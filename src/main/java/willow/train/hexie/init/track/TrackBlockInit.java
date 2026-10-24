@@ -24,6 +24,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
 
 import willow.train.hexie.Main;
+import willow.train.hexie.client.render.track.StandardTrackRenderProperties;
 import willow.train.hexie.blocks.track.standard.StandardTrackBlockStateGenerator;
 import willow.train.hexie.blocks.bogeys.df11g.DF11GBogeyBlock;
 import willow.train.hexie.blocks.bogeys.standard.HXStandardBogeyBlock;
@@ -57,7 +58,7 @@ public class TrackBlockInit {
                                         .noOcclusion()
                                         .forceSolidOn())
                 .transform(pickaxeOnly())
-                .clientExtension(() -> () -> new TrackBlock.RenderProperties())
+                .clientExtension(() -> () -> new StandardTrackRenderProperties())
                 .blockstate(blockstateGen)
                 .tag(AllTags.AllBlockTags.TRACKS.tag)
                 .tag(AllTags.AllBlockTags.GIRDABLE_TRACKS.tag)

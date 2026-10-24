@@ -27,7 +27,9 @@ import org.joml.Matrix4f;
 
 /** Shares each bogey's animation transforms between Create's renderer and Flywheel visual. */
 public abstract class SimpleBogeyRenderer implements BogeyRenderer {
-    private BiConsumer<PartialModel, Matrix4f> instanceOutput;
+    // Flywheel may update different visuals using the same renderer concurrently.
+    private final ThreadLocal<BiConsumer<PartialModel, Matrix4f>> instanceOutput = new ThreadLocal<>();
+    private final ThreadLocal<Matrix4f> instanceTransform = ThreadLocal.withInitial(Matrix4f::new);
     private int overlay;
 
     public abstract BogeySizes.BogeySize getSize();
@@ -90,8 +92,10 @@ public abstract class SimpleBogeyRenderer implements BogeyRenderer {
         }
 
         public void render(PoseStack poseStack, int light, VertexConsumer buffer) {
-            if (instanceOutput != null) {
-                instanceOutput.accept(model, new Matrix4f(poseStack.last().pose()).mul(transform));
+            BiConsumer<PartialModel, Matrix4f> output = instanceOutput.get();
+            if (output != null) {
+                // The instance copies the transform immediately, so this thread-local scratch matrix is reusable.
+                output.accept(model, instanceTransform.get().set(poseStack.last().pose()).mul(transform));
                 return;
             }
             poseStack.pushPose();
@@ -103,11 +107,16 @@ public abstract class SimpleBogeyRenderer implements BogeyRenderer {
         }
     }
 
+    private static final class ModelInstances {
+        private final List<TransformedInstance> instances = new ArrayList<>();
+        private int used;
+    }
+
     private final class AnimatedVisual implements BogeyVisual {
         private final VisualizationContext context;
         private final boolean inContraption;
-        private final Map<PartialModel, List<TransformedInstance>> instances = new HashMap<>();
-        private final Map<PartialModel, Integer> used = new HashMap<>();
+        private final Map<PartialModel, ModelInstances> instances = new HashMap<>();
+        private final BiConsumer<PartialModel, Matrix4f> output = this::emit;
         private int packedLight;
 
         private AnimatedVisual(VisualizationContext context, boolean inContraption) {
@@ -117,32 +126,37 @@ public abstract class SimpleBogeyRenderer implements BogeyRenderer {
 
         @Override
         public void update(CompoundTag bogeyData, float wheelAngle, PoseStack poseStack) {
-            used.clear();
-            instanceOutput = this::emit;
+            instances.values().forEach(group -> group.used = 0);
+            BiConsumer<PartialModel, Matrix4f> previousOutput = instanceOutput.get();
+            instanceOutput.set(output);
             poseStack.pushPose();
             try {
                 SimpleBogeyRenderer.this.render(bogeyData, wheelAngle, poseStack,
                         packedLight, null, inContraption);
             } finally {
                 poseStack.popPose();
-                instanceOutput = null;
+                if (previousOutput == null)
+                    instanceOutput.remove();
+                else
+                    instanceOutput.set(previousOutput);
             }
-            instances.forEach((model, list) -> {
-                for (int i = used.getOrDefault(model, 0); i < list.size(); i++)
-                    list.get(i).setZeroTransform().setChanged();
+            instances.values().forEach(group -> {
+                for (int i = group.used; i < group.instances.size(); i++)
+                    group.instances.get(i).setZeroTransform().setChanged();
             });
         }
 
         private void emit(PartialModel model, Matrix4f transform) {
-            List<TransformedInstance> list = instances.computeIfAbsent(model,
-                    ignored -> new ArrayList<>());
-            int index = used.merge(model, 1, Integer::sum) - 1;
-            if (index == list.size()) {
-                list.add(context.instancerProvider()
+            ModelInstances group = instances.computeIfAbsent(model, ignored -> new ModelInstances());
+            int index = group.used++;
+            if (index == group.instances.size()) {
+                TransformedInstance instance = context.instancerProvider()
                         .instancer(InstanceTypes.TRANSFORMED, SpecialModels.smoothLit(model))
-                        .createInstance());
+                        .createInstance();
+                instance.light(packedLight);
+                group.instances.add(instance);
             }
-            list.get(index).setTransform(transform).light(packedLight).setChanged();
+            group.instances.get(index).setTransform(transform).setChanged();
         }
 
         @Override
@@ -168,7 +182,7 @@ public abstract class SimpleBogeyRenderer implements BogeyRenderer {
         }
 
         private void forEach(Consumer<TransformedInstance> action) {
-            instances.values().forEach(list -> list.forEach(action));
+            instances.values().forEach(group -> group.instances.forEach(action));
         }
     }
 }

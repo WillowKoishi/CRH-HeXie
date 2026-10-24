@@ -213,13 +213,11 @@ public class DF11GBogeyRenderer {
             //转向架朝向是否取反
             //boolean forwards = DF11GBogeyRenderer.isForwards(bogeyData, inContraption);
             //转向架朝向
-            Direction direction =
-                    bogeyData.contains(Constants.BOGEY_ASSEMBLY_DIRECTION_KEY)
-                            ? NBTHelper.readEnum(
-                            bogeyData,
-                            Constants.BOGEY_ASSEMBLY_DIRECTION_KEY,
-                            Direction.class)
-                            : Direction.NORTH;
+            String directionKey = !inContraption && bogeyData.contains(Constants.QJ_PREVIEW_DIRECTION_KEY)
+                    ? Constants.QJ_PREVIEW_DIRECTION_KEY : Constants.BOGEY_ASSEMBLY_DIRECTION_KEY;
+            Direction direction = bogeyData.contains(directionKey)
+                    ? NBTHelper.readEnum(bogeyData, directionKey, Direction.class)
+                    : Direction.NORTH;
 
 
             //是否需要反向渲染
