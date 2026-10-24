@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "hexie:block/df11g/df11g_front_module",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "hexie:block/df11g/df11g_front_module"
+    },
+    "facing=south": {
+      "model": "hexie:block/df11g/df11g_front_module",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "hexie:block/df11g/df11g_front_module",
+      "y": 270
+    }
+  }
+}

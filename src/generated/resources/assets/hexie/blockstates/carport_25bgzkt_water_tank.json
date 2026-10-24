@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "hexie:block/carport_25bgzkt_water_tank",
+      "y": 270
+    },
+    "facing=north": {
+      "model": "hexie:block/carport_25bgzkt_water_tank",
+      "y": 180
+    },
+    "facing=south": {
+      "model": "hexie:block/carport_25bgzkt_water_tank",
+      "y": 0
+    },
+    "facing=west": {
+      "model": "hexie:block/carport_25bgzkt_water_tank",
+      "y": 90
+    }
+  }
+}

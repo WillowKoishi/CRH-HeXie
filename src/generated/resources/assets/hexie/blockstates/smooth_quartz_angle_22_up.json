@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "hexie:block/smooth_quartz_angle_22_up",
+      "y": 270
+    },
+    "facing=north": {
+      "model": "hexie:block/smooth_quartz_angle_22_up",
+      "y": 180
+    },
+    "facing=south": {
+      "model": "hexie:block/smooth_quartz_angle_22_up",
+      "y": 0
+    },
+    "facing=west": {
+      "model": "hexie:block/smooth_quartz_angle_22_up",
+      "y": 90
+    }
+  }
+}

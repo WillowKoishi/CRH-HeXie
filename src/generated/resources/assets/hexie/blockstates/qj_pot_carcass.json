@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "hexie:block/qj_steam_loco/qj_pot_carcass",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "hexie:block/qj_steam_loco/qj_pot_carcass",
+      "y": 0
+    },
+    "facing=south": {
+      "model": "hexie:block/qj_steam_loco/qj_pot_carcass",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "hexie:block/qj_steam_loco/qj_pot_carcass",
+      "y": 270
+    }
+  }
+}

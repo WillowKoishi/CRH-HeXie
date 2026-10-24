@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "hexie:block/ticket_vendor/ticket_vendor_2", "y": 0 },
+    "facing=east":  { "model": "hexie:block/ticket_vendor/ticket_vendor_2", "y": 90 },
+    "facing=south": { "model": "hexie:block/ticket_vendor/ticket_vendor_2" ,"y": 180},
+    "facing=west":  { "model": "hexie:block/ticket_vendor/ticket_vendor_2", "y":  270 }
+  }
+}

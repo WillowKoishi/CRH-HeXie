@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "hexie:block/carriage/windows/original_color_window_25t_sealed_small_blue",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "hexie:block/carriage/windows/original_color_window_25t_sealed_small_blue",
+      "y": 0
+    },
+    "facing=south": {
+      "model": "hexie:block/carriage/windows/original_color_window_25t_sealed_small_blue",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "hexie:block/carriage/windows/original_color_window_25t_sealed_small_blue",
+      "y": 270
+    }
+  }
+}

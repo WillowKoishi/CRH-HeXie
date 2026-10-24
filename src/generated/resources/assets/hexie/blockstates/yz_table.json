@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "hexie:block/carriage/facilities/yz_table", "y": 180 },
+    "facing=east":  { "model": "hexie:block/carriage/facilities/yz_table", "y": 270 },
+    "facing=south": { "model": "hexie:block/carriage/facilities/yz_table", "y": 0 },
+    "facing=west":  { "model": "hexie:block/carriage/facilities/yz_table", "y":  90 }
+  }
+}

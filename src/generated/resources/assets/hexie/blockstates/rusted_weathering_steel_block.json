@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "hexie:block/crafting/weathering_steel_blocks/rusted_weathering_steel_block"
+    }
+  }
+}

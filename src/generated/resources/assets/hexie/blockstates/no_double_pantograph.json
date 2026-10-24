@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "hexie:block/no_double_pantograph",
+      "y": 0
+    },
+    "facing=north": {
+      "model": "hexie:block/no_double_pantograph",
+      "y": 270
+    },
+    "facing=south": {
+      "model": "hexie:block/no_double_pantograph",
+      "y": 90
+    },
+    "facing=west": {
+      "model": "hexie:block/no_double_pantograph",
+      "y": 180
+    }
+  }
+}

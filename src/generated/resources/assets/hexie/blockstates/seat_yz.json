@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "hexie:block/seats/seat_yz", "y": 0 },
+    "facing=east":  { "model": "hexie:block/seats/seat_yz", "y": 90 },
+    "facing=south": { "model": "hexie:block/seats/seat_yz", "y": 180 },
+    "facing=west":  { "model": "hexie:block/seats/seat_yz", "y":  270 }
+  }
+}

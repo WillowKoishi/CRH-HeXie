@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "hexie:block/air_condition_bsp25t",
+      "y": 270
+    },
+    "facing=north": {
+      "model": "hexie:block/air_condition_bsp25t",
+      "y": 180
+    },
+    "facing=south": {
+      "model": "hexie:block/air_condition_bsp25t",
+      "y": 0
+    },
+    "facing=west": {
+      "model": "hexie:block/air_condition_bsp25t",
+      "y": 90
+    }
+  }
+}

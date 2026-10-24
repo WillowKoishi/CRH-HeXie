@@ -1,0 +1,36 @@
+{
+  "variants": {
+    "facing=east,half=bottom": {
+      "model": "hexie:block/carriage/carriage_marshalled_cr200j/wide_window/wide_window_sealed",
+      "y": 90
+    },
+    "facing=north,half=bottom": {
+      "model": "hexie:block/carriage/carriage_marshalled_cr200j/wide_window/wide_window_sealed",
+      "y": 0
+    },
+    "facing=south,half=bottom": {
+      "model": "hexie:block/carriage/carriage_marshalled_cr200j/wide_window/wide_window_sealed",
+      "y": 180
+    },
+    "facing=west,half=bottom": {
+      "model": "hexie:block/carriage/carriage_marshalled_cr200j/wide_window/wide_window_sealed",
+      "y": 270
+    },
+    "facing=east,half=top": {
+      "model": "hexie:block/carriage/carriage_marshalled_cr200j/wide_window/wide_window_sealed_lh",
+      "y": 90
+    },
+    "facing=north,half=top": {
+      "model": "hexie:block/carriage/carriage_marshalled_cr200j/wide_window/wide_window_sealed_lh",
+      "y": 0
+    },
+    "facing=south,half=top": {
+      "model": "hexie:block/carriage/carriage_marshalled_cr200j/wide_window/wide_window_sealed_lh",
+      "y": 180
+    },
+    "facing=west,half=top": {
+      "model": "hexie:block/carriage/carriage_marshalled_cr200j/wide_window/wide_window_sealed_lh",
+      "y": 270
+    }
+  }
+}
