@@ -1,0 +1,7 @@
+{
+	"parent": "block/block",
+	"loader": "neoforge:obj",
+	"flip_v": true,
+	"model": "hexie:models/block/bogey/hx_standard/cw2_wheel.obj"
+
+}

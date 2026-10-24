@@ -1,0 +1,6 @@
+{
+  "parent": "block/block",
+  "loader": "neoforge:obj",
+  "flip_v": true,
+  "model": "hexie:models/block/bogey/qj/radius_rod_otherside.obj"
+}
