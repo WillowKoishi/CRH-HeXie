@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "hexie:panel_25z_original_top"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "hexie:panel_25z_original_bottom_symbol"
+  }
+}

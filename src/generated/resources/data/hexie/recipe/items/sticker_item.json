@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ppp",
+    "pap",
+    "ppp"
+  ],
+  "key": {
+    "p": {
+      "item": "minecraft:paper"
+    },
+    "a": {
+      "item": "minecraft:slime_ball"
+    }
+  },
+  "result": {
+    "count": 8,
+    "id": "hexie:sticker_item"
+  }
+}

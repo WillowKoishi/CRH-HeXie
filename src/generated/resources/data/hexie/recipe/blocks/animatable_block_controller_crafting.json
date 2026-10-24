@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "create:linked_controller"
+    },
+    {
+      "item": "hexie:automatic_control_coupling"
+    }
+  ],
+  "result": {
+    "id": "hexie:animatable_block_controller"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "replace": false,
+  "values": [
+    "hexie:original_25b_door",
+    "hexie:original_25g_door",
+    "hexie:original_25k_door",
+    "hexie:original_25k_sliding_door",
+    "hexie:original_25t_door",
+    "hexie:original_25t_sliding_door",
+    "hexie:marshalled_25_door",
+    "hexie:df11g_cab_door",
+    "hexie:df11g_equip_room_door",
+    "hexie:hxd3d_cab_door",
+    "hexie:original_25z_door",
+    "hexie:marshalled_cr200j_door",
+    "hexie:marshalled_cr200j_cabin_door",
+    "hexie:marshalled_cr200j_door_2",
+    "hexie:cr200j_front"
+  ]
+}

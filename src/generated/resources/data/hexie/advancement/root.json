@@ -1,0 +1,30 @@
+{
+  "display": {
+    "icon": {
+      "id": "hexie:cr_logo"
+    },
+    "title": {
+      "translate": "hexie:advancement.root"
+    },
+    "description": {
+      "color": "#DBA213",
+      "translate": "hexie:advancement.root.desc"
+    },
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false,
+    "background": "hexie:textures/block/standard_track_crosstie.png"
+  },
+  "criteria": {
+    "0": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {}
+    }
+  },
+  "requirements": [
+    [
+      "0"
+    ]
+  ]
+}

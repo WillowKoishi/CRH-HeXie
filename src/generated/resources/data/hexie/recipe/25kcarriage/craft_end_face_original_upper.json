@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " d ",
+    "bbb",
+    "sss"
+  ],
+  "key": {
+    "d": {
+      "tag": "c:dyes/blue"
+    },
+    "b": {
+      "item": "hexie:weathering_resistant_steel_board"
+    },
+    "s": {
+      "item": "hexie:weathering_resistant_steel_stick"
+    }
+  },
+  "result": {
+    "count": 1,
+    "id": "hexie:end_face_25k_original_upper"
+  }
+}

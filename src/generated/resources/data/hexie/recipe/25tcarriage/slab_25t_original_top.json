@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "df ",
+    "www"
+  ],
+  "key": {
+    "d": {
+      "tag": "c:dyes/white"
+    },
+    "w": {
+      "item": "hexie:weathering_resistant_steel_board"
+    },
+    "f": {
+      "tag": "c:dyes/blue"
+    }
+  },
+  "result": {
+    "count": 2,
+    "id": "hexie:slab_25t_original_top"
+  }
+}

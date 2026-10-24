@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "a",
+    "b",
+    "c"
+  ],
+  "key": {
+    "a": {
+      "item": "create:electron_tube"
+    },
+    "b": {
+      "item": "create:precision_mechanism"
+    },
+    "c": {
+      "item": "create:brass_sheet"
+    }
+  },
+  "result": {
+    "count": 1,
+    "id": "hexie:automatic_control_coupling"
+  }
+}

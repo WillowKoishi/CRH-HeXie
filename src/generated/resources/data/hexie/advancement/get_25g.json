@@ -1,0 +1,38 @@
+{
+  "parent": "hexie:get_steel",
+  "display": {
+    "icon": {
+      "id": "hexie:panel_25g_original_bottom"
+    },
+    "title": {
+      "translate": "hexie.advancement.25g"
+    },
+    "description": {
+      "color": "#DBA213",
+      "translate": "hexie.advancement.25g.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "0": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "hexie:panel_25g_original_bottom"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "0"
+    ]
+  ]
+}

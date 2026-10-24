@@ -1,0 +1,20 @@
+{
+  "values": [
+    "hexie:standard_track",
+    "hexie:ballastless_track",
+    "hexie:tieless_track",
+    "hexie:hx_standard_bogey",
+    "hexie:df11g_bogey",
+    "hexie:df11g_backward_bogey",
+    "hexie:pk209p_bogey",
+    "hexie:pk209p_no_motor_bogey",
+    "hexie:pk209p_backward_bogey",
+    "hexie:sw220k_bogey",
+    "hexie:sw220k_backward_bogey",
+    "hexie:qj_bogey",
+    "hexie:sw160_bogey",
+    "hexie:df11g_front2",
+    "hexie:hxd3d_front",
+    "hexie:hx_semaphore"
+  ]
+}

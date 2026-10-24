@@ -1,0 +1,34 @@
+{
+  "parent": "hexie:root",
+  "display": {
+    "icon": {
+      "id": "hexie:train_diet_1"
+    },
+    "title": {
+      "translate": "hexie.advancement.diet"
+    },
+    "description": {
+      "color": "#DBA213",
+      "translate": "hexie.advancement.diet.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "1": {
+      "trigger": "minecraft:effects_changed",
+      "conditions": {
+        "effects": {
+          "hexie:noodle_smell": {}
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "1"
+    ]
+  ]
+}

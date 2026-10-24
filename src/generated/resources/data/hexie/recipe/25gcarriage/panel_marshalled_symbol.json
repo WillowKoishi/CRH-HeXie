@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "hexie:panel_25g_original_bottom"
+    },
+    {
+      "item": "hexie:green_brush"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "hexie:panel_25g_marshalled_symbol"
+  }
+}

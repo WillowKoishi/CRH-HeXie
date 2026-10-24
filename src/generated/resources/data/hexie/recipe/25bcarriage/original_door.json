@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "w",
+    "x"
+  ],
+  "key": {
+    "w": {
+      "item": "hexie:original_color_window_25b_small"
+    },
+    "x": {
+      "item": "hexie:panel_25b_original_bottom"
+    }
+  },
+  "result": {
+    "id": "hexie:original_25b_door"
+  }
+}

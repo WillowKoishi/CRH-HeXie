@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "hexie:original_color_window_25"
+    },
+    {
+      "item": "hexie:original_color_window_25"
+    },
+    {
+      "item": "hexie:original_color_window_25"
+    },
+    {
+      "item": "hexie:original_color_window_25"
+    },
+    {
+      "tag": "c:dyes/white"
+    },
+    {
+      "tag": "c:dyes/blue"
+    }
+  ],
+  "result": {
+    "count": 4,
+    "id": "hexie:original_color_window_25t_wide"
+  }
+}
