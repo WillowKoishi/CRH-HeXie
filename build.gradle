@@ -1,0 +1,116 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'idea'
+    id 'net.neoforged.moddev' version '2.0.148'
+}
+
+version = mod_version
+group = mod_group_id
+def artifactBuildDate = new Date().format('yyMMdd', TimeZone.getTimeZone('Asia/Shanghai'))
+def artifactLoaderName = 'NeoForge'
+def artifactArchiveVersion = "${project.version}-${artifactBuildDate}"
+base.archivesName = "Hexie-${minecraft_version}-${artifactLoaderName}"
+
+tasks.withType(Jar).configureEach {
+    archiveVersion = artifactArchiveVersion
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    withSourcesJar()
+}
+
+sourceSets.main.resources {
+    srcDir 'src/generated/resources'
+    exclude '**/.cache/**', '**/*.bbmodel'
+}
+
+repositories {
+    maven { url = 'https://maven.createmod.net' }
+    maven { url = 'https://maven.ithundxr.dev/snapshots' }
+    mavenCentral()
+}
+
+neoForge {
+    version = neo_version
+
+    runs {
+        client { client() }
+        server {
+            server()
+            programArgument '--nogui'
+        }
+        gameTestServer { type = 'gameTestServer' }
+        data {
+            data()
+            programArguments.addAll '--mod', mod_id, '--all', '--existing-mod', 'create',
+                    '--output', file(providers.gradleProperty('hexieDataOutput')
+                            .getOrElse('build/generated/datagen')).absolutePath,
+                    '--existing', file('src/main/resources').absolutePath,
+                    '--existing', file('src/generated/resources').absolutePath
+        }
+        configureEach {
+            gameDirectory = layout.projectDirectory.dir("run-1.21.1/${name}").asFile
+            systemProperty 'java.io.tmpdir', layout.buildDirectory.dir('tmp').get().asFile.absolutePath
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+            logLevel = org.slf4j.event.Level.DEBUG
+        }
+    }
+    mods {
+        "${mod_id}" { sourceSet sourceSets.main }
+    }
+}
+
+dependencies {
+
+    implementation("com.simibubi.create:create-${minecraft_version}:${create_version}") {
+        transitive = false
+    }
+    implementation "com.tterrag.registrate:Registrate:${registrate_version}"
+    implementation "net.createmod.ponder:ponder-neoforge:${ponder_version}+mc${minecraft_version}"
+    compileOnly "dev.engine-room.flywheel:flywheel-neoforge-api-${minecraft_version}:${flywheel_version}"
+    runtimeOnly "dev.engine-room.flywheel:flywheel-neoforge-${minecraft_version}:${flywheel_version}"
+}
+
+tasks.named('processResources', ProcessResources).configure {
+    var properties = [mod_version: mod_version, mod_name: mod_name,
+                      minecraft_version: minecraft_version, neo_version: neo_version]
+    inputs.properties properties
+    filesMatching('META-INF/neoforge.mods.toml') { expand properties }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs.addAll '-Xmaxerrs', '10000'
+}
+
+tasks.named('runServer', JavaExec).configure {
+    standardInput = System.in
+}
+
+tasks.named('jar', Jar).configure {
+    manifest.attributes([
+            'Specification-Title': mod_name,
+            'Specification-Vendor': 'FairingStudio',
+            'Specification-Version': '1',
+            'Implementation-Title': project.name,
+            'Implementation-Version': project.version,
+            'Implementation-Vendor': 'FairingStudio'
+    ])
+}
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) { from components.java }
+    }
+    repositories {
+        maven { url = layout.buildDirectory.dir('repo') }
+    }
+}
+
+idea.module {
+    downloadSources = true
+    downloadJavadoc = true
+}
