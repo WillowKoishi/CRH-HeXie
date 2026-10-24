@@ -15,6 +15,18 @@
     "hexie:sw160_bogey",
     "hexie:df11g_front2",
     "hexie:hxd3d_front",
-    "hexie:hx_semaphore"
+    "hexie:hx_semaphore",
+    "hexie:weathering_resistant_steel_block_0",
+    "hexie:exposed_weathering_steel_block",
+    "hexie:yellowing_weathering_steel_block",
+    "hexie:rusted_weathering_steel_block",
+    "hexie:stably_rusted_weathering_steel_block",
+    "hexie:fully_rusted_weathering_steel_block",
+    "hexie:waxed_weathering_resistant_steel_block_0",
+    "hexie:waxed_exposed_weathering_steel_block",
+    "hexie:waxed_yellowing_weathering_steel_block",
+    "hexie:waxed_rusted_weathering_steel_block",
+    "hexie:waxed_stably_rusted_weathering_steel_block",
+    "hexie:waxed_fully_rusted_weathering_steel_block"
   ]
 }

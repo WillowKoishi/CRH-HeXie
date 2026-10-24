@@ -47,5 +47,35 @@ public class WeatheringResistantSteelBlockInit {
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops()),
             object -> () -> new BlockItem(object.get(), new Item.Properties()));
 
+    // 涂蜡的耐候钢块
+    public static final DeferredHolder<Block, Block> WAXED_WEATHERING_STEEL_BLOCK = register("waxed_weathering_resistant_steel_block_0",
+            () -> new Block(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2.0f, 3.0f).sound(SoundType.COPPER).requiresCorrectToolForDrops()),
+            object -> () -> new BlockItem(object.get(), new Item.Properties()));
+
+    // 涂蜡的斑驳耐候钢块
+    public static final DeferredHolder<Block, Block> WAXED_EXPOSED_WEATHERING_STEEL_BLOCK = register("waxed_exposed_weathering_steel_block",
+            () -> new Block(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2.0f, 3.0f).sound(SoundType.COPPER).requiresCorrectToolForDrops()),
+            object -> () -> new BlockItem(object.get(), new Item.Properties()));
+
+    // 涂蜡的泛黄耐候钢块
+    public static final DeferredHolder<Block, Block> WAXED_YELLOWING_WEATHERING_STEEL_BLOCK = register("waxed_yellowing_weathering_steel_block",
+            () -> new Block(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2.0f, 3.0f).sound(SoundType.COPPER).requiresCorrectToolForDrops()),
+            object -> () -> new BlockItem(object.get(), new Item.Properties()));
+
+    // 涂蜡的耐候钢锈块
+    public static final DeferredHolder<Block, Block> WAXED_RUSTED_WEATHERING_STEEL_BLOCK = register("waxed_rusted_weathering_steel_block",
+            () -> new Block(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2.0f, 3.0f).sound(SoundType.COPPER).requiresCorrectToolForDrops()),
+            object -> () -> new BlockItem(object.get(), new Item.Properties()));
+
+    // 涂蜡的稳定耐候钢锈块
+    public static final DeferredHolder<Block, Block> WAXED_STABLY_RUSTED_WEATHERING_STEEL_BLOCK = register("waxed_stably_rusted_weathering_steel_block",
+            () -> new Block(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2.0f, 3.0f).sound(SoundType.COPPER).requiresCorrectToolForDrops()),
+            object -> () -> new BlockItem(object.get(), new Item.Properties()));
+
+    // 涂蜡的致密耐候钢锈块
+    public static final DeferredHolder<Block, Block> WAXED_FULLY_RUSTED_WEATHERING_STEEL_BLOCK = register("waxed_fully_rusted_weathering_steel_block",
+            () -> new Block(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2.0f, 3.0f).sound(SoundType.COPPER).requiresCorrectToolForDrops()),
+            object -> () -> new BlockItem(object.get(), new Item.Properties()));
+
     public static void invoke(){};
 }

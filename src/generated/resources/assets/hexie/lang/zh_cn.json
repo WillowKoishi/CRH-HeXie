@@ -280,11 +280,11 @@
   "easter.eggs.l99": "L99被管理员禁言29天23小时59分钟",
 
   "block.hexie.waxed_weathering_resistant_steel_block_0": "涂蜡的耐候钢块",
-  "block.hexie.waxed_exposed_weathering_steel_block": "涂蜡的斑驳的耐候钢块",
-  "block.hexie.waxed_yellowing_weathering_steel_block": "涂蜡的泛黄的耐候钢",
+  "block.hexie.waxed_exposed_weathering_steel_block": "涂蜡的斑驳耐候钢块",
+  "block.hexie.waxed_yellowing_weathering_steel_block": "涂蜡的泛黄耐候钢块",
   "block.hexie.waxed_rusted_weathering_steel_block": "涂蜡的耐候钢锈块",
-  "block.hexie.waxed_stably_rusted_weathering_steel_block": "涂蜡的稳定的耐候钢锈块",
-  "block.hexie.waxed_fully_rusted_weathering_steel_block": "涂蜡的致密的耐候锈块",
+  "block.hexie.waxed_stably_rusted_weathering_steel_block": "涂蜡的稳定耐候钢锈块",
+  "block.hexie.waxed_fully_rusted_weathering_steel_block": "涂蜡的致密耐候钢锈块",
 
   "tips.item": "--------------------------------以下是物品-------------------------------------------",
   "item.hexie.train_diet_1": "火车餐A",
