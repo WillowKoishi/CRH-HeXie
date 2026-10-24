@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "building",
+  "ingredients": [
+    {
+      "item": "minecraft:honeycomb"
+    },
+    {
+      "item": "hexie:stably_rusted_weathering_steel_block"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "hexie:waxed_stably_rusted_weathering_steel_block"
+  }
+}

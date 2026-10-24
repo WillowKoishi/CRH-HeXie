@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_stably_rusted_weathering_steel_block": {
+      "conditions": {
+        "items": [
+          {
+            "items": "hexie:stably_rusted_weathering_steel_block"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "hexie:waxed_stably_rusted_weathering_steel_block_from_honeycomb"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_stably_rusted_weathering_steel_block"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "hexie:waxed_stably_rusted_weathering_steel_block_from_honeycomb"
+    ]
+  }
+}

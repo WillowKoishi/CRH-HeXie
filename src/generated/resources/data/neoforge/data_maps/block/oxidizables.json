@@ -1,0 +1,19 @@
+{
+  "values": {
+    "hexie:weathering_resistant_steel_block_0": {
+      "next_oxidation_stage": "hexie:exposed_weathering_steel_block"
+    },
+    "hexie:exposed_weathering_steel_block": {
+      "next_oxidation_stage": "hexie:yellowing_weathering_steel_block"
+    },
+    "hexie:yellowing_weathering_steel_block": {
+      "next_oxidation_stage": "hexie:rusted_weathering_steel_block"
+    },
+    "hexie:rusted_weathering_steel_block": {
+      "next_oxidation_stage": "hexie:stably_rusted_weathering_steel_block"
+    },
+    "hexie:stably_rusted_weathering_steel_block": {
+      "next_oxidation_stage": "hexie:fully_rusted_weathering_steel_block"
+    }
+  }
+}

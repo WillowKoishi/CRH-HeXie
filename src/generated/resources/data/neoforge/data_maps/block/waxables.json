@@ -1,0 +1,22 @@
+{
+  "values": {
+    "hexie:weathering_resistant_steel_block_0": {
+      "waxed": "hexie:waxed_weathering_resistant_steel_block_0"
+    },
+    "hexie:exposed_weathering_steel_block": {
+      "waxed": "hexie:waxed_exposed_weathering_steel_block"
+    },
+    "hexie:yellowing_weathering_steel_block": {
+      "waxed": "hexie:waxed_yellowing_weathering_steel_block"
+    },
+    "hexie:rusted_weathering_steel_block": {
+      "waxed": "hexie:waxed_rusted_weathering_steel_block"
+    },
+    "hexie:stably_rusted_weathering_steel_block": {
+      "waxed": "hexie:waxed_stably_rusted_weathering_steel_block"
+    },
+    "hexie:fully_rusted_weathering_steel_block": {
+      "waxed": "hexie:waxed_fully_rusted_weathering_steel_block"
+    }
+  }
+}

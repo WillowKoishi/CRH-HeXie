@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "building",
+  "ingredients": [
+    {
+      "item": "minecraft:honeycomb"
+    },
+    {
+      "item": "hexie:yellowing_weathering_steel_block"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "hexie:waxed_yellowing_weathering_steel_block"
+  }
+}

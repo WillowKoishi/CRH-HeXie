@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_weathering_resistant_steel_block_0": {
+      "conditions": {
+        "items": [
+          {
+            "items": "hexie:weathering_resistant_steel_block_0"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "hexie:waxed_weathering_resistant_steel_block_0_from_honeycomb"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_weathering_resistant_steel_block_0"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "hexie:waxed_weathering_resistant_steel_block_0_from_honeycomb"
+    ]
+  }
+}
