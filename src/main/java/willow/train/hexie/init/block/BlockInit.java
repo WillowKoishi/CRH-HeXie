@@ -1241,7 +1241,6 @@ public static final DeferredHolder<Block, DF11GPanel3Wide> DF11G_PANEL_CR = regi
             object -> () -> new BlockItem(object.get(), new Item.Properties()));
 
 //qj
-    // TODO: for next version (0.4)
 
     public static final DeferredHolder<Block, DF11GFrontBlock> QJ_POT_CARCASS = register("qj_pot_carcass",
             () -> new DF11GFrontBlock(BlockBehaviour.Properties.of().mapColor(MapColor.PLANT).strength(1.5f, 3.0f)

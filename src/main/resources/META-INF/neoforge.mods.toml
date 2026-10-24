@@ -1,0 +1,40 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="MIT"
+[[mods]]
+modId = "hexie"
+version = "${mod_version}"
+displayName = "${mod_name}"
+displayURL = "https://fairingstudio.com/" #optional
+logoFile = "crh.png" #optional
+credits = "苟利国家生死以，岂因祸福避趋之。" #optional
+authors = "柳树怪(WillowKoishi),flycatfeimao,羊驼猫猫头(AlpacaCatou)可爱金发小耗子,radekemia,shazimingjiang"#optional
+description = '''
+和谐号掠过站台时，那一声低伏而锐利的破风嘶鸣
+在350公里的刻度上被悄然按回300的寂静里，久久悬在夜空。
+这是一个为机械动力mod而制作的装饰类方块mod（暂定） 因为本人是java初学者，不怎么会编程,还请谅解(^^;;;
+'''
+
+[[mixins]]
+config="hexie.mixins.json"
+
+[[dependencies.hexie]]
+modId="neoforge"
+type="required"
+versionRange="[${neo_version},)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.hexie]]
+modId="minecraft"
+type="required"
+versionRange="[${minecraft_version}]"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.hexie]]
+modId="create"
+type="required"
+versionRange="[6.0.10,6.1)"
+ordering="AFTER"
+side="BOTH"
