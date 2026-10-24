@@ -1,0 +1,13 @@
+{
+  "type": "create:pressing",
+  "ingredients": [
+    {
+      "item": "hexie:incomplete_tieless_track"
+    }
+  ],
+  "results": [
+    {
+      "id": "hexie:tieless_track"
+    }
+  ]
+}

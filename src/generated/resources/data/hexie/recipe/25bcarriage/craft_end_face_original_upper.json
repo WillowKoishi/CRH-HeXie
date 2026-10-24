@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " d ",
+    "bbb",
+    " k "
+  ],
+  "key": {
+    "d": {
+      "tag": "c:dyes/green"
+    },
+    "b": {
+      "item": "hexie:weathering_resistant_steel_board"
+    },
+    "k": {
+      "item": "minecraft:dried_kelp"
+    }
+  },
+  "result": {
+    "count": 1,
+    "id": "hexie:end_face_25b_original_upper"
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "type": "create:sequenced_assembly",
+  "ingredient": {
+    "item": "hexie:weathering_resistant_steel_nugget"
+  },
+  "sequence": [
+    {
+      "type": "create:deploying",
+      "ingredients": [
+        {
+          "item": "hexie:incomplete_standard_track"
+        },
+        [
+          {
+            "item": "hexie:weathering_resistant_steel_nugget"
+          }
+        ]
+      ],
+      "results": [
+        {
+          "id": "hexie:incomplete_standard_track"
+        }
+      ]
+    },
+    {
+      "type": "create:deploying",
+      "ingredients": [
+        {
+          "item": "hexie:incomplete_standard_track"
+        },
+        [
+          {
+            "tag": "create:sleepers"
+          }
+        ]
+      ],
+      "results": [
+        {
+          "id": "hexie:incomplete_standard_track"
+        }
+      ]
+    },
+    {
+      "type": "create:pressing",
+      "ingredients": [
+        {
+          "item": "hexie:incomplete_standard_track"
+        }
+      ],
+      "results": [
+        {
+          "id": "hexie:incomplete_standard_track"
+        }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "id": "hexie:standard_track"
+    }
+  ],
+  "loops": 2,
+  "transitional_item": {
+    "id": "hexie:incomplete_standard_track"
+  }
+}

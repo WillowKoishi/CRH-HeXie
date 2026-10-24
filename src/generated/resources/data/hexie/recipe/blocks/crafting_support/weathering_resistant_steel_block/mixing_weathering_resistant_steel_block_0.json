@@ -1,0 +1,24 @@
+{
+  "type": "create:mixing",
+  "ingredients": [
+    {
+      "item": "minecraft:iron_block"
+    },
+    {
+      "item": "minecraft:iron_block"
+    },
+    {
+      "tag": "c:ingots/copper"
+    },
+    {
+      "tag": "minecraft:coals"
+    }
+  ],
+  "results": [
+    {
+      "count": 2,
+      "id": "hexie:weathering_resistant_steel_block_0"
+    }
+  ],
+  "heat_requirement": "heated"
+}

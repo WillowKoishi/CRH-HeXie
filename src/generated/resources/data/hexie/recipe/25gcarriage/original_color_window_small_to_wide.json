@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "hexie:original_color_window_25g_small"
+    },
+    {
+      "item": "hexie:original_color_window_25g_small"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "hexie:original_color_window_25g_wide"
+  }
+}

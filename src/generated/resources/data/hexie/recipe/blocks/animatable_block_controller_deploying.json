@@ -1,0 +1,16 @@
+{
+  "type": "create:deploying",
+  "ingredients": [
+    {
+      "item": "create:linked_controller"
+    },
+    {
+      "item": "hexie:automatic_control_coupling"
+    }
+  ],
+  "results": [
+    {
+      "id": "hexie:animatable_block_controller"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "hexie:switch_off_sign"
+    }
+  ],
+  "result": {
+    "id": "hexie:switch_on_sign"
+  }
+}

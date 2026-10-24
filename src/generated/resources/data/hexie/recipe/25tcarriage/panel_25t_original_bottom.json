@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "df ",
+    "bb ",
+    "bb "
+  ],
+  "key": {
+    "b": {
+      "item": "hexie:weathering_resistant_steel_board"
+    },
+    "d": {
+      "tag": "c:dyes/white"
+    },
+    "f": {
+      "tag": "c:dyes/blue"
+    }
+  },
+  "result": {
+    "count": 2,
+    "id": "hexie:panel_25t_original_bottom"
+  }
+}

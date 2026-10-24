@@ -1,0 +1,36 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "hexie:tactile_paving_straight"
+    },
+    {
+      "item": "hexie:tactile_paving_straight"
+    },
+    {
+      "item": "hexie:tactile_paving_straight"
+    },
+    {
+      "item": "hexie:tactile_paving_straight"
+    },
+    {
+      "item": "hexie:tactile_paving_straight"
+    },
+    {
+      "item": "hexie:tactile_paving_straight"
+    },
+    {
+      "item": "hexie:tactile_paving_straight"
+    },
+    {
+      "item": "hexie:tactile_paving_straight"
+    },
+    {
+      "item": "hexie:tactile_paving_straight"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "minecraft:yellow_concrete"
+  }
+}

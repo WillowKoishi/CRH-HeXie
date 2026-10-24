@@ -1,0 +1,36 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "hexie:weathering_resistant_steel_nugget"
+    },
+    {
+      "item": "hexie:weathering_resistant_steel_nugget"
+    },
+    {
+      "item": "hexie:weathering_resistant_steel_nugget"
+    },
+    {
+      "item": "hexie:weathering_resistant_steel_nugget"
+    },
+    {
+      "item": "hexie:weathering_resistant_steel_nugget"
+    },
+    {
+      "item": "hexie:weathering_resistant_steel_nugget"
+    },
+    {
+      "item": "hexie:weathering_resistant_steel_nugget"
+    },
+    {
+      "item": "hexie:weathering_resistant_steel_nugget"
+    },
+    {
+      "item": "hexie:weathering_resistant_steel_nugget"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "hexie:weathering_resistant_steel_ingot"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "hexie:tactile_paving_pin"
+    }
+  ],
+  "result": {
+    "id": "hexie:tactile_paving_straight"
+  }
+}

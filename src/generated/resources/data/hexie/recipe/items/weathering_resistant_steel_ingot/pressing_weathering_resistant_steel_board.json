@@ -1,0 +1,14 @@
+{
+  "type": "create:pressing",
+  "ingredients": [
+    {
+      "item": "hexie:weathering_resistant_steel_ingot"
+    }
+  ],
+  "results": [
+    {
+      "count": 1,
+      "id": "hexie:weathering_resistant_steel_board"
+    }
+  ]
+}

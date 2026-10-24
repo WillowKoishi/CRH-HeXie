@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "hexie:carport_25bgzk_air_condition_all"
+    }
+  ],
+  "result": {
+    "id": "hexie:carport_25bgzk_air_condition_side"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "parent": "hexie:get_steel",
+  "display": {
+    "icon": {
+      "id": "hexie:standard_track"
+    },
+    "title": {
+      "translate": "hexie.advancement.track"
+    },
+    "description": {
+      "color": "#DBA213",
+      "translate": "hexie.advancement.track.desc"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "0": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "hexie:standard_track"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "0"
+    ]
+  ]
+}

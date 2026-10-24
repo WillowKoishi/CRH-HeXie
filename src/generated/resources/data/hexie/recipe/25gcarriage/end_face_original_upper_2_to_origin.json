@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "hexie:end_face_25g_original_upper_2"
+    }
+  ],
+  "result": {
+    "id": "hexie:end_face_25g_original_upper"
+  }
+}

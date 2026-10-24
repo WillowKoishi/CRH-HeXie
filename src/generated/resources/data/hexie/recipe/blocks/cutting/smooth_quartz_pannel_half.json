@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": {
+    "item": "minecraft:smooth_quartz"
+  },
+  "result": {
+    "id": "hexie:smooth_quartz_panel_half",
+    "count": 2
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "hexie:original_25k_sliding_door"
+    }
+  ],
+  "result": {
+    "id": "hexie:original_25k_door"
+  }
+}

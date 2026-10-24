@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " d ",
+    "srs",
+    "sbs"
+  ],
+  "key": {
+    "s": {
+      "item": "hexie:weathering_resistant_steel_board"
+    },
+    "b": {
+      "item": "create:belt_connector"
+    },
+    "d": {
+      "tag": "c:dyes/green"
+    },
+    "r": {
+      "item": "hexie:original_25b_door"
+    }
+  },
+  "result": {
+    "count": 1,
+    "id": "hexie:end_face_25b_original"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "hexie:weathering_resistant_steel_ingot"
+    }
+  ],
+  "result": {
+    "count": 9,
+    "id": "hexie:weathering_resistant_steel_nugget"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "required": true,
+  "priority": 1000,
+  "package": "willow.train.hexie.mixins.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "MixinAbstractContraptionEntity",
+    "MixinDeployerMovementBehavior",
+    "MixinSchematicannonInventory",
+    "MixinSchematicSyncPacket",
+    "MixinTrackBlockEntity"
+  ],
+  "client": [
+    "client.CreativeModeInventoryScreenAccessor",
+    "client.MixinSchematicEditScreen",
+    "client.MixinSchematicPromptScreen",
+    "client.MixinSchematicHandler"
+  ],
+  "minVersion": "0.8"
+}

@@ -1,0 +1,48 @@
+{
+  "type": "create:sequenced_assembly",
+  "ingredient": {
+    "item": "hexie:tieless_track"
+  },
+  "sequence": [
+    {
+      "type": "create:deploying",
+      "ingredients": [
+        {
+          "item": "hexie:incomplete_ballastless_track"
+        },
+        [
+          {
+            "tag": "create:sleepers"
+          }
+        ]
+      ],
+      "results": [
+        {
+          "id": "hexie:incomplete_ballastless_track"
+        }
+      ]
+    },
+    {
+      "type": "create:pressing",
+      "ingredients": [
+        {
+          "item": "hexie:incomplete_ballastless_track"
+        }
+      ],
+      "results": [
+        {
+          "id": "hexie:incomplete_ballastless_track"
+        }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "id": "hexie:ballastless_track"
+    }
+  ],
+  "loops": 1,
+  "transitional_item": {
+    "id": "hexie:incomplete_ballastless_track"
+  }
+}

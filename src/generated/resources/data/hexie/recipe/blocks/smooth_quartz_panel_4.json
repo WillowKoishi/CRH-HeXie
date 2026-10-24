@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "#  ",
+    "#  "
+  ],
+  "key": {
+    "#": {
+      "item": "hexie:smooth_quartz_panel_half"
+    }
+  },
+  "result": {
+    "count": 4,
+    "id": "hexie:smooth_quartz_panel_4"
+  }
+}
