@@ -1,0 +1,20 @@
+name: Format
+
+on:
+  push:
+    branches: [ 1.19.2_lead_beyond_migrate ]
+
+jobs:
+  formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4 # v2 minimum required
+      - uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: 21
+      - uses: axel-op/googlejavaformat-action@v3
+        with:
+          args: "--replace --aosp"
+          version: "v1.17.0"
+          files: "src/**/*.java"

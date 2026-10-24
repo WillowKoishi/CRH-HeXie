@@ -1,0 +1,6 @@
+{
+  "loader": "neoforge:obj",
+  "model": "hexie:models/block/shielded_gate/electric_fence/electric_fence_wall_right.obj",
+  "render_type": "translucent",
+  "flip_v": true
+}

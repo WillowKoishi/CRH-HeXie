@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "hexie:item/track/incomplete_standard_track"
+  }
+}

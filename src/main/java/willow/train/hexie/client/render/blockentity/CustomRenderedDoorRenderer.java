@@ -73,8 +73,10 @@ public class CustomRenderedDoorRenderer implements BlockEntityRenderer<CustomRen
             lower.rotateYDegrees(counter * (leftSide ? 90 : -90));
             upper.rotateYDegrees(counter * (leftSide ? 90 : -90));
         }
-        lower.renderInto(pose, consumer);
-        upper.renderInto(pose, consumer);
+        // SuperByteBuffer does not inherit the BlockEntityRenderer's packed light value.
+        // Pass it explicitly so the door panels are lit like the surrounding carriage.
+        lower.light(light).overlay(overlay).renderInto(pose, consumer);
+        upper.light(light).overlay(overlay).renderInto(pose, consumer);
         pose.popPose();
     }
 }

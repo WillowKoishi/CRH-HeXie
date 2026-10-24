@@ -1,0 +1,14 @@
+{
+  "crossing_ringing": {
+    "subtitle": "sounds.hexie.crossing_ringing",
+    "sounds": [
+      "hexie:crossing_ringing"
+    ]
+  },
+  "beep_turnstile": {
+    "sounds": ["hexie:beep_turnstile"]
+  },
+  "chuff": {
+    "sounds": ["hexie:chuff"]
+  }
+}

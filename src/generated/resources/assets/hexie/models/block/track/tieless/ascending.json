@@ -1,0 +1,12 @@
+{
+  "loader": "neoforge:obj",
+  "ambientocclusion": false,
+  "flip_v": true,
+  "render_type": "cutout_mipped",
+  "model": "hexie:models/block/track/tieless/ascending.obj",
+  "textures": {
+    "0": "hexie:block/track/standard_gauge_track/standard_track",
+    "1": "hexie:block/track/standard_gauge_track/standard_track_mip",
+    "particle": "hexie:block/palettes/stone_types/polished/andesite_cut_polished"
+  }
+}
