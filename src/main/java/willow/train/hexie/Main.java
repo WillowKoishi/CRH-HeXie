@@ -34,7 +34,6 @@ import willow.train.hexie.init.track.TrackMaterialInit;
 import willow.train.hexie.interaction.InteractionProcessor;
 import willow.train.hexie.network.Env;
 import willow.train.hexie.network.HexieNetworkHandler;
-import willow.train.hexie.util.InternalTestUtil;
 import willow.train.hexie.util.enums.PanelTypesUtil;
 
 import java.util.Random;
@@ -91,7 +90,7 @@ public class Main {
         bus.addListener(HexieNetworkHandler::registerPackets);
         CreativeTabsInit.register(bus);
 
-        InternalTestUtil.InternalTest();
+        //InternalTestUtil.InternalTest();
 
         AllItemsInit.registerAllItems(bus);
 
