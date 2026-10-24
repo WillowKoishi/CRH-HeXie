@@ -53,13 +53,13 @@ public class ScrollBar extends AbstractWidget {
             setRencent((int)Math.round(exactLength * percentage));
         }
         if(vertical) {
-            boundsVertical.renderLazy(getX() + 1, getY());
-            boundsVertical.renderLazy(getX() + 1, getY() + height - boundsVertical.height());
-            ball.renderLazy(getX(), getRecentY());
+            boundsVertical.renderLazy(pGuiGraphics, getX() + 1, getY());
+            boundsVertical.renderLazy(pGuiGraphics, getX() + 1, getY() + height - boundsVertical.height());
+            ball.renderLazy(pGuiGraphics, getX(), getRecentY());
         } else {
-            boundsHorizontal.renderLazy(getX(), getY() + 1);
-            boundsHorizontal.renderLazy(getX() + width - boundsHorizontal.width(), getY() + 1);
-            ball.renderLazy(getRecentX(), getY());
+            boundsHorizontal.renderLazy(pGuiGraphics, getX(), getY() + 1);
+            boundsHorizontal.renderLazy(pGuiGraphics, getX() + width - boundsHorizontal.width(), getY() + 1);
+            ball.renderLazy(pGuiGraphics, getRecentX(), getY());
         }
     }
 

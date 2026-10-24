@@ -112,7 +112,7 @@ public class ItemSlotButton extends Button {
 public void renderItemTooltip(GuiGraphics pose, int mouseX, int mouseY) {
         if(stackIn == null) return;
         if(!isMouseOver(mouseX, mouseY) || stackIn.is(Items.AIR)) return;
-        chosenFrame.render(getX() - 1, getY() - 1, width + 2, height + 2);
+        chosenFrame.render(pose, getX() - 1, getY() - 1, width + 2, height + 2);
         pose.renderTooltip(Minecraft.getInstance().font, Screen.getTooltipFromItem(Minecraft.getInstance(), stackIn),
                 stackIn.getTooltipImage(), mouseX + 5, mouseY + 10);
     }

@@ -52,7 +52,7 @@ public class AutomaticControlCouplingScreen extends AbstractContainerScreen<Auto
         }
         if(holding.is(ResourceItemInit.AutomaticControlCoupling.get())) {
             List<AutomaticControlCouplingItem.CouplingDisplayData> datas = AutomaticControlCouplingItem.getDisplayDatas(holding);
-            int counter = 1;
+            int counter = 0;
             for(AutomaticControlCouplingItem.CouplingDisplayData d : datas) {
                 tagList.add(new ACCTagBox(d, zoom, counter));
                 counter++;
@@ -81,30 +81,38 @@ public class AutomaticControlCouplingScreen extends AbstractContainerScreen<Auto
     @Override
     public void render(GuiGraphics pose, int mouseX, int mouseY, float partial) {
         //super.render(pose, mouseX, mouseY, partial);
-        background.renderLazy(x, y);
+        background.renderLazy(pose, x, y);
         ACCTagBox.renderTextCentered(pose, TITLE.copy().withStyle(ChatFormatting.BOLD), x + 64 * zoom, y + 7.5f * zoom);
         if(!tagList.isEmpty()) {
+            int previousSize = tagList.size();
             tagList.removeIf(ACCTagBox::shouldRemove);
             scrollBar.setExactLength(tagList.size());
-            tagList.forEach(box -> {box.index = String.valueOf(tagList.indexOf(box));box.visible = false;});
-
-            if(tagList.size() > scrollBar.getRencent()) {
-                tagList.get(scrollBar.getRencent()).setPosition(x + (int)(5 * zoom), y + (int)(21 * zoom));
-                tagList.get(scrollBar.getRencent()).visible = true;
-                tagList.get(scrollBar.getRencent()).render(pose, mouseX, mouseY, partial);
+            int firstVisible = scrollBar.getRencent();
+            boolean reindex = tagList.size() != previousSize;
+            for (int i = 0; i < tagList.size(); i++) {
+                ACCTagBox box = tagList.get(i);
+                if (reindex)
+                    box.index = Integer.toString(i);
+                box.visible = i >= firstVisible && i < firstVisible + 2;
             }
 
-            if(tagList.size() > scrollBar.getRencent() + 1) {
-                tagList.get(scrollBar.getRencent() + 1).setPosition(x + (int)(5 * zoom),y + (int)(41 * zoom));
-                tagList.get(scrollBar.getRencent() + 1).visible = true;
-                tagList.get(scrollBar.getRencent() + 1).render(pose, mouseX, mouseY, partial);
+            if(tagList.size() > firstVisible) {
+                ACCTagBox firstTag = tagList.get(firstVisible);
+                firstTag.setPosition(x + (int)(5 * zoom), y + (int)(21 * zoom));
+                firstTag.render(pose, mouseX, mouseY, partial);
+            }
+
+            if(tagList.size() > firstVisible + 1) {
+                ACCTagBox secondTag = tagList.get(firstVisible + 1);
+                secondTag.setPosition(x + (int)(5 * zoom),y + (int)(41 * zoom));
+                secondTag.render(pose, mouseX, mouseY, partial);
             }
 
             scrollBar.setX(x + (int) (119 * zoom));
             scrollBar.setY(y + (int) (17 * zoom));
             scrollBar.render(pose, mouseX, mouseY, partial);
         } else {
-            emptyBg.renderLazy(x + 1 + (int)(8 * zoom), y + (int)(31 * zoom));
+            emptyBg.renderLazy(pose, x + 1 + (int)(8 * zoom), y + (int)(31 * zoom));
             ACCTagBox.renderTextCentered(pose, Component.translatable("container.hexie.acc.empty"), x + 64 * zoom, y + 38 * zoom);
         }
         if (this.renderer != null && holding != null)

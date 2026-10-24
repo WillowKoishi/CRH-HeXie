@@ -56,7 +56,7 @@ public class RenderableItem {
 
     public void render(@Nullable GuiGraphics pose, ItemRenderer renderer, int x, int y, int width, int height){
         if(stack == null) return;
-        renderItem(renderer, stack, x, y, width, height);
+        renderItem(pose, stack, x, y, width, height);
         if(renderCount && stack.isStackable() && stack.getCount() > 1 && pose != null) {
             String count = String.valueOf(stack.getCount());
             int w = font.width(count);
@@ -76,13 +76,17 @@ public class RenderableItem {
         renderCentered(pose, renderer, centerX, centerY, width, height);
     }
 
-    private void renderItem(ItemRenderer renderer, ItemStack item, int x, int y, int width, int height) {
-        GuiGraphics graphics = new GuiGraphics(Minecraft.getInstance(), Minecraft.getInstance().renderBuffers().bufferSource());
+    private void renderItem(@Nullable GuiGraphics graphics, ItemStack item, int x, int y, int width, int height) {
+        if (graphics == null) {
+            GuiGraphics fallback = new GuiGraphics(Minecraft.getInstance(), Minecraft.getInstance().renderBuffers().bufferSource());
+            renderItem(fallback, item, x, y, width, height);
+            fallback.flush();
+            return;
+        }
         graphics.pose().pushPose();
         graphics.pose().translate(x, y, 0);
         graphics.pose().scale(width / 16.0F, height / 16.0F, 1.0F);
         graphics.renderItem(item, 0, 0);
-        graphics.flush();
         graphics.pose().popPose();
     }
 }

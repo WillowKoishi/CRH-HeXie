@@ -94,7 +94,7 @@ public class HexieInventory {
         if(player == null) return;
         Inventory inventory = player.getInventory();
         Font font = Minecraft.getInstance().font;
-        inventoryBackground.renderLazy(x, y);
+        inventoryBackground.renderLazy(stack, x, y);
         for(int i = 0; i < 27; i++) {
             int px = x + basic_x + (i % 9) * 18;
             int py = y + basic_x + 1 + (i / 9) * 18;
@@ -114,7 +114,7 @@ public class HexieInventory {
         Inventory inventory = player.getInventory();
         Font font = Minecraft.getInstance().font;
         if(isRenderingQuickBar())
-            quickBarBackground.renderLazy(x, y);
+            quickBarBackground.renderLazy(stack, x, y);
         for(int i = 0; i < 9; i++) {
             int px = x + basic_x + (i % 9) * 18;
             int py = y + basic_x - (isRenderingQuickBar() ? 3 : 0);
@@ -141,12 +141,12 @@ public class HexieInventory {
         if(i < 0 || i > 35) return;
         ItemStack chosen = inventory.getItem(i);
         if(isRenderingQuickBar())
-            chosenFrame.renderLazy(x + basic_x + (i % 9) * 18 - 1, y - 4 + basic_x);
+            chosenFrame.renderLazy(stack, x + basic_x + (i % 9) * 18 - 1, y - 4 + basic_x);
         else{
             if(i < 9)
-                chosenFrame.renderLazy(x + basic_x + (i % 9) * 18 - 1, y + 58 + basic_x);
+                chosenFrame.renderLazy(stack, x + basic_x + (i % 9) * 18 - 1, y + 58 + basic_x);
             else
-                chosenFrame.renderLazy(x + basic_x + (i % 9) * 18 - 1, y + basic_x + ((i-9) / 9) * 18);
+                chosenFrame.renderLazy(stack, x + basic_x + (i % 9) * 18 - 1, y + basic_x + ((i-9) / 9) * 18);
         }
         if (Minecraft.getInstance().screen != null && !chosen.is(Items.AIR)) {
             stack.renderTooltip(Minecraft.getInstance().font, Screen.getTooltipFromItem(Minecraft.getInstance(), chosen),

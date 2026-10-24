@@ -162,10 +162,16 @@ public class LacqueredBoardEntity extends SmartBlockEntity
 
     public FormattedCharSequence[] getRenderMessages(
             Function<Component, FormattedCharSequence> pMessageTransformer) {
+        return getRenderMessages(pMessageTransformer, messages.length);
+    }
 
-        this.renderMessages = new FormattedCharSequence[this.messages.length + 1];
+    public FormattedCharSequence[] getRenderMessages(
+            Function<Component, FormattedCharSequence> pMessageTransformer, int messageCount) {
+
+        int count = Math.max(0, Math.min(messageCount, this.messages.length));
+        this.renderMessages = new FormattedCharSequence[count + 1];
         this.renderMessages[0] = pMessageTransformer.apply(BELT);
-        for (int i = 1; i - 1 < this.messages.length; ++i) {
+        for (int i = 1; i <= count; ++i) {
             this.renderMessages[i] = pMessageTransformer.apply(this.messages[i - 1]);
         }
         return this.renderMessages;

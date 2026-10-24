@@ -45,7 +45,7 @@ public class CustomRenderedDoorEntity extends SmartBlockEntity implements IContr
     @Override
     public void tick() {
         if(level == null) return;
-        this.open = level.getBlockState(this.getBlockPos()).getValue(DoorBlock.OPEN);
+        this.open = getBlockState().getValue(DoorBlock.OPEN);
     }
 
     public boolean isOpen(){

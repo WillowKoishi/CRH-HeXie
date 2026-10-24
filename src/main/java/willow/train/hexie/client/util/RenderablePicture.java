@@ -2,6 +2,7 @@ package willow.train.hexie.client.util;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
 import javax.annotation.Nonnull;
 
@@ -188,6 +189,25 @@ public class RenderablePicture {
         RenderSystem.disableBlend();
     }
 
+    public void render(GuiGraphics graphics, int x, int y, int width, int height) {
+        if (data.width <= 0 || data.height <= 0)
+            return;
+        if (cachedImageWidth != data.width || cachedImageHeight != data.height)
+            refreshImage();
+
+        graphics.setColor(
+                ((color >> 16) & 0xff) / 255.0f,
+                ((color >> 8) & 0xff) / 255.0f,
+                (color & 0xff) / 255.0f,
+                1.0f);
+        try {
+            graphics.blit(data.location, x, y, (float) uOffset, (float) vOffset,
+                    width, height, data.width, data.height);
+        } finally {
+            graphics.setColor(1.0f, 1.0f, 1.0f, 1.0f);
+        }
+    }
+
     public void renderScaled(int x, int y, int axis, boolean isWidth) {
         if(isWidth) render(x, y, axis, getFixedHeight(axis));
         else render(x, y, getFixedWidth(axis), axis);
@@ -195,6 +215,10 @@ public class RenderablePicture {
 
     public void renderLazy(int x, int y) {
         render(x, y, (int) (uWidth * zoom), (int) (vHeight * zoom));
+    }
+
+    public void renderLazy(GuiGraphics graphics, int x, int y) {
+        render(graphics, x, y, (int) (uWidth * zoom), (int) (vHeight * zoom));
     }
 
     private int packRgb(int r, int g, int b) {

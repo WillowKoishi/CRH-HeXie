@@ -34,6 +34,6 @@ public class ImageButton extends Button {
     public void renderWidget(GuiGraphics pGuiGraphics, int mouseX, int mouseY, float partialTicks) {
         if (!visible) return;
         picture.setColor(isActive() ? 255 : 127, isActive() ? 255 : 127, isActive() ? 255 : 127, isActive() ? 1 : .5f);
-        picture.render(getX(), getY(), width, height);
+        picture.render(pGuiGraphics, getX(), getY(), width, height);
     }
 }

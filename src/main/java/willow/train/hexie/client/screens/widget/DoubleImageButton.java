@@ -62,8 +62,8 @@ public class DoubleImageButton extends Button {
     public void renderWidget(GuiGraphics pGuiGraphics, int mouseX, int mouseY, float partialTicks) {
         if (!visible) return;
         if(isDown)
-            downPicture.renderLazy(getX(), getY());
+            downPicture.renderLazy(pGuiGraphics, getX(), getY());
         else
-            upPicture.renderLazy(getX(), getY());
+            upPicture.renderLazy(pGuiGraphics, getX(), getY());
     }
 }

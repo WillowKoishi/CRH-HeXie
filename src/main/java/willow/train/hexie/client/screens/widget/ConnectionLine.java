@@ -64,13 +64,31 @@ public class ConnectionLine extends AbstractWidget {
 
     @Override
     public void renderWidget(GuiGraphics pGuiGraphics, int pMouseX, int pMouseY, float pPartialTick) {
+        if (!hasGeometry()) return;
+        BufferBuilder buffer = Tesselator.getInstance().begin(
+                VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+        appendVertices(buffer);
+        RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
+        RenderSystem.setShaderTexture(0, LacqueredBoardEntityRenderer.STICKER);
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.enableBlend();
+        BufferUploader.drawWithShader(buffer.buildOrThrow());
+        RenderSystem.disableBlend();
+    }
+
+    public boolean hasGeometry() {
+        return pX1 != pX2 || pY1 != pY2;
+    }
+
+    public void appendVertices(BufferBuilder buffer) {
+        if (!hasGeometry()) return;
         int dx = pX2 - pX1;
         int dy = pY2 - pY1;
         int half_line_width = lineWidth / 2;
-        pGuiGraphics.pose().pushPose();
+        int r = (themeColor >> 16) & 0xff;
+        int g = (themeColor >> 8) & 0xff;
+        int b = themeColor & 0xff;
         float angle_factor = 0.2f;
-        RenderSystem.setShaderTexture(0, LacqueredBoardEntityRenderer.STICKER);
-        RenderSystem.enableBlend();
         if (dx != 0 && dy != 0) {
             int stepXY = (int) (Math.min(Math.abs(dx), Math.abs(dy)) * angle_factor);
             int signDx = (int) Math.signum(dx), signDy = (int) Math.signum(dy);
@@ -92,22 +110,22 @@ public class ConnectionLine extends AbstractWidget {
 
             // 第一段 (x1, y1) -> (angleX1, angleY1)
             if (pX1 == angleX1) {
-                drawTexture(
+                appendTexture(buffer,
                         pX1 - half_line_width,
                         Math.min(pY1, angleY1),
                         lineWidth,
                         Math.abs(angleY1 - pY1),
                         1.0f,
-                        1.0f);
+                        1.0f, r, g, b);
             }
             if (pY1 == angleY1) {
-                drawTexture(
+                appendTexture(buffer,
                         Math.min(pX1, angleX1),
                         pY1 - half_line_width,
                         Math.abs(angleX1 - pX1),
                         lineWidth,
                         1.0f,
-                        1.0f);
+                        1.0f, r, g, b);
             }
 
             // 第二段 (angleX1, angleY1) -> (angleX2, angleY2)
@@ -115,62 +133,55 @@ public class ConnectionLine extends AbstractWidget {
             for (int i = 0; i < stepXY + 1; i++) {
                 int x0 = angleX1 - half_line_width + i * signDx;
                 int y0 = angleY1 - half_line_width + i * signDy;
-                drawTexture(x0, y0, lineWidth, lineWidth, 1.0f, 1.0f);
+                appendTexture(buffer, x0, y0, lineWidth, lineWidth, 1.0f, 1.0f, r, g, b);
             }
 
             // 第三段 (angleX2, angleY2) -> (x2, y2)
             if (pX2 == angleX2) {
 
-                drawTexture(
+                appendTexture(buffer,
                         pX2 - half_line_width,
                         Math.min(pY2, angleY2),
                         lineWidth,
                         Math.abs(pY2 - angleY2),
                         1.0f,
-                        1.0f);
+                        1.0f, r, g, b);
             }
             if (pY2 == angleY2) {
-                drawTexture(
+                appendTexture(buffer,
                         Math.min(pX2, angleX2),
                         pY2 - half_line_width,
                         Math.abs(pX2 - angleX2),
                         lineWidth,
                         1.0f,
-                        1.0f);
+                        1.0f, r, g, b);
             }
         } else if (pX1 == pX2) {
-            drawTexture(
+            appendTexture(buffer,
                     pX1 - half_line_width,
                     Math.min(pY1, pY2),
                     lineWidth,
                     Math.abs(pY2 - pY1),
                     1.0f,
-                    1.0f);
+                    1.0f, r, g, b);
         } else if (pY1 == pY2) {
-            drawTexture(
+            appendTexture(buffer,
                     Math.min(pX1, pX2),
                     pY1 - half_line_width,
                     Math.abs(pX1 - pX2),
                     lineWidth,
                     1.0f,
-                    1.0f);
+                    1.0f, r, g, b);
         }
-        RenderSystem.disableBlend();
-        pGuiGraphics.pose().popPose();
     }
 
-    private void drawTexture(int x, int y, int width, int height, float uWidth, float vHeight) {
-        int[] colors = getRGBAColor();
-        int r = colors[0], g = colors[1], b = colors[2];
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderColor(
-                (float) r / 255.0f, (float) g / 255.0f, (float) b / 255.0f, 1.0f);
-        BufferBuilder buffer = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        buffer.addVertex(x, y, 0.0F).setUv(0, 0);
-        buffer.addVertex(x, y + height, 0.0F).setUv(0, vHeight);
-        buffer.addVertex(x + width, y + height, 0.0F).setUv(uWidth, vHeight);
-        buffer.addVertex(x + width, y, 0.0F).setUv(uWidth, 0);
-        BufferUploader.drawWithShader(buffer.buildOrThrow());
+    private static void appendTexture(
+            BufferBuilder buffer, int x, int y, int width, int height,
+            float uWidth, float vHeight, int r, int g, int b) {
+        buffer.addVertex(x, y, 0.0F).setUv(0, 0).setColor(r, g, b, 255);
+        buffer.addVertex(x, y + height, 0.0F).setUv(0, vHeight).setColor(r, g, b, 255);
+        buffer.addVertex(x + width, y + height, 0.0F).setUv(uWidth, vHeight).setColor(r, g, b, 255);
+        buffer.addVertex(x + width, y, 0.0F).setUv(uWidth, 0).setColor(r, g, b, 255);
     }
 
     public int[] getRGBAColor() {

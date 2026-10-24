@@ -129,7 +129,7 @@ public class BogeyCheckOverlay extends BaseOverlay {
         } else if(previewPicture != null) {
             int imageWidth = 80;
             int imageHeight = (int) (imageWidth / previewPicture.widthHeightRatio());
-            previewPicture.render(x + 10, y + (boxHeight - imageHeight)/2 + 5, imageWidth, imageHeight);
+            previewPicture.render(pose, x + 10, y + (boxHeight - imageHeight)/2 + 5, imageWidth, imageHeight);
         }
 
         int textX = x + (int)((float)boxWidth * 0.75) - 25;

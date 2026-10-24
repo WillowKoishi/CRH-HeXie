@@ -2,17 +2,19 @@ package willow.train.hexie.client.screens.widget;
 
 import net.minecraft.client.gui.GuiGraphics;
 import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.systems.RenderSystem;
 
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 
+import willow.train.hexie.client.render.blockentity.LacqueredBoardEntityRenderer;
 import willow.train.hexie.util.station.Connections;
 import willow.train.hexie.util.station.LineMap;
 import willow.train.hexie.util.station.LineTag;
 import willow.train.hexie.util.station.StationRenderCache;
 
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -63,13 +65,25 @@ public class LineMapScreenWidget extends AbstractWidget {
             }
         }
 
+        BufferBuilder lineBuffer = null;
         for (ConnectionLine line : connectionLines) {
-            if (chosenLine != null) {
-                if (shouldRender(line) && line.lineID == chosenLine.lineID)
-                    line.render(pGuiGraphics, pMouseX, pMouseY, pPartialTick);
-            } else {
-                if (shouldRender(line)) line.render(pGuiGraphics, pMouseX, pMouseY, pPartialTick);
+            if (!shouldRender(line)
+                    || (chosenLine != null && line.lineID != chosenLine.lineID)
+                    || !line.hasGeometry())
+                continue;
+            if (lineBuffer == null) {
+                lineBuffer = Tesselator.getInstance().begin(
+                        VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
             }
+            line.appendVertices(lineBuffer);
+        }
+        if (lineBuffer != null) {
+            RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
+            RenderSystem.setShaderTexture(0, LacqueredBoardEntityRenderer.STICKER);
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+            RenderSystem.enableBlend();
+            BufferUploader.drawWithShader(lineBuffer.buildOrThrow());
+            RenderSystem.disableBlend();
         }
         for (StationButton button : stationButtons) {
             if (chosenLine != null) {

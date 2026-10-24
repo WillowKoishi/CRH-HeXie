@@ -37,7 +37,7 @@ public class OBJRenderableEndFaceEntity extends SmartBlockEntity implements ICon
     @Override
     public void tick() {
         if(level == null) return;
-        this.isDoorOpen = level.getBlockState(this.getBlockPos()).getValue(DoorBlock.OPEN);
+        this.isDoorOpen = getBlockState().getValue(DoorBlock.OPEN);
     }
 
     @Override

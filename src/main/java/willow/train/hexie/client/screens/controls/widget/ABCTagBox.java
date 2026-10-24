@@ -17,9 +17,6 @@ import willow.train.hexie.interaction.base.ICustomInteractionGroup;
 import willow.train.hexie.item.AnimatableBlockControllerItem;
 import willow.train.hexie.client.util.RenderablePicture;
 
-/**
- * Name -> Animatable Block Controller Tag Box
- */
 public class ABCTagBox extends AbstractWidget {
     public final RenderablePicture background;
     ScrollingComponentBox box;
@@ -60,7 +57,7 @@ public class ABCTagBox extends AbstractWidget {
 
     @Override
     public void renderWidget(GuiGraphics pGuiGraphics, int pMouseX, int pMouseY, float pPartialTick) {
-        background.renderLazy(getX(), getY());
+        background.renderLazy(pGuiGraphics, getX(), getY());
         slot.render(pGuiGraphics, pMouseX, pMouseY, pPartialTick);
         box.render(pGuiGraphics, pMouseX, pMouseY, pPartialTick);
     }

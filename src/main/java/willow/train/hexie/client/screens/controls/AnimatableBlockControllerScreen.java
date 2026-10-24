@@ -81,7 +81,7 @@ public class AnimatableBlockControllerScreen extends AbstractContainerScreen<Ani
 
     @Override
     public void render(GuiGraphics pose, int mouseX, int mouseY, float partial) {
-        background.renderLazy(x, y);
+        background.renderLazy(pose, x, y);
         ivt.render(pose, Minecraft.getInstance().getItemRenderer(), minecraft.player, mouseX, mouseY);
         ACCTagBox.renderTextCentered(pose, TITLE.copy().withStyle(ChatFormatting.BOLD), x + 64 * zoom, y + 7.5f * zoom);
         if (holding != null)

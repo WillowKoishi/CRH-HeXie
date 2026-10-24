@@ -13,9 +13,7 @@ import willow.train.hexie.item.AutomaticControlCouplingItem;
 import willow.train.hexie.client.util.RenderablePicture;
 
 
-/**
- * Name -> Automatic Control Coupling Tag Box
- */
+
 public class ACCTagBox extends AbstractWidget {
     public static GuiImageCache.ImageData CONTROLLER_IMAGE = GuiImageCache.register("textures/gui/controller/controller.png", 0);
     public final RenderablePicture background, buttonBgUp, buttonBgDown;
@@ -97,7 +95,7 @@ public class ACCTagBox extends AbstractWidget {
 
     @Override
     public void renderWidget(GuiGraphics pose, int pMouseX, int pMouseY, float pPartialTick) {
-        background.renderLazy(getX(), getY());
+        background.renderLazy(pose, getX(), getY());
         renderTextCentered(pose, index, getX() + (int)(9 * zoom), getY() + (int) (7 * zoom));
         editBox.render(pose, pMouseX, pMouseY, pPartialTick);
         removalButton.render(pose, pMouseX, pMouseY, pPartialTick);

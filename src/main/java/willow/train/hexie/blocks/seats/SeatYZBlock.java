@@ -39,6 +39,8 @@ public class SeatYZBlock extends SeatBlock implements IWrenchable {
     protected static final VoxelShape BASE_AABB = Block.box(0, 4, 0, 16, 8, 16);
     protected static final VoxelShape SN_AABB = Block.box(0, 8, 6, 16, 23, 10);
     protected static final VoxelShape WE_AABB = Block.box(6, 8, 0, 10, 23, 16);
+    private static final VoxelShape SN_SHAPE = Shapes.join(BASE_AABB, SN_AABB, BooleanOp.OR);
+    private static final VoxelShape WE_SHAPE = Shapes.join(BASE_AABB, WE_AABB, BooleanOp.OR);
 
     public SeatYZBlock(Properties properties, DyeColor color, boolean inCreativeTab) {
         super(properties, color);
@@ -97,11 +99,11 @@ public class SeatYZBlock extends SeatBlock implements IWrenchable {
     }
 
     public VoxelShape snShape() {
-        return Shapes.join(BASE_AABB, SN_AABB, BooleanOp.OR);
+        return SN_SHAPE;
     }
 
     public VoxelShape weShape() {
-        return Shapes.join(BASE_AABB, WE_AABB, BooleanOp.OR);
+        return WE_SHAPE;
     }
 
     public RenderShape getRenderShape(BlockState pState) {
@@ -166,7 +168,7 @@ public class SeatYZBlock extends SeatBlock implements IWrenchable {
         return InteractionResult.SUCCESS;
     }
 
-    /** Selects one of four fixed seats from the clicked X/Z quarter of the block. */
+
     public static int getPositionForHit(BlockState state, BlockPos pos, Vec3 hitLocation) {
         boolean rightHalf = hitLocation.x - pos.getX() >= .5;
         boolean farHalf = hitLocation.z - pos.getZ() >= .5;

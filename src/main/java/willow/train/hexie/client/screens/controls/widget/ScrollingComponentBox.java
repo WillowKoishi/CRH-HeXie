@@ -120,7 +120,7 @@ public class ScrollingComponentBox extends AbstractWidget {
     }
 
     public void renderTooltip(GuiGraphics pose, int mouseX, int mouseY, float partial) {
-        tooltipBg.render(getX(), getY() + height, maxWidth + 2, nameList.size() * font.lineHeight);
+        tooltipBg.render(pose, getX(), getY() + height, maxWidth + 2, nameList.size() * font.lineHeight);
         for(int counter = 0; counter < nameList.size(); counter++) {
             String name = nameList.get(counter);
             if(counter == cursor) {

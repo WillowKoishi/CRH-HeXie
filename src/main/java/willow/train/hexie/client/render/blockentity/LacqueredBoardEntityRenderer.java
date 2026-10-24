@@ -57,7 +57,7 @@ public class LacqueredBoardEntityRenderer implements BlockEntityRenderer<Lacquer
                         (p_173653_) -> {
                             List<FormattedCharSequence> list = this.font.split(p_173653_, 180);
                             return list.isEmpty() ? FormattedCharSequence.EMPTY : list.get(0);
-                        });
+                        }, 6);
 
         pPoseStack.translate(0.5d, -0.5d, 0.5d);
         float f = -pState.getValue(TrainNoBlock.FACING).getOpposite().toYRot();
