@@ -1,0 +1,10 @@
+{
+	"parent": "create:block/block",
+	"loader": "neoforge:obj",
+	"render_type": "cutout_mipped",
+	"flip_v": true,
+	"model": "hexie:models/block/hxd3d/head/hxd3dhead.obj",
+	"textures": {
+		"0": "hexie:block/df11g/df11g_front"
+	}
+}

@@ -1,0 +1,10 @@
+{
+	"credit": "Made by WillowKoishi",
+	"render_type": "translucent",
+	"parent": "hexie:block/carriage/windows/original_color_window_25t_sealed_small",
+	"textures": {
+		"0": "hexie:block/windows/original_color_window_25b",
+		"3": "hexie:block/panel_25g_original_mid",
+		"particle": "hexie:block/panel_25g_original_mid"
+	}
+}

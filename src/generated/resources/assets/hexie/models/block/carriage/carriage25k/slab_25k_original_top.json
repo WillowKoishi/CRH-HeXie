@@ -1,0 +1,7 @@
+{
+  "parent": "hexie:block/panel_slab",
+  "textures": {
+    "1": "hexie:block/panel_slab_25k",
+    "particle": "hexie:block/panel_slab_25k"
+  }
+}

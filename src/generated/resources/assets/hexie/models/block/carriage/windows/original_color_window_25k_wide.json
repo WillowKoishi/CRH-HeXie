@@ -1,0 +1,9 @@
+{
+	"parent": "hexie:block/carriage/windows/original_color_window_25g",
+	"render_type": "translucent",
+	"textures": {
+		"0": "hexie:block/windows/original_color_window_25b",
+		"1": "hexie:block/panel_25k_original_mid",
+		"particle": "hexie:block/panel_25k_original_mid"
+	}
+}

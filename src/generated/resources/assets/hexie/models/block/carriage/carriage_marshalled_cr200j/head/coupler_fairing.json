@@ -1,0 +1,5 @@
+{
+  "loader": "neoforge:obj",
+  "flip_v": true,
+  "model": "hexie:models/block/carriage/carriage_marshalled_cr200j/head/coupler_fairing.obj"
+}

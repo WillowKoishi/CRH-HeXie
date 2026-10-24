@@ -1,0 +1,7 @@
+{
+  "parent": "hexie:block/hexie_panel",
+  "textures": {
+    "0": "hexie:block/panel_cr200j_marshalled_top",
+    "particle": "hexie:block/panel_cr200j_marshalled_top"
+  }
+}

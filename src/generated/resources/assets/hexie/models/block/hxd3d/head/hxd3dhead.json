@@ -1,0 +1,5 @@
+{
+  "loader": "neoforge:obj",
+  "model": "hexie:models/block/hxd3d/head/hxd3dhead.obj",
+  "flip_v": false
+}

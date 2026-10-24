@@ -1,0 +1,6 @@
+{
+  "parent": "hexie:block/door/door_bottom_rh",
+  "textures": {
+    "1": "hexie:block/original_25k_door_bottom"
+  }
+}

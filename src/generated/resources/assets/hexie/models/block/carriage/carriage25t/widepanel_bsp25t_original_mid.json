@@ -1,0 +1,7 @@
+{
+  "parent": "hexie:block/carriage/carriage25t/widepanel_hexie",
+  "textures": {
+    "0": "hexie:block/widepanel_bsp25t_original_mid",
+    "particle": "hexie:block/widepanel_bsp25t_original_mid"
+  }
+}

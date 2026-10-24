@@ -3,6 +3,7 @@ package willow.train.hexie.client.render.blockentity;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 
+import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
@@ -64,8 +65,24 @@ public class ElectricFenceDoorRenderer implements BlockEntityRenderer<ElectricFe
                 pBufferSource.getBuffer(
                         RenderType.entityTranslucent(
                                 ElectricFenceDoorRightModel.RIGHT_LAYER.getModel())),
-                pPackedLight,
+                getModelLight(pBlockEntity, pPackedLight),
                 pPackedOverlay);
         pPoseStack.popPose();
+    }
+
+    private static int getModelLight(ElectricFenceDoorEntity blockEntity, int packedLight) {
+        if (blockEntity.getLevel() == null) {
+            return packedLight;
+        }
+
+        // The block itself is intentionally non-occluding, but the tall door model also reaches
+        // into the block above. Sample there as well so the model does not inherit a zero light
+        // value from the block position when the light engine treats that position as enclosed.
+        int lightAbove = LevelRenderer.getLightColor(
+                blockEntity.getLevel(), blockEntity.getBlockPos().above());
+
+        int blockLight = Math.max(packedLight & 0xF0, lightAbove & 0xF0);
+        int skyLight = Math.max(packedLight & 0xF00000, lightAbove & 0xF00000);
+        return blockLight | skyLight;
     }
 }

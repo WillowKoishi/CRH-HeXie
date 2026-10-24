@@ -1,0 +1,7 @@
+{
+  "parent": "hexie:block/hexie_panel_lh",
+  "textures": {
+    "0": "hexie:block/panel_25t_original_bottom_b",
+    "particle": "hexie:block/panel_25t_original_bottom_b"
+  }
+}

@@ -148,7 +148,7 @@ public class BlockInit {
 
     public static final DeferredHolder<Block, ElectricFenceDoor> ELECTRIC_FENCE_DOOR_BLOCK = register("electric_fence_door_block",
             () -> new ElectricFenceDoor(BlockBehaviour.Properties.of().mapColor(MapColor.PLANT).strength(1.5f, 3.0f)
-                    .sound(SoundType.COPPER).requiresCorrectToolForDrops()),
+                    .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),
             object -> () -> new Item(new Item.Properties()));  // 
 
     public static final DeferredHolder<Block, ElectricFenceWall> ELECTRIC_FENCE_WALL_BLOCK = register("electric_fence_wall_block",

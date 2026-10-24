@@ -1,0 +1,7 @@
+{
+	"parent": "hexie:block/door/sliding_door_25t_bottom",
+	"textures": {
+		"0": "hexie:block/sliding_door_25k",
+		"particle": "hexie:block/sliding_door_25k"
+	}
+}

@@ -1,0 +1,8 @@
+{
+  "parent": "block/block",
+  "loader": "neoforge:obj",
+  "render_type": "translucent",
+  "ambientocclusion": false,
+  "flip_v": true,
+  "model": "hexie:models/block/hx_semaphore/signal_white_glow.obj"
+}
