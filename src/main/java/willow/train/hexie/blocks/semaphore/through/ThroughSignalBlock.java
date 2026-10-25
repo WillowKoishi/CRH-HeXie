@@ -97,7 +97,8 @@ public class ThroughSignalBlock extends HorizontalDirectionalBlock implements IB
         BlockState state = super.getStateForPlacement(pContext);
         if (state == null) return null;
 
-        Direction facing = pContext.getHorizontalDirection().getOpposite();
+        Direction facing = SignalPlacementContext.consume(pContext,
+                pContext.getHorizontalDirection().getOpposite());
 
         return this.defaultBlockState()
                 .setValue(FACING, facing)
