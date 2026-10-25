@@ -1,6 +1,6 @@
 {
 	"credit": "Made with Blockbench",
-	"render_type": "translucent",
+	"render_type": "cutout",
 	"texture_size": [128, 128],
 	"textures": {
 		"0": "hexie:block/hx_semaphore/hx_shunting_signal",
