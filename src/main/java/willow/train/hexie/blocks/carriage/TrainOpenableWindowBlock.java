@@ -7,7 +7,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -31,7 +30,6 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 import javax.annotation.Nullable;
-
 
 public class TrainOpenableWindowBlock extends TrapDoorBlock implements IWrenchable {
     public static final BooleanProperty OPEN = BlockStateProperties.OPEN;
@@ -204,19 +202,6 @@ public class TrainOpenableWindowBlock extends TrapDoorBlock implements IWrenchab
 
     public boolean isOpen(BlockState pState) {
         return pState.getValue(OPEN);
-    }
-
-    public void setOpen(
-            @Nullable Entity p_153166_,
-            Level pLevel,
-            BlockState pState,
-            BlockPos pPos,
-            boolean pOpen) {
-        if (pState.is(this) && pState.getValue(OPEN) != pOpen) {
-            pLevel.setBlock(pPos, pState.setValue(OPEN, Boolean.valueOf(pOpen)), 10);
-            // this.playSound(pLevel, pPos, pOpen);
-            pLevel.gameEvent(p_153166_, pOpen ? GameEvent.BLOCK_OPEN : GameEvent.BLOCK_CLOSE, pPos);
-        }
     }
 
     public BlockState rotate(BlockState pState, Rotation pRotation) {

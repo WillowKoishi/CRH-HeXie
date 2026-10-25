@@ -7,27 +7,11 @@ import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
-import org.jetbrains.annotations.Nullable;
 
 import willow.train.hexie.init.client.MenuInit;
 
 public class TicketVendorMenu extends AbstractContainerMenu {
     // CarriageNoSignEntity ctse;
-
-    public TicketVendorMenu(@Nullable MenuType<?> pMenuType, int pContainerId) {
-        super(pMenuType, pContainerId);
-
-        this.addDataSlot(
-                new DataSlot() {
-                    @Override
-                    public int get() {
-                        return 0;
-                    }
-
-                    @Override
-                    public void set(int pValue) {}
-                });
-    }
 
     @Override
     public ItemStack quickMoveStack(Player pPlayer, int pIndex) {
@@ -52,7 +36,6 @@ public class TicketVendorMenu extends AbstractContainerMenu {
     public boolean stillValid(Player pPlayer) {
         return true;
     }
-
 
     /**
      * 这个方法将负责将方块实体向Screen传递

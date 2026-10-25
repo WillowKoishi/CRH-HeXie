@@ -65,12 +65,6 @@ public class CustomRenderedDoorBlock extends DoorBlock implements IBE<CustomRend
         this.isSlideDoor = isSlideDoor;
     }
 
-    public CustomRenderedDoorBlock(Properties pProperties,
-                                   CustomRenderedDoorBlock modelFrom,
-                                   RenderShape renderShape, boolean isSlideDoor) {
-        this(pProperties, modelFrom.leftDoorModelLocations, modelFrom.rightDoorModelLocations, renderShape, isSlideDoor);
-    }
-
     @Override
     public VoxelShape getShape(BlockState pState, BlockGetter pLevel, BlockPos pPos, CollisionContext pContext) {
         if(!isSlideDoor || !pState.getValue(OPEN))

@@ -4,7 +4,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
-
 public class PlayerUtil {
 
     public static boolean isPlayerEyeOn(Player player, BlockPos pos) {
@@ -46,15 +45,6 @@ public class PlayerUtil {
         }
     }
 
-    public static boolean isPlayerEyeOn2(Player player, BlockPos pos) {
-        Vec3 eyePos = player.getEyePosition();
-        Vec3 eyeVec = player.getViewVector(0f);
-        Vec3 blockPos = Vec3.atLowerCornerOf(pos);
-        return isHit(eyeVec, eyePos, blockPos, blockPos.add(new Vec3(1, 1, 1))) ||
-                isHit(eyeVec, eyePos, blockPos.add(1, 0, 1), blockPos.add(new Vec3(0, 1, 0)));
-    }
-
-
     // 0 -> x
     // 1 -> y
     // 2 -> z
@@ -79,33 +69,6 @@ public class PlayerUtil {
             case 2 -> {return (posNeedCheck.z() >= bounding0 && posNeedCheck.z() <= bounding1);}
         }
         return false;
-    }
-
-    private static boolean isHit(Vec3 viewVec, Vec3 viewPos, Vec3 lowerAngle, Vec3 higherAngle) {
-        Vec3 posVec = lowerAngle.subtract(viewPos);
-        double cos = posVec.dot(viewVec)/(posVec.length() * viewVec.length());
-        boolean flag = false;
-
-        if(cos == 0) {
-            flag = true;
-            posVec = higherAngle.subtract(viewVec);
-            cos = posVec.dot(viewVec)/(posVec.length() * viewVec.length());
-        }
-
-        if(cos == 0) return false;
-
-        double length = posVec.length() / cos;
-        Vec3 view = viewVec.scale(length);
-
-        if(flag) {
-            return view.x() - posVec.x() < lowerAngle.x() - higherAngle.x() &&
-                    view.y() - posVec.y() < lowerAngle.y() - higherAngle.y() &&
-                    view.z() - posVec.z() < lowerAngle.z() - higherAngle.z();
-        }
-
-        return view.x() - posVec.x() < higherAngle.x() - lowerAngle.x() &&
-                view.y() - posVec.y() < higherAngle.y() - lowerAngle.y() &&
-                view.z() - posVec.z() < higherAngle.z() - lowerAngle.z();
     }
 
 }

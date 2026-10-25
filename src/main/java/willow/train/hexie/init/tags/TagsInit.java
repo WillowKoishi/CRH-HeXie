@@ -7,11 +7,8 @@ import net.createmod.catnip.lang.Lang;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.state.BlockState;
 
 import willow.train.hexie.Main;
 
@@ -78,16 +75,6 @@ public class TagsInit {
             return block.builtInRegistryHolder().is(tag);
         }
 
-        public boolean matches(ItemStack stack) {
-            return stack != null
-                    && stack.getItem() instanceof BlockItem blockItem
-                    && matches(blockItem.getBlock());
-        }
-
-        public boolean matches(BlockState state) {
-            return state.is(tag);
-        }
-
         public static void register() {}
     }
 
@@ -122,15 +109,6 @@ public class TagsInit {
                     ResourceLocation.fromNamespaceAndPath(namespace.id, path == null ? Lang.asId(name()) : path);
             tag = optionalTag(net.minecraft.core.registries.Registries.ITEM, id);
             this.alwaysDatagen = alwaysDatagen;
-        }
-
-        @SuppressWarnings("deprecation")
-        public boolean matches(Item item) {
-            return item.builtInRegistryHolder().is(tag);
-        }
-
-        public boolean matches(ItemStack stack) {
-            return stack.is(tag);
         }
 
         public static void register() {}

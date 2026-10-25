@@ -79,12 +79,6 @@ public class ElectricFenceWall extends HorizontalBlockBase implements IWrenchabl
                 .setValue(TYPE, 0);
     }
 
-    public BlockState getStateForPlacement(BlockPlaceContext context, int type) {
-        return this.defaultBlockState()
-                .setValue(FACING, context.getHorizontalDirection())
-                .setValue(TYPE, type);
-    }
-
     public BlockState getStateForPlacement(Direction direction, int type) {
         return this.defaultBlockState().setValue(FACING, direction).setValue(TYPE, type);
     }

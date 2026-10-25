@@ -3,7 +3,6 @@ package willow.train.hexie.init;
 import com.simibubi.create.api.behaviour.interaction.MovingInteractionBehaviour;
 import com.simibubi.create.foundation.block.IBE;
 import net.minecraft.tags.BlockTags;
-import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Block;
 import willow.train.hexie.init.block.CustomRenderedDoorBlockInit;
 import willow.train.hexie.interaction.HexieDoorMovingInteraction;
@@ -43,7 +42,4 @@ public class InteractionBehaviourInit {
         }
     }
 
-    public static void regForTag(Supplier<? extends MovingInteractionBehaviour> supplier, TagKey<Block> tag) {
-        MovingInteractionBehaviour.REGISTRY.registerProvider(com.simibubi.create.api.registry.SimpleRegistry.Provider.forBlockTag(tag, supplier.get()));
-    }
 }

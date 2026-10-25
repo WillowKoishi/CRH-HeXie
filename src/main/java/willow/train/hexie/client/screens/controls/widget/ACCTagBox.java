@@ -12,8 +12,6 @@ import willow.train.hexie.client.util.GuiImageCache;
 import willow.train.hexie.item.AutomaticControlCouplingItem;
 import willow.train.hexie.client.util.RenderablePicture;
 
-
-
 public class ACCTagBox extends AbstractWidget {
     public static GuiImageCache.ImageData CONTROLLER_IMAGE = GuiImageCache.register("textures/gui/controller/controller.png", 0);
     public final RenderablePicture background, buttonBgUp, buttonBgDown;
@@ -53,39 +51,8 @@ public class ACCTagBox extends AbstractWidget {
         removalButton.setY(y + (int) zoom);
     }
 
-    public void setZoom(float zoom) {
-        this.zoom = zoom;
-        height = (int)(14 * zoom);
-        width = (int)(110 * zoom);
-        background.zoom(zoom);
-        buttonBgUp.zoom(zoom);
-        buttonBgDown.zoom(zoom);
-        editBox.setWidth((int)(62 * zoom));
-        editBox.setHeight((int)(8 * zoom));
-        removalButton.setWidth((int)(12 * zoom));
-        removalButton.setHeight((int)(12 * zoom));
-        editBox.setValue(data.name);
-        setPosition(this.getX(), this.getY());
-    }
-
     public boolean shouldRemove() {
         return shouldRemove;
-    }
-
-    public String getName() {
-        return editBox.getValue();
-    }
-
-    public boolean isDirty() {
-        if(data.name.equals(editBox.getValue())) {
-            data.name = editBox.getValue();
-            return true;
-        }
-        return false;
-    }
-
-    public String getIndex() {
-        return index;
     }
 
     public AutomaticControlCouplingItem.CouplingDisplayData getNewData() {
@@ -99,10 +66,6 @@ public class ACCTagBox extends AbstractWidget {
         renderTextCentered(pose, index, getX() + (int)(9 * zoom), getY() + (int) (7 * zoom));
         editBox.render(pose, pMouseX, pMouseY, pPartialTick);
         removalButton.render(pose, pMouseX, pMouseY, pPartialTick);
-    }
-
-    public static void renderText(GuiGraphics pose, String content, float x, float y) {
-        renderText(pose, Component.literal(content), x, y);
     }
 
     public static void renderText(GuiGraphics pose, Component content, float x, float y) {

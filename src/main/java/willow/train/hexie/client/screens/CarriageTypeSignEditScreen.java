@@ -706,10 +706,6 @@ public class CarriageTypeSignEditScreen extends AbstractContainerScreen<Carriage
         renderTooltip(pGuiGraphics, pMouseX, pMouseY);
     }
 
-    public int offset(int x) {
-        return x + (Minecraft.getInstance().getWindow().getWidth() - imageWidth) / 2 + offsetX;
-    }
-
     public boolean isPauseScreen() {
         return true;
     }

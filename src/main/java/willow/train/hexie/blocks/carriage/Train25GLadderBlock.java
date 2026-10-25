@@ -5,7 +5,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -242,19 +241,6 @@ public class Train25GLadderBlock extends TrapDoorBlock implements IWrenchable {
         return pState.getValue(OPEN);
     }
 
-    public void setOpen(
-            @Nullable Entity p_153166_,
-            Level pLevel,
-            BlockState pState,
-            BlockPos pPos,
-            boolean pOpen) {
-        if (pState.is(this) && pState.getValue(OPEN) != pOpen) {
-            pLevel.setBlock(pPos, pState.setValue(OPEN, Boolean.valueOf(pOpen)), 10);
-            // this.playSound(pLevel, pPos, pOpen);
-            pLevel.gameEvent(p_153166_, pOpen ? GameEvent.BLOCK_OPEN : GameEvent.BLOCK_CLOSE, pPos);
-        }
-    }
-
     @Override
     public BlockState updateShape(
             BlockState pState,
@@ -266,7 +252,6 @@ public class Train25GLadderBlock extends TrapDoorBlock implements IWrenchable {
 
         return pState;
     }
-
 
     public BlockState rotate(BlockState pState, Rotation pRotation) {
         return pState.setValue(FACING, pRotation.rotate(pState.getValue(FACING)));

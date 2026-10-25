@@ -7,7 +7,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -231,7 +230,6 @@ public class CarPortBlockBGKZ extends HorizontalBlockBase {
                         Block.box(15, 18, 1, 17, 21, 15),
                         Block.box(15, -16, -16, 17, 21, 1));
 
-
         public VoxelShape getShape(
                 BlockState pState,
                 BlockGetter p_54373_,
@@ -391,20 +389,6 @@ public class CarPortBlockBGKZ extends HorizontalBlockBase {
             return pState.getValue(OPEN);
         }
 
-        public void setOpen(
-                @Nullable Entity p_153166_,
-                Level pLevel,
-                BlockState pState,
-                BlockPos pPos,
-                boolean pOpen) {
-            if (pState.is(this) && pState.getValue(OPEN) != pOpen) {
-                pLevel.setBlock(pPos, pState.setValue(OPEN, Boolean.valueOf(pOpen)), 10);
-                // this.playSound(pLevel, pPos, pOpen);
-                pLevel.gameEvent(
-                        p_153166_, pOpen ? GameEvent.BLOCK_OPEN : GameEvent.BLOCK_CLOSE, pPos);
-            }
-        }
-
         @Override
         public BlockState updateShape(
                 BlockState pState,
@@ -416,7 +400,6 @@ public class CarPortBlockBGKZ extends HorizontalBlockBase {
 
             return pState;
         }
-
 
         public BlockState rotate(BlockState pState, Rotation pRotation) {
             return pState.setValue(FACING, pRotation.rotate(pState.getValue(FACING)));

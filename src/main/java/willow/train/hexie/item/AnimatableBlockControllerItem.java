@@ -28,7 +28,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import willow.train.hexie.menu.AnimatableBlockControllerMenu;
-import willow.train.hexie.config.HXConfig;
 import willow.train.hexie.init.item.ResourceItemInit;
 import willow.train.hexie.interaction.InteractionProcessor;
 import willow.train.hexie.interaction.base.ICustomInteraction;
@@ -74,7 +73,7 @@ public class AnimatableBlockControllerItem extends Item implements MenuProvider 
         if(Screen.hasShiftDown()) {
             components.add(Component.translatable("tooltip.hexie.abc.binding.explain.bind_mode.title").withStyle(ChatFormatting.GOLD));
             components.add(Component.translatable("tooltip.hexie.abc.binding.explain.bind_mode.text_1").
-                    append(Component.literal(String.valueOf(HXConfig.getCachedMaxAbcControlDistance())).withStyle(ChatFormatting.GREEN)).
+                    //append(Component.literal(String.valueOf(HXConfig.getCachedMaxAbcControlDistance())).withStyle(ChatFormatting.GREEN)).
                     append(Component.translatable("tooltip.hexie.abc.binding.explain.bind_mode.text_2")));
             components.add(Component.translatable("tooltip.hexie.abc.binding.explain.use_mode.title").withStyle(ChatFormatting.GOLD));
             components.add(Component.translatable("tooltip.hexie.abc.binding.explain.use_mode.text"));
@@ -135,12 +134,6 @@ public class AnimatableBlockControllerItem extends Item implements MenuProvider 
             }
         }
         return new String[]{};
-    }
-
-    public static String getControllingKey(ItemStack stack){
-        String[] groupAndKey = getControllingGroupAndKey(stack);
-        if(groupAndKey.length != 2) return "";
-        return groupAndKey[1];
     }
 
     public static boolean hasId(ItemStack stack) {
@@ -222,16 +215,6 @@ public class AnimatableBlockControllerItem extends Item implements MenuProvider 
         CompoundTag tag = ItemData.getOrCreateTagElement(coupling, "contents");
         if(tag.isEmpty()) return;
         ItemData.updateTagElement(controller, "coupling", data -> data.put("contents", tag));
-    }
-
-    public static ItemStack generateCoupling(ItemStack controller) {
-        CompoundTag tag = ItemData.getOrCreateTagElement(controller, "coupling");
-        if(tag.isEmpty()) return Items.AIR.getDefaultInstance();
-        ItemStack coupling = ResourceItemInit.AutomaticControlCoupling.get().getDefaultInstance();
-        CompoundTag nbt = ItemData.getTag(coupling);
-        nbt.put("contents", tag.getCompound("contents"));
-        ItemData.setTag(coupling, nbt);
-        return coupling;
     }
 
     public static ItemStack generateCoupling(CompoundTag tag) {

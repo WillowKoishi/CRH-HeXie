@@ -1,6 +1,5 @@
 package willow.train.hexie.blockentity;
 
-
 import com.simibubi.create.content.equipment.clipboard.ClipboardCloneable;
 import com.simibubi.create.foundation.blockEntity.SmartBlockEntity;
 import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour;
@@ -158,11 +157,6 @@ public class LacqueredBoardEntity extends SmartBlockEntity
 
     public int getBeltForGroundColor() {
         return beltForGroundColor;
-    }
-
-    public FormattedCharSequence[] getRenderMessages(
-            Function<Component, FormattedCharSequence> pMessageTransformer) {
-        return getRenderMessages(pMessageTransformer, messages.length);
     }
 
     public FormattedCharSequence[] getRenderMessages(

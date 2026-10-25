@@ -204,10 +204,6 @@ public class TrainPanelBlock extends SignBlockBase implements IWrenchable {
         return pState.getValue(MIRROR);
     }
 
-    public boolean isPossibleToRespawnInThis() {
-        return true;
-    }
-
     @Override
     public ItemStack getCloneItemStack(
             BlockState state, HitResult target, net.minecraft.world.level.LevelReader level, BlockPos pos, Player player) {

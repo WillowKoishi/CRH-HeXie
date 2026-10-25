@@ -168,7 +168,6 @@ public class SeatYZBlock extends SeatBlock implements IWrenchable {
         return InteractionResult.SUCCESS;
     }
 
-
     public static int getPositionForHit(BlockState state, BlockPos pos, Vec3 hitLocation) {
         boolean rightHalf = hitLocation.x - pos.getX() >= .5;
         boolean farHalf = hitLocation.z - pos.getZ() >= .5;
@@ -263,49 +262,6 @@ public class SeatYZBlock extends SeatBlock implements IWrenchable {
                 return seat;
         }
         return null;
-    }
-
-    public void resolveSitDown(
-            Level level, BlockState state, BlockPos pos, Entity entity, int index) {
-        Direction direction = state.getValue(FACING);
-        if (direction == Direction.NORTH || direction == Direction.SOUTH) {
-            sitDownSN(level, entity, pos, index);
-        } else {
-            sitDownWE(level, entity, pos, index);
-        }
-    }
-
-    public static void sitDownSN(Level world, Entity entity, BlockPos pos, int index) {
-        switch (index) {
-            case 0 -> sitDown(world, pos, entity, .25f, 0, .1875f);
-            case 1 -> sitDown(world, pos, entity, .75f, 0, .1875f);
-            case 2 -> sitDown(world, pos, entity, .75f, 0, .8125f);
-            case 3 -> sitDown(world, pos, entity, .25f, 0, .8125f);
-            default -> sitDown(world, pos, entity, .25f, 0, .1875f);
-        }
-    }
-
-    public static void sitDownWE(Level world, Entity entity, BlockPos pos, int index) {
-        switch (index) {
-            case 0 -> sitDown(world, pos, entity, .8125f, 0, .75f);
-            case 1 -> sitDown(world, pos, entity, .8125f, 0, .25f);
-            case 2 -> sitDown(world, pos, entity, .1875f, 0, .25f);
-            case 3 -> sitDown(world, pos, entity, .1875f, 0, .75f);
-            default -> sitDown(world, pos, entity, .8125f, 0, .75f);
-        }
-    }
-
-    public static void sitDown(
-            Level world, BlockPos pos, Entity entity, float xOffset, float yOffset, float zOffset) {
-        if (world.isClientSide) return;
-        HexieSeatEntity seat = new HexieSeatEntity(world);
-        seat.setPos(
-                (float) pos.getX() + xOffset,
-                (float) pos.getY() + yOffset,
-                (float) pos.getZ() + zOffset);
-        world.addFreshEntity(seat);
-        entity.startRiding(seat, true);
-        if (entity instanceof TamableAnimal ta) ta.setInSittingPose(true);
     }
 
     @Override

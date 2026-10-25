@@ -9,7 +9,4 @@ public class ByteBufUtil {
         return new FriendlyByteBuf(ByteBufAllocator.DEFAULT.buffer());
     }
 
-    public static FriendlyByteBuf defaultBuf(int initCapacity) {
-        return new FriendlyByteBuf(ByteBufAllocator.DEFAULT.buffer(initCapacity));
-    }
 }

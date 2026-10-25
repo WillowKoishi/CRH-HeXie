@@ -8,7 +8,6 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.phys.Vec2;
 
 import willow.train.hexie.client.render.blockentity.LacqueredBoardEntityRenderer;
 import willow.train.hexie.util.station.Connections;
@@ -41,20 +40,6 @@ public class ConnectionLine extends AbstractWidget {
         this(connections.x1, connections.y1, connections.x2, connections.y2, themeColor);
         this.lineWidth = connections.lineWidth;
         this.tactics = connections.tatics;
-    }
-
-    public ConnectionLine(Vec2 pos1, Vec2 pos2, int themeColor) {
-        super(
-                (int) Math.min(pos1.x, pos2.x),
-                (int) Math.min(pos1.y, pos2.y),
-                (int) Math.abs(pos2.x - pos1.x),
-                (int) Math.abs(pos2.y - pos1.y),
-                Component.empty());
-        this.pX1 = (int) pos1.x;
-        this.pY1 = (int) pos1.y;
-        this.pX2 = (int) pos2.x;
-        this.pY2 = (int) pos2.y;
-        this.themeColor = themeColor;
     }
 
     public ConnectionLine line(long line) {
@@ -182,16 +167,6 @@ public class ConnectionLine extends AbstractWidget {
         buffer.addVertex(x, y + height, 0.0F).setUv(0, vHeight).setColor(r, g, b, 255);
         buffer.addVertex(x + width, y + height, 0.0F).setUv(uWidth, vHeight).setColor(r, g, b, 255);
         buffer.addVertex(x + width, y, 0.0F).setUv(uWidth, 0).setColor(r, g, b, 255);
-    }
-
-    public int[] getRGBAColor() {
-        int[] result = new int[4];
-        Color color = new Color(themeColor);
-        result[0] = color.getRed();
-        result[1] = color.getGreen();
-        result[2] = color.getBlue();
-        result[3] = color.getAlpha();
-        return result;
     }
 
     @Override

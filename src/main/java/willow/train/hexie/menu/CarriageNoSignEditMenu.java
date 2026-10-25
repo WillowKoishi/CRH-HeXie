@@ -7,28 +7,12 @@ import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
-import org.jetbrains.annotations.Nullable;
 
 import willow.train.hexie.init.client.MenuInit;
 import willow.train.hexie.blockentity.CarriageNoSignEntity;
 
 public class CarriageNoSignEditMenu extends AbstractContainerMenu {
     CarriageNoSignEntity ctse;
-
-    public CarriageNoSignEditMenu(@Nullable MenuType<?> pMenuType, int pContainerId) {
-        super(pMenuType, pContainerId);
-
-        this.addDataSlot(
-                new DataSlot() {
-                    @Override
-                    public int get() {
-                        return 0;
-                    }
-
-                    @Override
-                    public void set(int pValue) {}
-                });
-    }
 
     @Override
     public ItemStack quickMoveStack(Player pPlayer, int pIndex) {

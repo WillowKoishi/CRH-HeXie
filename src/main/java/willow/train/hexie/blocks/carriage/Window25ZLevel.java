@@ -194,10 +194,6 @@ public class Window25ZLevel extends HorizontalBlockBase {
         return pState.getValue(MIRROR);
     }
 
-    public boolean isPossibleToRespawnInThis() {
-        return true;
-    }
-
     @Override
     public List<ItemStack> getDrops(BlockState pState, LootParams.Builder pBuilder) {
         return List.of(this.asItem().getDefaultInstance());

@@ -1,97 +1,12 @@
 package willow.train.hexie.init.client;
 
 import dev.engine_room.flywheel.lib.model.baked.PartialModel;
-import com.simibubi.create.content.trains.track.TrackShape;
 
 import willow.train.hexie.Main;
 
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
 
-import javax.annotation.Nullable;
 
 public class PartialModelInit {
-
-    public record ModelTransform(double x, double y, double z, float rx, float ry, float rz) {
-        public static final PartialModelInit.ModelTransform ZERO =
-                new PartialModelInit.ModelTransform(0, 0, 0, 0, 0, 0);
-
-        public static PartialModelInit.ModelTransform of(
-                double x, double y, double z, float rx, float ry, float rz) {
-            return new PartialModelInit.ModelTransform(x, y, z, rx, ry, rz);
-        }
-
-        public static PartialModelInit.ModelTransform of(double x, double y, double z) {
-            return of(x, y, z, 0, 0, 0);
-        }
-
-        public static PartialModelInit.ModelTransform of(double x, double z) {
-            return of(x, 0, z);
-        }
-    }
-
-    public static final class TrackCasingSpec {
-
-        public final PartialModel model;
-
-        public final PartialModelInit.ModelTransform transform;
-        public final List<PartialModelInit.ModelTransform> additionalTransforms = new ArrayList<>();
-        private PartialModelInit.TrackCasingSpec altSpec;
-        private final int topSurfacePixelHeight;
-        private double xShift = 0;
-        private double zShift = 0;
-
-        public TrackCasingSpec(
-                PartialModel model,
-                PartialModelInit.ModelTransform transform,
-                int topSurfacePixelHeight) {
-            this.model = model;
-            this.transform = transform;
-            this.topSurfacePixelHeight = topSurfacePixelHeight;
-        }
-
-        public PartialModelInit.TrackCasingSpec addTransform(
-                PartialModelInit.ModelTransform transform) {
-            additionalTransforms.add(transform);
-            return this;
-        }
-
-        public PartialModelInit.TrackCasingSpec addTransform(double x, double z) {
-            return addTransform(PartialModelInit.ModelTransform.of(x, z));
-        }
-
-        public PartialModelInit.TrackCasingSpec withAltSpec(
-                @Nullable PartialModelInit.TrackCasingSpec altSpec) {
-            this.altSpec = altSpec;
-            return this;
-        }
-
-        public PartialModelInit.TrackCasingSpec getAltSpec() {
-            return altSpec != null ? altSpec : this;
-        }
-
-        public int getTopSurfacePixelHeight(boolean alt) {
-            return (alt && altSpec != null) ? altSpec.topSurfacePixelHeight : topSurfacePixelHeight;
-        }
-
-        public PartialModelInit.TrackCasingSpec overlayShift(double x, double z) {
-            this.xShift = x;
-            this.zShift = z;
-            return this;
-        }
-
-        public double getXShift() {
-            return xShift;
-        }
-
-        public double getZShift() {
-            return zShift;
-        }
-    }
-
-    public static final EnumMap<TrackShape, PartialModelInit.TrackCasingSpec> TRACK_CASINGS =
-            new EnumMap<>(TrackShape.class);
 
     public static final PartialModel
             HX_TRACK_SEGMENT_LEFT = block("track/standard/segment_left"),

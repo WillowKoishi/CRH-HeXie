@@ -13,7 +13,6 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import willow.train.hexie.creative.*;
-import willow.train.hexie.config.HXConfig;
 import willow.train.hexie.init.*;
 import willow.train.hexie.init.block.BlockInit;
 import willow.train.hexie.init.bogeys.BogeyEntityInit;
@@ -144,6 +143,6 @@ public class Main {
         InteractionProcessor.invoke();
         SemaphoreBlockInit.register();
         SemaphoreEntityInit.register();
-        HXConfig.register(modContainer);
+        //HXConfig.register(modContainer);
     }
 }

@@ -41,8 +41,6 @@ import willow.train.hexie.item.ToolTipsItemHelper;
 import willow.train.hexie.item.editable_panels.TrainNoItem;
 import willow.train.hexie.item.editable_panels.TrainPanelItem;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.util.function.Function;
 
 public class BlockInit {
@@ -52,7 +50,6 @@ public class BlockInit {
     public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(Registries.BLOCK,
             Main.MOD_ID);
     public static final DeferredRegister<Item> ITEMS = AllItemsInit.ITEMS;
-
 
     /**
      * logo
@@ -69,7 +66,6 @@ public class BlockInit {
             () -> new RZSeatBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                     .sound(SoundType.STONE)),
             object -> () -> new BlockItem(object.get(), new Item.Properties()));
-
 
     public static final DeferredHolder<Block, SeatYZBlock> SEAT_YZ = register("seat_yz",
             () -> new SeatYZBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
@@ -154,7 +150,6 @@ public class BlockInit {
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops()),
             object -> () -> new ElectricFenceWallItem(object.get(), new Item.Properties()));  // 
 
-
     /**
      * 暂未分类
      */
@@ -215,7 +210,6 @@ public class BlockInit {
                     .sound(SoundType.GLASS).requiresCorrectToolForDrops().noOcclusion()),
             object -> () -> new ToolTipsItemHelper(object.get(), new Item.Properties()));
 
-
     public static final DeferredHolder<Block, TrainOpenableWindowBlock> ORIGINAL_COLOR_WINDOW_25B = register("original_color_window_25b",
             () -> new TrainOpenableWindowBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                     .sound(SoundType.GLASS).requiresCorrectToolForDrops().noOcclusion(),0),
@@ -262,7 +256,6 @@ public class BlockInit {
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),
             object -> () -> new ToolTipsItemHelper(object.get(), new Item.Properties()));
 
-
     //25G
     public static final DeferredHolder<Block, TrainDoorBlock> PANEL_25G_ORIGINAL_DOOR = register("original_25g_door",
             () -> new TrainDoorBlock(BlockBehaviour.Properties.of().mapColor(MapColor.WATER).strength(1.5f, 3.0f)
@@ -275,7 +268,6 @@ public class BlockInit {
             () -> new OrdinaryTrainPanelBlock(BlockBehaviour.Properties.of().mapColor(MapColor.PLANT).strength(1.5f, 3.0f)
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops()),
             object -> () -> new BlockItem(object.get(), new Item.Properties()));
-
 
     //panel_25g_original_mid
     public static final DeferredHolder<Block, OrdinaryTrainPanelBlock> PANEL_25G_ORIGINAL_MID = register("panel_25g_original_mid",
@@ -302,7 +294,6 @@ public class BlockInit {
                     .sound(SoundType.GLASS).requiresCorrectToolForDrops().noOcclusion()),
             object -> () -> new ToolTipsItemHelper(object.get(), new Item.Properties()));
 
-
     public static final DeferredHolder<Block, TrainOpenableWindowBlock> ORIGINAL_COLOR_WINDOW_25G_TOILET = register("original_color_window_25g_toilet",
             () -> new TrainOpenableWindowBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                     .sound(SoundType.GLASS).requiresCorrectToolForDrops().noOcclusion(),0),
@@ -313,7 +304,6 @@ public static final DeferredHolder<Block, TrainOpenableWindowBlock> ORIGINAL_COL
         () -> new TrainOpenableWindowBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                 .sound(SoundType.GLASS).requiresCorrectToolForDrops().noOcclusion(),1),
         object -> () -> new ToolTipsItemHelper(object.get(), new Item.Properties()));
-
 
     public static final DeferredHolder<Block, TrainSealedWindowBlock> ORIGINAL_COLOR_WINDOW_25G_WIDE_SEALED = register("original_color_window_25g_wide_sealed",
             () -> new TrainSealedWindowBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
@@ -385,7 +375,6 @@ public static final DeferredHolder<Block, TrainOpenableWindowBlock> ORIGINAL_COL
                     .sound(SoundType.GLASS).requiresCorrectToolForDrops().noOcclusion(),0),
             object -> () -> new ToolTipsItemHelper(object.get(), new Item.Properties()));
 
-
     public static final DeferredHolder<Block, TopPanelSlabBlock> DIRECT_DRAINAGE_TOILET_ORIGINAL_25Z = register("direct_drainage_toilet_original_25z",
             () -> new TopPanelSlabBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),
@@ -406,7 +395,6 @@ public static final DeferredHolder<Block, TrainOpenableWindowBlock> ORIGINAL_COL
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion(), 2),
             object -> () -> new BlockItem(object.get(), new Item.Properties()));
 
-
     public static final DeferredHolder<Block, Train25KTEndFaceBlock> END_FACE_25Z_ORIGINAL = register("end_face_25z_original",
             () -> new Train25KTEndFaceBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),
@@ -421,7 +409,6 @@ public static final DeferredHolder<Block, TrainOpenableWindowBlock> ORIGINAL_COL
             () -> new OrdinaryTrainPanelBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),
             object -> () -> new ToolTipsItemHelper(object.get(), new Item.Properties()));
-
 
     //猪
     public static final DeferredHolder<Block, OrdinaryTrainPanelBlock> PANEL_25Z_ORIGINAL_BOTTOM_SIDE = register("panel_25z_original_bottom_side",
@@ -511,7 +498,6 @@ public static final DeferredHolder<Block, TrainOpenableWindowBlock> ORIGINAL_COL
                     .sound(SoundType.GLASS).requiresCorrectToolForDrops().noOcclusion()),
             object -> () -> new ToolTipsItemHelper(object.get(), new Item.Properties()));
 
-
     public static final DeferredHolder<Block, TrainOpenableWindowBlock> ORIGINAL_COLOR_WINDOW_25K_TOILET = register("original_color_window_25k_toilet",
             () -> new TrainOpenableWindowBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                     .sound(SoundType.GLASS).requiresCorrectToolForDrops().noOcclusion(),0),
@@ -521,7 +507,6 @@ public static final DeferredHolder<Block, TrainOpenableWindowBlock> ORIGINAL_COL
             () -> new TrainSealedWindowBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                     .sound(SoundType.GLASS).requiresCorrectToolForDrops().noOcclusion()),
             object -> () -> new ToolTipsItemHelper(object.get(), new Item.Properties()));
-
 
     //panel_25k_original_top
     public static final DeferredHolder<Block, OrdinaryTrainUpperPanelBlock> PANEL_25K_ORIGINAL_TOP = register("panel_25k_original_top",
@@ -541,7 +526,6 @@ public static final DeferredHolder<Block, TrainOpenableWindowBlock> ORIGINAL_COL
             () -> new HXD3DPanelBlocks(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion(), 2),
             object -> () -> new BlockItem(object.get(), new Item.Properties()));
-
 
     //carport_25bgzk_air_condition_all
     public static final DeferredHolder<Block, HXD3DPanelBlocks> CARPORT_25BGZKT_CENTRE = register("carport_25bgzkt_centre",
@@ -564,14 +548,10 @@ public static final DeferredHolder<Block, HXD3DPanelBlocks> CARPORT_25BGZKT_WATE
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),
             object -> () -> new BlockItem(object.get(), new Item.Properties()));
 
-
-
-
     public static final DeferredHolder<Block, Train25GLadderBlock> LADDER_25K_ORIGIINAL = register("ladder_25k_original_sliding",
             () -> new Train25GLadderBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),
             object -> () -> new BlockItem(object.get(), new Item.Properties()));
-
 
     public static final DeferredHolder<Block, TopPanelSlabBlock> DIRECT_DRAINAGE_TOILET_ORIGINAL_25K = register("direct_drainage_toilet_original_25k",
             () -> new TopPanelSlabBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
@@ -584,7 +564,6 @@ public static final DeferredHolder<Block, HXD3DPanelBlocks> CARPORT_25BGZKT_WATE
             () -> new DF11GMirrorCarportBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),
             object -> () -> new BlockItem(object.get(), new Item.Properties()));
-
 
     public static final DeferredHolder<Block, TopPanelSlabBlock> SLAB_25K_ORIGINAL_TOP = register("slab_25k_original_top",
             () -> new TopPanelSlabBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
@@ -605,7 +584,6 @@ public static final DeferredHolder<Block, HXD3DPanelBlocks> CARPORT_25BGZKT_WATE
             () -> new OrdinaryTrainPanelBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),
             object -> () -> new ToolTipsItemHelper(object.get(), new Item.Properties()));
-
 
     public static final DeferredHolder<Block, CarPortBlockBGKZ.Train25BGEndFaceBlock> END_FACE_25K_ORIGINAL_RUBBER = register("end_face_25k_original_rubber",
             () -> new CarPortBlockBGKZ.Train25BGEndFaceBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
@@ -657,7 +635,6 @@ public static final DeferredHolder<Block, HXD3DPanelBlocks> CARPORT_25BGZKT_WATE
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),
             object -> () -> new BlockItem(object.get(), new Item.Properties()));
 
-
     //panel_25t_original_window
     public static final DeferredHolder<Block, TrainGlassPanelBlock> PANEL_25T_ORIGINAL_WINDOW = register("panel_25t_original_window",
             () -> new TrainGlassPanelBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
@@ -671,7 +648,6 @@ public static final DeferredHolder<Block, HXD3DPanelBlocks> CARPORT_25BGZKT_WATE
             () -> new TrainOpenableWindowBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                     .sound(SoundType.GLASS).requiresCorrectToolForDrops().noOcclusion(),0),
             object -> () -> new ToolTipsItemHelper(object.get(), new Item.Properties()));
-
 
     public static final DeferredHolder<Block, TrainOpenableWindowBlock> ORIGINAL_COLOR_WINDOW_25T_SMALL = register("original_color_window_25t_small",
             () -> new TrainOpenableWindowBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
@@ -699,7 +675,6 @@ public static final DeferredHolder<Block, HXD3DPanelBlocks> CARPORT_25BGZKT_WATE
             () -> new TrainOpenableWindowBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                     .sound(SoundType.GLASS).requiresCorrectToolForDrops().noOcclusion(),0),
             object -> () -> new ToolTipsItemHelper(object.get(), new Item.Properties()));
-
 
     public static final DeferredHolder<Block, TrainOpenableWindowBlock> ORIGINAL_COLOR_WINDOW_25T_TOILET = register("original_color_window_25t_toilet",
             () -> new TrainOpenableWindowBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
@@ -768,8 +743,6 @@ public static final DeferredHolder<Block, HXD3DPanelBlocks> CARPORT_25BGZKT_WATE
             () -> new CarPortBlockBGKZ(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),
             object -> () -> new BlockItem(object.get(), new Item.Properties()));
-
-
 
     public static final DeferredHolder<Block, BSP25TAirConditionBlock> AIR_CODITION_BSP25T = register("air_condition_bsp25t",
             () -> new BSP25TAirConditionBlock(BlockBehaviour.Properties.of().mapColor(MapColor.PLANT).strength(1.5f, 3.0f)
@@ -892,13 +865,11 @@ public static final DeferredHolder<Block, HXD3DPanelBlocks> CARPORT_25BGZKT_WATE
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),
             object -> () -> new ToolTipsItemHelper(object.get(), new Item.Properties()));
 
-
     //受电弓
     public static final DeferredHolder<Block, PantographBlock> PANTOGRAPH = register("pantograph",
             () -> new PantographBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),
             object -> () -> new ToolTipsItemHelper(object.get(), new Item.Properties()));
-
 
     /*
     public static final DeferredHolder<Block, CarriageTypeSignBlock> CARRIAGE_TYPE_SIGN_BLOCK = register("carriage_type_sign",
@@ -1086,7 +1057,6 @@ public static final DeferredHolder<Block, HXD3DPanelBlocks> CARPORT_25BGZKT_WATE
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),
             object -> () -> new BlockItem(object.get(), new Item.Properties()));
 
-
     public static final DeferredHolder<Block, CarPortBlockBGKZ> CARPORT_MARSHALLED_CR200J = register("carport_cr200j_marshalled",
             () -> new CarPortBlockBGKZ(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),
@@ -1096,8 +1066,6 @@ public static final DeferredHolder<Block, HXD3DPanelBlocks> CARPORT_25BGZKT_WATE
             () -> new HXD3DPanelBlocks(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion(), 2),
             object -> () -> new ToolTipsItemHelper(object.get(), new Item.Properties()));
-
-
 
 public static final DeferredHolder<Block, DF11GCowcatcherBlock> DF11G_COWCATCHER = register("df11g_cowcatcher",
         () -> new DF11GCowcatcherBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
@@ -1226,7 +1194,6 @@ public static final DeferredHolder<Block, DF11GPanel3Wide> DF11G_PANEL_CR = regi
                     .sound(SoundType.POLISHED_DEEPSLATE).requiresCorrectToolForDrops()),
             object -> () -> new BlockItem(object.get(), new Item.Properties()));  // 
 
-
     public static final DeferredHolder<Block, PanelBlockHalf> BOILING_WATER_PLACE = register("boiling_water_place",
             () -> new PanelBlockHalf(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                     .sound(SoundType.STONE).requiresCorrectToolForDrops()),
@@ -1242,7 +1209,6 @@ public static final DeferredHolder<Block, DF11GPanel3Wide> DF11G_PANEL_CR = regi
 
     }
 
-
     static <T extends Block> DeferredHolder<Block, T> register(final String name, final Supplier<? extends T> block,
                                                                 Function<DeferredHolder<Block, T>, Supplier<? extends Item>> item) {
         DeferredHolder<Block, T> obj = registerBlock(name, block);
@@ -1256,9 +1222,6 @@ public static final DeferredHolder<Block, DF11GPanel3Wide> DF11G_PANEL_CR = regi
         //ITEMS.register(name, item.apply(obj));
         return obj;
     }
-    static <T extends Block> DeferredHolder<Block, T> registerBlockWithoutBlockItem(String name, Supplier<T> block) {
-        return BLOCKS.register(name, block);
-    }
 
     public static void registerAllBlocks(IEventBus bus){
         CustomRenderedDoorBlockInit.invoke();
@@ -1266,37 +1229,5 @@ public static final DeferredHolder<Block, DF11GPanel3Wide> DF11G_PANEL_CR = regi
         BLOCKS.register(bus);
     }
 
-    private static void generateDrops(String name) {
-        String basic = "{\n" +
-                "  \"type\": \"minecraft:block\",\n" +
-                "  \"pools\": [\n" +
-                "    {\n" +
-                "      \"bonus_rolls\": 1.0,\n" +
-                "      \"conditions\": [\n" +
-                "        {\n" +
-                "          \"condition\": \"minecraft:survives_explosion\"\n" +
-                "        }\n" +
-                "      ],\n" +
-                "      \"entries\": [\n" +
-                "        {\n" +
-                "          \"type\": \"minecraft:item\",\n" +
-                "          \"name\": \"hexie:" + name + "\"\n" +
-                "        }\n" +
-                "      ],\n" +
-                "      \"rolls\": 1.0\n" +
-                "    }\n" +
-                "  ]\n" +
-                "}";
-
-        File file = new File("../src/generated/resources/data/" + Main.MOD_ID + "/loot_table/blocks/" + name + ".json");
-        try {
-            file.createNewFile();
-            FileWriter writer = new FileWriter(file);
-            writer.write(basic);
-            writer.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 }
 

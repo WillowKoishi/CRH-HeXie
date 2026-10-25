@@ -13,7 +13,6 @@ import willow.train.hexie.Main;
 import willow.train.hexie.menu.AutomaticControlCouplingMenu;
 import willow.train.hexie.menu.*;
 import willow.train.hexie.client.screens.HexieInventory;
-import willow.train.hexie.network.Env;
 
 public class MenuInit {
 
@@ -49,7 +48,4 @@ public class MenuInit {
         MENUS.register(eventBus);
     }
 
-    public static void invokeComponent() {
-        if(Env.getCurrent() == Env.CLIENT) {INVENTORY_WIDGET = new HexieInventory();}
-    }
 }

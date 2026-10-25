@@ -19,13 +19,6 @@ public class LacqueredBoardPacket implements HexiePacket {
 
     BlockPos pos;
 
-    public LacqueredBoardPacket(BlockPos pPos, String[] contents, double x_offset, int... colors) {
-        this.pos = pPos;
-        this.contents = contents;
-        this.colors = colors;
-        this.x_offset = x_offset;
-    }
-
     public LacqueredBoardPacket(
             BlockPos pPos, Component[] contents, double x_offset, int... colors) {
         this.pos = pPos;

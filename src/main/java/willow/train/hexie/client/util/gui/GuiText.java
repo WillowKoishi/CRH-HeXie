@@ -10,6 +10,4 @@ public final class GuiText {
     public static void draw(GuiGraphics graphics, Font font, Component text, float x, float y, int color) { graphics.drawString(font, text, (int) x, (int) y, color, false); }
     public static void draw(GuiGraphics graphics, Font font, String text, float x, float y, int color) { graphics.drawString(font, text, (int) x, (int) y, color, false); }
     public static void draw(GuiGraphics graphics, Font font, FormattedCharSequence text, float x, float y, int color) { graphics.drawString(font, text, (int) x, (int) y, color, false); }
-    public static void drawShadow(GuiGraphics graphics, Font font, Component text, float x, float y, int color) { graphics.drawString(font, text, (int) x, (int) y, color, true); }
-    public static void drawShadow(GuiGraphics graphics, Font font, String text, float x, float y, int color) { graphics.drawString(font, text, (int) x, (int) y, color, true); }
 }

@@ -14,44 +14,12 @@ public class RenderableItem {
     private Font font;
     private boolean renderCount = false;
     private int width = 16, height = 16;
-    public RenderableItem(ItemStack stack) {
-        this.stack = stack;
-        font = Minecraft.getInstance().font;
-    }
 
     public RenderableItem(ItemStack stack, int width, int height) {
         this.stack = stack;
         font = Minecraft.getInstance().font;
         this.width = width;
         this.height = height;
-    }
-
-    public boolean isRenderingCount() {
-        return renderCount;
-    }
-
-    public void renderCount(boolean TorF) {
-        this.renderCount = TorF;
-    }
-
-    public void setWidth(int width) {
-        this.width = width;
-    }
-
-    public void setHeight(int height) {
-        this.height = height;
-    }
-
-    public int getHeight() {
-        return height;
-    }
-
-    public int getWidth() {
-        return width;
-    }
-
-    public ItemStack getStack() {
-        return stack;
     }
 
     public void render(@Nullable GuiGraphics pose, ItemRenderer renderer, int x, int y, int width, int height){

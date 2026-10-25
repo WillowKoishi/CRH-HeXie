@@ -238,35 +238,6 @@ public class CarriageTypeSignEntity extends SmartBlockEntity
         return ClientboundBlockEntityDataPacket.create(this);
     }
 
-    public int nextColor() {
-        switch (color) {
-            case YELLOW -> {
-                return YELLOW2;
-            }
-            case YELLOW2 -> {
-                return RED;
-            }
-            case RED -> {
-                return BLUE;
-            }
-            case BLUE -> {
-                return BLUE2;
-            }
-            case BLUE2 -> {
-                return BLUE3;
-            }
-            case BLUE3 -> {
-                return BLACK;
-            }
-            case BLACK -> {
-                return YELLOW;
-            }
-            default -> {
-                return YELLOW;
-            }
-        }
-    }
-
     @Override
     public String getClipboardKey() {
         return "carriage_type_sign";

@@ -61,44 +61,4 @@ public enum UpperPanelTypes implements StringRepresentable {
         return this.getSerializedName();
     }
 
-    public static UpperPanelTypes encode(String str) {
-        switch (str) {
-            case "p25ba" -> {
-                return P25BA;
-            }
-            case "p25bb" -> {
-                return P25BB;
-            }
-            case "p25g" -> {
-                return P25G;
-            }
-            case "p25z" -> {
-                return P25Z;
-            }
-            case "p25k" -> {
-                return P25K;
-            }
-            case "p25ta" -> {
-                return P25TA;
-            }
-            case "p25tb" -> {
-                return P25TB;
-            }
-            case "p25tc" -> {
-                return P25TC;
-            }
-            case "m25a" -> {
-                return M25A;
-            }
-            case "m25b" -> {
-                return M25B;
-            }
-            case "cr200j" -> {
-                return CR200J;
-            }
-            default -> {
-                return P25BA;
-            }
-        }
-    }
 }

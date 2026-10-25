@@ -8,7 +8,6 @@ import willow.train.hexie.client.util.gui.Button;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.phys.Vec2;
 
 import willow.train.hexie.Main;
 import willow.train.hexie.util.station.LineTag;
@@ -46,23 +45,6 @@ public class StationButton extends Button {
         this.staticY = (int) cache.y();
         this.setX(staticX - Math.round(20 * scale));
         this.setY(staticY - Math.round(20 * scale));
-    }
-
-    public StationButton addLine(LineTag line) {
-        this.lines.add(line);
-        this.station().station().addLine(line);
-        return this;
-    }
-
-    public boolean belongsTo(LineTag tag) {
-        return lines.contains(tag);
-    }
-
-    public void removeLine(LineTag line) {
-        if (this.lines.contains(line)) {
-            this.lines.remove(line);
-        }
-        this.station().station().removeLine(line);
     }
 
     @Override
@@ -115,18 +97,6 @@ public class StationButton extends Button {
         poseStack.pose().scale(scale, scale, 1.0f);
         willow.train.hexie.client.util.gui.GuiText.draw(poseStack, font, pText, 0, 0, color);
         poseStack.pose().popPose();
-    }
-
-    public Vec2 center() {
-        return new Vec2(this.getX() + this.width / 2, this.getY() + this.height / 2);
-    }
-
-    public int x_center() {
-        return this.getX() + this.width / 2;
-    }
-
-    public int y_center() {
-        return this.getY() + this.height / 2;
     }
 
     public StationRenderCache station() {

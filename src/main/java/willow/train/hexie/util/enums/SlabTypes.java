@@ -64,47 +64,4 @@ public enum SlabTypes implements StringRepresentable {
         }
     }
 
-    public static SlabTypes encode(String name) {
-        switch (name) {
-            case "s25b" -> {
-                return S25B;
-            }
-            case "d25b" -> {
-                return D25B;
-            }
-            case "s25g" -> {
-                return S25G;
-            }
-            case "d25g" -> {
-                return D25G;
-            }
-            case "s25z" -> {
-                return S25Z;
-            }
-            case "d25z" -> {
-                return D25Z;
-            }
-            case "s25k" -> {
-                return S25K;
-            }
-            case "d25k" -> {
-                return D25K;
-            }
-            case "s25t" -> {
-                return S25T;
-            }
-            case "d25t" -> {
-                return D25T;
-            }
-            case "s25m" -> {
-                return S25M;
-            }
-            case "cr200j" -> {
-                return CR200J;
-            }
-            default -> {
-                return S25B;
-            }
-        }
-    }
 }

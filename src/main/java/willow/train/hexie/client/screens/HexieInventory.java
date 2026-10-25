@@ -31,22 +31,8 @@ public class HexieInventory {
     private Screen parentScreen;
     private ItemStack hoveringItem;
 
-    public HexieInventory() {
-        this.inventoryBackground = new RenderablePicture(INVENTORY_IMAGE, 175, 90);
-        this.quickBarBackground = inventoryBackground.cut(0, 62, 0, 0);
-        this.chosenFrame = new RenderablePicture(INVENTORY_IMAGE, 192, 0, 18, 18);
-    }
-
     public void setParentScreen(Screen screen) {
         this.parentScreen = screen;
-    }
-
-    public Screen getParentScreen() {
-        return parentScreen;
-    }
-
-    public void quickBarMode() {
-        this.renderQuickBar = true;
     }
 
     public void horizontalCenter(Screen screen) {
@@ -106,8 +92,6 @@ public class HexieInventory {
         renderHoveringItem(stack, renderer, font, mouseX, mouseY);
         renderTooltip(stack, inventory, mouseX, mouseY);
     }
-
-
 
     public void renderQuickBar(GuiGraphics stack, ItemRenderer renderer, Player player, int x, int y, int mouseX, int mouseY) {
         if(player == null) return;
@@ -267,16 +251,8 @@ public class HexieInventory {
         dirtySlots.clear();
     }
 
-    public void removeSlotLock(int slotIndex) {
-        slotLocks.remove((Integer) slotIndex);
-    }
-
     public boolean isLocked(int slotIndex) {
         return slotLocks.contains((Integer) slotIndex);
-    }
-
-    public List<Integer> getLocks() {
-        return slotLocks;
     }
 
     public void removeAllLocks() {

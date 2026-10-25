@@ -102,5 +102,4 @@ public class ItemIconButton extends Button {
         BufferUploader.drawWithShader(buffer.buildOrThrow());
     }
 
-    public void renderTooltip(GuiGraphics pGuiGraphics, int mouseX, int mouseY, float partialTicks) {}
 }

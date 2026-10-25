@@ -51,38 +51,6 @@ public class ItemSlotButton extends Button {
         return itemCouldIn.contains(stack.getItem());
     }
 
-    public void setShouldLimitItem(boolean shouldLimitItem) {
-        this.shouldLimitItem = shouldLimitItem;
-    }
-
-    public Set<Item> getItemLimitList() {
-        return itemCouldIn;
-    }
-
-    public void allowItemIn(Item itemLike) {
-        this.itemCouldIn.add(itemLike);
-    }
-
-    public void denyItemIn(Item itemLike) {
-        if(shouldLimitItem && itemCouldIn.contains(itemLike)) {
-            itemCouldIn.remove(itemLike);
-            return;
-        }
-        shouldLimitItem = true;
-    }
-
-    public float getItemSizeZoom() {
-        return itemSizeZoom;
-    }
-
-    public void setItemSizeZoom(float itemSizeZoom) {
-        this.itemSizeZoom = itemSizeZoom;
-    }
-
-    public boolean shouldLimitItem() {
-        return shouldLimitItem;
-    }
-
     public ItemStack putStackIn(ItemStack stack) {
         if(stack.is(Items.AIR)) {
             ItemStack cache = stackIn != null && !stackIn.is(Items.AIR) ? stackIn : Items.AIR.getDefaultInstance();
@@ -93,10 +61,6 @@ public class ItemSlotButton extends Button {
         ItemStack stackCache = stackIn != null && !stackIn.is(Items.AIR) ? stackIn : Items.AIR.getDefaultInstance();
         stackIn = stack;
         return stackCache;
-    }
-
-    public boolean hasStack() {
-        return stackIn != null && !stackIn.is(Items.AIR);
     }
 
     public ItemStack getStackIn() {

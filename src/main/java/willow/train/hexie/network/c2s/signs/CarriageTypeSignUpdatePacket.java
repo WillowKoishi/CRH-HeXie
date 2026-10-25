@@ -15,7 +15,6 @@ public class CarriageTypeSignUpdatePacket implements HexiePacket {
     private int color;
     private final String[] lines;
 
-
     public CarriageTypeSignUpdatePacket(
             BlockPos pPos,
             String pLine0,
@@ -29,7 +28,6 @@ public class CarriageTypeSignUpdatePacket implements HexiePacket {
         this.color = pColor;
     }
 
-
     public CarriageTypeSignUpdatePacket(FriendlyByteBuf pBuffer) {
         this.pos = pBuffer.readBlockPos();
         this.color = pBuffer.readInt();
@@ -39,11 +37,6 @@ public class CarriageTypeSignUpdatePacket implements HexiePacket {
             this.lines[i] = pBuffer.readUtf(384);
         }
     }
-
-    public BlockPos getPos() {
-        return this.pos;
-    }
-
 
     @Override
     public boolean handle(IPayloadContext context) {
@@ -64,7 +57,6 @@ public class CarriageTypeSignUpdatePacket implements HexiePacket {
                 });
         return true;
     }
-
 
     @Override
     public void encode(FriendlyByteBuf pBuffer) {

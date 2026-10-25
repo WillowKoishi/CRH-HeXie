@@ -23,13 +23,6 @@ public class ImageButton extends Button {
         this.setY(y);
     }
 
-    public ImageButton(RenderablePicture picture, OnPress press) {
-        super(0, 0, picture.width(), picture.height(), Component.empty(), press);
-        this.picture = picture;
-        this.width = picture.width();
-        this.height = picture.height();
-    }
-
     @Override
     public void renderWidget(GuiGraphics pGuiGraphics, int mouseX, int mouseY, float partialTicks) {
         if (!visible) return;

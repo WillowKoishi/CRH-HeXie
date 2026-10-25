@@ -31,11 +31,6 @@ public class ScrollingComponentBox extends AbstractWidget {
         this.font = font;
     }
 
-
-    public void addComponent(String value) {
-        this.addComponent(value, false);
-    }
-
     public void addComponent(Component component) {
         this.addComponent(component, false);
     }
@@ -44,32 +39,10 @@ public class ScrollingComponentBox extends AbstractWidget {
         this.addComponent(component, true);
     }
 
-    public void addTitle(String value) {
-        this.addComponent(value, true);
-    }
-
     public void addComponent(Component component, boolean isTitle) {
         nameList.add(component.getString());
         titleList.add(isTitle);
         maxWidth = Math.max(maxWidth, font.width(isTitle ? "-> " : "--> " + component.getString()));
-    }
-
-    public void addComponent(String value, boolean isTitle) {
-        nameList.add(value);
-        titleList.add(isTitle);
-        maxWidth = Math.max(maxWidth, font.width(isTitle ? "-> " : "--> " + value));
-    }
-
-    public void clear() {
-        nameList.clear();
-        titleList.clear();
-        maxWidth = 0;
-        cursor = 0;
-    }
-
-    public void setCursor(int cursor) {
-        this.cursor = Math.max(0, Math.min(cursor, nameList.size() - 1));
-        if(isTitle(cursor)) pushCursor(true);
     }
 
     public void setCursorWithoutTitle(int cursor) {
@@ -90,19 +63,6 @@ public class ScrollingComponentBox extends AbstractWidget {
             title += titleList.get(i) ? 1 : 0;
         }
         return cursor - title;
-    }
-
-    public int getCursor() {
-        return cursor;
-    }
-
-    public boolean isTitle(Component component) {
-        return isTitle(component.getString());
-    }
-
-    public boolean isTitle(String value) {
-        if(!nameList.contains(value)) return false;
-        return titleList.get(nameList.indexOf(value));
     }
 
     public boolean isTitle(int index) {

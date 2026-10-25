@@ -402,16 +402,11 @@ public class LacqueredBoardEditScreen extends AbstractContainerScreen<LacqueredB
         this.entity = entity;
     }
 
-
     @Override
     public void render(GuiGraphics pGuiGraphics, int pMouseX, int pMouseY, float pPartialTick) {
         renderBackground(pGuiGraphics, pMouseX, pMouseY, pPartialTick);
         super.render(pGuiGraphics, pMouseX, pMouseY, pPartialTick);
         renderTooltip(pGuiGraphics, pMouseX, pMouseY);
-    }
-
-    public int offset(int x) {
-        return x + (Minecraft.getInstance().getWindow().getWidth() - imageWidth) / 2 + offsetX;
     }
 
     public boolean isPauseScreen() {

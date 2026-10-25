@@ -1,6 +1,5 @@
 package willow.train.hexie.blockentity;
 
-
 import com.simibubi.create.content.equipment.clipboard.ClipboardCloneable;
 import com.simibubi.create.foundation.blockEntity.SmartBlockEntity;
 import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour;
@@ -16,7 +15,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.SimpleContainerData;
-import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 
 import org.jetbrains.annotations.Nullable;
@@ -37,10 +35,6 @@ public class TrainSpeedSignEntity extends SmartBlockEntity
     private Component content = Component.literal("xx km/h");
 
     private boolean x_revert = false, y_revert = false;
-
-    public TrainSpeedSignEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
-        super(type, pos, state);
-    }
 
     public TrainSpeedSignEntity(BlockPos pos, BlockState state) {
         super(BlockEntitiesInit.TRAIN_SPEED_SIGN.get(), pos, state);

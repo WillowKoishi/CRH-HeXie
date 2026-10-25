@@ -41,7 +41,6 @@ import willow.train.hexie.item.tickets.TicketItem;
 import willow.train.hexie.item.tickets.Ticketable;
 import willow.train.hexie.blockentity.TurnstileCRBlockEntity;
 
-
 public class TurnstileCRBlock extends BaseEntityBlock implements IWrenchable {
     @Override
     protected com.mojang.serialization.MapCodec<? extends net.minecraft.world.level.block.BaseEntityBlock> codec() {
@@ -230,14 +229,6 @@ public class TurnstileCRBlock extends BaseEntityBlock implements IWrenchable {
             return hinge + 1;
         }
         return 0;
-    }
-
-    public int prevHinge(BlockState pState) {
-        int hinge = pState.getValue(HINGE);
-        if (hinge > 0) {
-            return hinge - 1;
-        }
-        return 2;
     }
 
     @Override

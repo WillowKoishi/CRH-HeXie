@@ -41,11 +41,6 @@ public class BogeyStylesInit {
                     .size(BogeySizesInit.QJ_BACKWARD, TrackBlockInit.QJ_BACKWARD_BOGEY, () -> () -> { var renderer = new DF11GBogeyRenderer.QJBackwardBogeyRenderer(); return new BogeyStyle.SizeRenderer(renderer, renderer::createVisual); })
                     .build();
 
-    public static BogeyStyle.Builder create(String name, String cycleGroup) {
-        return create(Main.asResource(name), Main.asResource(cycleGroup))
-                .displayName(Component.translatable("hexie.bogeys.styles." + name));
-    }
-
     public static BogeyStyle.Builder create(
             String name, ResourceLocation cycleGroup) {
         return create(Main.asResource(name), cycleGroup);

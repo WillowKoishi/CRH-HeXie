@@ -4,7 +4,6 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 
-import willow.train.hexie.Main;
 
 public class ComponentTranslationTool {
 
@@ -13,37 +12,11 @@ public class ComponentTranslationTool {
             .append(Component.translatable("tooltip.hexie.abc.binding.explain.un_2").withStyle(ChatFormatting.GRAY));
 
     // 向某玩家展示
-    public static void showMsg(Player pPlayer, String s, boolean b) {
-        pPlayer.displayClientMessage(Component.translatable("msg." + Main.MOD_ID + "." + s), b);
-    }
-
-    public static void showSuccess(Player pPlayer, String s, boolean b) {
-        pPlayer.displayClientMessage(Component.literal("✔ ").withStyle(ChatFormatting.GREEN).copy()
-                .append(Component.translatable("msg." + Main.MOD_ID + "." + s).withStyle(ChatFormatting.GREEN)), b);
-    }
-
-    public static void showWarning(Player pPlayer, String s, boolean b) {
-        pPlayer.displayClientMessage(Component.literal("● ").withStyle(ChatFormatting.YELLOW).copy()
-                .append(Component.translatable("msg." + Main.MOD_ID + "." + s).withStyle(ChatFormatting.YELLOW)), b);
-    }
-
-    public static void showError(Player pPlayer, String s, boolean b) {
-        pPlayer.displayClientMessage(Component.literal("❌ ").withStyle(ChatFormatting.RED).copy()
-                .append(Component.translatable("msg." + Main.MOD_ID + "." + s).withStyle(ChatFormatting.RED)), b);
-    }
 
     public static void showSuccess(Player pPlayer, boolean b, Component... components) {
         Component cx = Component.literal("✔ ").withStyle(ChatFormatting.GREEN);
         for(Component c : components) {
             cx = cx.copy().append(c).withStyle(ChatFormatting.GREEN);
-        }
-        pPlayer.displayClientMessage(cx, b);
-    }
-
-    public static void showWarning(Player pPlayer, boolean b, Component... components) {
-        Component cx = Component.literal("● ").withStyle(ChatFormatting.YELLOW);
-        for(Component c : components) {
-            cx = cx.copy().append(c).withStyle(ChatFormatting.YELLOW);
         }
         pPlayer.displayClientMessage(cx, b);
     }
@@ -56,15 +29,4 @@ public class ComponentTranslationTool {
         pPlayer.displayClientMessage(cx, b);
     }
 
-    public static Component translatable(String s, ChatFormatting formatting) {
-        return Component.translatable("msg." + Main.MOD_ID + "." + s).withStyle(formatting);
-    }
-
-    public static Component translatable(String s) {
-        return Component.translatable("msg." + Main.MOD_ID + "." + s);
-    }
-
-    public static Component literal(String s) {
-        return Component.literal(s);
-    }
 }

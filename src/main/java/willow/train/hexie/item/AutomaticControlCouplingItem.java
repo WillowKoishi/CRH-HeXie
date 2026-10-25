@@ -35,7 +35,6 @@ import java.util.UUID;
 
 public class AutomaticControlCouplingItem extends Item implements MenuProvider {
 
-
     public AutomaticControlCouplingItem(Properties pProperties) {
         super(pProperties);
     }
@@ -131,36 +130,6 @@ public class AutomaticControlCouplingItem extends Item implements MenuProvider {
         boolean added = addContents(contents, data.localPos, data.name, data.entityId);
         ItemData.setTagElement(stack, "contents", contents);
         return added;
-    }
-
-    public static boolean addBlocks(ItemStack stack, CouplingDisplayData... datas) {
-        boolean result = true;
-        for(CouplingDisplayData data : datas) {
-            result = addBlock(stack, data) && result;
-        }
-        return result;
-    }
-
-    public static boolean removeBlock(ItemStack stack, BlockPos localPos) {
-        if(!(stack.getItem() instanceof AutomaticControlCouplingItem)) return false;
-        CompoundTag nbt = ItemData.getOrCreateTagElement(stack, "contents");
-        String wouldRemove = "";
-        for(String name : nbt.getAllKeys()) {
-            if(name.equals("basic")) continue;
-            CompoundTag tag = nbt.getCompound(name);
-            if(tag.getInt("px") == localPos.getX() && tag.getInt("py") == localPos.getY() && tag.getInt("pz") == localPos.getZ()) {
-                wouldRemove = name;
-                break;
-            }
-        }
-        if(wouldRemove.equals(""))
-            return false;
-        nbt.remove(wouldRemove);
-        if(nbt.size() == 1) {
-            nbt.remove("basic");
-        }
-        ItemData.setTagElement(stack, "contents", nbt);
-        return true;
     }
 
     public static void removeBasic(ItemStack stack) {
@@ -262,13 +231,6 @@ public class AutomaticControlCouplingItem extends Item implements MenuProvider {
         return result;
     }
 
-    public static CompoundTag getBasics(ItemStack stack) {
-        CompoundTag nbt = ItemData.getOrCreateTagElement(stack, "contents");
-        if(hasBasics(stack))
-            return nbt.getCompound("basic");
-        return new CompoundTag();
-    }
-
     public static boolean hasBasics(ItemStack stack) {
         return ItemData.getOrCreateTagElement(stack, "contents").contains("basic");
     }
@@ -305,27 +267,5 @@ public class AutomaticControlCouplingItem extends Item implements MenuProvider {
             name = tag.getString("name");
         }
 
-        public CouplingDisplayData(BlockPos localPos, UUID entityId, String name, @Nullable UUID trainId) {
-            this.localPos = localPos;
-            this.entityId = entityId;
-            this.trainId = trainId;
-            this.name = name;
-        }
-
-        public CompoundTag getCompound() {
-            CompoundTag tag = new CompoundTag();
-            tag.putInt("px", localPos.getX());
-            tag.putInt("py", localPos.getY());
-            tag.putInt("pz", localPos.getZ());
-            tag.putUUID("id", entityId);
-            tag.putString("name", name);
-            if(trainId != null)
-                tag.putUUID("uuid", trainId);
-            return tag;
-        }
-
-        public boolean hasTrainId() {
-            return trainId != null;
-        }
     }
 }

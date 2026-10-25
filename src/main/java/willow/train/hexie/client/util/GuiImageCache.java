@@ -5,7 +5,6 @@ import com.simibubi.create.content.trains.bogey.BogeySizes;
 import com.simibubi.create.content.trains.bogey.BogeyStyle;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import org.jetbrains.annotations.Nullable;
@@ -116,15 +115,6 @@ public final class GuiImageCache {
         public BufferedImage image;
         public byte[] bytes;
 
-
-        public ImageData(ResourceLocation location, BufferedImage image, int width, int height, byte[] bytes) {
-            this.width = width;
-            this.height = height;
-            this.location = location;
-            this.image = image;
-            this.bytes = bytes;
-        }
-
         public ImageData(ResourceLocation location) {
             this.location = location;
         }
@@ -136,13 +126,6 @@ public final class GuiImageCache {
             this.height = image.getHeight();
         }
 
-        public ImageData(FriendlyByteBuf buf) throws IOException {
-            this.location = buf.readResourceLocation();
-            int byteLength = buf.readInt();
-            this.bytes = buf.readByteArray(byteLength);
-            setImage(ImageIO.read(new ByteArrayInputStream(bytes)));
-        }
-
         public ImageData(ResourceLocation location, InputStream imageStream, boolean fromJar) throws IOException {
             this.location = location;
             this.bytes = imageStream.readAllBytes();
@@ -152,16 +135,6 @@ public final class GuiImageCache {
                 Minecraft.getInstance().getTextureManager().register(
                         location, new DynamicTexture(nativeImage));
             }
-        }
-
-        public int getColor(int x, int y) {
-            return image.getRGB(x, y);
-        }
-
-        public void toByteBuf(FriendlyByteBuf buf) {
-            buf.writeResourceLocation(location);
-            buf.writeInt(bytes.length);
-            buf.writeByteArray(bytes);
         }
 
         public double aspectRatio() {
