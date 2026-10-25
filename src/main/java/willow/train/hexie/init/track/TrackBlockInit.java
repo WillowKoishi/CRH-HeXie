@@ -7,7 +7,7 @@ import com.simibubi.create.AllTags;
 import com.simibubi.create.api.stress.BlockStressValues;
 import com.simibubi.create.content.trains.bogey.BogeySizes;
 import com.simibubi.create.content.trains.track.TrackBlock;
-import com.simibubi.create.content.trains.track.TrackBlockItem;
+import willow.train.hexie.item.track.StandardTrackItem;
 import com.simibubi.create.content.trains.track.TrackMaterial;
 import com.simibubi.create.content.trains.track.TrackModel;
 import com.simibubi.create.foundation.data.CreateRegistrate;
@@ -64,7 +64,7 @@ public class TrackBlockInit {
                 .lang(material.langName + " Train Track")
                 .onRegister(onRegister)
                 .onRegister(CreateRegistrate.blockModel(() -> TrackModel::new))
-                .item(TrackBlockItem::new)
+                .item(StandardTrackItem::new)
                 .tag(AllTags.AllItemTags.TRACKS.tag)
                 .model((c, p) -> p.generated(c, Main.asResource("item/track/" + c.getName())))
                 .build()

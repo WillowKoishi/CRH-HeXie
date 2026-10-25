@@ -28,6 +28,8 @@ public final class HexieNetworkHandler {
         register(TrainSpeedSignUpdatePacket.class, TrainSpeedSignUpdatePacket::new);
         register(InventoryUpdatePacket.class, InventoryUpdatePacket::new);
         var registrar = event.registrar("2");
+        registrar.playToServer(SignalPlacementFacingPacket.TYPE, SignalPlacementFacingPacket.CODEC,
+                (packet, context) -> packet.handle(context));
         registrar.playToServer(Payload.TYPE, Payload.CODEC,
                 (payload, context) -> payload.packet().handle(context));
         registrar.playToServer(

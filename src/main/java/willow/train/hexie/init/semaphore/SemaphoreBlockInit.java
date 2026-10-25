@@ -3,8 +3,7 @@ package willow.train.hexie.init.semaphore;
 
 import static com.simibubi.create.foundation.data.TagGen.pickaxeOnly;
 
-import com.simibubi.create.content.trains.graph.EdgePointType;
-import com.simibubi.create.content.trains.track.TrackTargetingBlockItem;
+import willow.train.hexie.item.semaphore.ThroughSignalItem;
 import com.simibubi.create.foundation.data.CreateRegistrate;
 import com.simibubi.create.foundation.data.SharedProperties;
 import com.tterrag.registrate.util.entry.BlockEntry;
@@ -35,7 +34,7 @@ public class SemaphoreBlockInit {
                             .rotationY((state.getValue(BlockStateProperties.HORIZONTAL_FACING).get2DDataValue() * 90 + 180) % 360)
                             .build()))
             .lang("Color Light Signal")
-            .item(TrackTargetingBlockItem.ofType(EdgePointType.SIGNAL))
+            .item(ThroughSignalItem::new)
             .model((c, p) -> p.withExistingParent(c.getName(), Main.asResource("block/hx_semaphore/hx_shunting_signal")))
             .build()
             .register();
