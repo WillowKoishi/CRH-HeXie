@@ -177,6 +177,7 @@ public class DF11GBogeyRenderer {
 
     public static class QJBogeyRenderer extends SimpleBogeyRenderer {
         public static final String TRAIN_SPEED_KEY = "HeXieQJTrainSpeed";
+        public static final String PHYSICS_BOGEY_KEY = "HeXieQJPhysicsBogey";
 
         protected boolean isBackward() {
             return false;
@@ -397,9 +398,9 @@ public class DF11GBogeyRenderer {
                     .render(ms, light,vb);
 
             /*-----渲染需要列车速度与运行方向参数的部件-----*/
-            // 客车运行数据由 TrainBogeyClientSync 在客户端 tick 中写入 bogeyData。
-            // 非列车渲染（物品栏或放置状态）保持静态。
-            if (!inContraption) {
+            // Create 列车由 TrainBogeyClientSync 提供速度，Simurail 实体由客户端兼容钩子提供。
+            // Simurail 渲染也传入 inContraption=false，不能据此把真实物理转向架当成静态预览。
+            if (!inContraption && !bogeyData.getBoolean(PHYSICS_BOGEY_KEY)) {
                 DF11GBogeyRenderer.staticPartialRender(combinationLever, combinationLeverOtherside,
                         steamValve, steamValveOtherside,
                         radiusRod, radiusRodOtherside,

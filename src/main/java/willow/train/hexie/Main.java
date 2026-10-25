@@ -7,11 +7,13 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import willow.train.hexie.compat.HeXieSimurailCompat;
 import willow.train.hexie.creative.*;
 import willow.train.hexie.init.*;
 import willow.train.hexie.init.block.BlockInit;
@@ -122,6 +124,9 @@ public class Main {
 
     protected void setup(final FMLCommonSetupEvent event) {
         event.enqueueWork(InteractionBehaviourInit::register);
+        if (ModList.get().isLoaded("simurail")) {
+            event.enqueueWork(HeXieSimurailCompat::register);
+        }
     }
 
     public static CreateRegistrate registrate() {

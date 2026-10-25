@@ -12,6 +12,7 @@
   ],
   "client": [
     "client.CreativeModeInventoryScreenAccessor",
+    "client.MixinPhysicsBogeyBlockEntity",
     "client.MixinSchematicEditScreen",
     "client.MixinSchematicPromptScreen",
     "client.MixinSchematicHandler"

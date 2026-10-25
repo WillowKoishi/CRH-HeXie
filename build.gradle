@@ -78,6 +78,11 @@ dependencies {
     compileOnly "dev.engine-room.flywheel:flywheel-neoforge-api-${minecraft_version}:${flywheel_version}"
     runtimeOnly "dev.engine-room.flywheel:flywheel-neoforge-${minecraft_version}:${flywheel_version}"
 
+    // Optional integration API; Simurail is not bundled into the published jar.
+    compileOnly("maven.modrinth:create-simurail:${simurail_version}") {
+        transitive = false
+    }
+
     // Development runtime: Simurail and its required Aeronautics/Sable stack.
     runtimeOnly "maven.modrinth:create-simurail:${simurail_version}"
     runtimeOnly "maven.modrinth:create-aeronautics:${aeronautics_version}"
