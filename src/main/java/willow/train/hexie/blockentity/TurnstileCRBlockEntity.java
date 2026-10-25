@@ -9,7 +9,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 
-import willow.train.hexie.blocks.turnstile.TurnstileBlock;
+import willow.train.hexie.blocks.turnstile.TurnstileCRBlock;
 import willow.train.hexie.init.BlockEntitiesInit;
 
 public class TurnstileCRBlockEntity extends BlockEntity {
@@ -49,17 +49,17 @@ public class TurnstileCRBlockEntity extends BlockEntity {
     public static void tick(
             Level world, BlockPos pos, BlockState state, TurnstileCRBlockEntity be) {
         if (world.isClientSide()) return;
-        if (be.timer <= 0 && !state.getValue(TurnstileBlock.OPEN)) return;
+        if (be.timer <= 0 && !state.getValue(TurnstileCRBlock.OPEN)) return;
         if (be.timer > 0) {
-            if (!state.getValue(TurnstileBlock.OPEN)) {
+            if (!state.getValue(TurnstileCRBlock.OPEN)) {
                 world.playSound(null, pos, SoundEvents.IRON_DOOR_OPEN, SoundSource.BLOCKS, 1f, 1f);
-                world.setBlockAndUpdate(pos, state.setValue(TurnstileBlock.OPEN, true));
+                world.setBlockAndUpdate(pos, state.setValue(TurnstileCRBlock.OPEN, true));
             }
             be.timer--;
         } else {
-            if (state.getValue(TurnstileBlock.OPEN)) {
+            if (state.getValue(TurnstileCRBlock.OPEN)) {
                 world.playSound(null, pos, SoundEvents.IRON_DOOR_CLOSE, SoundSource.BLOCKS, 1f, 1f);
-                world.setBlockAndUpdate(pos, state.setValue(TurnstileBlock.OPEN, false));
+                world.setBlockAndUpdate(pos, state.setValue(TurnstileCRBlock.OPEN, false));
             }
         }
         be.setChanged();

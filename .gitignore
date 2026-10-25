@@ -27,3 +27,4 @@ forge*changelog.txt
 
 # Isolated Minecraft 1.21.1 development runs
 /run-1.21.1/
+/.codex/

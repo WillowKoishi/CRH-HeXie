@@ -39,7 +39,7 @@ import willow.train.hexie.init.SoundsInit;
 import willow.train.hexie.item.tickets.CardItem;
 import willow.train.hexie.item.tickets.TicketItem;
 import willow.train.hexie.item.tickets.Ticketable;
-import willow.train.hexie.blockentity.TurnstileBlockEntity;
+import willow.train.hexie.blockentity.TurnstileCRBlockEntity;
 
 
 public class TurnstileCRBlock extends BaseEntityBlock implements IWrenchable {
@@ -131,7 +131,7 @@ public class TurnstileCRBlock extends BaseEntityBlock implements IWrenchable {
         if (world.isClientSide()) return InteractionResult.SUCCESS;
         ItemStack stack = player.getItemInHand(hand);
         BlockEntity be = world.getBlockEntity(pos);
-        if (be instanceof TurnstileBlockEntity turnstile) {
+        if (be instanceof TurnstileCRBlockEntity turnstile) {
             if (!turnstile.exit) {
                 if (stack.getItem() instanceof TicketItem) {
                     CompoundTag nbt = ItemData.getOrCreateTagElement(stack, "ticketInfo");
@@ -194,7 +194,7 @@ public class TurnstileCRBlock extends BaseEntityBlock implements IWrenchable {
         Player player = context.getPlayer();
         if (player != null) {
             BlockEntity be = world.getBlockEntity(context.getClickedPos());
-            if (be instanceof TurnstileBlockEntity turnstile) {
+            if (be instanceof TurnstileCRBlockEntity turnstile) {
                 turnstile.exit = !turnstile.exit;
                 turnstile.setChanged();
                 player.displayClientMessage(
@@ -257,7 +257,7 @@ public class TurnstileCRBlock extends BaseEntityBlock implements IWrenchable {
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        return new TurnstileBlockEntity(BlockEntitiesInit.TURNS_A.get(), pos, state);
+        return new TurnstileCRBlockEntity(pos, state);
     }
 
     @Nullable
@@ -265,7 +265,7 @@ public class TurnstileCRBlock extends BaseEntityBlock implements IWrenchable {
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(
             Level world, BlockState state, BlockEntityType<T> type) {
         return createTickerHelper(
-                type, BlockEntitiesInit.TURNS_A.get(), TurnstileBlockEntity::tick);
+                type, BlockEntitiesInit.TURNS_B.get(), TurnstileCRBlockEntity::tick);
     }
 
     @Override

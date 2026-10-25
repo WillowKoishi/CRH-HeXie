@@ -182,8 +182,6 @@
   "block.hexie.platform_line_block": "Platform Line Block",
   "block.hexie.Carrier": "Gantry Cast Catenary Hanger",
   "block.hexie.hang_catenary_grid": "Catenary Network Frame (Hang)",
-  "block.hexie.station_entrance_signal": "Inbound Signal",
-  "block.hexie.shunting_signal": "Shunting Signal",
   "block.hexie.no_double_pantograph": "No Double Pantographs",
 
   "block.hexie.megaphone": "Grade Crossing Megaphone",
@@ -217,8 +215,6 @@
 
   "block.hexie.switch_off_sign": "Sign(switch off)",
   "block.hexie.switch_on_sign": "Sign(switch on)",
-  "block.hexie.signal_pole": "Signal column",
-  "block.hexie.signal_pole_light": "Signal(in column)",
   "block.hexie.tactile_paving_straight": "typhlosole(Line)",
   "block.hexie.tactile_paving_pin": "Typhlosole(Point)",
   "block.hexie.flourescent_light": "Fluorescent lamp",

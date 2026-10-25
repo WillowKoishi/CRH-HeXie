@@ -24,8 +24,6 @@ import willow.train.hexie.blocks.locos.cr200j.CR200jPanelBlocks;
 import willow.train.hexie.blocks.locos.df11g.*;
 import willow.train.hexie.blocks.seats.RZSeatBlock;
 import willow.train.hexie.blocks.seats.SeatYZBlock;
-import willow.train.hexie.blocks.signal.SeatedSignalBlock;
-import willow.train.hexie.blocks.signal.SignalPoleLightBlock;
 import willow.train.hexie.blocks.signs.LacqueredBoardBlock;
 import willow.train.hexie.blocks.signs.TrainNoBlock;
 import willow.train.hexie.blocks.signs.TrainPanelBlock;
@@ -115,7 +113,7 @@ public class BlockInit {
 
     public static final DeferredHolder<Block, TurnstileCRBlock> TURNS_B = register("turns_b_block",
             () -> new TurnstileCRBlock(BlockBehaviour.Properties.of().mapColor(MapColor.PLANT).strength(1.5f, 3.0f)
-                    .sound(SoundType.COPPER).requiresCorrectToolForDrops()),
+                    .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),
             object -> () -> new BlockItem(object.get(), new Item.Properties()));
 
     /**
@@ -962,15 +960,6 @@ public static final DeferredHolder<Block, HXD3DPanelBlocks> CARPORT_25BGZKT_WATE
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),object -> () -> new BlockItem(object.get(),
                     new Item.Properties()));
 
-    public static final DeferredHolder<Block, SeatedSignalBlock> Station_Entrance_Signal = register("station_entrance_signal",
-            () -> new SeatedSignalBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
-                    .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),object -> () -> new BlockItem(object.get(),
-                    new Item.Properties()));
-
-    public static final DeferredHolder<Block, SeatedSignalBlock> Shunting_Signal = register("shunting_signal",
-            () -> new SeatedSignalBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
-                    .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),object -> () -> new BlockItem(object.get(),
-                    new Item.Properties()));
     public static final DeferredHolder<Block, TrainSignBlock> No_Double_Pantograph = register("no_double_pantograph",
             () -> new TrainSignBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),object -> () -> new BlockItem(object.get(),
@@ -982,16 +971,6 @@ public static final DeferredHolder<Block, HXD3DPanelBlocks> CARPORT_25BGZKT_WATE
 
     public static final DeferredHolder<Block, TrainSignBlock> Switch_On_Sign = register("switch_on_sign",
             () -> new TrainSignBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
-                    .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),object -> () -> new BlockItem(object.get(),
-                    new Item.Properties()));
-
-    public static final DeferredHolder<Block, SignalPoleBlock> Signal_Pole = register("signal_pole",
-            () -> new SignalPoleBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
-                    .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),object -> () -> new BlockItem(object.get(),
-                    new Item.Properties()));
-
-    public static final DeferredHolder<Block, SignalPoleLightBlock> Signal_Pole_Light = register("signal_pole_light",
-            () -> new SignalPoleLightBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),object -> () -> new BlockItem(object.get(),
                     new Item.Properties()));
 
