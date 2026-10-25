@@ -80,9 +80,9 @@ public final class TrainBogeyClientSync {
 
         float signedSpeed = 0;
         boolean firstNeedsSpeed = updateFirst && BogeyStylesInit.DF11GBOGEY.equals(firstBogey.getStyle())
-                && BogeySizesInit.QJ.equals(firstBogey.getSize());
+                && isQJSize(firstBogey);
         boolean secondNeedsSpeed = updateSecond && BogeyStylesInit.DF11GBOGEY.equals(secondBogey.getStyle())
-                && BogeySizesInit.QJ.equals(secondBogey.getSize());
+                && isQJSize(secondBogey);
         if (firstNeedsSpeed || secondNeedsSpeed) {
             Vec3 difference = entity.getPrevPositionVec()
                     .subtract(entity.getX(), entity.getY(), entity.getZ());
@@ -95,6 +95,11 @@ public final class TrainBogeyClientSync {
             updateBogey(firstBogey, assemblyDirection, signedSpeed, firstNeedsSpeed);
         if (updateSecond)
             updateBogey(secondBogey, assemblyDirection, signedSpeed, secondNeedsSpeed);
+    }
+
+    private static boolean isQJSize(CarriageBogey bogey) {
+        return BogeySizesInit.QJ.equals(bogey.getSize())
+                || BogeySizesInit.QJ_BACKWARD.equals(bogey.getSize());
     }
 
     private static boolean isHexieBogey(CarriageBogey bogey) {

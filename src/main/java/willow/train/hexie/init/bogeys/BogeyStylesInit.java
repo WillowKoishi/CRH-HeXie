@@ -38,6 +38,7 @@ public class BogeyStylesInit {
                     .size(BogeySizes.SMALL, TrackBlockInit.DF11G_BOGEY, () -> () -> { var renderer = new DF11GBogeyRenderer.SmallDF11GBogeyRenderer(); return new BogeyStyle.SizeRenderer(renderer, renderer::createVisual); })
                     .size(BogeySizesInit.BACKWARD, TrackBlockInit.DF11G_BACKWARD_BOGEY, () -> () -> { var renderer = new DF11GBogeyRenderer.BackwardDF11GBogeyRenderer(); return new BogeyStyle.SizeRenderer(renderer, renderer::createVisual); })
                     .size(BogeySizesInit.QJ, TrackBlockInit.QJ_BOGEY, () -> () -> { var renderer = new DF11GBogeyRenderer.QJBogeyRenderer(); return new BogeyStyle.SizeRenderer(renderer, renderer::createVisual); })
+                    .size(BogeySizesInit.QJ_BACKWARD, TrackBlockInit.QJ_BACKWARD_BOGEY, () -> () -> { var renderer = new DF11GBogeyRenderer.QJBackwardBogeyRenderer(); return new BogeyStyle.SizeRenderer(renderer, renderer::createVisual); })
                     .build();
 
     public static BogeyStyle.Builder create(String name, String cycleGroup) {

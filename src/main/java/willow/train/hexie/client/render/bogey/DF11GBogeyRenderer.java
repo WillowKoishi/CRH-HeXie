@@ -178,7 +178,9 @@ public class DF11GBogeyRenderer {
     public static class QJBogeyRenderer extends SimpleBogeyRenderer {
         public static final String TRAIN_SPEED_KEY = "HeXieQJTrainSpeed";
 
-        
+        protected boolean isBackward() {
+            return false;
+        }
 
         @Override
         public BogeySizes.BogeySize getSize() {
@@ -219,12 +221,18 @@ public class DF11GBogeyRenderer {
                     ? NBTHelper.readEnum(bogeyData, directionKey, Direction.class)
                     : Direction.NORTH;
 
+            // A backward QJ faces opposite the station's assembly direction. The carriage
+            // supplies the forward renderer's base orientation, so reverse it here as well.
+            boolean rotateForStation = !inContraption
+                    && (direction == Direction.EAST || direction == Direction.SOUTH);
+            if (rotateForStation ^ isBackward())
+                ms.mulPose(Axis.YP.rotationDegrees(180));
+
+            if (isBackward())
+                wheelAngle = -wheelAngle;
 
             //是否需要反向渲染
             boolean rotateY = false;
-            if ((direction == Direction.EAST || direction == Direction.SOUTH) && !inContraption) {
-                ms.mulPose(Axis.YP.rotationDegrees(180));
-            }
 
             boolean inInstancedContraption = vb == null;
 
@@ -403,9 +411,11 @@ public class DF11GBogeyRenderer {
             }
 
             double speed = bogeyData.getFloat(TRAIN_SPEED_KEY);
+            if (isBackward())
+                speed = -speed;
             updateCompoundTagSpeedData(bogeyData, (float) speed);
 
-            //列车是否后退
+            //列车是否后退（相对于该转向架的车头方向）
             movingBackwards = speed < 0;
 
             //定义和计算必需变量
@@ -526,6 +536,18 @@ public class DF11GBogeyRenderer {
                     .rotateX(reversingRotateX)
                     .render(ms, light,vb);
 
+        }
+    }
+
+    public static class QJBackwardBogeyRenderer extends QJBogeyRenderer {
+        @Override
+        public BogeySizes.BogeySize getSize() {
+            return BogeySizesInit.QJ_BACKWARD;
+        }
+
+        @Override
+        protected boolean isBackward() {
+            return true;
         }
     }
 

@@ -131,7 +131,7 @@ public final class QJBogeyStationPreview {
             bogeyPos.setWithOffset(railPos, up);
             boolean sameChunk = (bogeyPos.getX() >> 4) == chunkX && (bogeyPos.getZ() >> 4) == chunkZ;
             BlockState state = sameChunk ? chunk.getBlockState(bogeyPos) : level.getBlockState(bogeyPos);
-            if (!TrackBlockInit.QJ_BOGEY.has(state)
+            if (!(TrackBlockInit.QJ_BOGEY.has(state) || TrackBlockInit.QJ_BACKWARD_BOGEY.has(state))
                     || state.getValue(AbstractBogeyBlock.AXIS) != assemblyDirection.getAxis()
                     || !(level.getBlockEntity(bogeyPos) instanceof DF11GBogeyBlockEntity bogey)
                     || bogey.isRemoved())

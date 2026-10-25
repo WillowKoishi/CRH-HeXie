@@ -12,17 +12,8 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import willow.train.hexie.blocks.track.standard.TrackParticleGeometry;
 
-/** Keeps particles inside the block while retaining Create's connected-track destruction overlays. */
+/** Uses Create's full-width destruction effects and connected-track overlays. */
 public final class StandardTrackRenderProperties extends TrackBlock.RenderProperties {
-    @Override
-    public boolean addDestroyEffects(BlockState state, Level level, BlockPos pos, ParticleEngine particles) {
-        if (level instanceof ClientLevel client && !state.isAir())
-            TrackParticleGeometry.destroy(state.getShape(level, pos), pos, client.random,
-                    (x, y, z, vx, vy, vz) -> particles.add(
-                            new TerrainParticle(client, x, y, z, vx, vy, vz, state, pos).updateSprite(state, pos)));
-        return true;
-    }
-
     @Override
     public boolean addHitEffects(BlockState state, Level level, HitResult target, ParticleEngine particles) {
         if (level instanceof ClientLevel client && target instanceof BlockHitResult hit

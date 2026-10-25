@@ -201,8 +201,9 @@ public class RenderablePicture {
                 (color & 0xff) / 255.0f,
                 1.0f);
         try {
-            graphics.blit(data.location, x, y, (float) uOffset, (float) vOffset,
-                    width, height, data.width, data.height);
+            graphics.blit(data.location, x, y, width, height,
+                    (float) uOffset, (float) vOffset,
+                    uWidth, vHeight, data.width, data.height);
         } finally {
             graphics.setColor(1.0f, 1.0f, 1.0f, 1.0f);
         }

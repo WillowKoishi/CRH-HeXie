@@ -5,6 +5,7 @@ import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import willow.train.hexie.Main;
 import willow.train.hexie.client.screens.*;
@@ -13,11 +14,13 @@ import willow.train.hexie.client.screens.controls.AutomaticControlCouplingScreen
 import willow.train.hexie.client.overlay.OverlayManager;
 import willow.train.hexie.event.client.HXInventoryEvents;
 import willow.train.hexie.init.BlockEntitiesInit;
+import willow.train.hexie.init.track.TrackBlockInit;
 import willow.train.hexie.init.bogeys.BogeyEntityInit;
 import willow.train.hexie.init.client.PartialModelInit;
 import willow.train.hexie.init.semaphore.SemaphoreEntityInit;
 import willow.train.hexie.client.render.blockentity.ThroughSignalRenderer;
 import willow.train.hexie.client.render.blockentity.*;
+import willow.train.hexie.client.render.track.StandardTrackRenderProperties;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -25,6 +28,7 @@ import java.util.function.Supplier;
 public class HeXieClientInit {
 
     public static void init() {
+        Main.bus.addListener(HeXieClientInit::registerBlockExtensions);
         Main.bus.addListener(HeXieClientInit::registerMenus);
         Main.bus.addListener(HeXieClientInit::registerRenderers);
         PartialModelInit.init();
@@ -32,6 +36,14 @@ public class HeXieClientInit {
         Main.bus.addListener(HeXieClientInit::onModelLayerRegistration);
         NeoForge.EVENT_BUS.register(new HXInventoryEvents());
         NeoForge.EVENT_BUS.register(new OverlayManager.OverlayRenderEvent());
+    }
+
+    public static void registerBlockExtensions(RegisterClientExtensionsEvent event) {
+        // Register directly: the track builders are declared before Registrate is attached to the mod bus.
+        event.registerBlock(new StandardTrackRenderProperties(),
+                TrackBlockInit.STANDARD_TRACK.get(),
+                TrackBlockInit.BALLASTLESS_TRACK.get(),
+                TrackBlockInit.TIELESS_TRACK.get());
     }
 
     private static final Map<ModelLayerLocation, Supplier<LayerDefinition>> modelLayers =

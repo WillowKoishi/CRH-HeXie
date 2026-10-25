@@ -15,6 +15,7 @@
   "block.hexie.ballastless_track": "Ballastless Track",
   "block.hexie.tieless_track": "Tieless Track",
   "block.hexie.hx_standard_bogey": "HX Standard Bogey",
+  "block.hexie.qj_backward_bogey": "QJ Backward Bogey",
   "hexie.bogeys.styles.hxstandardbogey": "Passanger Cart Bogey",
   "hexie.bogeys.styles.df11gbogey": "Loco Bogey",
   "block.hexie.hx_semaphore": "Color Light Signal",

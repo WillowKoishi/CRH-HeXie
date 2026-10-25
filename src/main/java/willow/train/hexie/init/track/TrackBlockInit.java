@@ -24,7 +24,6 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
 
 import willow.train.hexie.Main;
-import willow.train.hexie.client.render.track.StandardTrackRenderProperties;
 import willow.train.hexie.blocks.track.standard.StandardTrackBlockStateGenerator;
 import willow.train.hexie.blocks.bogeys.df11g.DF11GBogeyBlock;
 import willow.train.hexie.blocks.bogeys.standard.HXStandardBogeyBlock;
@@ -58,7 +57,6 @@ public class TrackBlockInit {
                                         .noOcclusion()
                                         .forceSolidOn())
                 .transform(pickaxeOnly())
-                .clientExtension(() -> () -> new StandardTrackRenderProperties())
                 .blockstate(blockstateGen)
                 .tag(AllTags.AllBlockTags.TRACKS.tag)
                 .tag(AllTags.AllBlockTags.GIRDABLE_TRACKS.tag)
@@ -179,6 +177,14 @@ public class TrackBlockInit {
                     .properties(p -> p.mapColor(MapColor.PODZOL))
                     .transform(BuilderTransformers.df11gbogey("create:block/track/bogey/top"))
                     .lang("QJ Bogey")
+                    .register();
+
+    public static final BlockEntry<DF11GBogeyBlock> QJ_BACKWARD_BOGEY =
+            REGISTRATE
+                    .block("qj_backward_bogey", p -> new DF11GBogeyBlock(p, BogeySizesInit.QJ_BACKWARD))
+                    .properties(p -> p.mapColor(MapColor.PODZOL))
+                    .transform(BuilderTransformers.df11gbogey("create:block/track/bogey/top"))
+                    .lang("QJ Backward Bogey")
                     .register();
 
     public static final BlockEntry<HXStandardBogeyBlock> SW160_BOGEY =

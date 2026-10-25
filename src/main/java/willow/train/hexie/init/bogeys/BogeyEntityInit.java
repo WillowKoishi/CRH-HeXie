@@ -31,7 +31,8 @@ public class BogeyEntityInit {
                     .validBlocks(
                             TrackBlockInit.DF11G_BOGEY,
                             TrackBlockInit.DF11G_BACKWARD_BOGEY,
-                            TrackBlockInit.QJ_BOGEY)
+                            TrackBlockInit.QJ_BOGEY,
+                            TrackBlockInit.QJ_BACKWARD_BOGEY)
                     .register();
 
     //            .register();

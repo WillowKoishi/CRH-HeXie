@@ -15,6 +15,7 @@
   "block.hexie.ballastless_track": "无砟轨道",
   "block.hexie.tieless_track": "无枕轨道",
   "block.hexie.hx_standard_bogey": "CW2转向架",
+  "block.hexie.qj_backward_bogey": "前进型反向转向架",
   "hexie.bogeys.styles.hxstandardbogey": "客车转向架",
   "hexie.bogeys.styles.df11gbogey": "机车转向架",
   "block.hexie.hx_semaphore": "色灯信号机(调车)",
