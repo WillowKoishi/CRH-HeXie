@@ -18,7 +18,7 @@
   "block.hexie.qj_backward_bogey": "前进型反向转向架",
   "hexie.bogeys.styles.hxstandardbogey": "客车转向架",
   "hexie.bogeys.styles.df11gbogey": "机车转向架",
-  "simurail_bogey_category.hexie": "和谐号",
+  "simurail_bogey_category.hexie": "CRH mod",
   "simurail_bogey_entry.hexie.cw2": "CW-2",
   "simurail_bogey_entry.hexie.pk209p": "PK-209P（轴发）",
   "simurail_bogey_entry.hexie.pk209p_no_motor": "PK-209P",
@@ -30,7 +30,7 @@
   "simurail_bogey_entry.hexie.df11g_backward": "DF11G（反向）",
   "simurail_bogey_entry.hexie.qj": "前进型动轮",
   "simurail_bogey_entry.hexie.qj_backward": "前进型动轮（反向）",
-  "simurail_track_type.hexie.standard": "和谐号标准轨距",
+  "simurail_track_type.hexie.standard": "1435标准轨距",
   "simurail_track_type.hexie.standard.short": "和谐号",
   "block.hexie.hx_semaphore": "色灯信号机(调车)",
 

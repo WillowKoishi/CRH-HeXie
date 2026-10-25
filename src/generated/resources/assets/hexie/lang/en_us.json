@@ -18,7 +18,7 @@
   "block.hexie.qj_backward_bogey": "QJ Backward Bogey",
   "hexie.bogeys.styles.hxstandardbogey": "Passanger Cart Bogey",
   "hexie.bogeys.styles.df11gbogey": "Loco Bogey",
-  "simurail_bogey_category.hexie": "HeXie",
+  "simurail_bogey_category.hexie": "CRH mod",
   "simurail_bogey_entry.hexie.cw2": "CW-2",
   "simurail_bogey_entry.hexie.pk209p": "PK-209P (Axle Generator)",
   "simurail_bogey_entry.hexie.pk209p_no_motor": "PK-209P",
@@ -30,7 +30,7 @@
   "simurail_bogey_entry.hexie.df11g_backward": "DF11G (Backward)",
   "simurail_bogey_entry.hexie.qj": "QJ Driving Wheels",
   "simurail_bogey_entry.hexie.qj_backward": "QJ Driving Wheels (Backward)",
-  "simurail_track_type.hexie.standard": "HeXie Standard Gauge",
+  "simurail_track_type.hexie.standard": "1435 Standard Gauge",
   "simurail_track_type.hexie.standard.short": "HeXie",
   "block.hexie.hx_semaphore": "Color Light Signal",
 

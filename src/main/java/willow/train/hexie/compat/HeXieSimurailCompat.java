@@ -52,34 +52,47 @@ public final class HeXieSimurailCompat {
     }
 
     private static void registerTrackType() {
-        // 轨道参数暂沿用 Simurail 标准轨；可在这里分别修改轨距、高度和三个物理系数。
+        // Contact centres and rail-head height from HeXie's track models (model units / 16).
+        // Keep Simurail's standard speed and adhesion coefficients.
         TrackTypeEntry standard = SimurailTracks.STANDARD;
         TrackTypeEntries.addEntry(new TrackTypeEntry(
                 TrackMaterialInit.HEXIE_STANDARD,
                 Component.translatable("simurail_track_type.hexie.standard"),
                 Component.translatable("simurail_track_type.hexie.standard.short"),
                 standard.allowInverted(),
-                standard.width(),
-                standard.height(),
+                24.15 / 16.0,
+                5.4816 / 16.0,
                 standard.lateralMaxSpeedFactor(),
                 standard.verticalMaxSpeedFactor(),
                 standard.adhesionFactor(),
                 TrackBlockInit.STANDARD_TRACK::getDefaultState));
     }
 
-    /**
-     * 转向架参数填写入口。不设置覆盖时，Simurail 沿用原方块属性及其默认值。
-     * 使用 {@link BogeyPropertyOverrides} 为上方任意条目的 type() 设置参数；长度单位为方块。
-     */
+    /** Nominal rolling radii and axle positions from HeXie's sizes and renderers, in blocks. */
     private static void configureParameters() {
-        // 按需取消注释，并把参数名替换为自己的数值；CW2 可替换为上方任意转向架常量。
-        // BogeyPropertyOverrides.setAxleSpacingOverride(CW2.type(), axleSpacing);
-        // BogeyPropertyOverrides.setAxleCountOverride(CW2.type(), axleCount);
-        // BogeyPropertyOverrides.setAxlePositionsOverride(CW2.type(), axlePositions);
-        // BogeyPropertyOverrides.setWheelRadiusOverride(CW2.type(), wheelRadius);
-        // BogeyPropertyOverrides.setConnectorAnchorOffsetOverride(CW2.type(), new org.joml.Vector3f(x, y, z));
-        // BogeyPropertyOverrides.setTrackWidthOverride(CW2.type(), trackWidth);
-        // BogeyPropertyOverrides.setTrackHeightOverride(CW2.type(), trackHeight);
-        // BogeyPropertyOverrides.setGroundDrivableOverride(CW2.type(), groundDrivable);
+        // CW2 shares the passenger wheel dimensions; forward/backward DF11G share one wheel model.
+        configureBogey(CW2, 0.915 / 2, -1.2, 1.2);
+        configureBogey(PK209P, 0.915 / 2, -1.2, 1.2);
+        configureBogey(PK209P_NO_MOTOR, 0.915 / 2, -1.2, 1.2);
+        configureBogey(PK209P_BACKWARD, 0.915 / 2, -1.2, 1.2);
+        configureBogey(SW220K, 0.915 / 2, -1.25, 1.25);
+        configureBogey(SW220K_BACKWARD, 0.915 / 2, -1.25, 1.25);
+        configureBogey(SW160, 0.915 / 2, -1.28, 1.28);
+        configureBogey(DF11G, 1.05 / 2, -2, 0, 2);
+        configureBogey(DF11G_BACKWARD, 1.05 / 2, -2, 0, 2);
+        configureBogey(QJ, 1.5 / 2, -3.2, -1.6, 0, 1.6, 3.2);
+        configureBogey(QJ_BACKWARD, 1.5 / 2, -3.2, -1.6, 0, 1.6, 3.2);
+    }
+
+    private static void configureBogey(BogeyEntry entry, double wheelRadius, double... axlePositions) {
+        BogeyType type = entry.type();
+        // Simurail uses the OUTERMOST axle span, rounding it to an integer for its two logical axles.
+        double axleSpan = axlePositions[axlePositions.length - 1] - axlePositions[0];
+        BogeyPropertyOverrides.setAxleSpacingOverride(type, axleSpan);
+        BogeyPropertyOverrides.setAxleCountOverride(type, axlePositions.length);
+        BogeyPropertyOverrides.setAxlePositionsOverride(type, axlePositions);
+        BogeyPropertyOverrides.setWheelRadiusOverride(type, wheelRadius);
+        // Width/height come from HEXIE_STANDARD. Retain the block's connector offset: Simurail
+        // converts Create's (0, 7/32, 1) into its own coordinates (1, -9/32, 0) automatically.
     }
 }

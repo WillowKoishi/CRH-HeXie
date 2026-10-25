@@ -37,11 +37,40 @@ repositories {
     mavenCentral()
 }
 
+sourceSets {
+    aeronautics {
+        java.setSrcDirs([])
+        resources.setSrcDirs([])
+        runtimeClasspath += sourceSets.main.runtimeClasspath
+    }
+}
+
 neoForge {
     version = neo_version
 
     runs {
-        client { client() }
+        configureEach {
+            gameDirectory = layout.projectDirectory.dir("run-1.21.1/${name}").asFile
+            systemProperty 'java.io.tmpdir', layout.buildDirectory.dir('tmp').get().asFile.absolutePath
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+            logLevel = org.slf4j.event.Level.DEBUG
+
+            // Keep the existing aviation stack on non-client runs and the aviation client.
+            if (name != 'client') {
+                sourceSet = sourceSets.aeronautics
+            }
+        }
+        client {
+            client()
+            ideName = 'Client - Create'
+            gameDirectory = layout.projectDirectory.dir('run-1.21.1/client-create').asFile
+        }
+        clientAeronautics {
+            client()
+            ideName = 'Client - Create + Aeronautics'
+            gameDirectory = layout.projectDirectory.dir('run-1.21.1/client').asFile
+        }
         server {
             server()
             programArgument '--nogui'
@@ -54,13 +83,6 @@ neoForge {
                             .getOrElse('build/generated/datagen')).absolutePath,
                     '--existing', file('src/main/resources').absolutePath,
                     '--existing', file('src/generated/resources').absolutePath
-        }
-        configureEach {
-            gameDirectory = layout.projectDirectory.dir("run-1.21.1/${name}").asFile
-            systemProperty 'java.io.tmpdir', layout.buildDirectory.dir('tmp').get().asFile.absolutePath
-            systemProperty 'forge.logging.markers', 'REGISTRIES'
-            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
-            logLevel = org.slf4j.event.Level.DEBUG
         }
     }
     mods {
@@ -83,10 +105,10 @@ dependencies {
         transitive = false
     }
 
-    // Development runtime: Simurail and its required Aeronautics/Sable stack.
-    runtimeOnly "maven.modrinth:create-simurail:${simurail_version}"
-    runtimeOnly "maven.modrinth:create-aeronautics:${aeronautics_version}"
-    runtimeOnly "maven.modrinth:sable:${sable_version}"
+    // Aviation mods are selected per run; the base client only loads Create and its dependencies.
+    aeronauticsRuntimeOnly "maven.modrinth:create-simurail:${simurail_version}"
+    aeronauticsRuntimeOnly "maven.modrinth:create-aeronautics:${aeronautics_version}"
+    aeronauticsRuntimeOnly "maven.modrinth:sable:${sable_version}"
 }
 
 tasks.named('processResources', ProcessResources).configure {
