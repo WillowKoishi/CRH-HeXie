@@ -31,7 +31,7 @@ public class CarriageNoSignUpdatePacket implements HexiePacket {
         this.pos = buffer.readBlockPos();
         this.color = buffer.readInt();
         this.message = Component.literal(buffer.readUtf());
-        this.isLeftSide = buffer.getBoolean(0);
+        this.isLeftSide = buffer.readBoolean();
     }
 
     @Override
