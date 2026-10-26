@@ -1,0 +1,35 @@
+Create (机械动力)
+Upstream project: https://github.com/Creators-of-Create/Create
+
+HeXie includes code derived from Create, with modifications by HeXie
+contributors. The following files retain Create's copyright and MIT
+license notices:
+
+- src/main/java/willow/train/hexie/blocks/semaphore/through/ThroughSignalBlock.java
+- src/main/java/willow/train/hexie/blocks/semaphore/through/ThroughSignalBlockEntity.java
+- src/main/java/willow/train/hexie/client/render/blockentity/ThroughSignalRenderer.java
+
+The following license applies to the Create-derived portions. HeXie's
+own license does not replace the original copyright and permission notice.
+
+MIT License
+
+Copyright (c) 2019 simibubi
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

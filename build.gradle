@@ -14,6 +14,9 @@ base.archivesName = "Hexie-${minecraft_version}-${artifactLoaderName}"
 
 tasks.withType(Jar).configureEach {
     archiveVersion = artifactArchiveVersion
+    from(project.files('LICENSE.txt', 'THIRD_PARTY_NOTICES.txt')) {
+        into 'META-INF'
+    }
 }
 
 java {
