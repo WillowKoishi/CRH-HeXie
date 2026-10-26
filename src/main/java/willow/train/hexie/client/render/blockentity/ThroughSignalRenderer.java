@@ -45,14 +45,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-public class ThroughSignalRenderer extends SafeBlockEntityRenderer<ThroughSignalBlockEntity> {
+public class ThroughSignalRenderer<T extends ThroughSignalBlockEntity> extends SafeBlockEntityRenderer<T> {
 
     public ThroughSignalRenderer(BlockEntityRendererProvider.Context context) {
         super();
     }
 
     @Override
-    protected void renderSafe(ThroughSignalBlockEntity be, float partialTicks, PoseStack ms, MultiBufferSource buffer,
+    protected void renderSafe(T be, float partialTicks, PoseStack ms, MultiBufferSource buffer,
                               int light, int overlay) {
         BlockState blockState = be.getBlockState();
         SignalBlockEntity.SignalState signalState = be.getState();
@@ -61,9 +61,10 @@ public class ThroughSignalRenderer extends SafeBlockEntityRenderer<ThroughSignal
         float renderTime = AnimationTickHolder.getRenderTime(be.getLevel());
 
         ms.pushPose();
-        float yRot = AngleHelper.horizontalAngle(blockState.getValue(BlockStateProperties.HORIZONTAL_FACING)) + 180;
+        float yRot = getModelAngle(be);
         var msr = TransformStack.of(ms);
         msr.center().rotateYDegrees(yRot).uncenter();
+        renderHousing(be, ms, buffer, light, overlay);
 
         int lightMode = be.getLightMode();
         boolean changingToLowerLamp = signalState.isRedLight(renderTime);
@@ -112,13 +113,20 @@ public class ThroughSignalRenderer extends SafeBlockEntityRenderer<ThroughSignal
 
     }
 
+    protected float getModelAngle(T signal) {
+        return AngleHelper.horizontalAngle(signal.getBlockState()
+                .getValue(BlockStateProperties.HORIZONTAL_FACING)) + 180;
+    }
+
+    protected void renderHousing(T signal, PoseStack pose, MultiBufferSource buffer, int light, int overlay) {}
+
     @Override
     public int getViewDistance() {
         return 256;
     }
 
     @Override
-    public boolean shouldRenderOffScreen(ThroughSignalBlockEntity pBlockEntity) {
+    public boolean shouldRenderOffScreen(T pBlockEntity) {
         return true;
     }
 }

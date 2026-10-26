@@ -29,7 +29,8 @@ public record SignalPlacementFacingPacket(BlockPos pos, InteractionHand hand, Di
         context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)
                     || player.isSpectator() || !facing.getAxis().isHorizontal()
-                    || !SemaphoreBlockInit.HX_SEMAPHORE.isIn(player.getItemInHand(hand))
+                    || !(SemaphoreBlockInit.HX_SEMAPHORE.isIn(player.getItemInHand(hand))
+                            || SemaphoreBlockInit.ADJUSTABLE_SEMAPHORE.isIn(player.getItemInHand(hand)))
                     || !player.canInteractWithBlock(pos, 1.0))
                 return;
             SignalPlacementContext.remember(player, pos, hand, facing);

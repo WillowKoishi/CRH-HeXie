@@ -19,6 +19,7 @@ import net.neoforged.neoforge.client.model.generators.ConfiguredModel;
 
 import willow.train.hexie.Main;
 import willow.train.hexie.blocks.semaphore.through.ThroughSignalBlock;
+import willow.train.hexie.blocks.semaphore.through.AdjustableSignalBlock;
 
 public class SemaphoreBlockInit {
 
@@ -36,6 +37,21 @@ public class SemaphoreBlockInit {
             .lang("Color Light Signal")
             .item(ThroughSignalItem::new)
             .model((c, p) -> p.withExistingParent(c.getName(), Main.asResource("block/hx_semaphore/hx_shunting_signal")))
+            .build()
+            .register();
+
+    public static final BlockEntry<AdjustableSignalBlock> ADJUSTABLE_SEMAPHORE = REGISTRATE
+            .block("adjustable_semaphore", AdjustableSignalBlock::new)
+            .initialProperties(SharedProperties::softMetal)
+            .properties(properties -> properties.mapColor(MapColor.PODZOL).noOcclusion()
+                    .sound(SoundType.NETHERITE_BLOCK))
+            .transform(pickaxeOnly())
+            .blockstate((context, provider) -> provider.simpleBlock(context.get(),
+                    provider.models().getExistingFile(provider.modLoc("block/adjustable_semaphore"))))
+            .lang("Adjustable Color Light Signal")
+            .item(ThroughSignalItem::new)
+            .model((context, provider) -> provider.withExistingParent(context.getName(),
+                    Main.asResource("block/hx_semaphore/hx_shunting_signal")))
             .build()
             .register();
 

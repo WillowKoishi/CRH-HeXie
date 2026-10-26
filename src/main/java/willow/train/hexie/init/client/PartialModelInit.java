@@ -62,6 +62,7 @@ public class PartialModelInit {
             CR200J_HEAD_WIND_SHIELD_2 = block("carriage/carriage_marshalled_cr200j/head/wind_shield_2");
 
     public static final PartialModel
+            HX_SIGNAL_HOUSING = block("hx_semaphore/hx_shunting_signal"),
             HX_SIGNAL_WHITE_GLOW = block("hx_semaphore/signal_white_glow");
 
     private static PartialModel block(String path) {

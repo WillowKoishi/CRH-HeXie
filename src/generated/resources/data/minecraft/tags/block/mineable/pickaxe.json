@@ -1,5 +1,6 @@
 {
   "values": [
+    "hexie:adjustable_semaphore",
     "hexie:standard_track",
     "hexie:ballastless_track",
     "hexie:tieless_track",
