@@ -7,6 +7,7 @@ import com.simibubi.create.content.trains.signal.SignalBlockEntity;
 import com.simibubi.create.content.trains.signal.SignalBoundary;
 import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour;
 import com.simibubi.create.foundation.blockEntity.behaviour.ValueBoxTransform;
+import com.simibubi.create.foundation.blockEntity.behaviour.ValueSettingsBehaviour.ValueSettings;
 import com.simibubi.create.foundation.blockEntity.behaviour.ValueSettingsBoard;
 import com.simibubi.create.foundation.blockEntity.behaviour.ValueSettingsFormatter;
 import com.simibubi.create.foundation.blockEntity.behaviour.scrollValue.ScrollValueBehaviour;
@@ -54,7 +55,7 @@ SOFTWARE.
 
 public class ThroughSignalBlockEntity extends SignalBlockEntity implements TransformableBlockEntity {
 
-    private static final int LIGHT_MODE_DRAG_STEP = 16;
+    protected static final int LIGHT_MODE_DRAG_STEP = 16;
 
     private SignalBlockEntity.SignalState state;
     private SignalBlockEntity.OverlayState overlay;
@@ -112,10 +113,7 @@ public class ThroughSignalBlockEntity extends SignalBlockEntity implements Trans
 
             @Override
             public ValueSettingsBoard createBoard(Player player, BlockHitResult hitResult) {
-                return new ValueSettingsBoard(label, LIGHT_MODE_DRAG_STEP * 2, LIGHT_MODE_DRAG_STEP,
-                        List.of(Component.translatable("gui.hexie.semaphore.light_mode.options")),
-                        new ValueSettingsFormatter(settings -> Component.translatable(
-                                "gui.hexie.semaphore.light_mode.option." + (modeFromDragValue(settings.value()) + 1))));
+                return createLightModeBoard();
             }
 
             @Override
@@ -125,6 +123,8 @@ public class ThroughSignalBlockEntity extends SignalBlockEntity implements Trans
 
             @Override
             public void setValueSettings(Player player, ValueSettings settings, boolean ctrlDown) {
+                if (applyAdditionalLightSetting(player, settings))
+                    return;
                 int mode = swapFirstTwoModes(modeFromDragValue(settings.value()));
                 if (mode == getValue())
                     return;
@@ -135,11 +135,23 @@ public class ThroughSignalBlockEntity extends SignalBlockEntity implements Trans
         behaviours.add(lightMode);
     }
 
+    protected ValueSettingsBoard createLightModeBoard() {
+        return new ValueSettingsBoard(Component.translatable("gui.hexie.semaphore.light_mode"),
+                LIGHT_MODE_DRAG_STEP * 2, LIGHT_MODE_DRAG_STEP,
+                List.of(Component.translatable("gui.hexie.semaphore.light_mode.options")),
+                new ValueSettingsFormatter(settings -> Component.translatable(
+                        "gui.hexie.semaphore.light_mode.option." + (modeFromDragValue(settings.value()) + 1))));
+    }
+
+    protected boolean applyAdditionalLightSetting(Player player, ValueSettings settings) {
+        return false;
+    }
+
     public int getLightMode() {
         return lightMode == null ? 0 : lightMode.getValue();
     }
 
-    private static int modeFromDragValue(int dragValue) {
+    protected static int modeFromDragValue(int dragValue) {
         return Mth.clamp(Math.round(dragValue / (float) LIGHT_MODE_DRAG_STEP), 0, 2);
     }
 

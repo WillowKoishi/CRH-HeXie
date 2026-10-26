@@ -69,6 +69,8 @@ public class HeXieClientInit {
         event.registerBlockEntityRenderer(
                 SemaphoreEntityInit.HX_SEMAPHORE.get(), ThroughSignalRenderer::new);
         event.registerBlockEntityRenderer(
+                SemaphoreEntityInit.ADJUSTABLE_SEMAPHORE.get(), AdjustableSignalRenderer::new);
+        event.registerBlockEntityRenderer(
                 BlockEntitiesInit.CARRIAGE_TYPE_SIGN.get(), CarriageTypeSignRenderer::new);
         event.registerBlockEntityRenderer(
                 BlockEntitiesInit.CARRIAGE_NO_SIGN.get(), CarriageNoSignRenderer::new);
