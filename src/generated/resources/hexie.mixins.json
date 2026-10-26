@@ -7,8 +7,7 @@
     "MixinAbstractContraptionEntity",
     "MixinDeployerMovementBehavior",
     "MixinSchematicannonInventory",
-    "MixinSchematicSyncPacket",
-    "MixinTrackBlockEntity"
+    "MixinSchematicSyncPacket"
   ],
   "client": [
     "client.CreativeModeInventoryScreenAccessor",

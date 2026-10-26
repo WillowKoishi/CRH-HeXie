@@ -7,6 +7,10 @@ import willow.train.hexie.item.semaphore.ThroughSignalItem;
 import com.simibubi.create.foundation.data.CreateRegistrate;
 import com.simibubi.create.foundation.data.SharedProperties;
 import com.tterrag.registrate.util.entry.BlockEntry;
+import com.tterrag.registrate.providers.DataGenContext;
+import com.tterrag.registrate.providers.RegistrateBlockstateProvider;
+import net.minecraft.world.level.block.Block;
+import net.neoforged.neoforge.client.model.generators.ModelFile;
 
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -28,16 +32,23 @@ public class SemaphoreBlockInit {
             .properties(p -> p.noOcclusion())
             .properties(p -> p.sound(SoundType.NETHERITE_BLOCK))
             .transform(pickaxeOnly())
-            .blockstate((c, p) -> p.getVariantBuilder(c.get())
-                    .forAllStates(state -> ConfiguredModel.builder()
-                            .modelFile(p.models().getExistingFile(p.modLoc("block/hx_semaphore/hx_shunting_signal")))
-                            .rotationY((state.getValue(BlockStateProperties.HORIZONTAL_FACING).get2DDataValue() * 90 + 180) % 360)
-                            .build()))
+            .blockstate(SemaphoreBlockInit::generateBlockstate)
             .lang("Color Light Signal")
             .item(ThroughSignalItem::new)
             .model((c, p) -> p.withExistingParent(c.getName(), Main.asResource("block/hx_semaphore/hx_shunting_signal")))
             .build()
             .register();
+
+    private static void generateBlockstate(
+            DataGenContext<Block, ThroughSignalBlock> context, RegistrateBlockstateProvider provider) {
+        ModelFile housing = provider.models().getExistingFile(
+                provider.modLoc("block/hx_semaphore/hx_shunting_signal"));
+        provider.getVariantBuilder(context.get()).forAllStates(state -> {
+            int quarterTurns = state.getValue(BlockStateProperties.HORIZONTAL_FACING).get2DDataValue();
+            return ConfiguredModel.builder().modelFile(housing)
+                    .rotationY((quarterTurns * 90 + 180) % 360).build();
+        });
+    }
 
     public static void register() {}
 }

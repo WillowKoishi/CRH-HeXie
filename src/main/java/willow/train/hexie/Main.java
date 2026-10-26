@@ -7,6 +7,8 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -28,12 +30,10 @@ import willow.train.hexie.init.recipe.RecipeInit;
 import willow.train.hexie.init.recipe.RecipeSerializerInit;
 import willow.train.hexie.init.semaphore.SemaphoreBlockInit;
 import willow.train.hexie.init.semaphore.SemaphoreEntityInit;
-import willow.train.hexie.init.tags.TagsInit;
 import willow.train.hexie.init.track.TrackBlockInit;
 import willow.train.hexie.init.track.TrackItems;
 import willow.train.hexie.init.track.TrackMaterialInit;
 import willow.train.hexie.interaction.InteractionProcessor;
-import willow.train.hexie.network.Env;
 import willow.train.hexie.network.HexieNetworkHandler;
 import willow.train.hexie.util.enums.PanelTypesUtil;
 
@@ -115,7 +115,10 @@ public class Main {
 
         bus.addListener(this::setup);
 
-        Env.CLIENT.runIfCurrent(() -> HeXieClientInit::init);
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            Runnable clientSetup = HeXieClientInit::init;
+            clientSetup.run();
+        }
 
         MenuInit.register(bus);
 
@@ -144,7 +147,6 @@ public class Main {
         BogeySizesInit.register();
         TrackBlockInit.register();
         BogeyEntityInit.register();
-        TagsInit.register();
         InteractionProcessor.invoke();
         SemaphoreBlockInit.register();
         SemaphoreEntityInit.register();

@@ -107,24 +107,27 @@ public class ThroughSignalBlock extends HorizontalDirectionalBlock implements IB
     }
 
     @Override
-    public void neighborChanged(BlockState pState, Level pLevel, BlockPos pPos, Block pBlock, BlockPos pFromPos,
-                                boolean pIsMoving) {
-        if (pLevel.isClientSide)
-            return;
-        boolean powered = pState.getValue(POWERED);
-        if (powered == pLevel.hasNeighborSignal(pPos))
-            return;
-        if (powered) {
-            pLevel.scheduleTick(pPos, this, 4);
-        } else {
-            pLevel.setBlock(pPos, pState.cycle(POWERED), 2);
+    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block changedBlock,
+                                BlockPos changedPos, boolean moving) {
+        if (!level.isClientSide) {
+            updateFromRedstone(state, level, pos);
+        }
+    }
+
+    private void updateFromRedstone(BlockState state, Level level, BlockPos pos) {
+        boolean receivesPower = level.hasNeighborSignal(pos);
+        if (receivesPower && !state.getValue(POWERED)) {
+            level.setBlock(pos, state.setValue(POWERED, true), Block.UPDATE_CLIENTS);
+        } else if (!receivesPower && state.getValue(POWERED)) {
+            level.scheduleTick(pos, this, 4);
         }
     }
 
     @Override
-    public void tick(BlockState pState, ServerLevel pLevel, BlockPos pPos, RandomSource pRand) {
-        if (pState.getValue(POWERED) && !pLevel.hasNeighborSignal(pPos))
-            pLevel.setBlock(pPos, pState.cycle(POWERED), 2);
+    public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+        if (!level.hasNeighborSignal(pos) && state.getValue(POWERED)) {
+            level.setBlock(pos, state.setValue(POWERED, false), Block.UPDATE_CLIENTS);
+        }
     }
 
     @Override
