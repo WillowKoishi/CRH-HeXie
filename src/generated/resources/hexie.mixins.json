@@ -4,6 +4,7 @@
   "package": "willow.train.hexie.mixins.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "MixinCurvedTrackSelectionPacket",
     "MixinAbstractContraptionEntity",
     "MixinDeployerMovementBehavior",
     "MixinSchematicannonInventory",
