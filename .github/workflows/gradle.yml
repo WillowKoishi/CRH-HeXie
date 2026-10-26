@@ -1,11 +1,4 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-# This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
-
-name: HeXie CI
+name: HeXie CI / Nightly Build
 
 on:
   push:
@@ -16,8 +9,10 @@ permissions:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
+    # Same-repository PRs are already built by their push event. Keep the PR
+    # trigger for fork PRs, where the upstream repository does not receive a push.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
 
     steps:
     - uses: actions/checkout@v4
@@ -26,9 +21,24 @@ jobs:
       with:
         java-version: '21'
         distribution: 'temurin'
+        cache: gradle
     - name: validate gradle wrapper
       uses: gradle/actions/wrapper-validation@v4
     - name: make gradle wrapper executable
       run: chmod +x ./gradlew
-    - name: build
-      run: ./gradlew build
+    - name: Build and package JAR
+      run: ./gradlew build jar
+
+    - name: Upload nightly JAR
+      id: upload-jar
+      uses: actions/upload-artifact@v7
+      with:
+        name: nightly-${{ github.sha }}
+        path: |
+          build/libs/*-NeoForge-*.jar
+          !build/libs/*-sources.jar
+        if-no-files-found: error
+        retention-days: 30
+
+    - name: Add download link to workflow summary
+      run: echo "Download the JAR from [this artifact](${{ steps.upload-jar.outputs.artifact-url }})." >> "$GITHUB_STEP_SUMMARY"
