@@ -32,6 +32,9 @@ public final class CarriageBrowserView implements AutoCloseable {
     private float neighborVisibility = .25f;
     private float maxLength, focusDistance, visibleRadius;
     private long phase;
+    // Camera-only track offset; never applied to the train motion or the upper strip.
+    private double panZ, panTarget;
+    private Matrix4f selectedTransform;
     private double yaw = FRONT_YAW, fromYaw = FRONT_YAW, targetYaw = FRONT_YAW, viewStarted;
     private float shell = 1, fromShell = 1, targetShell = 1;
     private float sceneScale, stripScale, trackOriginY;
@@ -41,7 +44,7 @@ public final class CarriageBrowserView implements AutoCloseable {
     private final List<StripEntry> stripEntries = new ArrayList<>();
     private static final Map<ResourceLocation, Saved> SAVED = new HashMap<>();
     final ResourceLocation tab;
-    private record Saved(ResourceLocation model, long index, long phase, double offset, double velocity) {}
+    private record Saved(ResourceLocation model, long index, long phase, boolean open, double pan, double offset, double velocity) {}
     private record StripEntry(long index, double left, double right) {}
 
     public CarriageBrowserView(CreativeModeInventoryScreen host) { this.host = host; this.tab = CarriageBrowserClient.tabId(host); init(); }
@@ -97,8 +100,9 @@ public final class CarriageBrowserView implements AutoCloseable {
                 position = targetPosition + offset;
                 motion.restore(position, velocity, targetPosition);
                 phase = saved.phase();
-                yaw = fromYaw = targetYaw = FRONT_YAW + Math.floorDiv(phase + 1, 2) * 180;
-                shell = fromShell = targetShell = Math.floorMod(phase, 4) < 2 ? 1 : 0;
+                yaw = fromYaw = targetYaw = FRONT_YAW + phase * 90;
+                shell = fromShell = targetShell = saved.open() ? 0 : 1;
+                panZ = panTarget = saved.pan();
                 neighborVisibility = 1;
                 lastInput = now();
             }
@@ -113,6 +117,8 @@ public final class CarriageBrowserView implements AutoCloseable {
         lastFrame = time;
         motion.advance(elapsed);
         position = motion.position();
+        panZ += (panTarget - panZ) * (1 - Math.exp(-elapsed * 12));
+        if (Math.abs(panTarget - panZ) < .0001) panZ = panTarget;
         boolean scrolling = time - lastInput < .16;
         float opacity = scrolling ? 1 : .25f + .75f * (float) Math.min(1, Math.abs(motion.velocity()) / 12);
         neighborVisibility += (opacity - neighborVisibility) * (float) (1 - Math.exp(-elapsed * 12));
@@ -124,6 +130,7 @@ public final class CarriageBrowserView implements AutoCloseable {
     private void select(long index) {
         if (layout == null) return;
         animate();
+        if (selected != index) panZ = panTarget = 0;
         selected = index;
         targetPosition = layout.center(index);
         motion.target(targetPosition);
@@ -133,12 +140,45 @@ public final class CarriageBrowserView implements AutoCloseable {
 
     private void cycle(int delta) {
         animate();
-        phase += delta;
         fromYaw = yaw;
         fromShell = shell;
-        targetYaw = FRONT_YAW + Math.floorDiv(phase + 1, 2) * 180;
-        targetShell = Math.floorMod(phase, 4) < 2 ? 1 : 0;
+        if (delta < 0) {
+            if (targetShell > .5f) targetShell = 0;
+            else phase--;
+        } else {
+            if (targetShell < .5f) targetShell = 1;
+            else phase++;
+        }
+        targetYaw = FRONT_YAW + phase * 90;
         viewStarted = now();
+    }
+
+    private double focusZ() {
+        // Orbit the current observation point instead of sliding the pivot with yaw.
+        return -focusDistance;
+    }
+
+    private Matrix4f localCamera(double pan) {
+        return new Matrix4f().translate(width / 2f, trackOriginY, 200)
+                .scale(sceneScale, -sceneScale, sceneScale)
+                .rotateX((float) Math.toRadians(CAMERA_PITCH)).rotateY((float) Math.toRadians(yaw))
+                .translate(0, 0, (float) -(focusZ() + pan));
+    }
+
+    private double clampPan(double requested) {
+        if (layout == null) return 0;
+        var model = catalog.models().get(layout.model(selected));
+        Matrix4f camera = localCamera(0);
+        double minX = Double.POSITIVE_INFINITY, maxX = Double.NEGATIVE_INFINITY;
+        double minY = Double.POSITIVE_INFINITY, maxY = Double.NEGATIVE_INFINITY;
+        for (int x = 0; x < 2; x++) for (int y = 0; y < 2; y++) for (int z = 0; z < 2; z++) {
+            var corner = camera.transformPosition(new org.joml.Vector3f(
+                    (x - .5f) * model.width(), y * model.height(), (z - .5f) * model.length()));
+            minX = Math.min(minX, corner.x); maxX = Math.max(maxX, corner.x);
+            minY = Math.min(minY, corner.y); maxY = Math.max(maxY, corner.y);
+        }
+        var direction = camera.transformDirection(new org.joml.Vector3f(0, 0, -1));
+        return CarriagePanBounds.clamp(requested, minX, maxX, minY, maxY, direction.x, direction.y);
     }
 
     public void render(GuiGraphics gui, int mouseX, int mouseY) {
@@ -163,7 +203,7 @@ public final class CarriageBrowserView implements AutoCloseable {
         animate();
         // Stretch only the flat slot interior; preserve the original window, tabs and hotbar.
         gui.blit(SLOT_TEXTURE, 8, 17, 162, 90, 9, 18, 16, 16, 256, 256);
-        gui.blit(SLOT_TEXTURE, 173, 17, 16, 96, 4, 4, 1, 1, 256, 256);
+        gui.blit(SLOT_TEXTURE, 173, 17, 16, 114, 4, 4, 1, 1, 256, 256);
         // Outer slot bevel and one horizontal divider, never a tiled grid.
         gui.blit(SLOT_TEXTURE, 8, 17, 162, 1, 8, 17, 18, 1, 256, 256);
         gui.blit(SLOT_TEXTURE, 8, 17, 1, 90, 8, 17, 1, 18, 256, 256);
@@ -171,6 +211,7 @@ public final class CarriageBrowserView implements AutoCloseable {
         gui.blit(SLOT_TEXTURE, 8, 106, 162, 1, 8, 34, 18, 1, 256, 256);
         gui.blit(SLOT_TEXTURE, 8, 34, 162, 2, 8, 34, 18, 2, 256, 256);
         hovered = null;
+        selectedTransform = null;
         stripEntries.clear();
         if (layout == null) return;
         gui.flush();
@@ -201,13 +242,9 @@ public final class CarriageBrowserView implements AutoCloseable {
         if (bottom > PREVIEW_TOP) {
             gui.flush();
             scissor(gui, 9, PREVIEW_TOP, 169, bottom);
-            double focusZ = -Math.cos(Math.toRadians(yaw - FRONT_YAW)) * focusDistance;
-            Matrix4f camera = new Matrix4f(gui.pose().last().pose())
-                    .translate(width / 2f, trackOriginY, 200)
-                    .scale(sceneScale, -sceneScale, sceneScale)
-                    .rotateX((float) Math.toRadians(CAMERA_PITCH)).rotateY((float) Math.toRadians(yaw))
-                    .translate(0, 0, (float) -focusZ);
-            // Camera and rail geometry stay fixed. Only carriage positions translate along Z.
+            double focusZ = focusZ() + panZ;
+            Matrix4f camera = new Matrix4f(gui.pose().last().pose()).mul(localCamera(panZ));
+            // Panning changes the camera for both rails and carriages; train motion remains independent.
             previews.get(layout.model(selected)).renderRails(camera, 1);
             // Visibility follows the actual train position, not the potentially distant target.
             double sceneCenter = position + focusZ;
@@ -218,6 +255,7 @@ public final class CarriageBrowserView implements AutoCloseable {
                 var model = catalog.models().get(modelIndex);
                 Matrix4f transform = new Matrix4f(camera).translate(-model.width() / 2f, 0,
                         (float) (layout.center(index) - position - model.length() / 2.0));
+                if (index == selected) selectedTransform = new Matrix4f(transform);
                 previews.get(modelIndex).render(transform, index == selected ? 1 : neighborVisibility, index == selected ? shell : 1);
                 if (index == selected && mouseX >= 9 && mouseX < 169 && mouseY >= PREVIEW_TOP && mouseY < bottom
                         && Math.abs(position - targetPosition) < .02 && (shell > .995 || shell < .005)) {
@@ -257,12 +295,22 @@ public final class CarriageBrowserView implements AutoCloseable {
         if (delta == 0) return false;
         int step = delta > 0 ? -1 : 1;
         if (y >= STRIP_Y && y <= STRIP_Y + STRIP_HEIGHT) select(selected + step);
-        else if (y >= PREVIEW_TOP && y < height - 39) cycle(step);
+        else if (x >= 9 && x < 169 && y >= PREVIEW_TOP && y < 106 && layout != null) {
+            // Use the same block shapes as hover picking; empty gaps belong to camera panning.
+            boolean overCar = selectedTransform != null && previews.get(layout.model(selected)).pick(
+                    selectedTransform, x + host.getGuiLeft(), y + host.getGuiTop(), shell > .5) != null;
+            if (overCar) cycle(step);
+            else panTarget = clampPan(panTarget + step * .5);
+        }
         else return false;
         return true;
     }
 
     public boolean mouseClicked(double x, double y, int button) {
+        if (x >= 9 && x < 169 && y >= 18 && y < 106 && !host.getMenu().getCarried().isEmpty()) {
+            host.getMenu().setCarried(net.minecraft.world.item.ItemStack.EMPTY);
+            return true;
+        }
         if (button == 0 && y >= STRIP_Y && y <= STRIP_Y + STRIP_HEIGHT) {
             for (StripEntry entry : stripEntries) if (x >= entry.left && x <= entry.right) { select(entry.index); return true; }
         }
@@ -288,7 +336,7 @@ public final class CarriageBrowserView implements AutoCloseable {
     private void closeMeshes() { previews.forEach(CarriagePreview::close); previews.clear(); }
     @Override public void close() {
         if (layout != null) {
-            SAVED.put(tab, new Saved(catalog.models().get(layout.model(selected)).id(), selected, phase,
+            SAVED.put(tab, new Saved(catalog.models().get(layout.model(selected)).id(), selected, phase, targetShell < .5f, panTarget,
                     position - targetPosition, motion.velocity()));
         }
         closeMeshes();

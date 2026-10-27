@@ -133,7 +133,12 @@ public final class CarriagePaletteScreen extends CreativeModeInventoryScreen {
         return !inside(x, y) && !hotbar(x, y);
     }
     @Override public boolean mouseClicked(double x, double y, int button) {
-        if (!inside(x, y) && !hotbar(x, y)) { onClose(); return true; }
+        if (!inside(x, y) && !hotbar(x, y)) {
+            double localX = x - parent.host.getGuiLeft(), localY = y - parent.host.getGuiTop();
+            if (localX >= 9 && localX < 169 && localY >= 18 && localY < 106) menu.setCarried(ItemStack.EMPTY);
+            onClose();
+            return true;
+        }
         return super.mouseClicked(x, y, button);
     }
     @Override public void onClose() {

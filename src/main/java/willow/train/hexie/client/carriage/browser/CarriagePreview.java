@@ -163,7 +163,7 @@ public final class CarriagePreview implements AutoCloseable {
         for (var cell : model.cells()) {
             if (cell.shell() && !showShell) continue;
             var shape = cell.state().getShape(world, cell.pos());
-            if (shape.isEmpty()) shape = net.minecraft.world.phys.shapes.Shapes.block();
+            if (shape.isEmpty()) continue;
             // Pick individual boxes accurately, but highlight the whole block's union outline.
             var outline = shape.optimize().move(cell.pos().getX(), cell.pos().getY(), cell.pos().getZ());
             for (AABB local : shape.toAabbs()) {
