@@ -18,6 +18,7 @@ import willow.train.hexie.Main;
 public class ItemIconButton extends Button {
 
     boolean toggled = false;
+    private boolean expandWhenSelected = true;
 
     int x_offset = 0;
 
@@ -47,13 +48,18 @@ public class ItemIconButton extends Button {
         this.message = message;
     }
 
+    public void setExpandWhenSelected(boolean expand) {
+        if (toggled && expandWhenSelected != expand) setX(getX() + (expand ? -20 : 20));
+        expandWhenSelected = expand;
+    }
+
     public void toggle() {
-        if (!toggled) setX(getX() - 20);
+        if (!toggled && expandWhenSelected) setX(getX() - 20);
         this.toggled = true;
     }
 
     public void reset() {
-        if (toggled) setX(getX() + 20);
+        if (toggled && expandWhenSelected) setX(getX() + 20);
         this.toggled = false;
     }
 
@@ -80,7 +86,7 @@ public class ItemIconButton extends Button {
         int x = this.getX();
         int y = this.getY();
 
-        if (toggled) {
+        if (toggled && expandWhenSelected) {
             this.drawTexture(x, y, 0, 0, 40, 20);
             willow.train.hexie.client.util.gui.GuiText.draw(pGuiGraphics, font, message, x + 20, y + y_offset + 3, 0x4699FF);
         } else {

@@ -608,5 +608,7 @@
   "tips.patchouli": "--------------------------------帕秋莉辞典内容--------------------------------",
   "patchouli.hexie.name": "铁路车辆图鉴",
   "patchouli.hexie.landing_text": "放眼未来，走向世界",
-  "easter.eggs": "此去，二百由旬↓↓"
+  "easter.eggs": "此去，二百由旬↓↓",
+  "gui.hexie.carriage_browser.demo": "彩虹示例车厢",
+  "container.hexie.inventory.button.switch_mode": "切换模式"
 }

@@ -15,6 +15,7 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 
 import willow.train.hexie.Main;
+import willow.train.hexie.client.carriage.browser.CarriageBrowserClient;
 import willow.train.hexie.client.screens.widget.ImageButton;
 import willow.train.hexie.client.screens.widget.ItemIconButton;
 import willow.train.hexie.client.carriage.*;
@@ -32,7 +33,8 @@ import java.util.List;
 public class HXInventoryEvents {
     public static final GuiImageCache.ImageData UP_IMAGE = GuiImageCache.register("textures/gui/up_button.png", 0);
     public static final GuiImageCache.ImageData DOWN_IMAGE = GuiImageCache.register("textures/gui/down_button.png", 0);
-    private static int carriageType = 0;
+    private static int carriageType = 1;
+    private static final float[] groupScroll = new float[8];
     private static CreativeModeTab currentCreativeTab = CreativeModeTabs.getDefaultTab();
     private static HXInventoryEvents instance;
     ItemIconButton[] imgBtn = new ItemIconButton[8];
@@ -52,24 +54,39 @@ public class HXInventoryEvents {
     }
 
 
-    private static void onCreativeTabObserved(
-            CreativeModeInventoryScreen screen, CreativeModeTab selectedTab) {
-        boolean tabChanged = currentCreativeTab != selectedTab;
-        currentCreativeTab = selectedTab;
-        HXInventoryEvents events = instance;
-        if (events == null) return;
+    public static void captureLegacyScroll(CreativeModeInventoryScreen screen) {
+        if (instance == null || screen instanceof willow.train.hexie.client.carriage.browser.CarriagePaletteScreen
+                || CarriageBrowserClient.previewMode()) return;
+        var accessor = (CreativeModeInventoryScreenAccessor) screen;
+        if (isCarriageTab(accessor.hexie$getSelectedTab()) && instance.hasAppliedFilter(screen.getMenu()))
+            groupScroll[carriageType] = accessor.hexie$getScrollOffs();
+    }
 
-        if (!isCarriageTab(selectedTab)) {
-            events.onChanged = true;
-            return;
-        }
+    public static void restoreMode(CreativeModeInventoryScreen screen) {
+        if (instance == null) return;
+        instance.onChanged = true;
+        instance.syncMenu(screen);
+    }
 
-        CreativeModeInventoryScreen.ItemPickerMenu menu = screen.getMenu();
-        if (tabChanged || events.onChanged || !events.hasAppliedFilter(menu)) {
-            events.updateMenuItem(menu);
-            if (tabChanged || events.onChanged) menu.scrollTo(0.0F);
-            events.onChanged = false;
+    private void syncMenu(CreativeModeInventoryScreen screen) {
+        var accessor = (CreativeModeInventoryScreenAccessor) screen;
+        currentCreativeTab = accessor.hexie$getSelectedTab();
+        boolean visible = isCarriageTab(currentCreativeTab);
+        boolean preview = CarriageBrowserClient.previewMode();
+        if (visible && !preview) {
+            if (onChanged || !hasAppliedFilter(screen.getMenu())) {
+                updateMenuItem(screen.getMenu());
+                accessor.hexie$setScrollOffs(groupScroll[carriageType]);
+                screen.getMenu().scrollTo(groupScroll[carriageType]);
+                onChanged = false;
+            } else captureLegacyScroll(screen);
         }
+        refreshBtn(currentCreativeTab);
+        for (int i = 0; i < imgBtn.length; i++) if (imgBtn[i] != null) {
+            if ((i == 0 && preview) || (i == carriageType && !preview)) imgBtn[i].toggle();
+            else imgBtn[i].reset();
+        }
+        for (ImageButton button : upAndDownBtn) if (button != null) button.visible = visible && !preview;
     }
 
     private static boolean isCarriageTab(CreativeModeTab tab) {
@@ -78,7 +95,8 @@ public class HXInventoryEvents {
 
     @SubscribeEvent
     public void onPlayerLogout(ClientPlayerNetworkEvent.LoggingOut event) {
-        carriageType = 0;
+        carriageType = 1;
+        java.util.Arrays.fill(groupScroll, 0);
         ContraptionSeatPositionCache.clear();
     }
 
@@ -91,6 +109,7 @@ public class HXInventoryEvents {
     @SubscribeEvent
     @SuppressWarnings({"resource"})
     public void onScreenInit(ScreenEvent.Init.Post event) {
+        if (event.getScreen() instanceof willow.train.hexie.client.carriage.browser.CarriagePaletteScreen) return;
         if (!(event.getScreen() instanceof CreativeModeInventoryScreen)) return;
         this.guiLeft = ((CreativeModeInventoryScreen) event.getScreen()).getGuiLeft();
         this.guiTop = ((CreativeModeInventoryScreen) event.getScreen()).getGuiTop();
@@ -120,8 +139,8 @@ public class HXInventoryEvents {
                     if(btn_location > 0){
                         btn_location --;
                         btn_location = Math.max(btn_location, 0);
-                        refreshBtn(tab);
-                        onUp();
+                        refreshBtn(currentCreativeTab);
+
                     }
                 });
         upAndDownBtn[1] = new ImageButton(new RenderablePicture(DOWN_IMAGE), this.guiLeft - 22, this.guiTop - 8 + (showBtnNumber + 1) * 22, 20, 20,
@@ -129,8 +148,8 @@ public class HXInventoryEvents {
                     if(btn_location < imgBtn.length - showBtnNumber){
                         btn_location++;
                         btn_location = Math.min(btn_location, imgBtn.length - showBtnNumber);
-                        refreshBtn(tab);
-                        onDown();
+                        refreshBtn(currentCreativeTab);
+
                     }
                 });
 
@@ -138,7 +157,7 @@ public class HXInventoryEvents {
 
         Component[] components = new Component[8];
         components[0] =
-                Component.translatable("container." + Main.MOD_ID + ".inventory.button.all");
+                Component.translatable("container." + Main.MOD_ID + ".inventory.button.switch_mode");
         components[1] =
                 Component.translatable("container." + Main.MOD_ID + ".inventory.button.25b");
         components[2] =
@@ -163,26 +182,23 @@ public class HXInventoryEvents {
                             components[i],
                             icons[i],
                             b -> {
-                                for (int bx = 0; bx < imgBtn.length; bx++) {
-                                    if (b.equals(imgBtn[bx])) {
-                                        carriageType = bx;
-                                        ((ItemIconButton) b).toggle();
-                                        Screen activeScreen = Minecraft.getInstance().screen;
-                                        if (activeScreen instanceof CreativeModeInventoryScreen creativeScreen
-                                                && isCarriageTab(currentCreativeTab)) {
-                                            ensureMapping();
-                                            updateMenuItem(creativeScreen.getMenu());
-                                            creativeScreen.getMenu().scrollTo(0.0F);
-                                            onChanged = false;
-                                        }
-                                    } else {
-                                        (imgBtn[bx]).reset();
-                                    }
+                                Screen activeScreen = Minecraft.getInstance().screen;
+                                if (!(activeScreen instanceof CreativeModeInventoryScreen creativeScreen)) return;
+                                if (b == imgBtn[0]) {
+                                    CarriageBrowserClient.toggleMode(creativeScreen);
+                                    return;
                                 }
+                                captureLegacyScroll(creativeScreen);
+                                for (int bx = 1; bx < imgBtn.length; bx++) if (b == imgBtn[bx]) carriageType = bx;
+                                onChanged = true;
+                                syncMenu(creativeScreen);
                             },
                             i == 0 ? -2 : 1,
                             i == 0 ? 0 : 2);
         }
+        imgBtn[0].setExpandWhenSelected(false);
+        imgBtn[0].setTooltip(net.minecraft.client.gui.components.Tooltip.create(components[0]));
+        imgBtn[0].setMessage(components[0]);
         for (ItemIconButton b : imgBtn) {
             event.addListener(b);
         }
@@ -192,72 +208,30 @@ public class HXInventoryEvents {
             b.visible = isCarriageTab(tab);
         }
 
-        imgBtn[carriageType].toggle();
-        updateButtons();
-        menu.scrollTo(0);
+        onChanged = true;
+        syncMenu((CreativeModeInventoryScreen) event.getScreen());
     }
 
     private void refreshBtn(net.minecraft.world.item.CreativeModeTab tab) {
-        int right_edge = btn_location + showBtnNumber - 1;
-        for(int i = 0; i < imgBtn.length; i++) {
-            if(i < btn_location || i > right_edge) {
-                imgBtn[i].visible = false;
-            } else {
-                imgBtn[i].visible = isCarriageTab(tab);
-            }
+        boolean visible = isCarriageTab(tab);
+        if (imgBtn[0] != null) {
+            imgBtn[0].visible = visible && Minecraft.getInstance().screen instanceof CreativeModeInventoryScreen screen
+                    && CarriageBrowserClient.canSwitchMode(screen);
+            imgBtn[0].setY(guiTop + 14);
         }
-    }
-
-    private void onUp() {
-        for(ItemIconButton b : imgBtn) {
-            b.setY(b.getY() + 22);
-        }
-    }
-
-    private void onDown() {
-        for(ItemIconButton b : imgBtn) {
-            b.setY(b.getY() - 22);
+        for (int i = 1; i < imgBtn.length; i++) if (imgBtn[i] != null) {
+            imgBtn[i].setY(guiTop + 36 + (i - 1 - btn_location) * 22);
+            imgBtn[i].visible = visible && !CarriageBrowserClient.previewMode()
+                    && i > btn_location && i < btn_location + showBtnNumber;
         }
     }
 
     @SubscribeEvent
     public void onRender(ScreenEvent.Render.Pre event) {
-        Screen screen = event.getScreen();
-        if (screen instanceof CreativeModeInventoryScreen creativeScreen) {
-            onCreativeTabObserved(
-                    creativeScreen,
-                    ((CreativeModeInventoryScreenAccessor) creativeScreen).hexie$getSelectedTab());
-            updateButtons();
-            CreativeModeTab tab = currentCreativeTab;
-            for(ImageButton b : upAndDownBtn) {
-                b.visible = isCarriageTab(tab);
-            }
-            refreshBtn(tab);
-            if (tab == Main.HEXIE_MAIN.getId()) {
-                addSchematicToTab(((CreativeModeInventoryScreen) screen).getMenu());
-            }
-        }
-    }
-
-    public void updateButtons() {
-        Screen screen = Minecraft.getInstance().screen;
-        CreativeModeTab tab = currentCreativeTab;
-        if (screen instanceof CreativeModeInventoryScreen creativeScreen) {
-            CreativeModeInventoryScreen.ItemPickerMenu menu = creativeScreen.getMenu();
-            boolean vis = isCarriageTab(tab);
-            for (ItemIconButton b : imgBtn) {
-                b.visible = vis;
-            }
-            if (vis) {
-                if (onChanged) {
-                    menu.scrollTo(0.0f);
-                    updateMenuItem(menu);
-                    menu.scrollTo(0.0f);
-                    onChanged = false;
-                }
-            } else {
-                onChanged = true;
-            }
+        if (event.getScreen() instanceof willow.train.hexie.client.carriage.browser.CarriagePaletteScreen) return;
+        if (event.getScreen() instanceof CreativeModeInventoryScreen screen) {
+            syncMenu(screen);
+            if (currentCreativeTab == Main.HEXIE_MAIN.getId()) addSchematicToTab(screen.getMenu());
         }
     }
 

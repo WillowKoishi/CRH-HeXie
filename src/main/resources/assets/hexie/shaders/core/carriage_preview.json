@@ -1,0 +1,25 @@
+{
+  "vertex": "hexie:carriage_preview",
+  "fragment": "hexie:carriage_preview",
+  "samplers": [
+    {
+      "name": "Sampler0"
+    },
+    {
+      "name": "Sampler1"
+    }
+  ],
+  "uniforms": [
+    {
+      "name": "ColorModulator",
+      "type": "float",
+      "count": 4,
+      "values": [
+        1,
+        1,
+        1,
+        1
+      ]
+    }
+  ]
+}

@@ -604,5 +604,7 @@
 
   "tips.patchouli": "--------------------------------all entity above here-------------------------------------------",
   "patchouli.hexie.name":"铁路车辆图鉴",
-  "patchouli.hexie.landing_text": "放眼未来，走向世界"
+  "patchouli.hexie.landing_text": "放眼未来，走向世界",
+  "gui.hexie.carriage_browser.demo": "Rainbow example carriage",
+  "container.hexie.inventory.button.switch_mode": "Switch mode"
 }

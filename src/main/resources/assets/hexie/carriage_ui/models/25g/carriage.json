@@ -1,0 +1,79 @@
+{
+  "format": 1,
+  "title": "25G 原色硬座车",
+  "track": {
+    "block": "hexie:standard_track",
+    "properties": {
+      "shape": "zo"
+    }
+  },
+  "front_gap": 0,
+  "rear_gap": 0,
+  "exterior": "exterior.nbt",
+  "interior": "interior.nbt",
+  "groups": {
+    "hexie:carriage/air_conditioners": [
+      "hexie:carport_25bgzk_air_condition_all",
+      "hexie:carport_25bgzk_air_condition_side"
+    ],
+    "hexie:carriage/bogeys": [
+      "hexie:hx_standard_bogey"
+    ],
+    "hexie:carriage/boilers": [
+      "hexie:boiling_water_place"
+    ],
+    "hexie:carriage/doors": [
+      "hexie:original_25k_door",
+      "hexie:original_25k_sliding_door"
+    ],
+    "hexie:carriage/ends": [
+      "hexie:end_face_25g_original",
+      "hexie:end_face_25g_original_upper"
+    ],
+    "hexie:carriage/floors": [
+      "hexie:slab_25k_original_top"
+    ],
+    "hexie:carriage/ladders": [
+      "hexie:ladder_25k_original_sliding"
+    ],
+    "hexie:carriage/luggage_racks": [
+      "hexie:ceilin_shelf"
+    ],
+    "hexie:carriage/panels": [
+      "hexie:panel_25g_original_bottom",
+      "hexie:panel_25g_original_mid",
+      "hexie:panel_25g_original_top"
+    ],
+    "hexie:carriage/quartz_panels": [
+      "hexie:smooth_quartz_panel_2"
+    ],
+    "hexie:carriage/roofs": [
+      "hexie:carport_25bgzk",
+      "hexie:carport_25bgzkt_centre"
+    ],
+    "hexie:carriage/seats": [
+      "hexie:seat_yz"
+    ],
+    "hexie:carriage/signs": [
+      "hexie:laquered_board_block",
+      "hexie:train_bottom_panel_block",
+      "hexie:train_no_block",
+      "hexie:train_speed_block"
+    ],
+    "hexie:carriage/tables": [
+      "hexie:yz_table"
+    ],
+    "hexie:carriage/toilets": [
+      "hexie:direct_drainage_toilet_original_25k"
+    ],
+    "hexie:carriage/water_tanks": [
+      "hexie:carport_25bgzkt_water_tank"
+    ],
+    "hexie:carriage/windows": [
+      "hexie:original_color_window_25g_small",
+      "hexie:original_color_window_25g_toilet",
+      "hexie:original_color_window_25g_wide",
+      "hexie:original_color_window_25g_wide_sealed"
+    ]
+  }
+}

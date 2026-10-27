@@ -11,6 +11,8 @@
     "MixinSchematicSyncPacket"
   ],
   "client": [
+    "client.CarriageCreativeScreenMixin",
+    "client.CarriageContainerScreenMixin",
     "client.CreativeModeInventoryScreenAccessor",
     "client.MixinPhysicsBogeyBlockEntity",
     "client.MixinSchematicEditScreen",

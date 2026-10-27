@@ -28,6 +28,7 @@ import java.util.function.Supplier;
 public class HeXieClientInit {
 
     public static void init() {
+        willow.train.hexie.client.carriage.browser.CarriageBrowserClient.register(Main.bus);
         Main.bus.addListener(HeXieClientInit::registerBlockExtensions);
         Main.bus.addListener(HeXieClientInit::registerMenus);
         Main.bus.addListener(HeXieClientInit::registerRenderers);

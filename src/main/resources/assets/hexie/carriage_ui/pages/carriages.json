@@ -1,0 +1,12 @@
+{
+  "tab": "hexie:hexie_normalspeedpassagecarriagetab",
+  "carriages": [
+    "hexie:25b",
+    "hexie:25g",
+    "hexie:25k",
+    "hexie:25t",
+    "hexie:25z"
+  ],
+  "default_mode": "preview",
+  "allow_mode_switch": true
+}
