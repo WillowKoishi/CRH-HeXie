@@ -67,17 +67,10 @@ public final class CarriageBrowserView implements AutoCloseable {
     private void load() {
         closeMeshes();
         generation = CarriageBrowserClient.resourceGeneration;
-        catalog = CarriageAssets.load(minecraft.getResourceManager(), CarriageBrowserClient.page(host).carriages());
-        List<CarriageAssets.Model> usable = new ArrayList<>();
-        List<String> errors = new ArrayList<>(catalog.errors());
-        for (var model : catalog.models()) {
-            try { previews.add(new CarriagePreview(model)); usable.add(model); }
-            catch (RuntimeException e) {
-                errors.add(model.id() + ": " + e.getMessage());
-                Main.LOGGER.warn("Could not bake carriage preview {}", model.id(), e);
-            }
-        }
-        catalog = new CarriageAssets.Catalog(List.copyOf(usable), List.copyOf(errors));
+        CarriageBrowserClient.warmPreviews();
+        catalog = CarriageBrowserClient.catalog(CarriageBrowserClient.page(host));
+        List<CarriageAssets.Model> usable = catalog.models();
+        for (var model : usable) previews.add(CarriageBrowserClient.preview(model.id()));
         if (!usable.isEmpty()) {
             layout = new CarriageLayout(usable.stream().mapToDouble(CarriageAssets.Model::length).toArray(),
                     usable.stream().mapToDouble(CarriageAssets.Model::frontGap).toArray(),
@@ -333,7 +326,7 @@ public final class CarriageBrowserView implements AutoCloseable {
     }
 
     public boolean contains(double x, double y) { return x >= 8 && x < 188 && y >= 17 && y < 107; }
-    private void closeMeshes() { previews.forEach(CarriagePreview::close); previews.clear(); }
+    private void closeMeshes() { previews.clear(); }
     @Override public void close() {
         if (layout != null) {
             SAVED.put(tab, new Saved(catalog.models().get(layout.model(selected)).id(), selected, phase, targetShell < .5f, panTarget,

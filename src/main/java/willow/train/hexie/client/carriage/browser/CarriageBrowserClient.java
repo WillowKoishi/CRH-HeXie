@@ -33,7 +33,7 @@ public final class CarriageBrowserClient {
     public static CarriagePages.Page page(CreativeModeInventoryScreen screen) {
         if (((CreativeModeInventoryScreenAccessor) screen).hexie$getSelectedTab().getType()
                 != net.minecraft.world.item.CreativeModeTab.Type.CATEGORY) return null;
-        return CarriagePages.get(net.minecraft.client.Minecraft.getInstance().getResourceManager(), tabId(screen));
+        return CarriagePages.get(tabId(screen));
     }
 
     public static boolean previewMode() {
@@ -106,6 +106,7 @@ public final class CarriageBrowserClient {
     public static void register(IEventBus bus) {
         bus.addListener(CarriageBrowserClient::shaders);
         bus.addListener(CarriageBrowserClient::reloads);
+        NeoForge.EVENT_BUS.addListener(CarriageBrowserClient::tickCache);
         NeoForge.EVENT_BUS.addListener(CarriageBrowserClient::initScreen);
         NeoForge.EVENT_BUS.addListener(CarriageBrowserClient::beforeRender);
         NeoForge.EVENT_BUS.addListener(CarriageBrowserClient::key);
@@ -121,8 +122,63 @@ public final class CarriageBrowserClient {
     }
 
     private static void reloads(RegisterClientReloadListenersEvent event) {
-        event.registerReloadListener((ResourceManagerReloadListener) resources -> resourceGeneration++);
+        event.registerReloadListener((ResourceManagerReloadListener) resources -> {
+            clearPreviews();
+            CarriagePages.reload(resources);
+            var requested = new java.util.LinkedHashSet<net.minecraft.resources.ResourceLocation>();
+            for (var page : CarriagePages.all()) requested.addAll(page.carriages());
+            assets = CarriageAssets.load(resources, java.util.List.copyOf(requested));
+            resourceGeneration++;
+        });
     }
+
+    private static CarriageAssets.Catalog assets = new CarriageAssets.Catalog(java.util.List.of(), java.util.List.of());
+    private static final Map<net.minecraft.resources.ResourceLocation, CarriagePreview> PREVIEWS = new java.util.HashMap<>();
+    private static final java.util.Set<net.minecraft.resources.ResourceLocation> FAILED = new java.util.HashSet<>();
+    private static net.minecraft.client.multiplayer.ClientLevel previewLevel;
+
+    private static void clearPreviews() {
+        // Views borrow meshes; only the cache owns their lifetime.
+        VIEWS.values().forEach(CarriageBrowserView::close);
+        VIEWS.clear();
+        PREVIEWS.values().forEach(CarriagePreview::close);
+        PREVIEWS.clear();
+        FAILED.clear();
+        previewLevel = null;
+        CarriageRenderLayer.releaseTarget();
+    }
+
+    private static void tickCache(net.neoforged.neoforge.client.event.ClientTickEvent.Post event) {
+        var mc = net.minecraft.client.Minecraft.getInstance();
+        if (previewLevel != mc.level) clearPreviews();
+        // Model/texture reload must finish before capturing native renderers.
+        if (mc.level != null && mc.getOverlay() == null) warmPreviews();
+    }
+
+    static void warmPreviews() {
+        var mc = net.minecraft.client.Minecraft.getInstance();
+        if (previewLevel != mc.level) clearPreviews();
+        if (mc.level == null) return;
+        previewLevel = mc.level;
+        for (var model : assets.models()) {
+            if (PREVIEWS.containsKey(model.id()) || FAILED.contains(model.id())) continue;
+            try { PREVIEWS.put(model.id(), new CarriagePreview(model)); }
+            catch (RuntimeException e) {
+                FAILED.add(model.id());
+                Main.LOGGER.warn("Could not bake carriage preview {}", model.id(), e);
+            }
+        }
+    }
+
+    static CarriageAssets.Catalog catalog(CarriagePages.Page page) {
+        var byId = new java.util.HashMap<net.minecraft.resources.ResourceLocation, CarriageAssets.Model>();
+        for (var model : assets.models()) byId.put(model.id(), model);
+        var models = new java.util.ArrayList<CarriageAssets.Model>();
+        for (var id : page.carriages()) if (PREVIEWS.containsKey(id)) models.add(byId.get(id));
+        return new CarriageAssets.Catalog(java.util.List.copyOf(models), assets.errors());
+    }
+
+    static CarriagePreview preview(net.minecraft.resources.ResourceLocation id) { return PREVIEWS.get(id); }
 
     public static boolean active(Screen screen) {
         return screen instanceof CreativeModeInventoryScreen creative

@@ -16,7 +16,7 @@ import org.joml.Vector3f;
 
 import java.util.*;
 
-/** Native material batches plus live block entities in an isolated preview world. */
+/** Cached native material batches and initial-frame block entities in an isolated preview world. */
 public final class CarriagePreview implements AutoCloseable {
     public static ShaderInstance shader;
     private final CarriageAssets.Model model;
@@ -80,7 +80,7 @@ public final class CarriagePreview implements AutoCloseable {
                 if (cell.shell() != exterior) continue;
                 pose.pushPose();
                 pose.translate(cell.pos().getX(), cell.pos().getY(), cell.pos().getZ());
-                // Animated entity blocks are rendered with their real block entity below.
+                // Capture the model and block entity once, in the same material cache.
                 if (cell.state().getRenderShape() == net.minecraft.world.level.block.RenderShape.MODEL) {
                     var baked = mc.getBlockRenderer().getBlockModel(cell.state());
                     var entity = world.getBlockEntity(cell.pos());
@@ -97,6 +97,11 @@ public final class CarriagePreview implements AutoCloseable {
                     mc.getBlockRenderer().renderLiquid(cell.pos(), world,
                             new FluidOffset(fluid, cell.pos()), cell.state(), cell.state().getFluidState());
                 }
+                BlockEntity entity = world.getBlockEntity(cell.pos());
+                if (entity != null) renderEntity(entity, pose, buffers);
+                else if (cell.state().getRenderShape() == net.minecraft.world.level.block.RenderShape.ENTITYBLOCK_ANIMATED)
+                    mc.getBlockRenderer().renderSingleBlock(cell.state(), pose, buffers,
+                            LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
                 pose.popPose();
             }
         });
@@ -115,39 +120,19 @@ public final class CarriagePreview implements AutoCloseable {
         @Override public VertexConsumer setNormal(float x, float y, float z) { delegate.setNormal(x,y,z); return this; }
     }
 
-    private void drawEntities(boolean exterior, Matrix4f transform) {
-        // Keep text, custom textures, Create fallback renderers and animations on their native paths.
-        try (CarriageRenderLayer dynamic = CarriageRenderLayer.capture(buffers -> {
-            PoseStack pose = new PoseStack();
-            for (var cell : model.cells()) {
-                if (cell.shell() != exterior) continue;
-                BlockEntity entity = world.getBlockEntity(cell.pos());
-                if (entity == null && cell.state().getRenderShape() != net.minecraft.world.level.block.RenderShape.ENTITYBLOCK_ANIMATED) continue;
-                pose.pushPose();
-                pose.translate(cell.pos().getX(), cell.pos().getY(), cell.pos().getZ());
-                if (entity != null) renderEntity(entity, pose, buffers);
-                else Minecraft.getInstance().getBlockRenderer().renderSingleBlock(cell.state(), pose, buffers,
-                        LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
-                pose.popPose();
-            }
-        })) { dynamic.drawNative(transform); }
-    }
-
     private static <T extends BlockEntity> void renderEntity(T entity, PoseStack pose, MultiBufferSource buffers) {
         BlockEntityRenderer<T> renderer = Minecraft.getInstance().getBlockEntityRenderDispatcher().getRenderer(entity);
-        if (renderer != null) renderer.render(entity, Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false), pose, buffers, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
+        if (renderer != null) renderer.render(entity, 0, pose, buffers, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
     }
 
     public void render(Matrix4f transform, float opacity, float shellVisibility) {
         CarriageRenderLayer.composite(opacity, () -> {
             interior.drawNative(transform);
-            drawEntities(false, transform);
         });
         if (shellVisibility > .001f) {
             Matrix4f lifted = new Matrix4f(transform).translate(0, (1 - shellVisibility) * 4, 0);
             CarriageRenderLayer.composite(opacity * shellVisibility, () -> {
                 shell.drawNative(lifted);
-                drawEntities(true, lifted);
             });
         }
     }
@@ -182,6 +167,5 @@ public final class CarriagePreview implements AutoCloseable {
         if (interior != null) interior.close();
         if (rails != null) rails.close();
         world.clear();
-        CarriageRenderLayer.releaseTarget();
     }
 }
