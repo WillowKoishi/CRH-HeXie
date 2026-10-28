@@ -70,7 +70,7 @@ public final class HeXieSimurailCompat {
                 Component.translatable("simurail_track_type.hexie.standard.short"),
                 standard.allowInverted(),
                 24.15 / 16.0,
-                5.4816 / 16.0,
+                TrackMaterialInit.RAIL_SURFACE_HEIGHT,
                 standard.lateralMaxSpeedFactor(),
                 standard.verticalMaxSpeedFactor(),
                 standard.adhesionFactor(),

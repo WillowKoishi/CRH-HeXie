@@ -1,17 +1,17 @@
 {
   "variants": {
     "axis=x,waterlogged=false": {
-      "model": "create:block/track/bogey/top"
+      "model": "hexie:block/bogey/qj/qj_top"
     },
     "axis=x,waterlogged=true": {
-      "model": "create:block/track/bogey/top"
+      "model": "hexie:block/bogey/qj/qj_top"
     },
     "axis=z,waterlogged=false": {
-      "model": "create:block/track/bogey/top",
+      "model": "hexie:block/bogey/qj/qj_top",
       "y": 90
     },
     "axis=z,waterlogged=true": {
-      "model": "create:block/track/bogey/top",
+      "model": "hexie:block/bogey/qj/qj_top",
       "y": 90
     }
   }
