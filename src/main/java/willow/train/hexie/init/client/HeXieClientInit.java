@@ -70,6 +70,8 @@ public class HeXieClientInit {
         event.registerBlockEntityRenderer(
                 BogeyEntityInit.DF11G_BOGEY.get(), BogeyBlockEntityRenderer::new);
         event.registerBlockEntityRenderer(
+                BogeyEntityInit.CRH_BOGEY.get(), BogeyBlockEntityRenderer::new);
+        event.registerBlockEntityRenderer(
                 SemaphoreEntityInit.HX_SEMAPHORE.get(), ThroughSignalRenderer::new);
         event.registerBlockEntityRenderer(
                 SemaphoreEntityInit.ADJUSTABLE_SEMAPHORE.get(), AdjustableSignalRenderer::new);

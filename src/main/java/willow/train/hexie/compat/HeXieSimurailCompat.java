@@ -5,6 +5,7 @@ import com.crystaelix.simurail.api.bogey.BogeyType;
 import com.crystaelix.simurail.api.bogey.menu.BogeyEntry;
 import com.crystaelix.simurail.api.bogey.menu.BogeyEntryCategory;
 import com.crystaelix.simurail.api.bogey.menu.BogeyMenuManager;
+import com.crystaelix.simurail.api.bogey.menu.BogeyParentCategory;
 import com.crystaelix.simurail.api.track.TrackTypeEntries;
 import com.crystaelix.simurail.api.track.TrackTypeEntry;
 import com.crystaelix.simurail.content.SimurailTracks;
@@ -21,6 +22,7 @@ import java.util.List;
 
 /** Only loaded from common setup when Simurail is installed. */
 public final class HeXieSimurailCompat {
+    public static final BogeyEntry DT206 = entry("dt206", BogeyStylesInit.CRHBOGEY, BogeySizesInit.DT206);
     public static final BogeyEntry CW2 = entry("cw2", BogeyStylesInit.HXSTANDARDBOGEY, BogeySizes.SMALL);
     public static final BogeyEntry PK209P = entry("pk209p", BogeyStylesInit.HXSTANDARDBOGEY, BogeySizesInit.PK209P);
     public static final BogeyEntry PK209P_NO_MOTOR = entry("pk209p_no_motor", BogeyStylesInit.HXSTANDARDBOGEY, BogeySizesInit.PK209P_NO_MOTOR);
@@ -33,10 +35,17 @@ public final class HeXieSimurailCompat {
     public static final BogeyEntry QJ = entry("qj", BogeyStylesInit.DF11GBOGEY, BogeySizesInit.QJ);
     public static final BogeyEntry QJ_BACKWARD = entry("qj_backward", BogeyStylesInit.DF11GBOGEY, BogeySizesInit.QJ_BACKWARD);
 
-    public static final BogeyEntryCategory HEXIE = new BogeyEntryCategory(
+    public static final BogeyEntryCategory PASSENGER = new BogeyEntryCategory(
+            Component.translatable("simurail_bogey_category.hexie.passenger"),
+            List.of(CW2, PK209P, PK209P_NO_MOTOR, PK209P_BACKWARD, SW220K, SW220K_BACKWARD, SW160));
+    public static final BogeyEntryCategory LOCOMOTIVE = new BogeyEntryCategory(
+            Component.translatable("simurail_bogey_category.hexie.locomotive"),
+            List.of(DF11G, DF11G_BACKWARD, QJ, QJ_BACKWARD));
+    public static final BogeyEntryCategory EMU = new BogeyEntryCategory(
+            Component.translatable("simurail_bogey_category.hexie.emu"), List.of(DT206));
+    public static final BogeyParentCategory HEXIE = new BogeyParentCategory(
             Component.translatable("simurail_bogey_category.hexie"),
-            List.of(CW2, PK209P, PK209P_NO_MOTOR, PK209P_BACKWARD, SW220K, SW220K_BACKWARD,
-                    SW160, DF11G, DF11G_BACKWARD, QJ, QJ_BACKWARD));
+            List.of(PASSENGER, LOCOMOTIVE, EMU));
 
     private HeXieSimurailCompat() {}
 
@@ -71,6 +80,7 @@ public final class HeXieSimurailCompat {
     /** Nominal rolling radii and axle positions from HeXie's sizes and renderers, in blocks. */
     private static void configureParameters() {
         // CW2 shares the passenger wheel dimensions; forward/backward DF11G share one wheel model.
+        configureBogey(DT206, 0.43, -1.25, 1.25);
         configureBogey(CW2, 0.915 / 2, -1.2, 1.2);
         configureBogey(PK209P, 0.915 / 2, -1.2, 1.2);
         configureBogey(PK209P_NO_MOTOR, 0.915 / 2, -1.2, 1.2);

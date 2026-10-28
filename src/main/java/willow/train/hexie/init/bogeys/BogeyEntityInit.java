@@ -6,6 +6,7 @@ import com.tterrag.registrate.util.entry.BlockEntityEntry;
 import willow.train.hexie.Main;
 import willow.train.hexie.blocks.bogeys.df11g.DF11GBogeyBlockEntity;
 import willow.train.hexie.blocks.bogeys.standard.HXStandardBogeyBlockEntity;
+import willow.train.hexie.blocks.bogeys.CRH.CRHBogeyBlockEntity;
 import willow.train.hexie.init.track.TrackBlockInit;
 
 public class BogeyEntityInit {
@@ -35,8 +36,12 @@ public class BogeyEntityInit {
                             TrackBlockInit.QJ_BACKWARD_BOGEY)
                     .register();
 
-    //            .register();
-
+    public static final BlockEntityEntry<CRHBogeyBlockEntity> CRH_BOGEY =
+            REGISTRATE
+                    .blockEntity("crh_bogey", CRHBogeyBlockEntity::new)
+                    .validBlocks(
+                            TrackBlockInit.DT206_BOGEY)
+                    .register();
 
     public static void register() {}
 }

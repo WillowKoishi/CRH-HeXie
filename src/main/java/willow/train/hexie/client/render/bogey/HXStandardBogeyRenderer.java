@@ -364,4 +364,22 @@ public class HXStandardBogeyRenderer {
             }
         }
     }
+    public static class DT206BogeyRenderer extends SimpleBogeyRenderer {
+        // Exported wheel tread radius: 6.88/16; axle centres: Z = +/-20/16.
+        private static final double AXLE_HEIGHT = 5.4816 / 16.0 + 0.43;
+        @Override public BogeySizes.BogeySize getSize() { return BogeySizesInit.DT206; }
+        @Override public void render(CompoundTag data, float wheelAngle, PoseStack pose,
+                int light, VertexConsumer buffer, boolean inContraption) {
+            boolean instanced = buffer == null;
+            getTransform(DT206_FRAME, pose, instanced)
+                    .translate(0, AXLE_HEIGHT + 4.9 / 16.0, 0).render(pose, light, buffer);
+            BogeyModelData[] wheels = getTransform(DT206_WHEEL, pose, instanced, 2);
+            for (int side : Iterate.positiveAndNegative) {
+                if (!instanced) pose.pushPose();
+                wheels[(side + 1) / 2].translate(0, AXLE_HEIGHT, side * 1.25)
+                        .rotateX(wheelAngle).render(pose, light, buffer);
+                if (!instanced) pose.popPose();
+            }
+        }
+    }
 }

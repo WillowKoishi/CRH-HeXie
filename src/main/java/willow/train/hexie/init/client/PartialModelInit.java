@@ -13,6 +13,8 @@ public class PartialModelInit {
             HX_TRACK_SEGMENT_RIGHT = block("track/standard/segment_right"),
             HX_TRACK_TIE = block("track/standard/tie"),
             BALLASTLESS_TRACK_TIE = block("track/ballastless/tie"),
+            DT206_FRAME = block("bogey/dt206/frame"),
+            DT206_WHEEL = block("bogey/dt206/wheel"),
             HXSTANDARDBOGEY_FRAME = block("bogey/hx_standard/bogey_cw2_temple"),
             HXSTANDARDBOGEY_WHEEL = block("bogey/hx_standard/cw2_wheel"),
             DF11G_FRAME = block("bogey/df11g/df11g_bogey_temple"),
