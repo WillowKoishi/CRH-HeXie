@@ -11,6 +11,7 @@
     "MixinSchematicSyncPacket"
   ],
   "client": [
+    "client.MixinTrackGraphVisualizer",
     "client.CarriageCreativeScreenMixin",
     "client.CarriageContainerScreenMixin",
     "client.CreativeModeInventoryScreenAccessor",

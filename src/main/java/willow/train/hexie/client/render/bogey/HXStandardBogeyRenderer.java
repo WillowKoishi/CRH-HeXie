@@ -366,7 +366,7 @@ public class HXStandardBogeyRenderer {
     }
     public static class DT206BogeyRenderer extends SimpleBogeyRenderer {
         // Exported wheel tread radius: 6.88/16; axle centres: Z = +/-20/16.
-        // Original model-space alignment; SimpleBogeyRenderer adds the rail-height increase once.
+        // Original model-space alignment; SimpleBogeyRenderer applies the height increase once.
         private static final double AXLE_HEIGHT = 0.7726;
         @Override public BogeySizes.BogeySize getSize() { return BogeySizesInit.DT206; }
         @Override public void render(CompoundTag data, float wheelAngle, PoseStack pose,
