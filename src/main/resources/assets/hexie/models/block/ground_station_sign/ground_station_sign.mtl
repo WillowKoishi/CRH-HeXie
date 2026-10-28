@@ -1,0 +1,10 @@
+newmtl texture_0
+map_Kd hexie:block/ground_station_sign/0
+newmtl texture_1
+map_Kd hexie:block/ground_station_sign/1
+newmtl texture_2
+map_Kd hexie:block/ground_station_sign/2
+newmtl texture_3
+map_Kd hexie:block/ground_station_sign/3
+newmtl texture_4
+map_Kd hexie:block/ground_station_sign/4

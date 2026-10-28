@@ -28,6 +28,7 @@ import java.util.function.Supplier;
 public class HeXieClientInit {
 
     public static void init() {
+        willow.train.hexie.client.sign.SignTextClient.register(Main.bus);
         willow.train.hexie.client.carriage.browser.CarriageBrowserClient.register(Main.bus);
         Main.bus.addListener(HeXieClientInit::registerBlockExtensions);
         Main.bus.addListener(HeXieClientInit::registerMenus);
@@ -62,6 +63,7 @@ public class HeXieClientInit {
     }
 
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerBlockEntityRenderer(BlockEntitiesInit.GROUND_STATION_SIGN.get(), GroundStationSignRenderer::new);
         // Register here so NeoForge has the renderer before it builds the dispatcher.
         event.registerBlockEntityRenderer(
                 BogeyEntityInit.HX_STANDARD_BOGEY.get(), BogeyBlockEntityRenderer::new);
@@ -93,6 +95,7 @@ public class HeXieClientInit {
     }
 
     public static void registerMenus(final RegisterMenuScreensEvent event) {
+        event.register(MenuInit.GROUND_STATION_SIGN_MENU.get(), GroundStationSignScreen::new);
         event.register(
                 MenuInit.CARRIAGE_TYPE_SIGN_EDIT_MENU.get(), CarriageTypeSignEditScreen::new);
         event.register(

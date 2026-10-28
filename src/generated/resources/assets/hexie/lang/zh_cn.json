@@ -610,5 +610,11 @@
   "patchouli.hexie.landing_text": "放眼未来，走向世界",
   "easter.eggs": "此去，二百由旬↓↓",
   "gui.hexie.carriage_browser.demo": "彩虹示例车厢",
-  "container.hexie.inventory.button.switch_mode": "切换模式"
+  "container.hexie.inventory.button.switch_mode": "切换模式",
+  "block.hexie.ground_station_sign": "国铁地面站牌",
+  "gui.hexie.ground_station_sign.station_name": "站名",
+  "gui.hexie.ground_station_sign.pinyin": "拼音",
+  "gui.hexie.ground_station_sign.previous": "上一站",
+  "gui.hexie.ground_station_sign.next": "下一站",
+  "gui.hexie.ground_station_sign.switch_font": "切换字体"
 }

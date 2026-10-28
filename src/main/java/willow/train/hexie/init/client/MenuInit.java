@@ -19,6 +19,8 @@ public class MenuInit {
     public static HexieInventory INVENTORY_WIDGET = null;
     public static final DeferredRegister<MenuType<?>> MENUS =
             DeferredRegister.create(Registries.MENU, Main.MOD_ID);
+    public static final DeferredHolder<MenuType<?>, MenuType<GroundStationSignMenu>> GROUND_STATION_SIGN_MENU =
+            registerMenuType(GroundStationSignMenu::new, "ground_station_sign");
     public static final DeferredHolder<MenuType<?>, MenuType<CarriageTypeSignEditMenu>>
             CARRIAGE_TYPE_SIGN_EDIT_MENU =
                     registerMenuType(CarriageTypeSignEditMenu::new, "carriage_type_sign_edit_menu");

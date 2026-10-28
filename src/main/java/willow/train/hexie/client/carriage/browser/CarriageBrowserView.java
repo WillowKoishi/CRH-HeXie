@@ -17,6 +17,7 @@ public final class CarriageBrowserView implements AutoCloseable {
     private static final int STRIP_Y = 17;
     private static final int STRIP_HEIGHT = 18;
     private static final int PREVIEW_TOP = 37;
+    private static final int CONTROL_X = 174, CONTROL_Y = 19, CONTROL_SIZE = 14, CONTROL_PITCH = 18;
     private static final float FRONT_YAW = 142;
     private static final float CAMERA_PITCH = 44;
     final CreativeModeInventoryScreen host;
@@ -206,7 +207,7 @@ public final class CarriageBrowserView implements AutoCloseable {
         hovered = null;
         selectedTransform = null;
         stripEntries.clear();
-        if (layout == null) return;
+        if (layout == null) { renderControls(gui, mouseX, mouseY); return; }
         gui.flush();
         scissor(gui, 9, STRIP_Y + 1, 169, 34);
         Matrix4f sideTrack = new Matrix4f(gui.pose().last().pose())
@@ -260,6 +261,87 @@ public final class CarriageBrowserView implements AutoCloseable {
             gui.flush();
             gui.disableScissor();
         }
+        renderControls(gui, mouseX, mouseY);
+    }
+
+    private int controlAt(double x, double y) {
+        if (x < CONTROL_X || x >= CONTROL_X + CONTROL_SIZE) return -1;
+        int index = (int) Math.floor((y - CONTROL_Y) / CONTROL_PITCH);
+        return index >= 0 && index < 5 && y < CONTROL_Y + index * CONTROL_PITCH + CONTROL_SIZE ? index : -1;
+    }
+
+    // Pixel masks face in screen coordinates; no rotation of an asymmetric outline.
+    private static final String[] CONTROL_LEFT = {
+            "....#..", "...##..", "..###..", ".####..", "..###..", "...##..", "....#.."};
+    private static final String[] CONTROL_RIGHT = {
+            "..#....", "..##...", "..###..", "..####.", "..###..", "..##...", "..#...."};
+    private static final String[] CONTROL_UP = {
+            "...#...", "..###..", ".#####.", "#######", ".......", ".......", ".#####."};
+    private static final String[] CONTROL_DOWN = {
+            ".......", "#######", ".#####.", "..###..", "...#...", ".......", ".#####."};
+    private static final String[] CONTROL_CLOCKWISE = {
+            "..###..", ".#...#.", "#....#.", "#...###", "#....#.", ".#.....", "..###.."};
+    private static final String[] CONTROL_COUNTERCLOCKWISE = {
+            "..###..", ".#...#.", ".#....#", "###...#", ".#....#", ".....#.", "..###.."};
+
+    private void renderControls(GuiGraphics gui, int mouseX, int mouseY) {
+        gui.pose().pushPose();
+        gui.pose().translate(0, 0, 400);
+        int hoveredControl = controlAt(mouseX, mouseY);
+        for (int i = 0; i < 5; i++) {
+            int x = CONTROL_X, y = CONTROL_Y + i * CONTROL_PITCH;
+            boolean hover = layout != null && hoveredControl == i;
+            // Bedrock touch D-pad: square bevel, broad solid arrow and a one-pixel recess.
+            gui.fill(x, y, x + CONTROL_SIZE, y + CONTROL_SIZE, 0xFF666666);
+            gui.fill(x + 1, y + 1, x + 13, y + 13, 0xFFAAAAAA);
+            gui.fill(x + 1, y + 1, x + 13, y + 2, 0xFFFFFFFF);
+            gui.fill(x + 1, y + 2, x + 2, y + 12, 0xFFF7F7F7);
+            gui.fill(x + 2, y + 2, x + 12, y + 11, hover ? 0xFFF8F8F8 : 0xFFE2E2E2);
+            gui.fill(x + 2, y + 11, x + 12, y + 12, 0xFFC4C4C4);
+            String[] icon = switch (i) {
+                case 0 -> targetShell > .5f ? CONTROL_UP : CONTROL_DOWN;
+                case 1 -> CONTROL_CLOCKWISE;
+                case 2 -> CONTROL_COUNTERCLOCKWISE;
+                case 3 -> CONTROL_LEFT;
+                default -> CONTROL_RIGHT;
+            };
+            drawControlPixels(gui, icon, x + 3, y + 4, layout == null ? 0xFFC0C0C0 : 0xFFA4A4A4);
+            drawControlPixels(gui, icon, x + 3, y + 3, layout == null ? 0xFFA8A8A8 : 0xFF555555);
+        }
+        gui.pose().popPose();
+    }
+
+    private static void drawControlPixels(GuiGraphics gui, String[] icon, int x, int y, int color) {
+        for (int row = 0; row < icon.length; row++) {
+            for (int col = 0; col < icon[row].length(); col++) {
+                if (icon[row].charAt(col) == '#') gui.fill(x + col, y + row, x + col + 1, y + row + 1, color);
+            }
+        }
+    }
+
+    private void activateControl(int control) {
+        if (layout == null) return;
+        animate();
+        if (control >= 3) {
+            // Project the camera pan into screen space: arrow direction describes the visible train,
+            // not the camera or the model's north/south axis.
+            double screenX = localCamera(0).transformDirection(new org.joml.Vector3f(0, 0, -1)).x;
+            if (Math.abs(screenX) < .0001) screenX = -Math.sin(Math.toRadians(targetYaw));
+            double step = (control == 3 ? -1 : 1) * (screenX >= 0 ? 1 : -1);
+            // A direction reversal should not first finish a queued movement the other way.
+            if ((panTarget - panZ) * step < 0) panTarget = panZ;
+            panTarget = clampPan(panTarget + step);
+        } else {
+            fromYaw = yaw;
+            fromShell = shell;
+            if (control == 0) targetShell = targetShell > .5f ? 0 : 1;
+            else phase += control == 1 ? -1 : 1;
+            targetYaw = FRONT_YAW + phase * 90;
+            viewStarted = now();
+        }
+        hovered = null;
+        minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+                net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1));
     }
 
     private void drawOutline(Matrix4f matrix, net.minecraft.world.phys.shapes.VoxelShape shape) {
@@ -287,7 +369,7 @@ public final class CarriageBrowserView implements AutoCloseable {
         double delta = vertical != 0 ? vertical : horizontal;
         if (delta == 0) return false;
         int step = delta > 0 ? -1 : 1;
-        if (y >= STRIP_Y && y <= STRIP_Y + STRIP_HEIGHT) select(selected + step);
+        if (x >= 9 && x < 169 && y >= STRIP_Y && y <= STRIP_Y + STRIP_HEIGHT) select(selected + step);
         else if (x >= 9 && x < 169 && y >= PREVIEW_TOP && y < 106 && layout != null) {
             // Use the same block shapes as hover picking; empty gaps belong to camera panning.
             boolean overCar = selectedTransform != null && previews.get(layout.model(selected)).pick(
@@ -300,6 +382,11 @@ public final class CarriageBrowserView implements AutoCloseable {
     }
 
     public boolean mouseClicked(double x, double y, int button) {
+        int control = controlAt(x, y);
+        if (control >= 0) {
+            if (button == 0) activateControl(control);
+            return true;
+        }
         if (x >= 9 && x < 169 && y >= 18 && y < 106 && !host.getMenu().getCarried().isEmpty()) {
             host.getMenu().setCarried(net.minecraft.world.item.ItemStack.EMPTY);
             return true;

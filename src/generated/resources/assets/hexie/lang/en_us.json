@@ -606,5 +606,11 @@
   "patchouli.hexie.name":"铁路车辆图鉴",
   "patchouli.hexie.landing_text": "放眼未来，走向世界",
   "gui.hexie.carriage_browser.demo": "Rainbow example carriage",
-  "container.hexie.inventory.button.switch_mode": "Switch mode"
+  "container.hexie.inventory.button.switch_mode": "Switch mode",
+  "block.hexie.ground_station_sign": "Ground Station Sign",
+  "gui.hexie.ground_station_sign.station_name": "Station name",
+  "gui.hexie.ground_station_sign.pinyin": "Pinyin",
+  "gui.hexie.ground_station_sign.previous": "Previous station",
+  "gui.hexie.ground_station_sign.next": "Next station",
+  "gui.hexie.ground_station_sign.switch_font": "Switch font"
 }

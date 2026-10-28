@@ -1,0 +1,8 @@
+HeXie uses texgyreheros-bold.otf and texgyreschola-bold.otf from the TeX Gyre distribution.
+Both font binaries are unmodified. A complete unmodified upstream distribution
+is included as tex-gyre-original.zip, with its manifests, licenses and sources.
+Upstream: https://ctan.org/pkg/tex-gyre
+Download: https://mirrors.ctan.org/fonts/tex-gyre.zip
+Copyright 2007-2009 for TeX Gyre extensions by B. Jackowski and J. M. Nowacki.
+The original authors do not provide support for HeXie integration.
+Integration support belongs to the HeXie contributors.

@@ -3,7 +3,7 @@ package willow.train.hexie.client.render.blockentity;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 
-import net.minecraft.client.gui.Font;
+import willow.train.hexie.client.sign.SignLettering;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
@@ -17,10 +17,7 @@ import java.util.List;
 
 public class TrainSpeedSignEntityRenderer implements BlockEntityRenderer<TrainSpeedSignEntity> {
 
-    private final Font font;
-
-    public TrainSpeedSignEntityRenderer(BlockEntityRendererProvider.Context pContext) {
-        this.font = pContext.getFont();
+public TrainSpeedSignEntityRenderer(BlockEntityRendererProvider.Context pContext) {
     }
 
     @Override
@@ -44,13 +41,10 @@ public class TrainSpeedSignEntityRenderer implements BlockEntityRenderer<TrainSp
 
         FormattedCharSequence formattedcharsequence =
                 pBlockEntity.getRenderMessages(
-                        (p_173653_) -> {
-                            List<FormattedCharSequence> list = this.font.split(p_173653_, 180);
-                            return list.isEmpty() ? FormattedCharSequence.EMPTY : list.get(0);
-                        });
+                        net.minecraft.network.chat.Component::getVisualOrderText);
 
-        float text_length = this.font.width(formattedcharsequence);
-        float text_height = this.font.lineHeight;
+        float text_length = SignLettering.width(SignLettering.SPEED, formattedcharsequence);
+        float text_height = 8;
 
         pPoseStack.pushPose();
 
@@ -97,16 +91,6 @@ public class TrainSpeedSignEntityRenderer implements BlockEntityRenderer<TrainSp
             PoseStack pPoseStack,
             MultiBufferSource pBufferSource,
             int pPackedLight) {
-        this.font.drawInBatch(
-                formattedcharsequence,
-                pX,
-                pY,
-                getDarkColor(pBlockEntity) * 2,
-                false,
-                pPoseStack.last().pose(),
-                pBufferSource,
-                net.minecraft.client.gui.Font.DisplayMode.NORMAL,
-                0,
-                pPackedLight);
+        SignLettering.draw(SignLettering.SPEED, formattedcharsequence, pX, pY, getDarkColor(pBlockEntity) * 2, pPoseStack, pBufferSource, pPackedLight);
     }
 }

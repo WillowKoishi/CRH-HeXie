@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "flip_v": true,
+  "model": "hexie:models/block/ground_station_sign/ground_station_sign.obj",
+  "textures": {
+    "particle": "hexie:block/ground_station_sign/4"
+  }
+}

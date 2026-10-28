@@ -15,6 +15,10 @@ public class BlockEntitiesInit {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, Main.MOD_ID);
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<GroundStationSignEntity>> GROUND_STATION_SIGN =
+            BLOCK_ENTITIES.register("ground_station_sign", () -> BlockEntityType.Builder.of(
+                    GroundStationSignEntity::new, BlockInit.GROUND_STATION_SIGN.get()).build(null));
+
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<MegaphoneBlockEntity>>
             MEGAPHONE_BLOCK_ENTITIES =
                     BLOCK_ENTITIES.register(
