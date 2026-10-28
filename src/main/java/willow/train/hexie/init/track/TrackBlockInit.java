@@ -34,6 +34,7 @@ import net.minecraft.world.level.material.MapColor;
 import willow.train.hexie.Main;
 import willow.train.hexie.blocks.bogeys.df11g.DF11GBogeyBlock;
 import willow.train.hexie.blocks.bogeys.standard.HXStandardBogeyBlock;
+import willow.train.hexie.blocks.bogeys.CRH.CRHBogeyBlock;
 import willow.train.hexie.blocks.locos.df11g.DF11GFrontBlock;
 import willow.train.hexie.init.bogeys.BogeySizesInit;
 import willow.train.hexie.item.ToolTipsItemHelper;
@@ -219,6 +220,14 @@ public class TrackBlockInit {
                     .properties(p -> p.mapColor(MapColor.PODZOL))
                     .transform(bogeyModel("hexie:block/bogey/hx_standard/cw2_top"))
                     .lang("SW160 Bogey")
+                    .register();
+
+    public static final BlockEntry<CRHBogeyBlock> DT206_BOGEY =
+            REGISTRATE
+                    .block("dt206_bogey", p -> new CRHBogeyBlock(p, BogeySizesInit.DT206))
+                    .properties(p -> p.mapColor(MapColor.METAL))
+                    .transform(bogeyModel("hexie:block/bogey/hx_standard/cw2_top"))
+                    .lang("DT-206 Bogey")
                     .register();
 
     private static final CreateRegistrate locoREGISTRATE =

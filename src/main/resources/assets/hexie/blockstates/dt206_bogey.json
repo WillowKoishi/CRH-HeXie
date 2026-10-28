@@ -1,0 +1,11 @@
+{
+  "variants": {
+    "axis=x": {
+      "model": "hexie:block/bogey/hx_standard/cw2_top"
+    },
+    "axis=z": {
+      "model": "hexie:block/bogey/hx_standard/cw2_top",
+      "y": 90
+    }
+  }
+}

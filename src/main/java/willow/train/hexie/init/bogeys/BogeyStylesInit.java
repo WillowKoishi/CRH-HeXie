@@ -41,6 +41,12 @@ public class BogeyStylesInit {
                     .size(BogeySizesInit.QJ_BACKWARD, TrackBlockInit.QJ_BACKWARD_BOGEY, () -> () -> { var renderer = new DF11GBogeyRenderer.QJBackwardBogeyRenderer(); return new BogeyStyle.SizeRenderer(renderer, renderer::createVisual); })
                     .build();
 
+    public static final BogeyStyle CRHBOGEY =
+            create("crhbogey", HEXIE_CYCLE_GROUP)
+                    .displayName(Component.translatable("hexie.bogeys.styles.crhbogey"))
+                    .size(BogeySizesInit.DT206, TrackBlockInit.DT206_BOGEY, () -> () -> { var renderer = new HXStandardBogeyRenderer.DT206BogeyRenderer(); return new BogeyStyle.SizeRenderer(renderer, renderer::createVisual); })
+                    .build();
+
     public static BogeyStyle.Builder create(
             String name, ResourceLocation cycleGroup) {
         return create(Main.asResource(name), cycleGroup);

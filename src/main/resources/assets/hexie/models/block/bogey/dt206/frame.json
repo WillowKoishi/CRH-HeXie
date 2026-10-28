@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "flip_v": true,
+  "model": "hexie:models/block/bogey/dt206/frame.obj",
+  "textures": {
+    "particle": "hexie:block/bogey/dt206/frame"
+  }
+}
