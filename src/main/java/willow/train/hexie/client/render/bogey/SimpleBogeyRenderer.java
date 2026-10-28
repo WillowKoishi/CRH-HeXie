@@ -74,6 +74,8 @@ public abstract class SimpleBogeyRenderer implements BogeyRenderer {
 
         private BogeyModelData(PartialModel model) {
             this.model = model;
+            // Raise all moving/frame parts together; the separately baked top stays at its original anchor.
+            transform.translate(0, (float) willow.train.hexie.init.track.TrackMaterialInit.RAIL_HEIGHT_INCREASE, 0);
         }
 
         public BogeyModelData translate(double x, double y, double z) {

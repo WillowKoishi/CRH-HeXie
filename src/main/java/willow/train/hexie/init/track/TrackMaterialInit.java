@@ -11,13 +11,16 @@ import willow.train.hexie.blocks.track.standard.StandardTrackBlock;
 
 public class TrackMaterialInit {
 
+    public static final double RAIL_SURFACE_HEIGHT = 0.75;
+    public static final double RAIL_HEIGHT_INCREASE = 0.4074;
+
     // All three materials share one Create track type. Bogeys for this type cannot
     // travel on Create's own STANDARD track type.
     public static final TrackMaterial.TrackType HEXIE_STANDARD =
             new TrackMaterial.TrackType(Main.asResource("standard"), StandardTrackBlock::new);
 
     // Create places curved rail segments at 0.965 blocks. Both segment OBJ models
-    // compensate by 0.210 blocks to retain the original 0.755-block rail offset.
+    // retain their previous alignment compensation, plus RAIL_HEIGHT_INCREASE in the OBJ vertices.
     public static final TrackMaterial STANDARD = make(Main.asResource("standard"))
             .lang("Standard")
             .block(() -> TrackBlockInit.STANDARD_TRACK)

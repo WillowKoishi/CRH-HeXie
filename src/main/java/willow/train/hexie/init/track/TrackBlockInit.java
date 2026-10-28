@@ -202,7 +202,7 @@ public class TrackBlockInit {
             REGISTRATE
                     .block("qj_bogey", p -> new DF11GBogeyBlock(p, BogeySizesInit.QJ))
                     .properties(p -> p.mapColor(MapColor.PODZOL))
-                    .transform(bogeyModel("create:block/track/bogey/top"))
+                    .transform(bogeyModel("hexie:block/bogey/qj/qj_top"))
                     .lang("QJ Bogey")
                     .register();
 
@@ -210,7 +210,7 @@ public class TrackBlockInit {
             REGISTRATE
                     .block("qj_backward_bogey", p -> new DF11GBogeyBlock(p, BogeySizesInit.QJ_BACKWARD))
                     .properties(p -> p.mapColor(MapColor.PODZOL))
-                    .transform(bogeyModel("create:block/track/bogey/top"))
+                    .transform(bogeyModel("hexie:block/bogey/qj/qj_top"))
                     .lang("QJ Backward Bogey")
                     .register();
 
