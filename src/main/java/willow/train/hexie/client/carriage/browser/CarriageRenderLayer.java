@@ -17,17 +17,25 @@ final class CarriageRenderLayer implements AutoCloseable {
     private record Batch(RenderType type, VertexBuffer buffer) {}
     private final List<Batch> batches = new ArrayList<>();
     private static RenderTarget target;
+    private final Set<net.minecraft.resources.ResourceLocation> signTextures = new HashSet<>();
 
     static CarriageRenderLayer capture(Consumer<MultiBufferSource> render) {
         var result = new CarriageRenderLayer();
         Map<RenderType, ByteBufferBuilder> memory = new LinkedHashMap<>();
         Map<RenderType, BufferBuilder> builders = new LinkedHashMap<>();
         try {
-            render.accept(type -> builders.computeIfAbsent(type, key -> {
+            render.accept(new willow.train.hexie.client.sign.SignTextRenderer.TextureOwner() {
+                @Override public void retainSignTexture(net.minecraft.resources.ResourceLocation texture) {
+                    if (result.signTextures.add(texture)) willow.train.hexie.client.sign.SignTextRenderer.retain(texture);
+                }
+                @Override public VertexConsumer getBuffer(RenderType type) {
+                    return builders.computeIfAbsent(type, key -> {
                 var bytes = new ByteBufferBuilder(65536);
                 memory.put(key, bytes);
                 return new BufferBuilder(bytes, key.mode(), key.format());
-            }));
+                    });
+                }
+            });
             for (var entry : builders.entrySet()) {
                 MeshData mesh = entry.getValue().build();
                 if (mesh == null) continue;
@@ -127,5 +135,7 @@ final class CarriageRenderLayer implements AutoCloseable {
     @Override public void close() {
         batches.forEach(batch -> batch.buffer.close());
         batches.clear();
+        signTextures.forEach(willow.train.hexie.client.sign.SignTextRenderer::release);
+        signTextures.clear();
     }
 }

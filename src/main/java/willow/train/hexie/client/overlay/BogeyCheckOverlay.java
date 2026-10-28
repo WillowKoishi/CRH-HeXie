@@ -132,6 +132,10 @@ public class BogeyCheckOverlay extends BaseOverlay {
             previewPicture.render(pose, x + 10, y + (boxHeight - imageHeight)/2 + 5, imageWidth, imageHeight);
         }
 
+        if (previewPicture == null && style.equals(BogeyStylesInit.CRHBOGEY)) {
+            renderModelPreview(pose, x, y, partial);
+        }
+
         int textX = x + (int)((float)boxWidth * 0.75) - 25;
         if (speedLabel != null)
             renderComponent(pose, font, speedLabel, textX, y + 35, 0x5f4d3a);
@@ -153,6 +157,32 @@ public class BogeyCheckOverlay extends BaseOverlay {
         pose.pose().translate(0, 10, 0);
         renderComponent(pose, font, TIP_TWO, 0, 0, 0x5f4d3a);
         pose.pose().popPose();
+    }
+
+    /** Use the registered bogey renderer when the EMU has no preview image. */
+    private void renderModelPreview(GuiGraphics graphics, int x, int y, float partial) {
+        graphics.flush();
+        graphics.enableScissor(x + 8, y + 29, x + 92, y + 96);
+        var pose = graphics.pose();
+        pose.pushPose();
+        try {
+            pose.translate(x + 50, y + 69, 200);
+            pose.scale(18, -18, 18);
+            pose.mulPose(com.mojang.math.Axis.XP.rotationDegrees(25));
+            pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(135));
+            // BogeyStyle.render applies its own -1.5078125 Y offset.
+            pose.translate(0, 1.5078125, 0);
+            com.mojang.blaze3d.platform.Lighting.setupForFlatItems();
+            style.render(size, partial, pose, graphics.bufferSource(),
+                    net.minecraft.client.renderer.LightTexture.FULL_BRIGHT,
+                    net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,
+                    0, new net.minecraft.nbt.CompoundTag(), false);
+            graphics.flush();
+        } finally {
+            pose.popPose();
+            graphics.disableScissor();
+            com.mojang.blaze3d.platform.Lighting.setupFor3DItems();
+        }
     }
 
     private static String[] splitLabel(String text) {

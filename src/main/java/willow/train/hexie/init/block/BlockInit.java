@@ -51,6 +51,11 @@ public class BlockInit {
             Main.MOD_ID);
     public static final DeferredRegister<Item> ITEMS = AllItemsInit.ITEMS;
 
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.signs.GroundStationSignBlock> GROUND_STATION_SIGN = register("ground_station_sign",
+            () -> new willow.train.hexie.blocks.signs.GroundStationSignBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.QUARTZ).strength(1.5f).sound(SoundType.STONE).noOcclusion()),
+            object -> () -> new BlockItem(object.get(), new Item.Properties()));
+
     /**
      * logo
      */

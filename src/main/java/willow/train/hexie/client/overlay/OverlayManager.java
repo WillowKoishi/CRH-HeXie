@@ -76,7 +76,8 @@ public final class OverlayManager {
             BlockEntity blockEntity = mc.level.getBlockEntity(((BlockHitResult) hit).getBlockPos());
             if (!(blockEntity instanceof AbstractBogeyBlockEntity bogey)) return;
             if (!bogey.getStyle().equals(BogeyStylesInit.HXSTANDARDBOGEY)
-                    && !bogey.getStyle().equals(BogeyStylesInit.DF11GBOGEY)) return;
+                    && !bogey.getStyle().equals(BogeyStylesInit.DF11GBOGEY)
+                    && !bogey.getStyle().equals(BogeyStylesInit.CRHBOGEY)) return;
 
             BlockPos position = bogey.getBlockPos();
             if (mc.player.getEyePosition().distanceToSqr(

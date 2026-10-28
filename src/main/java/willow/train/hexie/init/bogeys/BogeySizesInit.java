@@ -29,6 +29,8 @@ public class BogeySizesInit {
 
     public static final BogeySizes.BogeySize SW160 = create("sw160", 0.915F / 2F);
 
+    public static final BogeySizes.BogeySize DT206 = create("dt206", 0.915F / 2F);
+
     public static BogeySizes.BogeySize create(String name, float size) {
         BogeySizes.BogeySize bogeySize = new BogeySizes.BogeySize(Main.asResource(name), size);
         BogeySizes.register(bogeySize);

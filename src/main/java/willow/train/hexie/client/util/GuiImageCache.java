@@ -93,6 +93,7 @@ public final class GuiImageCache {
         loaded = true;
         loadBogeyPreviews(BogeyStylesInit.HXSTANDARDBOGEY);
         loadBogeyPreviews(BogeyStylesInit.DF11GBOGEY);
+        loadBogeyPreviews(BogeyStylesInit.CRHBOGEY);
         for (ImageData pending : PENDING_IMAGES) {
             ImageData image = register(pending.location, 0);
             if (image == null)

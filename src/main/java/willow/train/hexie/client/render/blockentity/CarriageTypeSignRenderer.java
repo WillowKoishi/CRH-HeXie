@@ -3,7 +3,7 @@ package willow.train.hexie.client.render.blockentity;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 
-import net.minecraft.client.gui.Font;
+import willow.train.hexie.client.sign.SignLettering;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
@@ -14,14 +14,13 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import willow.train.hexie.blocks.signs.TrainPanelBlock;
 import willow.train.hexie.blockentity.CarriageTypeSignEntity;
 
-import java.util.List;
+import willow.train.hexie.client.sign.CarriageMarkingLayout;
+import willow.train.hexie.client.sign.SignTextRenderer;
+import net.minecraft.resources.ResourceLocation;
 
 public class CarriageTypeSignRenderer implements BlockEntityRenderer<CarriageTypeSignEntity> {
 
-    private final Font font;
-
-    public CarriageTypeSignRenderer(BlockEntityRendererProvider.Context pContext) {
-        this.font = pContext.getFont();
+public CarriageTypeSignRenderer(BlockEntityRendererProvider.Context pContext) {
     }
 
     /**
@@ -47,12 +46,9 @@ public class CarriageTypeSignRenderer implements BlockEntityRenderer<CarriageTyp
 
         FormattedCharSequence[] aformattedcharsequence =
                 pBlockEntity.getRenderMessages(
-                        (p_173653_) -> {
-                            List<FormattedCharSequence> list = this.font.split(p_173653_, 180);
-                            return list.isEmpty() ? FormattedCharSequence.EMPTY : list.get(0);
-                        });
+                        net.minecraft.network.chat.Component::getVisualOrderText);
 
-        if (aformattedcharsequence.length == 0) return;
+        if (aformattedcharsequence.length < 5) return;
 
         pPoseStack.pushPose();
 
@@ -60,93 +56,24 @@ public class CarriageTypeSignRenderer implements BlockEntityRenderer<CarriageTyp
         float f = -blockstate.getValue(TrainPanelBlock.FACING).getOpposite().toYRot();
         pPoseStack.mulPose(Axis.YP.rotationDegrees(f));
         pPoseStack.translate(0.0d, -0.3d, -0.42d);
-        // width 1.2，height 0.5
-        // scale 0.133
-
-        float size0 = ((float) this.font.width(aformattedcharsequence[0])) * 0.13f; // 硬座车
-        float size1 = ((float) this.font.width(aformattedcharsequence[1])) * 0.08f; // YINGZUOCHE
-        float size2 = ((float) this.font.width(aformattedcharsequence[2])) * 0.23f; // YZ
-        float size3 = ((float) this.font.width(aformattedcharsequence[3])) * 0.12f; // 25T
-        float size4 = ((float) this.font.width(aformattedcharsequence[4])) * 0.30f; // 345674
-
-        if (revert) {
-            pPoseStack.translate(0.4d - size1 * 0.133f * 0.5f, 0.0, 0.0);
-        } else {
-            pPoseStack.translate(-0.4d, 0.0d, 0.0d);
+        // Measure the exact ink width used for drawing; never round each field to GUI pixels.
+        float[] widths = new float[5];
+        for (int i = 0; i < widths.length; i++)
+            widths[i] = SignTextRenderer.width(profile(i), SignLettering.text(aformattedcharsequence[i]), 8, 180);
+        var layout = CarriageMarkingLayout.arrange(widths, revert);
+        float unit = .133f * .55f;
+        // Both orientations share one layout. Reversed signs keep their right edge anchored.
+        pPoseStack.translate(revert ? .4f - layout.width() * unit : -.4f, 0, 0);
+        pPoseStack.scale(unit, -unit, unit);
+        pPoseStack.translate(0, -1.7f, 0);
+        for (int i = 0; i < layout.parts().length; i++) {
+            var part = layout.parts()[i];
+            pPoseStack.pushPose();
+            pPoseStack.translate(part.x(), part.y(), 0);
+            pPoseStack.scale(part.scaleX(), part.scaleY(), 1);
+            renderText(aformattedcharsequence, i, 0, 0, pBlockEntity, pPoseStack, pBufferSource, pPackedLight);
+            pPoseStack.popPose();
         }
-
-        pPoseStack.scale(0.133f * 0.55f, -0.133f * 0.55f, 0.133f * 0.55f); // standard size
-
-        pPoseStack.scale(0.08f, 0.08f, 1.0f);
-        renderText(
-                aformattedcharsequence,
-                1,
-                0,
-                0,
-                pBlockEntity,
-                pPoseStack,
-                pBufferSource,
-                pPackedLight); // 硬座车
-        pPoseStack.scale(12.5f, 12.5f, 1.0f);
-
-        pPoseStack.translate((size1 - size0) / 2, -1.7, 0);
-
-        pPoseStack.scale(0.13f, 0.18f, 1.0f);
-        renderText(
-                aformattedcharsequence,
-                0,
-                0,
-                0,
-                pBlockEntity,
-                pPoseStack,
-                pBufferSource,
-                pPackedLight); // YINGZUOCHE
-        pPoseStack.scale(7.6923076924f, 5.555555555555f, 1.0f);
-
-        if (revert) {
-            pPoseStack.translate(-size2 - size4 - size3 - 1, 0, 0);
-        } else {
-            pPoseStack.translate(size1, 0, 0);
-        }
-
-        pPoseStack.scale(0.23f, 0.32f, 1.0f);
-        renderText(
-                aformattedcharsequence,
-                2,
-                0,
-                0,
-                pBlockEntity,
-                pPoseStack,
-                pBufferSource,
-                pPackedLight); // YZ
-        pPoseStack.scale(4.347826086956f, 3.1250f, 1.0f);
-
-        pPoseStack.translate(size2, 1.6, 0.0);
-
-        pPoseStack.scale(0.12f, 0.12f, 1.0f);
-        renderText(
-                aformattedcharsequence,
-                3,
-                0,
-                0,
-                pBlockEntity,
-                pPoseStack,
-                pBufferSource,
-                pPackedLight); // 25k
-        pPoseStack.scale(8.333333333333f, 8.333333333333f, 1.0f);
-
-        pPoseStack.translate(size3 + 1, -1.6, 0.0);
-
-        pPoseStack.scale(0.26f, 0.32f, 1.0f);
-        renderText(
-                aformattedcharsequence,
-                4,
-                0,
-                0,
-                pBlockEntity,
-                pPoseStack,
-                pBufferSource,
-                pPackedLight); // 345674
 
         pPoseStack.popPose();
     }
@@ -161,17 +88,13 @@ public class CarriageTypeSignRenderer implements BlockEntityRenderer<CarriageTyp
             MultiBufferSource pBufferSource,
             int pPackedLight) {
         FormattedCharSequence formattedcharsequence = aformattedcharsequence[index];
-        this.font.drawInBatch(
-                formattedcharsequence,
-                pX,
-                pY,
-                getDarkColor(pBlockEntity) * 2,
-                false,
-                pPoseStack.last().pose(),
-                pBufferSource,
-                net.minecraft.client.gui.Font.DisplayMode.NORMAL,
-                0,
-                pPackedLight);
+        SignLettering.draw(profile(index),
+                formattedcharsequence, pX, pY, getDarkColor(pBlockEntity) * 2, pPoseStack, pBufferSource, pPackedLight);
+    }
+
+    private static ResourceLocation profile(int index) {
+        return index == 0 ? SignLettering.VEHICLE_CHINESE
+                : index == 1 ? SignLettering.VEHICLE_PINYIN : SignLettering.VEHICLE_CODE;
     }
 
     private static int getDarkColor(CarriageTypeSignEntity pBlockEntity) {

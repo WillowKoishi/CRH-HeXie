@@ -1,4 +1,15 @@
 {
+  "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_dt206.bogey.name": "DT-206",
+  "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_dt206.bogey.speed": "Speed level: 250km/h",
+  "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_dt206.bogey.cart": "Cart: · CRH2",
+
+  "simurail_bogey_category.hexie.passenger": "Passenger Car Bogeys",
+  "simurail_bogey_category.hexie.locomotive": "Locomotive Bogeys",
+
+  "simurail_bogey_category.hexie.emu": "EMU Bogeys",
+  "simurail_bogey_entry.hexie.dt206": "DT-206",
+  "block.hexie.dt206_bogey": "DT-206 Bogey",
+
   "itemGroup.hexie":"HeXie 1",
   "key.categories.hexie":"HeXie 2",
 
@@ -16,8 +27,10 @@
   "block.hexie.tieless_track": "Tieless Track",
   "block.hexie.hx_standard_bogey": "HX Standard Bogey",
   "block.hexie.qj_backward_bogey": "QJ Backward Bogey",
+  "block.hexie.CRH_bogey": "High-Speed Bogey",
   "hexie.bogeys.styles.hxstandardbogey": "Passanger Cart Bogey",
   "hexie.bogeys.styles.df11gbogey": "Loco Bogey",
+  "hexie.bogeys.styles.crhbogey": "High-Speed Bogey",
   "simurail_bogey_category.hexie": "CRH mod",
   "simurail_bogey_entry.hexie.cw2": "CW-2",
   "simurail_bogey_entry.hexie.pk209p": "PK-209P (Axle Generator)",
@@ -30,6 +43,7 @@
   "simurail_bogey_entry.hexie.df11g_backward": "DF11G (Backward)",
   "simurail_bogey_entry.hexie.qj": "QJ Driving Wheels",
   "simurail_bogey_entry.hexie.qj_backward": "QJ Driving Wheels (Backward)",
+  "simurail_bogey_entry.hexie.DT206": "DT206",
   "simurail_track_type.hexie.standard": "1435 Standard Gauge",
   "simurail_track_type.hexie.standard.short": "HeXie",
   "block.hexie.hx_semaphore": "Color Light Signal",
@@ -606,5 +620,11 @@
   "patchouli.hexie.name":"铁路车辆图鉴",
   "patchouli.hexie.landing_text": "放眼未来，走向世界",
   "gui.hexie.carriage_browser.demo": "Rainbow example carriage",
-  "container.hexie.inventory.button.switch_mode": "Switch mode"
+  "container.hexie.inventory.button.switch_mode": "Switch mode",
+  "block.hexie.ground_station_sign": "Ground Station Sign",
+  "gui.hexie.ground_station_sign.station_name": "Station name",
+  "gui.hexie.ground_station_sign.pinyin": "Pinyin",
+  "gui.hexie.ground_station_sign.previous": "Previous station",
+  "gui.hexie.ground_station_sign.next": "Next station",
+  "gui.hexie.ground_station_sign.switch_font": "Switch font"
 }

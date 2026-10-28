@@ -1,4 +1,15 @@
 {
+  "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_dt206.bogey.name": "DT-206",
+  "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_dt206.bogey.speed": "速度等级: 250km/h",
+  "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_dt206.bogey.cart": "适用车型: · CRH2",
+
+  "simurail_bogey_category.hexie.passenger": "客车转向架",
+  "simurail_bogey_category.hexie.locomotive": "机车转向架",
+
+  "simurail_bogey_category.hexie.emu": "动车转向架",
+  "simurail_bogey_entry.hexie.dt206": "DT-206",
+  "block.hexie.dt206_bogey": "DT-206 转向架",
+
   "itemGroup.hexie": "和谐1",
   "key.categories.hexie": "和谐2",
 
@@ -16,8 +27,10 @@
   "block.hexie.tieless_track": "无枕轨道",
   "block.hexie.hx_standard_bogey": "CW2转向架",
   "block.hexie.qj_backward_bogey": "前进型反向转向架",
+  "block.hexie.CRH_bogey": "动车转向架",
   "hexie.bogeys.styles.hxstandardbogey": "客车转向架",
   "hexie.bogeys.styles.df11gbogey": "机车转向架",
+  "hexie.bogeys.styles.crhbogey": "动车转向架",
   "simurail_bogey_category.hexie": "CRH mod",
   "simurail_bogey_entry.hexie.cw2": "CW-2",
   "simurail_bogey_entry.hexie.pk209p": "PK-209P（轴发）",
@@ -28,6 +41,7 @@
   "simurail_bogey_entry.hexie.sw160": "SW-160",
   "simurail_bogey_entry.hexie.df11g": "DF11G",
   "simurail_bogey_entry.hexie.df11g_backward": "DF11G（反向）",
+  "simurail_bogey_entry.hexie.DT206": "DT206",
   "simurail_bogey_entry.hexie.qj": "前进型动轮",
   "simurail_bogey_entry.hexie.qj_backward": "前进型动轮（反向）",
   "simurail_track_type.hexie.standard": "1435标准轨距",
@@ -610,5 +624,11 @@
   "patchouli.hexie.landing_text": "放眼未来，走向世界",
   "easter.eggs": "此去，二百由旬↓↓",
   "gui.hexie.carriage_browser.demo": "彩虹示例车厢",
-  "container.hexie.inventory.button.switch_mode": "切换模式"
+  "container.hexie.inventory.button.switch_mode": "切换模式",
+  "block.hexie.ground_station_sign": "国铁地面站牌",
+  "gui.hexie.ground_station_sign.station_name": "站名",
+  "gui.hexie.ground_station_sign.pinyin": "拼音",
+  "gui.hexie.ground_station_sign.previous": "上一站",
+  "gui.hexie.ground_station_sign.next": "下一站",
+  "gui.hexie.ground_station_sign.switch_font": "切换字体"
 }
