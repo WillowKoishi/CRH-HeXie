@@ -3,7 +3,7 @@ package willow.train.hexie.client.render.blockentity;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 
-import net.minecraft.client.gui.Font;
+import willow.train.hexie.client.sign.SignLettering;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
@@ -23,9 +23,7 @@ import java.util.List;
 public class CarriageNoSignRenderer implements BlockEntityRenderer<CarriageNoSignEntity> {
     private final CarriageNoSignModel model; // 模型
 
-    private final Font font;
-
-    /**
+/**
      * 为了调用到我们的模型，这个构造体应该改成这个样子 调用 BlockEntityRendererProvider.Context pContext 之后获得模型就像下面这样写就好了
      *
      * @param pContext -
@@ -34,7 +32,6 @@ public class CarriageNoSignRenderer implements BlockEntityRenderer<CarriageNoSig
         model =
                 new CarriageNoSignModel(
                         pContext.bakeLayer(CarriageNoSignModel.CARRIAGE_NO_SIGN_MODEL_LAYER));
-        font = pContext.getFont();
     }
 
     /**
@@ -60,10 +57,7 @@ public class CarriageNoSignRenderer implements BlockEntityRenderer<CarriageNoSig
 
         FormattedCharSequence formattedcharsequence =
                 pBlockEntity.getRenderMessages(
-                        (p_173653_) -> {
-                            List<FormattedCharSequence> list = this.font.split(p_173653_, 180);
-                            return list.isEmpty() ? FormattedCharSequence.EMPTY : list.get(0);
-                        });
+                        net.minecraft.network.chat.Component::getVisualOrderText);
 
         pPoseStack.pushPose();
 
@@ -104,19 +98,19 @@ public class CarriageNoSignRenderer implements BlockEntityRenderer<CarriageNoSig
 
         if (isLeftSide) {
             pPoseStack.translate(
-                    (0.125f - ((float) this.font.width(formattedcharsequence) * 0.133f * 0.08f)) / 2
+                    (0.125f - ((float) SignLettering.width(SignLettering.CARRIAGE_NUMBER, formattedcharsequence) * 0.133f * 0.08f)) / 2
                             - 0.02,
                     0.0d,
                     0.001d);
         } else {
             pPoseStack.translate(
-                    -(0.125f - ((float) this.font.width(formattedcharsequence) * 0.133f * 0.08f))
+                    -(0.125f - ((float) SignLettering.width(SignLettering.CARRIAGE_NUMBER, formattedcharsequence) * 0.133f * 0.08f))
                                     / 2
                             + 0.02,
                     0.0d,
                     0.001d);
             pPoseStack.translate(
-                    -((float) this.font.width(formattedcharsequence) * 0.133f * 0.08f), 0.0d, 0.0d);
+                    -((float) SignLettering.width(SignLettering.CARRIAGE_NUMBER, formattedcharsequence) * 0.133f * 0.08f), 0.0d, 0.0d);
         }
         pPoseStack.scale(0.133f, -0.133f, 0.133f); // standard size
         pPoseStack.scale(0.08f, 0.08f, 0.08f);
@@ -134,17 +128,7 @@ public class CarriageNoSignRenderer implements BlockEntityRenderer<CarriageNoSig
             PoseStack pPoseStack,
             MultiBufferSource pBufferSource,
             int pPackedLight) {
-        this.font.drawInBatch(
-                formattedcharsequence,
-                pX,
-                pY,
-                getDarkColor(pBlockEntity) * 2,
-                false,
-                pPoseStack.last().pose(),
-                pBufferSource,
-                net.minecraft.client.gui.Font.DisplayMode.NORMAL,
-                0,
-                pPackedLight);
+        SignLettering.draw(SignLettering.CARRIAGE_NUMBER, formattedcharsequence, pX, pY, getDarkColor(pBlockEntity) * 2, pPoseStack, pBufferSource, pPackedLight);
     }
 
     private static int getDarkColor(CarriageNoSignEntity pBlockEntity) {
