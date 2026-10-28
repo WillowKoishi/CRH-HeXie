@@ -604,6 +604,7 @@
   "container.hexie.acc.title": "自动控制配置项",
   "container.hexie.acc.empty": "这里空空如也",
   "container.hexie.abc.title": "遥控配置项",
+  "container.hexie.abc.inventory_full": "背包已满，请放回鼠标上的物品后再关闭",
 
   "tips.patchouli": "--------------------------------帕秋莉辞典内容--------------------------------",
   "patchouli.hexie.name": "铁路车辆图鉴",

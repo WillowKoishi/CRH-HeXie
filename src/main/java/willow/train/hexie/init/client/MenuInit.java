@@ -12,11 +12,9 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import willow.train.hexie.Main;
 import willow.train.hexie.menu.AutomaticControlCouplingMenu;
 import willow.train.hexie.menu.*;
-import willow.train.hexie.client.screens.HexieInventory;
 
 public class MenuInit {
 
-    public static HexieInventory INVENTORY_WIDGET = null;
     public static final DeferredRegister<MenuType<?>> MENUS =
             DeferredRegister.create(Registries.MENU, Main.MOD_ID);
     public static final DeferredHolder<MenuType<?>, MenuType<GroundStationSignMenu>> GROUND_STATION_SIGN_MENU =

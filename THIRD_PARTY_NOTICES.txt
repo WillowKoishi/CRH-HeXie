@@ -41,13 +41,14 @@ Noto Sans CJK SC Regular and Noto Serif CJK SC Regular
 Upstream: https://github.com/notofonts/noto-cjk
 Unmodified official OTF files, Sans/OTF/SimplifiedChinese and
 Serif/OTF/SimplifiedChinese respectively.
-Licenses: assets/hexie/sign_fonts/OFL.txt and NotoSerif-OFL.txt
+Licenses: META-INF/licenses/sign-fonts/OFL.txt and
+META-INF/licenses/sign-fonts/NotoSerif-OFL.txt
 
 Barlow Condensed Medium
 Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow)
 Source: https://github.com/google/fonts/tree/main/ofl/barlowcondensed
 Unmodified BarlowCondensed-Medium.ttf.
-License: assets/hexie/sign_fonts/Barlow-OFL.txt
+License: META-INF/licenses/sign-fonts/Barlow-OFL.txt
 
 These font licenses are included in the mod resources and remain applicable
 independently of HeXie's own license. Font files retain their embedded notices.
@@ -57,13 +58,13 @@ Sign lettering revision (2026-10-28)
 
 Noto Serif CJK SC Black: unmodified official font from notofonts/noto-cjk,
 Serif/OTF/SimplifiedChinese/NotoSerifCJKsc-Black.otf.
-License: assets/hexie/sign_fonts/NotoSerif-OFL.txt (SIL OFL 1.1).
+License: META-INF/licenses/sign-fonts/NotoSerif-OFL.txt (SIL OFL 1.1).
 
 Liberation Serif Bold 2.1.5: unmodified LiberationSerif-Bold.ttf.
 Digitized data copyright (c) 2010 Google Corporation, reserved names
 Arimo, Tinos and Cousine. Copyright (c) 2012 Red Hat, Inc., reserved name Liberation.
 Official release: https://github.com/liberationfonts/liberation-fonts/releases/tag/2.1.5
-License: assets/hexie/sign_fonts/Liberation-OFL.txt (SIL OFL 1.1).
+License: META-INF/licenses/sign-fonts/Liberation-OFL.txt (SIL OFL 1.1).
 
 TeX Gyre Heros Bold 2.004: unmodified texgyreheros-bold.otf.
 Copyright 2007-2009 for TeX Gyre extensions by B. Jackowski and J. M. Nowacki
@@ -71,7 +72,7 @@ Copyright 2007-2009 for TeX Gyre extensions by B. Jackowski and J. M. Nowacki
 Source: https://ctan.org/pkg/tex-gyre
 License: GUST Font License, an instance of LPPL 1.3c.
 Full unmodified upstream work: META-INF/licenses/tex-gyre/tex-gyre-original.zip
-Accompanying licenses, original README and manifest: assets/hexie/sign_fonts/.
+Accompanying licenses, original README and manifest: META-INF/licenses/sign-fonts/.
 The original authors do not provide support for HeXie integration.
 
 Barlow is retained for existing resource-pack references only; built-in
@@ -82,8 +83,8 @@ Copyright 2007-2009 for TeX Gyre extensions by B. Jackowski and J. M. Nowacki
 (on behalf of TeX Users Groups). Vietnamese characters by Han The Thanh.
 License: GUST Font License / LPPL 1.3c. The complete original distribution
 is included in META-INF/licenses/tex-gyre/tex-gyre-original.zip.
-Original README and manifest are in assets/hexie/sign_fonts/.
+Original README and manifest are in META-INF/licenses/sign-fonts/.
 
 Noto Sans CJK SC Bold: unmodified NotoSansCJKsc-Bold.otf from
 https://github.com/notofonts/noto-cjk/tree/main/Sans/OTF/SimplifiedChinese
-License: assets/hexie/sign_fonts/OFL.txt (SIL OFL 1.1).
+License: META-INF/licenses/sign-fonts/OFL.txt (SIL OFL 1.1).
