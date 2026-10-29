@@ -22,6 +22,26 @@ public class StandardTrackBlock extends TrackBlock {
     }
 
     @Override
+    public net.minecraft.world.ItemInteractionResult useItemOn(net.minecraft.world.item.ItemStack stack,
+            BlockState state, net.minecraft.world.level.Level level, BlockPos pos,
+            net.minecraft.world.entity.player.Player player, net.minecraft.world.InteractionHand hand,
+            net.minecraft.world.phys.BlockHitResult hit) {
+        if (!TrackBallast.enabled(state) || !TrackBallast.canPaint(player, stack))
+            return super.useItemOn(stack, state, level, pos, player, hand, hit);
+        if (!level.isClientSide && level.mayInteract(player, pos)) {
+            // Default straight tracks have no block entity. Allocate data storage only when painted.
+            if (!state.getValue(HAS_BE)) level.setBlockAndUpdate(pos, state.setValue(HAS_BE, true));
+            if (level.getBlockEntity(pos) instanceof com.simibubi.create.content.trains.track.TrackBlockEntity track) {
+                BlockState texture = ((net.minecraft.world.item.BlockItem) stack.getItem()).getBlock().defaultBlockState();
+                TrackBallast.paint(track, null, texture);
+                for (var curve : track.getConnections().values())
+                    if (curve.getMaterial() == TrackMaterialInit.STANDARD) TrackBallast.paint(track, curve.getKey(), texture);
+            }
+        }
+        return net.minecraft.world.ItemInteractionResult.sidedSuccess(level.isClientSide);
+    }
+
+    @Override
     public <Self extends Affine<Self>> PartialModel prepareTrackOverlay(Affine<Self> transform,
             BlockGetter world, BlockPos pos, BlockState state, BezierTrackPointLocation curvePoint,
             Direction.AxisDirection direction, RenderedTrackOverlayType type) {

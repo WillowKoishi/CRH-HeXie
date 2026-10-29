@@ -11,7 +11,6 @@ import com.simibubi.create.content.trains.track.TrackBlock;
 import willow.train.hexie.item.track.StandardTrackItem;
 import com.simibubi.create.content.trains.track.TrackMaterial;
 import com.simibubi.create.content.trains.track.TrackShape;
-import com.simibubi.create.content.trains.track.TrackModel;
 import com.simibubi.create.foundation.data.CreateRegistrate;
 import com.simibubi.create.foundation.data.SharedProperties;
 import com.tterrag.registrate.providers.DataGenContext;
@@ -62,7 +61,8 @@ public class TrackBlockInit {
                 .tag(AllTags.AllBlockTags.GIRDABLE_TRACKS.tag)
                 .tag(net.neoforged.neoforge.common.Tags.Blocks.RELOCATION_NOT_SUPPORTED)
                 .lang(material.langName + " Train Track")
-                .onRegister(CreateRegistrate.blockModel(() -> TrackModel::new))
+                .onRegister(CreateRegistrate.blockModel(() ->
+                        willow.train.hexie.client.render.track.BallastTrackModel::create))
                 .item(StandardTrackItem::new)
                 .tag(AllTags.AllItemTags.TRACKS.tag)
                 .model((context, provider) -> provider.generated(context,
