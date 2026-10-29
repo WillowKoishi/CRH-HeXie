@@ -8,6 +8,7 @@ license notices:
 - src/main/java/willow/train/hexie/blocks/semaphore/through/ThroughSignalBlock.java
 - src/main/java/willow/train/hexie/blocks/semaphore/through/ThroughSignalBlockEntity.java
 - src/main/java/willow/train/hexie/client/render/blockentity/ThroughSignalRenderer.java
+- src/main/java/willow/train/hexie/compat/create/CreateAssemblyWorld.java
 
 The following license applies to the Create-derived portions. HeXie's
 own license does not replace the original copyright and permission notice.

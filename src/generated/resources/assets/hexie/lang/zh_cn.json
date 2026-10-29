@@ -1,4 +1,5 @@
 {
+  "block.hexie.test_coupler": "验证车钩",
   "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_dt206.bogey.name": "DT-206",
   "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_dt206.bogey.speed": "速度等级: 250km/h",
   "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_dt206.bogey.cart": "适用车型: · CRH2",
@@ -630,5 +631,6 @@
   "gui.hexie.ground_station_sign.pinyin": "拼音",
   "gui.hexie.ground_station_sign.previous": "上一站",
   "gui.hexie.ground_station_sign.next": "下一站",
-  "gui.hexie.ground_station_sign.switch_font": "切换字体"
+  "gui.hexie.ground_station_sign.switch_font": "切换字体",
+  "gui.hexie.vehicle.assembled": "已组装"
 }

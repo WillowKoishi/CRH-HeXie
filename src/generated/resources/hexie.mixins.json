@@ -4,6 +4,9 @@
   "package": "willow.train.hexie.mixins.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "MixinVehicleAssemblyStation",
+    "MixinCompatibilityTrain",
+    "MixinTrackBallastData",
     "MixinCurvedTrackSelectionPacket",
     "MixinAbstractContraptionEntity",
     "MixinDeployerMovementBehavior",
@@ -11,6 +14,9 @@
     "MixinSchematicSyncPacket"
   ],
   "client": [
+    "client.MixinCurvedBallastInteraction",
+    "client.MixinTrackBallastRenderer",
+    "client.MixinBallastVisualizer",
     "client.MixinTrackGraphVisualizer",
     "client.CarriageCreativeScreenMixin",
     "client.CarriageContainerScreenMixin",

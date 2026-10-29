@@ -1,4 +1,5 @@
 {
+  "block.hexie.test_coupler": "Test Coupler",
   "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_dt206.bogey.name": "DT-206",
   "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_dt206.bogey.speed": "Speed level: 250km/h",
   "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_dt206.bogey.cart": "Cart: · CRH2",
@@ -626,5 +627,6 @@
   "gui.hexie.ground_station_sign.pinyin": "Pinyin",
   "gui.hexie.ground_station_sign.previous": "Previous station",
   "gui.hexie.ground_station_sign.next": "Next station",
-  "gui.hexie.ground_station_sign.switch_font": "Switch font"
+  "gui.hexie.ground_station_sign.switch_font": "Switch font",
+  "gui.hexie.vehicle.assembled": "Assembled"
 }

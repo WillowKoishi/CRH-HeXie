@@ -8,10 +8,19 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 
 import willow.train.hexie.Main;
 import willow.train.hexie.entity.HexieSeatEntity;
+import willow.train.hexie.compat.create.SnapshotCarriageEntity;
+import com.tterrag.registrate.util.entry.EntityEntry;
 
 public class EntityInit {
     public static DeferredRegister<EntityType<?>> ENTITY_TYPES =
             DeferredRegister.create(Registries.ENTITY_TYPE, Main.MOD_ID);
+
+    public static final EntityEntry<SnapshotCarriageEntity> ASSEMBLED_CARRIAGE =
+            Main.registrate()
+            .entity("assembled_carriage", SnapshotCarriageEntity::new, MobCategory.MISC)
+            .properties(builder -> builder.sized(1, 1).fireImmune().setTrackingRange(15)
+                    .setUpdateInterval(3).setShouldReceiveVelocityUpdates(false))
+            .register();
 
 
 

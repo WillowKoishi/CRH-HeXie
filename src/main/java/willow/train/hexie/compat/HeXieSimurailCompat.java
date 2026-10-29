@@ -19,6 +19,8 @@ import willow.train.hexie.init.track.TrackBlockInit;
 import willow.train.hexie.init.track.TrackMaterialInit;
 
 import java.util.List;
+import willow.train.hexie.vehicle.bogey.BogeyGeometry;
+import willow.train.hexie.vehicle.bogey.HexieBogeyGeometries;
 
 /** Only loaded from common setup when Simurail is installed. */
 public final class HeXieSimurailCompat {
@@ -80,28 +82,27 @@ public final class HeXieSimurailCompat {
     /** Nominal rolling radii and axle positions from HeXie's sizes and renderers, in blocks. */
     private static void configureParameters() {
         // CW2 shares the passenger wheel dimensions; forward/backward DF11G share one wheel model.
-        configureBogey(DT206, 0.43, -1.25, 1.25);
-        configureBogey(CW2, 0.915 / 2, -1.2, 1.2);
-        configureBogey(PK209P, 0.915 / 2, -1.2, 1.2);
-        configureBogey(PK209P_NO_MOTOR, 0.915 / 2, -1.2, 1.2);
-        configureBogey(PK209P_BACKWARD, 0.915 / 2, -1.2, 1.2);
-        configureBogey(SW220K, 0.915 / 2, -1.25, 1.25);
-        configureBogey(SW220K_BACKWARD, 0.915 / 2, -1.25, 1.25);
-        configureBogey(SW160, 0.915 / 2, -1.28, 1.28);
-        configureBogey(DF11G, 1.05 / 2, -2, 0, 2);
-        configureBogey(DF11G_BACKWARD, 1.05 / 2, -2, 0, 2);
-        configureBogey(QJ, 1.5 / 2, -3.2, -1.6, 0, 1.6, 3.2);
-        configureBogey(QJ_BACKWARD, 1.5 / 2, -3.2, -1.6, 0, 1.6, 3.2);
+        configureBogey(DT206, HexieBogeyGeometries.DT206);
+        configureBogey(CW2, HexieBogeyGeometries.CW2);
+        configureBogey(PK209P, HexieBogeyGeometries.PK209P);
+        configureBogey(PK209P_NO_MOTOR, HexieBogeyGeometries.PK209P);
+        configureBogey(PK209P_BACKWARD, HexieBogeyGeometries.PK209P);
+        configureBogey(SW220K, HexieBogeyGeometries.SW220K);
+        configureBogey(SW220K_BACKWARD, HexieBogeyGeometries.SW220K);
+        configureBogey(SW160, HexieBogeyGeometries.SW160);
+        configureBogey(DF11G, HexieBogeyGeometries.DF11G);
+        configureBogey(DF11G_BACKWARD, HexieBogeyGeometries.DF11G);
+        configureBogey(QJ, HexieBogeyGeometries.QJ);
+        configureBogey(QJ_BACKWARD, HexieBogeyGeometries.QJ);
     }
 
-    private static void configureBogey(BogeyEntry entry, double wheelRadius, double... axlePositions) {
+    private static void configureBogey(BogeyEntry entry, BogeyGeometry geometry) {
         BogeyType type = entry.type();
         // Simurail uses the OUTERMOST axle span, rounding it to an integer for its two logical axles.
-        double axleSpan = axlePositions[axlePositions.length - 1] - axlePositions[0];
-        BogeyPropertyOverrides.setAxleSpacingOverride(type, axleSpan);
-        BogeyPropertyOverrides.setAxleCountOverride(type, axlePositions.length);
-        BogeyPropertyOverrides.setAxlePositionsOverride(type, axlePositions);
-        BogeyPropertyOverrides.setWheelRadiusOverride(type, wheelRadius);
+        BogeyPropertyOverrides.setAxleSpacingOverride(type, geometry.axleSpan());
+        BogeyPropertyOverrides.setAxleCountOverride(type, geometry.axlePositions().size());
+        BogeyPropertyOverrides.setAxlePositionsOverride(type, geometry.axlePositionArray());
+        BogeyPropertyOverrides.setWheelRadiusOverride(type, geometry.wheelRadius());
         // Width/height come from HEXIE_STANDARD. Retain the block's connector offset: Simurail
         // converts Create's (0, 7/32, 1) into its own coordinates (1, -9/32, 0) automatically.
     }

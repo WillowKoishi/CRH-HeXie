@@ -1,12 +1,16 @@
 package willow.train.hexie.init.client;
 
 import com.simibubi.create.content.trains.bogey.BogeyBlockEntityRenderer;
+import willow.train.hexie.client.render.SnapshotCarriageRenderer;
+import willow.train.hexie.client.render.SnapshotCarriageVisual;
+import dev.engine_room.flywheel.lib.visualization.SimpleEntityVisualizer;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import willow.train.hexie.Main;
 import willow.train.hexie.client.screens.*;
 import willow.train.hexie.client.screens.controls.AnimatableBlockControllerScreen;
@@ -14,6 +18,7 @@ import willow.train.hexie.client.screens.controls.AutomaticControlCouplingScreen
 import willow.train.hexie.client.overlay.OverlayManager;
 import willow.train.hexie.event.client.HXInventoryEvents;
 import willow.train.hexie.init.BlockEntitiesInit;
+import willow.train.hexie.init.EntityInit;
 import willow.train.hexie.init.track.TrackBlockInit;
 import willow.train.hexie.init.bogeys.BogeyEntityInit;
 import willow.train.hexie.init.client.PartialModelInit;
@@ -33,7 +38,9 @@ public class HeXieClientInit {
         Main.bus.addListener(HeXieClientInit::registerBlockExtensions);
         Main.bus.addListener(HeXieClientInit::registerMenus);
         Main.bus.addListener(HeXieClientInit::registerRenderers);
+        Main.bus.addListener(HeXieClientInit::registerEntityVisuals);
         PartialModelInit.init();
+        willow.train.hexie.client.render.SnapshotCouplerRenderer.init();
         ClientModEventSubscriber.registerModelLayers();
         Main.bus.addListener(HeXieClientInit::onModelLayerRegistration);
         NeoForge.EVENT_BUS.register(new HXInventoryEvents());
@@ -63,6 +70,9 @@ public class HeXieClientInit {
     }
 
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        // Entity builders run before Registrate is attached to our bus. Bind directly so the
+        // renderer is present when the client dispatcher is created, including without Flywheel.
+        event.registerEntityRenderer(EntityInit.ASSEMBLED_CARRIAGE.get(), SnapshotCarriageRenderer::new);
         event.registerBlockEntityRenderer(BlockEntitiesInit.GROUND_STATION_SIGN.get(), GroundStationSignRenderer::new);
         // Register here so NeoForge has the renderer before it builds the dispatcher.
         event.registerBlockEntityRenderer(
@@ -94,6 +104,14 @@ public class HeXieClientInit {
         event.registerBlockEntityRenderer(
                 BlockEntitiesInit.CUSTOM_RENDERED_DOOR_ENTITY.get(),
                 CustomRenderedDoorRenderer::new);
+    }
+
+    public static void registerEntityVisuals(FMLClientSetupEvent event) {
+        event.enqueueWork(() -> SimpleEntityVisualizer.builder(EntityInit.ASSEMBLED_CARRIAGE.get())
+                .factory(SnapshotCarriageVisual::new)
+                // The base renderer still draws the non-instanced parts of a contraption.
+                .skipVanillaRender(entity -> false)
+                .apply());
     }
 
     public static void registerMenus(final RegisterMenuScreensEvent event) {

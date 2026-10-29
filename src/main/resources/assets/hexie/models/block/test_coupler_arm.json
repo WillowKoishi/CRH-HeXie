@@ -1,0 +1,25 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "minecraft:block/gray_concrete",
+    "arm": "minecraft:block/black_concrete", "head": "minecraft:block/gray_concrete"
+  },
+  "elements": [
+    {
+      "from": [6.5, 6.5, 10], "to": [9.5, 9.5, 16],
+      "faces": {
+        "north": { "texture": "#arm" }, "south": { "texture": "#arm" },
+        "east": { "texture": "#arm" }, "west": { "texture": "#arm" },
+        "up": { "texture": "#arm" }, "down": { "texture": "#arm" }
+      }
+    },
+    {
+      "from": [5, 5, 8], "to": [11, 11, 10],
+      "faces": {
+        "north": { "texture": "#head" }, "south": { "texture": "#head" },
+        "east": { "texture": "#head" }, "west": { "texture": "#head" },
+        "up": { "texture": "#head" }, "down": { "texture": "#head" }
+      }
+    }
+  ]
+}
