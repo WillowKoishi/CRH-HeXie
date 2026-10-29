@@ -23,9 +23,10 @@ import willow.train.hexie.vehicle.track.TrackPath;
  * body mount participates; connected couplers form a rigid link between their pivots.
  * One bogey of each connected component is the fixed rail anchor. Its cursor is
  * prescribed by the runtime and reversing does not replace that anchor. Carriages
- * close the rigid end-support chord and upstream coupler length in order; bounded
- * suspension travel absorbs each intermediate support's own mismatch without moving
- * either end to accommodate it. Only the excess departs from the rail.
+ * close the rigid end-support chord and upstream coupler length in order. When both
+ * cannot remain on the rail, the upstream joint stays rigid and the downstream body
+ * turns about its near support before allowing that support to depart as well.
+ * Intermediate supports never move the chosen body pose.
  * Cyclic/multi-anchor inputs retain the general constraint solver. Transverse/vertical mismatch
  * between the track reference and a body mount is allowed: model penetration is not
  * a motion failure. A bolsterless mount uses its registered lateral travel first;
@@ -437,8 +438,7 @@ public final class VehicleConstraintSolver {
                     endpointPoses.put(link.second.id(), new EndpointPose(b.pivot, b.start, shared));
                 } else {
                     Vector direction = b.pivot.subtract(a.pivot).normalized();
-                    checkFacing(link.first, endpointBody(link.first, bodyPoses), direction);
-                    checkFacing(link.second, endpointBody(link.second, bodyPoses), direction.scale(-1));
+                    // Registered facing rotates the local points; it is not a joint-angle limit.
                     Vector shared = add(a.pivot, direction.scale(link.firstLength));
                     endpointPoses.put(link.first.id(), orientedEndpoint(a, shared, direction));
                     endpointPoses.put(link.second.id(), orientedEndpoint(b, shared, direction.scale(-1)));
@@ -470,10 +470,6 @@ public final class VehicleConstraintSolver {
         BodyPose endpointBody(CouplingEndpoint endpoint, BodyPose[] poses) {
             Body owner = owners.get(endpoint.id());
             return owner == null ? fixedEndpoint.body : poses[owner.slot];
-        }
-        BodyPose endpointBody(CouplingEndpoint endpoint, Map<UUID, BodyPose> poses) {
-            Body owner = owners.get(endpoint.id());
-            return owner == null ? fixedEndpoint.body : poses.get(owner.definition.id());
         }
         TrackReference track(double distance) {
             return trackReferences.computeIfAbsent(distance, key -> {
@@ -534,19 +530,23 @@ public final class VehicleConstraintSolver {
                 sample.normal().dot(base.rotate(new Point(0, 1, 0))));
         return new BodyPose(sample.position(), yaw, pitch, roll);
     }
-    static void checkFacing(CouplingEndpoint endpoint, BodyPose body, Vector direction) {
-        Vector outward = body.rotate(endpoint.rotated(new Point(0, 0, -1)));
-        if (outward.dot(direction) < -POSITION_TOLERANCE)
-            throw new ConstraintFailure("Connected coupler folded behind its registered facing: " + endpoint.id());
-    }
     static EndpointPose orientedEndpoint(EndpointPose old, Vector shared, Vector direction) {
         Vector arm = old.complete.subtract(old.pivot), start = old.start.subtract(old.pivot);
         if (length(arm) < 1e-12) return new EndpointPose(old.pivot, old.start, shared);
-        Vector from = arm.normalized(), axis = cross(from, direction);
-        double cosine = Math.clamp(from.dot(direction), -1, 1);
-        if (cosine < -1 + 1e-9) throw new ConstraintFailure("Coupler reversed through its pivot");
-        Vector rotated = add(add(start, cross(axis, start)), cross(axis, cross(axis, start)).scale(1 / (1 + cosine)));
+        Vector rotated = rotateBetween(start, arm.normalized(), direction);
         return new EndpointPose(old.pivot, add(old.pivot, rotated), shared);
+    }
+    static Vector rotateBetween(Vector value, Vector from, Vector to) {
+        Vector axis = cross(from, to);
+        double sine = length(axis), cosine = Math.clamp(from.dot(to), -1, 1);
+        if (sine < 1e-12) {
+            if (cosine >= 0) return value;
+            // A half-turn has no unique axis; use a fixed perpendicular, never fail motion.
+            Vector up = Math.abs(from.y()) < .9 ? new Vector(0, 1, 0) : new Vector(1, 0, 0);
+            axis = up.subtract(from.scale(up.dot(from))).normalized();
+        } else axis = axis.scale(1 / sine);
+        return add(add(value.scale(cosine), cross(axis, value).scale(sine)),
+                axis.scale(axis.dot(value) * (1 - cosine)));
     }
     private static final class Body {
         final CarriageDefinition definition;

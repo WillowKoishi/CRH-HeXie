@@ -33,11 +33,32 @@ public final class CreateTrackGeometry implements TrackGeometry {
         if (!Double.isFinite(parameter) || parameter < 0 || parameter > 1)
             throw new IllegalArgumentException("Track parameter must be between 0 and 1");
         double step = Math.min(0.001, 0.01 / length());
-        Vec3 before = edge.getPosition(graph, Math.max(0, parameter - step));
-        Vec3 after = edge.getPosition(graph, Math.min(1, parameter + step));
+        Vec3 before = position(Math.max(0, parameter - step));
+        Vec3 after = position(Math.min(1, parameter + step));
         // No cant is introduced into existing tracks. No render-height offset is applied here.
-        return new Sample(vector(edge.getPosition(graph, parameter)), vector(after.subtract(before)),
+        return new Sample(vector(position(parameter)), vector(after.subtract(before)),
                 vector(edge.getNormal(graph, parameter)), 0);
+    }
+
+    private Vec3 position(double parameter) {
+        if (!edge.isTurn())
+            // These endpoints retain Create's smoothing on raised straight edges.
+            return lerp(edge.getPosition(graph, 0), edge.getPosition(graph, 1), parameter);
+        var turn = edge.getTurn();
+        Vec3 start = turn.starts.getFirst();
+        Vec3 end = turn.starts.getSecond();
+        double handle = turn.getHandleLength();
+        Vec3 firstHandle = start.add(turn.axes.getFirst().normalize().scale(handle));
+        Vec3 secondHandle = end.add(turn.axes.getSecond().normalize().scale(handle));
+        // Keep Create's control points, but avoid its float parameter quantization while solving.
+        Vec3 a = lerp(start, firstHandle, parameter);
+        Vec3 b = lerp(firstHandle, secondHandle, parameter);
+        Vec3 c = lerp(secondHandle, end, parameter);
+        return lerp(lerp(a, b, parameter), lerp(b, c, parameter), parameter);
+    }
+
+    private static Vec3 lerp(Vec3 from, Vec3 to, double parameter) {
+        return from.add(to.subtract(from).scale(parameter));
     }
 
     private static Vector vector(Vec3 value) { return new Vector(value.x, value.y, value.z); }
