@@ -6,6 +6,8 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import com.mojang.math.Axis;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.Direction;
+import net.minecraft.world.phys.AABB;
 import willow.train.hexie.client.sign.SignTextRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
@@ -14,6 +16,9 @@ import willow.train.hexie.blockentity.GroundStationSignEntity;
 import willow.train.hexie.blocks.signs.GroundStationSignBlock;
 
 public class GroundStationSignRenderer implements BlockEntityRenderer<GroundStationSignEntity> {
+    // Full OBJ bounds, with a small margin for the lettering on both faces.
+    private static final AABB NORTH_SOUTH_BOUNDS = new AABB(-.625, 0, .375, 1.625, 2.6875, .625).inflate(1 / 64d);
+    private static final AABB EAST_WEST_BOUNDS = new AABB(.375, 0, -.625, .625, 2.6875, 1.625).inflate(1 / 64d);
     private static final ResourceLocation NAME = ResourceLocation.fromNamespaceAndPath("hexie", "station_name");
     private static final ResourceLocation PINYIN = ResourceLocation.fromNamespaceAndPath("hexie", "station_pinyin");
     private static final ResourceLocation NEIGHBOR = ResourceLocation.fromNamespaceAndPath("hexie", "station_neighbor");
@@ -72,6 +77,11 @@ public class GroundStationSignRenderer implements BlockEntityRenderer<GroundStat
     private static void point(VertexConsumer vertex, PoseStack pose, float x, float y, int light) {
         vertex.addVertex(pose.last().pose(), x, y, 0).setColor(0xFF171717).setUv(.5f, .5f)
                 .setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(pose.last(), 0, 0, 1);
+    }
+    @Override public AABB getRenderBoundingBox(GroundStationSignEntity sign) {
+        // NeoForge also frustum-culls off-screen renderers; the root cell is below the text.
+        boolean eastWest = sign.getBlockState().getValue(GroundStationSignBlock.FACING).getAxis() == Direction.Axis.X;
+        return (eastWest ? EAST_WEST_BOUNDS : NORTH_SOUTH_BOUNDS).move(sign.getBlockPos());
     }
     @Override public boolean shouldRenderOffScreen(GroundStationSignEntity sign) { return true; }
 }
