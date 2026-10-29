@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 public class HeXieClientInit {
 
     public static void init() {
+        willow.train.hexie.client.render.track.BallastCurveBuffers.register();
         willow.train.hexie.client.sign.SignTextClient.register(Main.bus);
         willow.train.hexie.client.carriage.browser.CarriageBrowserClient.register(Main.bus);
         Main.bus.addListener(HeXieClientInit::registerBlockExtensions);

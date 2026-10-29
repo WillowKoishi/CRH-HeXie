@@ -1,7 +1,6 @@
 package willow.train.hexie.client.screens;
 
 import net.minecraft.client.gui.GuiGraphics;
-import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Screen;
@@ -15,13 +14,12 @@ import willow.train.hexie.network.HexieNetworkHandler;
 import willow.train.hexie.network.c2s.InventoryUpdatePacket;
 import willow.train.hexie.client.util.RenderablePicture;
 
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class HexieInventory {
     public static final GuiImageCache.ImageData INVENTORY_IMAGE = GuiImageCache.register("textures/gui/inventory.png", 0);
-    private RenderablePicture inventoryBackground, quickBarBackground, chosenFrame;
+    private final RenderablePicture inventoryBackground, quickBarBackground, chosenFrame;
     private final int basic_x = 8;
     boolean renderQuickBar = false;
 
@@ -30,6 +28,12 @@ public class HexieInventory {
     public ArrayList<Integer> dirtySlots = new ArrayList<>();
     private Screen parentScreen;
     private ItemStack hoveringItem;
+
+    public HexieInventory() {
+        this.inventoryBackground = new RenderablePicture(INVENTORY_IMAGE, 175, 90);
+        this.quickBarBackground = new RenderablePicture(INVENTORY_IMAGE, 0, 62, 175, 28);
+        this.chosenFrame = new RenderablePicture(INVENTORY_IMAGE, 192, 0, 18, 18);
+    }
 
     public void setParentScreen(Screen screen) {
         this.parentScreen = screen;
@@ -58,15 +62,9 @@ public class HexieInventory {
     }
 
     public ItemStack setHoveringItem(ItemStack stackIn) {
-        if(stackIn.is(Items.AIR)){
-            ItemStack cache = hoveringItem;
-            hoveringItem = Items.AIR.getDefaultInstance();
-            return cache;
-        } else {
-            ItemStack cache = hoveringItem;
-            hoveringItem = stackIn;
-            return cache;
-        }
+        ItemStack previous = getHoveringItem();
+        hoveringItem = stackIn.isEmpty() ? null : stackIn;
+        return previous;
     }
 
     public void render(GuiGraphics stack,ItemRenderer renderer, Player player, int mouseX, int mouseY){
@@ -146,14 +144,15 @@ public class HexieInventory {
 
         int colum = -1;
         int c = (px - basic_x - x) / 18;
+        if (c < 0 || c >= 9) return -1;
         int pc = c * 18 + basic_x + x;
         if(px > pc && px < pc + 16) {
             colum = c;
             int r = (py - basic_x - 1 - y)/18;
             int pr = r * 18 + 1 + basic_x + y;
-            if(r < 3 && py > pr && py < pr + 16) {
-                if(isRenderingQuickBar() && r == 0)
-                    return colum;
+            if(r >= 0 && r < 3 && py > pr && py < pr + 16) {
+                if(isRenderingQuickBar())
+                    return r == 0 ? colum : -1;
                 return (r+1) * 9 + colum;
             } else if (!isRenderingQuickBar() && py > y + basic_x + 59 && py < y + basic_x + 75){
                 return colum;
@@ -163,13 +162,15 @@ public class HexieInventory {
     }
 
     public void markDirty(Integer slot) {
-        this.dirtySlots.add((Integer) slot);
+        if (!dirtySlots.contains(slot))
+            dirtySlots.add(slot);
     }
 
     public void handleMouseClick(Inventory inventory, boolean isCreative, int mouseX, int mouseY, int button) {
         // 0 -> left
         // 1 -> right
         // 2 -> middle
+        if (hoveringItem != null && hoveringItem.isEmpty()) hoveringItem = null;
         if(mouseX < x || mouseY < y) return;
         if(mouseX > x + inventoryBackground.width()) return;
         if(isRenderingQuickBar() && mouseY > y + quickBarBackground.height()) return;
@@ -259,13 +260,23 @@ public class HexieInventory {
         slotLocks.clear();
     }
 
-    public void onClose(Inventory inventory) {
-        if(hoveringItem != null) {
+    public boolean onClose(Inventory inventory) {
+        if (hoveringItem != null && !hoveringItem.isEmpty()) {
+            List<ItemStack> before = new ArrayList<>();
+            for (int i = 0; i < inventory.getContainerSize(); i++)
+                before.add(inventory.getItem(i).copy());
             inventory.add(hoveringItem);
-            hoveringItem = Items.AIR.getDefaultInstance();
+            for (int i = 0; i < inventory.getContainerSize(); i++) {
+                if (!ItemStack.matches(before.get(i), inventory.getItem(i)))
+                    markDirty(i);
+            }
         }
+        if (hoveringItem != null && !hoveringItem.isEmpty())
+            return false;
+        hoveringItem = null;
         sendUpdateMessage();
         removeAllLocks();
+        return true;
     }
 
 }

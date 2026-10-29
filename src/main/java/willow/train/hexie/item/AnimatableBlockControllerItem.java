@@ -15,6 +15,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.MenuProvider;
+import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Inventory;
@@ -32,7 +33,6 @@ import willow.train.hexie.init.item.ResourceItemInit;
 import willow.train.hexie.interaction.InteractionProcessor;
 import willow.train.hexie.interaction.base.ICustomInteraction;
 import willow.train.hexie.interaction.base.ICustomInteractionGroup;
-import willow.train.hexie.util.ByteBufUtil;
 import willow.train.hexie.client.util.ComponentTranslationTool;
 
 import java.util.HashMap;
@@ -104,8 +104,14 @@ public class AnimatableBlockControllerItem extends Item implements MenuProvider 
         if(pPlayer.getItemInHand(pUsedHand).getItem() instanceof AnimatableBlockControllerItem) {
             ItemStack stack = pPlayer.getItemInHand(pUsedHand);
             if (pPlayer.isShiftKeyDown()) {
-                if(!pLevel.isClientSide)
-                    ((ServerPlayer) pPlayer).openMenu( this);
+                if (pPlayer instanceof ServerPlayer serverPlayer) {
+                    int controllerSlot = pUsedHand == InteractionHand.MAIN_HAND
+                            ? pPlayer.getInventory().selected : Inventory.SLOT_OFFHAND;
+                    serverPlayer.openMenu(new SimpleMenuProvider(
+                            (id, inventory, player) -> new AnimatableBlockControllerMenu(id, inventory, controllerSlot),
+                            getDisplayName()), buffer -> buffer.writeVarInt(controllerSlot));
+                }
+                return InteractionResultHolder.sidedSuccess(stack, pLevel.isClientSide);
             } else {
                 if(hasId(stack)) {
                     boolean successed = onUseItem(pLevel, pPlayer, pUsedHand, stack);
@@ -249,6 +255,6 @@ public class AnimatableBlockControllerItem extends Item implements MenuProvider 
     @Nullable
     @Override
     public AbstractContainerMenu createMenu(int pContainerId, Inventory pPlayerInventory, Player pPlayer) {
-        return new AnimatableBlockControllerMenu(pContainerId, pPlayerInventory, ByteBufUtil.defaultBuf());
+        return new AnimatableBlockControllerMenu(pContainerId, pPlayerInventory, pPlayerInventory.selected);
     }
 }

@@ -15,8 +15,7 @@
   ],
   "client": [
     "client.MixinCurvedBallastInteraction",
-    "client.MixinTrackBallastRenderer",
-    "client.MixinBallastVisualizer",
+    "client.MixinBallastModelData",
     "client.MixinTrackGraphVisualizer",
     "client.CarriageCreativeScreenMixin",
     "client.CarriageContainerScreenMixin",

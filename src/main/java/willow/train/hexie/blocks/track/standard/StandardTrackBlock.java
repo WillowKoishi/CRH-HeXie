@@ -19,25 +19,6 @@ public class StandardTrackBlock extends TrackBlock {
 
     public StandardTrackBlock(Properties properties, TrackMaterial material) {
         super(properties, material);
-        if (material == TrackMaterialInit.STANDARD)
-            registerDefaultState(defaultBlockState().setValue(HAS_BE, true));
-    }
-
-    @Override
-    public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        return TrackBallast.enabled(state) ? com.simibubi.create.AllBlockEntityTypes.TRACK.create(pos, state)
-                : super.newBlockEntity(pos, state);
-    }
-
-    @Override
-    public void onRemove(BlockState state, net.minecraft.world.level.Level level, BlockPos pos,
-            BlockState replacement, boolean moving) {
-        if (TrackBallast.enabled(state)) {
-            // Legacy straight tracks may have turn=false, but now also own a block entity.
-            state = state.setValue(HAS_BE, true);
-            if (replacement.is(this)) replacement = replacement.setValue(HAS_BE, true);
-        }
-        super.onRemove(state, level, pos, replacement, moving);
     }
 
     @Override
@@ -47,12 +28,15 @@ public class StandardTrackBlock extends TrackBlock {
             net.minecraft.world.phys.BlockHitResult hit) {
         if (!TrackBallast.enabled(state) || !TrackBallast.canPaint(player, stack))
             return super.useItemOn(stack, state, level, pos, player, hand, hit);
-        if (!level.isClientSide && level.getBlockEntity(pos) instanceof com.simibubi.create.content.trains.track.TrackBlockEntity track) {
-            BlockState texture = ((net.minecraft.world.item.BlockItem) stack.getItem()).getBlock().defaultBlockState();
-            TrackBallast.paint(track, null, texture);
-            for (var connection : track.getConnections().values())
-                if (connection.getMaterial() == TrackMaterialInit.STANDARD)
-                    TrackBallast.paint(track, connection.getKey(), texture);
+        if (!level.isClientSide && level.mayInteract(player, pos)) {
+            // Default straight tracks have no block entity. Allocate data storage only when painted.
+            if (!state.getValue(HAS_BE)) level.setBlockAndUpdate(pos, state.setValue(HAS_BE, true));
+            if (level.getBlockEntity(pos) instanceof com.simibubi.create.content.trains.track.TrackBlockEntity track) {
+                BlockState texture = ((net.minecraft.world.item.BlockItem) stack.getItem()).getBlock().defaultBlockState();
+                TrackBallast.paint(track, null, texture);
+                for (var curve : track.getConnections().values())
+                    if (curve.getMaterial() == TrackMaterialInit.STANDARD) TrackBallast.paint(track, curve.getKey(), texture);
+            }
         }
         return net.minecraft.world.ItemInteractionResult.sidedSuccess(level.isClientSide);
     }

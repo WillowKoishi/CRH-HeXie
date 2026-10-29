@@ -29,8 +29,7 @@ public final class HexieNetworkHandler {
         register(InventoryUpdatePacket.class, InventoryUpdatePacket::new);
         register(GroundStationSignUpdatePacket.class, GroundStationSignUpdatePacket::new);
         var registrar = event.registrar("2");
-        registrar.playToServer(TrackBallastPacket.TYPE, TrackBallastPacket.CODEC,
-                (packet, context) -> packet.handle(context));
+        registrar.playToServer(TrackBallastPacket.TYPE, TrackBallastPacket.CODEC, (packet, context) -> packet.handle(context));
         registrar.playToServer(SignalPlacementFacingPacket.TYPE, SignalPlacementFacingPacket.CODEC,
                 (packet, context) -> packet.handle(context));
         registrar.playToServer(Payload.TYPE, Payload.CODEC,

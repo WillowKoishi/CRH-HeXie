@@ -19,15 +19,13 @@ public class InventoryUpdatePacket implements HexiePacket {
     private final List<ItemStack> dirtyItems;
 
     public InventoryUpdatePacket(int dirtySlot, ItemStack newItemStack) {
-        dirtyItems = new ArrayList<>();
-        dirtyIndex = new ArrayList<>();
-        dirtyIndex.add(dirtySlot);
-        dirtyItems.add(newItemStack);
+        this(List.of(dirtySlot), List.of(newItemStack));
     }
 
     public InventoryUpdatePacket(List<Integer> dirty, List<ItemStack> dirtyItems) {
-        this.dirtyIndex = dirty;
-        this.dirtyItems = dirtyItems;
+        // Encoding can run after the screen clears its list or changes an item.
+        this.dirtyIndex = List.copyOf(dirty);
+        this.dirtyItems = dirtyItems.stream().map(ItemStack::copy).toList();
     }
 
     public InventoryUpdatePacket(FriendlyByteBuf buf) {
@@ -65,6 +63,7 @@ public class InventoryUpdatePacket implements HexiePacket {
             logger.debug("Length of Parameters : " + dirtyItems.size());
             logger.error("-- From network.c2s.InventoryUpdatePacket");
             var1.writeInt(0);
+            return;
         }
         var1.writeInt(dirtyIndex.size());
         int counter = 0;

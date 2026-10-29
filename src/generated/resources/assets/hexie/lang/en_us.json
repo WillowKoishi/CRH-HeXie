@@ -616,6 +616,7 @@
   "container.hexie.acc.title": "Automatic Control Config",
   "container.hexie.acc.empty": "There's nothing here",
   "container.hexie.abc.title": "Remote Control Config",
+  "container.hexie.abc.inventory_full": "Inventory full. Put down the held item before closing.",
 
   "tips.patchouli": "--------------------------------all entity above here-------------------------------------------",
   "patchouli.hexie.name":"铁路车辆图鉴",
