@@ -1,6 +1,6 @@
 {
 	"credit": "Made with Blockbench",
-	"render_type": "translucent",
+	"render_type": "solid",
 	"textures": {
 		"0": "hexie:block/panel_25t_marshalled_skirt",
 		"particle": "hexie:block/panel_25t_marshalled_skirt"

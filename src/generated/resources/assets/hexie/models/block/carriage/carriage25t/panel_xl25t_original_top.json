@@ -1,4 +1,5 @@
 {
+  "render_type": "translucent",
   "parent": "hexie:block/hexie_panel",
   "textures": {
     "0": "hexie:block/panel_xl25t_original_top",
