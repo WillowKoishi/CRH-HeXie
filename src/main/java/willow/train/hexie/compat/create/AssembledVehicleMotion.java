@@ -51,9 +51,8 @@ public final class AssembledVehicleMotion {
     private VehicleRuntime runtime;
     private final UUID[] carriages;
     private final Map<UUID, Controller> controllers = new HashMap<>();
-    private final java.util.Set<UUID> stalledCarriages = new HashSet<>();
     private long lastTick = Long.MIN_VALUE;
-    private String routeFailure;
+    private String lastMotionFailure;
     private CreateTrainBridge compatibility;
     private final Set<UUID> derailedCarriages = new HashSet<>();
 
@@ -78,6 +77,7 @@ public final class AssembledVehicleMotion {
         // This adapter delegates train-crash detection to Create. Coupling and its momentum
         // transfer remain in the independent runtime; do not also resolve body contacts here.
         runtime.collisionEnabled(false);
+        runtime.constraintFailurePolicy(VehicleRuntime.ConstraintFailurePolicy.RETRY_CONSIST);
         this.carriages = runtime.definitions().stream().map(car -> car.id()).toArray(UUID[]::new);
         this.sources = Map.copyOf(sources);
         if (!this.sources.keySet().equals(Set.of(carriages)))
@@ -111,12 +111,32 @@ public final class AssembledVehicleMotion {
     public CreateTrainBridge compatibility() { return compatibility; }
 
     public boolean extendRoute(boolean forward, CreateRouteBinding.RouteChoice choice) {
-        var extension = route.extend(forward, choice);
+        return extendRoute(forward, choice, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY);
+    }
+
+    boolean extendRoute(boolean forward, CreateRouteBinding.RouteChoice choice,
+                        double minimumOccupied, double maximumOccupied) {
+        for (var bogey : runtime.placement().bogeys().values()) {
+            minimumOccupied = Math.min(minimumOccupied, bogey.distance());
+            maximumOccupied = Math.max(maximumOccupied, bogey.distance());
+        }
+        var extension = route.extend(forward, choice, minimumOccupied, maximumOccupied);
         if (extension.binding() == route) return false;
         var extended = runtime.rebind(extension.binding().path(), extension.distanceOffset());
         route = extension.binding();
         runtime = extended;
-        routeFailure = null;
+        lastMotionFailure = null;
+        return true;
+    }
+
+    /** A graph migration changes coordinates, not vehicle placement, velocity or driver input. */
+    boolean rebindRoute(CreateRouteBinding replacement, double distanceOffset) {
+        final VehicleRuntime rebound;
+        try { rebound = runtime.rebind(replacement.path(), distanceOffset); }
+        catch (IllegalArgumentException | ConstraintFailure mismatch) { return false; }
+        route = replacement;
+        runtime = rebound;
+        lastMotionFailure = null;
         return true;
     }
 
@@ -138,8 +158,8 @@ public final class AssembledVehicleMotion {
     }
 
     public void reportActorStall(UUID carriage, boolean stalled) {
-        if (stalled) stalledCarriages.add(carriage);
-        else stalledCarriages.remove(carriage);
+        var train = compatibility == null ? null : compatibility.train(carriage);
+        if (train != null) train.carriages.get(train.carriageIds.indexOf(carriage)).stalled = stalled;
     }
 
     /** Legacy/unbound carrier entry; globally managed trains only consume their current pose. */
@@ -156,26 +176,28 @@ public final class AssembledVehicleMotion {
         if (lastTick != now) {
             lastTick = now;
             expireControls(now);
-            if (routeFailure == null) {
-                try {
-                    ensureCompatibility();
-                    if (compatibility != null) compatibility.beforeTick();
-                    // Wrench relocation can split an independent consist out of this route owner.
-                    if (compatibility == null) return;
-                    Set<UUID> blocked = new HashSet<>(stalledCarriages);
-                    blocked.addAll(derailedCarriages);
-                    for (var train : compatibility.trains())
-                        if (train.carriageWaitingForChunks != -1) blocked.addAll(train.carriageIds);
-                    runtime.tick(1.0 / 20, blocked);
-                    if (compatibility != null) compatibility.afterTick();
-                }
-                catch (CreateRouteBinding.RouteInvalidException | ConstraintFailure failure) {
-                    routeFailure = failure.getMessage();
-                    runtime.halt(routeFailure);
-                    LOGGER.warn("Independent assembly {} stopped: {}", assembly, routeFailure);
-                }
+            try {
+                ensureCompatibility();
+                if (compatibility != null) compatibility.beforeTick();
+                // Wrench relocation can split an independent consist out of this route owner.
+                if (compatibility == null) return;
+                runtime.tick(1.0 / 20, Set.of(), compatibility.motionPausedCarriages());
+                if (compatibility != null) compatibility.afterTick();
+                reportMotionFailure(runtime.constraintFailure().orElse(null));
+            } catch (CreateRouteBinding.RouteInvalidException | ConstraintFailure failure) {
+                // A failed geometry update retains the last valid pose. It does not decide
+                // whether the native train is stopped or disable future controls/recovery.
+                reportMotionFailure(failure.getMessage());
+            } finally {
+                if (compatibility != null) compatibility.manageEntities();
             }
         }
+    }
+
+    private void reportMotionFailure(String reason) {
+        if (reason != null && !reason.equals(lastMotionFailure))
+            LOGGER.warn("Vehicle motion {} will retry geometry update: {}", assembly, reason);
+        lastMotionFailure = reason;
     }
 
     public void applyCurrent(SnapshotCarriageEntity entity) {
@@ -202,11 +224,6 @@ public final class AssembledVehicleMotion {
         tag.put("CarriageSources", origins);
         tag.put("Route", route.save());
         tag.put("Runtime", VehicleRuntimeNbt.save(runtime));
-        var stalled = new ListTag();
-        stalledCarriages.stream().sorted().forEach(id -> {
-            var entry = new CompoundTag(); entry.putUUID("Carriage", id); stalled.add(entry);
-        });
-        tag.put("StalledCarriages", stalled);
         var derailed = new ListTag();
         derailedCarriages.stream().sorted().forEach(id -> {
             var entry = new CompoundTag(); entry.putUUID("Carriage", id); derailed.add(entry);
@@ -248,11 +265,7 @@ public final class AssembledVehicleMotion {
         // A disconnected driver's last keypress must not become permanent throttle after load.
         carriages.forEach(id -> runtime.controls(id, VehicleRuntime.Control.NEUTRAL));
         var motion = new AssembledVehicleMotion(level, assembly, forward, route, runtime, sources);
-        for (var element : tag.getList("StalledCarriages", Tag.TAG_COMPOUND)) {
-            UUID id = ((CompoundTag) element).getUUID("Carriage");
-            if (!carriages.contains(id) || !motion.stalledCarriages.add(id))
-                throw new IllegalArgumentException("Invalid stalled carriage in motion save");
-        }
+        // Old StalledCarriages is intentionally ignored; Create's carriage owns actor stalls.
         for (var element : tag.getList("DerailedCarriages", Tag.TAG_COMPOUND)) {
             UUID id = ((CompoundTag) element).getUUID("Carriage");
             if (!carriages.contains(id) || !motion.derailedCarriages.add(id))
@@ -261,7 +274,10 @@ public final class AssembledVehicleMotion {
         return motion;
     }
 
-    public boolean isDerailed(UUID carriage) { return derailedCarriages.contains(carriage); }
+    public boolean isDerailed(UUID carriage) {
+        var train = compatibility == null ? null : compatibility.train(carriage);
+        return train == null ? derailedCarriages.contains(carriage) : train.derailed;
+    }
 
     static Map<UUID, Source> readSources(ServerLevel level, CompoundTag tag) {
         var result = new LinkedHashMap<UUID, Source>();
@@ -305,21 +321,43 @@ public final class AssembledVehicleMotion {
     /** Join only the two selected consists' route calculations; each carriage keeps its own source and cargo. */
     public AssembledVehicleMotion beginCoupling(UUID firstCarriage, UUID firstEndpoint,
             AssembledVehicleMotion other, UUID secondCarriage, UUID secondEndpoint, double speed) {
+        return joinCouplingDomain(firstCarriage, firstEndpoint, other, secondCarriage, secondEndpoint, speed, null);
+    }
+
+    /** Share route coordinates for an approaching contact, without shunting or connecting either consist. */
+    public AssembledVehicleMotion prepareContact(UUID firstCarriage, UUID firstEndpoint,
+            AssembledVehicleMotion other, UUID secondCarriage, UUID secondEndpoint) {
+        return prepareContact(firstCarriage, firstEndpoint, other, secondCarriage, secondEndpoint, null);
+    }
+
+    AssembledVehicleMotion prepareContact(UUID firstCarriage, UUID firstEndpoint,
+            AssembledVehicleMotion other, UUID secondCarriage, UUID secondEndpoint, Set<UUID> contactMembers) {
+        return joinCouplingDomain(firstCarriage, firstEndpoint, other, secondCarriage, secondEndpoint, null, contactMembers);
+    }
+
+    private AssembledVehicleMotion joinCouplingDomain(UUID firstCarriage, UUID firstEndpoint,
+            AssembledVehicleMotion other, UUID secondCarriage, UUID secondEndpoint, Double approachSpeed,
+            Set<UUID> contactMembers) {
         if (other == null || level != other.level || !owns(firstCarriage) || !other.owns(secondCarriage))
             throw new IllegalArgumentException("Coupling requires two available carriages in this dimension");
         if (runtime.definition(firstCarriage).couplings().stream().noneMatch(e -> e.id().equals(firstEndpoint))
                 || other.runtime.definition(secondCarriage).couplings().stream().noneMatch(e -> e.id().equals(secondEndpoint)))
             throw new IllegalArgumentException("Coupler does not belong to the selected carriage");
-        if (other == this) { runtime.beginCoupling(firstEndpoint, secondEndpoint, speed); return this; }
-        var firstIds = Set.copyOf(runtime.state(firstCarriage).consist());
-        var secondIds = Set.copyOf(other.runtime.state(secondCarriage).consist());
+        if (other == this) {
+            if (approachSpeed != null) runtime.beginCoupling(firstEndpoint, secondEndpoint, approachSpeed);
+            return this;
+        }
+        var firstIds = contactMembers == null ? Set.copyOf(runtime.state(firstCarriage).consist())
+                : sources.keySet().stream().filter(contactMembers::contains).collect(java.util.stream.Collectors.toSet());
+        var secondIds = contactMembers == null ? Set.copyOf(other.runtime.state(secondCarriage).consist())
+                : other.sources.keySet().stream().filter(contactMembers::contains).collect(java.util.stream.Collectors.toSet());
         requireNoApproach(firstIds); other.requireNoApproach(secondIds);
         var routeMerge = route.merge(other.route);
         var combined = VehicleRuntime.merge(routeMerge.route().path(),
                 runtime.subset(firstIds).checkpoint(), routeMerge.firstOffset(),
                 other.runtime.subset(secondIds).checkpoint(), routeMerge.secondOffset(), routeMerge.reverseSecond());
         // This validation is detached. An invalid route or endpoint cannot consume either live vehicle.
-        combined.beginCoupling(firstEndpoint, secondEndpoint, speed);
+        if (approachSpeed != null) combined.beginCoupling(firstEndpoint, secondEndpoint, approachSpeed);
         var origins = new LinkedHashMap<UUID, Source>();
         firstIds.forEach(id -> origins.put(id, sources.get(id)));
         secondIds.forEach(id -> {
@@ -343,6 +381,13 @@ public final class AssembledVehicleMotion {
             installOwnerState(joined);
             joined.ensureCompatibility(previous);
             joined.compatibility.inheritControl(previous);
+            if (approachSpeed == null) {
+                // Unlike a player shunting request, this handoff occurs before the logical tick.
+                // installOwnerState normally suppresses another tick after a mid-tick transfer.
+                joined.lastTick = Math.max(lastTick, other.lastTick);
+                if (left != null) left.lastTick = lastTick;
+                if (otherLeft != null) otherLeft.lastTick = other.lastTick;
+            }
         } catch (RuntimeException failure) {
             // Retain original runtimes until the handoff finishes. Never restore from block
             // snapshots here: the original native cargo objects remain authoritative.
@@ -381,7 +426,6 @@ public final class AssembledVehicleMotion {
     private void copyMemberState(AssembledVehicleMotion target) {
         controllers.forEach((id, controller) -> { if (target.owns(id)) target.controllers.put(id, controller); });
         derailedCarriages.stream().filter(target::owns).forEach(target.derailedCarriages::add);
-        stalledCarriages.stream().filter(target::owns).forEach(target.stalledCarriages::add);
     }
 
     private void transferRemainder(AssembledVehicleMotion remaining) {
@@ -393,13 +437,18 @@ public final class AssembledVehicleMotion {
     }
 
     /** Recover one complete native-wrenched consist without loading its obsolete source route. */
-    static boolean recoverPendingRelocation(SnapshotCarriageEntity owner, CompoundTag saved,
+    static boolean recoverPendingRelocation(ServerLevel level, CompoundTag saved,
             VehicleRuntime.Checkpoint checkpoint, CompatibilityTrain train, CreateRouteBinding destination,
             Map<UUID, Double> distances) {
-        var level = (ServerLevel) owner.level();
+        return recoverPendingRelocation(level, saved, checkpoint, train, destination, distances, () -> {});
+    }
+
+    private static boolean recoverPendingRelocation(ServerLevel level, CompoundTag saved,
+            VehicleRuntime.Checkpoint checkpoint, CompatibilityTrain train, CreateRouteBinding destination,
+            Map<UUID, Double> distances, Runnable releasePrevious) {
         UUID assembly = saved.getUUID("Assembly");
         var sources = readSources(level, saved);
-        if (!sources.containsKey(owner.getUUID()) || !train.assemblyId.equals(assembly))
+        if (!train.assemblyId.equals(assembly))
             throw new IllegalArgumentException("Saved relocation belongs to another assembly");
         Direction forward = Direction.byName(saved.getString("Forward"));
         if (forward == null || !forward.getAxis().isHorizontal())
@@ -408,8 +457,9 @@ public final class AssembledVehicleMotion {
         if (!sources.keySet().equals(Set.copyOf(sourceIds)) || !Set.copyOf(train.carriageIds).equals(distances.keySet()))
             throw new IllegalArgumentException("Saved relocation has a different carriage selection");
         for (UUID id : distances.keySet()) {
-            if (!(level.getEntity(id) instanceof SnapshotCarriageEntity carrier) || carrier.isRemoved()
-                    || !sources.get(id).assembly().equals(carrier.assemblyId())) return false;
+            var entity = level.getEntity(id);
+            if (entity != null && (!(entity instanceof SnapshotCarriageEntity carrier) || carrier.isRemoved()
+                    || !sources.get(id).assembly().equals(carrier.assemblyId()))) return false;
         }
 
         // Both preparations are detached; a failed native destination cannot partially transfer
@@ -417,7 +467,7 @@ public final class AssembledVehicleMotion {
         final VehicleRuntime relocated;
         try {
             relocated = VehicleRuntime.relocateCheckpoint(checkpoint, destination.path(), distances);
-        } catch (CreateRouteBinding.RouteInvalidException | IllegalArgumentException unavailable) {
+        } catch (CreateRouteBinding.RouteInvalidException | IllegalArgumentException | ConstraintFailure unavailable) {
             // A native two-bogey preview can succeed before every independent support has a
             // usable destination. Keep the original saved owner until a valid placement arrives.
             return false;
@@ -440,17 +490,13 @@ public final class AssembledVehicleMotion {
                     if (remaining.contains(((CompoundTag) value).getUUID("Carriage"))) filtered.add(value.copy());
                 pending.put("CarriageSources", filtered);
             }
-            for (String field : java.util.List.of("StalledCarriages", "DerailedCarriages")) {
-                var filtered = new ListTag();
-                for (var value : saved.getList(field, Tag.TAG_COMPOUND))
-                    if (remaining.contains(((CompoundTag) value).getUUID("Carriage"))) filtered.add(value.copy());
-                pending.put(field, filtered);
-            }
+            pending.remove("StalledCarriages");
+            var derailed = new ListTag();
+            for (var value : saved.getList("DerailedCarriages", Tag.TAG_COMPOUND))
+                if (remaining.contains(((CompoundTag) value).getUUID("Carriage"))) derailed.add(value.copy());
+            pending.put("DerailedCarriages", derailed);
         }
-        for (var value : saved.getList("StalledCarriages", Tag.TAG_COMPOUND)) {
-            UUID id = ((CompoundTag) value).getUUID("Carriage");
-            if (distances.containsKey(id)) recovered.stalledCarriages.add(id);
-        }
+        releasePrevious.run();
         if (pending != null) {
             remainingOwner = CompatibilityTrain.retainPendingMotion(level, remaining, pending);
             for (UUID id : remaining) {
@@ -499,13 +545,31 @@ public final class AssembledVehicleMotion {
         if (selected.equals(all)) {
             VehicleRuntime relocated = runtime.rebase(replacementRoute.path(), distances, true);
             relocated.collisionEnabled(false);
+            relocated.constraintFailurePolicy(VehicleRuntime.ConstraintFailurePolicy.RETRY_CONSIST);
             runtime = relocated;
             route = replacementRoute;
-            routeFailure = null;
+            lastMotionFailure = null;
             controllers.clear();
             derailedCarriages.clear();
             for (UUID id : carriages)
                 if (level.getEntity(id) instanceof SnapshotCarriageEntity carrier) applyCurrent(carrier);
+            return;
+        }
+
+        if (!route.isValid()) {
+            // A live track rebuild can invalidate the other, unselected consists as well.
+            // Their old samples cannot be used by subset()/bridge reconstruction. Keep their
+            // native carriage/cargo records in the existing pending-state recovery path.
+            var selectedTrain = compatibility.train(distances.keySet().iterator().next());
+            var saved = writeState();
+            var previous = compatibility;
+            if (!recoverPendingRelocation(level, saved, runtime.checkpoint(), selectedTrain,
+                    replacementRoute, distances, () -> {
+                        previous.retainPending(saved);
+                        compatibility = null;
+                        for (UUID id : carriages)
+                            if (level.getEntity(id) instanceof SnapshotCarriageEntity carrier) carrier.installMotion(null);
+                    })) throw new IllegalArgumentException("Replacement track cannot support this complete consist");
             return;
         }
 
@@ -521,10 +585,6 @@ public final class AssembledVehicleMotion {
         });
         left.derailedCarriages.addAll(derailedCarriages);
         left.derailedCarriages.retainAll(remaining);
-        left.stalledCarriages.addAll(stalledCarriages);
-        left.stalledCarriages.retainAll(remaining);
-        moved.stalledCarriages.addAll(stalledCarriages);
-        moved.stalledCarriages.retainAll(selected);
         var previousTrains = compatibility == null ? java.util.List.<CompatibilityTrain>of() : compatibility.trains();
         removeCompatibility();
         installOwnerState(left);
@@ -561,7 +621,6 @@ public final class AssembledVehicleMotion {
             for (UUID id : remaining) {
                 if (controllers.containsKey(id)) survivors.controllers.put(id, controllers.get(id));
                 if (derailedCarriages.contains(id)) survivors.derailedCarriages.add(id);
-                if (stalledCarriages.contains(id)) survivors.stalledCarriages.add(id);
             }
         }
         var replacement = survivors;
@@ -581,7 +640,7 @@ public final class AssembledVehicleMotion {
 
 
     public boolean startControl(SnapshotCarriageEntity entity, BlockPos pos, Player player) {
-        if (!validControl(entity, pos, player) || routeFailure != null || isDerailed(entity.getUUID())) return false;
+        if (!validControl(entity, pos, player) || isDerailed(entity.getUUID())) return false;
         for (var entry : controllers.entrySet()) {
             if (runtime.connected(entity.getUUID(), entry.getKey())
                     && (!entry.getValue().player.equals(player.getUUID())
@@ -600,7 +659,7 @@ public final class AssembledVehicleMotion {
 
     /** Uses Create's existing controls input packets and timeout handling, with our own forces. */
     public boolean control(SnapshotCarriageEntity entity, BlockPos pos, Collection<Integer> keys, Player player) {
-        if (!validControl(entity, pos, player) || routeFailure != null || isDerailed(entity.getUUID())
+        if (!validControl(entity, pos, player) || isDerailed(entity.getUUID())
                 || keys.contains(5)) return false;
         Controller driver = controllers.get(entity.getUUID());
         if (driver == null || !driver.player.equals(player.getUUID()) || !driver.pos.equals(pos)) return false;

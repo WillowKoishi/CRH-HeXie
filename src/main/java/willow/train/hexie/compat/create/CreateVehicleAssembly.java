@@ -1,6 +1,9 @@
 package willow.train.hexie.compat.create;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 import java.util.Objects;
 import java.util.LinkedHashMap;
@@ -24,6 +27,7 @@ import willow.train.hexie.vehicle.assembly.CarriageSnapshot;
 import willow.train.hexie.vehicle.assembly.BogeyModelCatalog;
 import willow.train.hexie.vehicle.assembly.VehicleAssemblyPreparer;
 import willow.train.hexie.vehicle.assembly.VehicleCouplingCatalog;
+import willow.train.hexie.blocks.coupler.CouplerBlock;
 import org.slf4j.Logger;
 
 /** Action-only bridge: Create selects/triggers; our scanner and snapshot store own the assembly. */
@@ -44,12 +48,15 @@ public final class CreateVehicleAssembly {
         var structures = AssemblyCapture.capture(level, scanner.scan(level, request)).stream()
                 .map(snapshot -> withGlue(snapshot, scanner.capturedGlue())).toList();
         var route = selectedRoute != null ? selectedRoute : CreateRouteBinding.fromStation(station,
-                Vec3.atCenterOf(structures.getFirst().origin()), request.forward());
+                Vec3.atCenterOf(structures.getFirst().origin()), request.forward(),
+                structures.stream().flatMap(structure -> structure.supports().stream()
+                        .map(structure.origin()::offset)).toList());
         var prepared = VehicleAssemblyPreparer.prepare(structures, request.forward(),
                 BogeyModelCatalog.production(level.getServer().getResourceManager()), VehicleCouplingCatalog::decode);
         UUID assembly = UUID.randomUUID();
         var motion = AssembledVehicleMotion.create(level, assembly, prepared, route);
-        requireOriginalPose(motion, structures, request.forward());
+        requireOriginalPose(motion, structures, request.forward(),
+                "Selected assembly route does not align with the placed carriage");
         var store = CarriageSnapshotStore.get(level);
         var carriers = new ArrayList<SnapshotCarriageEntity>(structures.size());
         try {
@@ -115,7 +122,8 @@ public final class CreateVehicleAssembly {
         var carriers = carriers(level, assembled.carriages());
         for (var carrier : carriers)
             requireOriginalPose(Objects.requireNonNull(carrier.motion(), "Vehicle motion is not available"),
-                    List.of(store.find(carrier.getUUID()).orElseThrow()), carrier.motion().forward(carrier.getUUID()));
+                    List.of(store.find(carrier.getUUID()).orElseThrow()), carrier.motion().forward(carrier.getUUID()),
+                    "Stop all carriages at their original assembly position before dismantling");
         restoreAtCurrentPose(station, carriers);
     }
 
@@ -144,7 +152,7 @@ public final class CreateVehicleAssembly {
         var store = CarriageSnapshotStore.get(level);
         var sources = new LinkedHashMap<UUID, CarriageSnapshotStore.ActiveAssembly>();
         var sourceByCarriage = new LinkedHashMap<UUID, UUID>();
-        var transforms = new LinkedHashMap<UUID, StructureTransform>();
+        var transforms = disassemblyTransforms(station, carriers);
         var plans = new LinkedHashMap<UUID, SnapshotCarriageEntity.NativeDisassemblyPlan>();
         var selectedByOwner = new LinkedHashMap<AssembledVehicleMotion, Set<UUID>>();
         for (var carrier : carriers) {
@@ -154,7 +162,6 @@ public final class CreateVehicleAssembly {
             if (!source.equals(carrier.assemblyId())) throw new IllegalStateException("Carriage source assembly changed");
             if (!active.carriages().contains(id)) throw new IllegalStateException("Carriage has no active assembly snapshot");
             sourceByCarriage.put(id, source);
-            transforms.put(id, disassemblyTransform(carrier));
             selectedByOwner.computeIfAbsent(carrier.motion(), ignored -> new java.util.HashSet<>()).add(id);
         }
         // Prepare the surviving motion owners without mutating them or their native train identities.
@@ -251,6 +258,73 @@ public final class CreateVehicleAssembly {
         return new StructureTransform(BlockPos.containing(pose.position().x(), pose.position().y(), pose.position().z()), 0, angle, 0);
     }
 
+    /** Connected heads can share one cell while assembled; world blocks need separate cells. */
+    static Map<UUID, StructureTransform> disassemblyTransforms(StationBlockEntity station,
+            List<SnapshotCarriageEntity> carriers) {
+        var transforms = new LinkedHashMap<UUID, StructureTransform>();
+        var partners = new HashMap<UUID, UUID>();
+        for (var carrier : carriers)
+            transforms.put(carrier.getUUID(), disassemblyTransform(carrier));
+        for (var motion : carriers.stream().map(SnapshotCarriageEntity::motion).distinct().toList())
+            for (var coupling : motion.runtime().couplingStates()) if (coupling.connected()) {
+                partners.put(coupling.first(), coupling.second());
+                partners.put(coupling.second(), coupling.first());
+            }
+        var occupied = new HashMap<BlockPos, UUID>();
+        // Only coincident, connected coupler blocks permit unfolding. Unrelated overlapping
+        // body blocks remain an invalid dismantle instead of silently moving a whole carriage.
+        boolean needsUnfolding = false;
+        for (var carrier : carriers) {
+            var transform = transforms.get(carrier.getUUID());
+            needsUnfolding |= checkCarriageOverlap(carrier, transform, occupied, partners);
+            addCarriageCells(carrier, transform, occupied);
+        }
+        if (!needsUnfolding) return transforms;
+        Direction away = Objects.requireNonNull(station.getAssemblyDirection(), "Station has no assembly direction");
+        var ordered = carriers.stream().sorted(Comparator.comparingInt(carrier -> {
+            var position = transforms.get(carrier.getUUID()).offset;
+            return position.getX() * away.getStepX() + position.getZ() * away.getStepZ();
+        })).toList();
+        occupied.clear();
+        int shift = 0;
+        for (var carrier : ordered) {
+            var original = transforms.get(carrier.getUUID());
+            StructureTransform target;
+            do {
+                target = new StructureTransform(original.offset.relative(away, shift), original.rotationAxis,
+                        original.rotation, original.mirror);
+                if (!checkCarriageOverlap(carrier, target, occupied, partners)) break;
+                shift++;
+            } while (true);
+            transforms.put(carrier.getUUID(), target);
+            addCarriageCells(carrier, target, occupied);
+        }
+        return transforms;
+    }
+
+    private static boolean checkCarriageOverlap(SnapshotCarriageEntity carrier, StructureTransform transform,
+            Map<BlockPos, UUID> occupied, Map<UUID, UUID> partners) {
+        boolean overlaps = false;
+        for (var block : carrier.getContraption().getBlocks().values()) {
+            BlockPos target = transform.apply(block.pos());
+            if (!occupied.containsKey(target)) continue;
+            UUID endpoint = block.state().getBlock() instanceof CouplerBlock
+                    ? VehicleCouplingCatalog.endpointId(carrier.getUUID(), block.pos()) : null;
+            if (endpoint == null || partners.get(endpoint) == null
+                    || !partners.get(endpoint).equals(occupied.get(target)))
+                throw new IllegalArgumentException("Overlapping assembly snapshots at " + target);
+            overlaps = true;
+        }
+        return overlaps;
+    }
+
+    private static void addCarriageCells(SnapshotCarriageEntity carrier, StructureTransform transform,
+            Map<BlockPos, UUID> occupied) {
+        for (var block : carrier.getContraption().getBlocks().values())
+            occupied.put(transform.apply(block.pos()), block.state().getBlock() instanceof CouplerBlock
+                    ? VehicleCouplingCatalog.endpointId(carrier.getUUID(), block.pos()) : null);
+    }
+
     private static boolean hasRestorablePose(SnapshotCarriageEntity carrier) {
         var motion = carrier.motion();
         if (motion == null || !motion.owns(carrier.getUUID())
@@ -318,10 +392,11 @@ public final class CreateVehicleAssembly {
     }
 
     /** Verify initial assembly alignment and the explicit original-position restoration fallback. */
-    private static void requireOriginalPose(AssembledVehicleMotion motion, List<CarriageSnapshot> structures, Direction forward) {
+    private static void requireOriginalPose(AssembledVehicleMotion motion, List<CarriageSnapshot> structures,
+                                            Direction forward, String failureMessage) {
         for (var snapshot : structures)
             if (!hasOriginalPose(motion, snapshot, forward))
-                throw new IllegalStateException("Stop all carriages at their original assembly position before dismantling");
+                throw new IllegalStateException(failureMessage + " at " + snapshot.origin().toShortString());
     }
 
     private static boolean hasOriginalPose(AssembledVehicleMotion motion, CarriageSnapshot snapshot, Direction forward) {

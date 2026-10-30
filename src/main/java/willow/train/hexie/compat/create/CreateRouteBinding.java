@@ -9,6 +9,7 @@ import com.simibubi.create.content.trains.station.StationBlockEntity;
 import com.simibubi.create.content.trains.entity.TravellingPoint;
 import net.createmod.catnip.data.Couple;
 import net.createmod.catnip.data.Pair;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -44,7 +45,7 @@ public final class CreateRouteBinding {
     private final List<BoundGeometry> segments;
     private final TrackRoute route;
     private final double originDistance;
-    private final boolean canonicalGeometry;
+    private final int geometryVersion;
     private final Map<TrackEdge, EdgePosition> edgePositions = new IdentityHashMap<>();
 
     /** Preview is at its node2, facing outward. Choosing never advances a live Create point. */
@@ -64,15 +65,15 @@ public final class CreateRouteBinding {
 
     private CreateRouteBinding(ServerLevel level, TrackGraph graph, List<TrackNode> nodes,
                                double originDistance, Vec3 initialPosition) {
-        this(level, graph, nodes, originDistance, initialPosition, true);
+        this(level, graph, nodes, originDistance, initialPosition, 3);
     }
 
     private CreateRouteBinding(ServerLevel level, TrackGraph graph, List<TrackNode> nodes,
-                               double originDistance, Vec3 initialPosition, boolean canonicalGeometry) {
+                               double originDistance, Vec3 initialPosition, int geometryVersion) {
         this.level = Objects.requireNonNull(level);
         this.graph = Objects.requireNonNull(graph);
         this.nodes = List.copyOf(nodes);
-        this.canonicalGeometry = canonicalGeometry;
+        this.geometryVersion = geometryVersion;
         if (nodes.size() < 2 || nodes.size() > MAX_EDGES + 1)
             throw new IllegalArgumentException("Route must contain between 1 and " + MAX_EDGES + " edges");
         List<BoundGeometry> geometry = new ArrayList<>(nodes.size() - 1);
@@ -82,7 +83,7 @@ public final class CreateRouteBinding {
                 throw new IllegalArgumentException("Route node is not in this level and graph");
         }
         for (int i = 1; i < nodes.size(); i++)
-            geometry.add(new BoundGeometry(graph, nodes.get(i - 1), nodes.get(i), canonicalGeometry));
+            geometry.add(new BoundGeometry(graph, nodes.get(i - 1), nodes.get(i), geometryVersion));
         segments = List.copyOf(geometry);
         route = TrackRoute.directed(mapped(segments));
         indexEdges();
@@ -95,11 +96,13 @@ public final class CreateRouteBinding {
                                List<BoundGeometry> segments, TrackRoute route, double offset) {
         this.level = previous.level;
         this.graph = previous.graph;
-        this.canonicalGeometry = previous.canonicalGeometry;
+        this.geometryVersion = previous.geometryVersion;
         this.nodes = List.copyOf(nodes);
         this.segments = List.copyOf(segments);
         this.route = route;
-        this.originDistance = previous.originDistance + offset;
+        // The initial assembly seed can leave a moving route window. Live carriage cursors
+        // receive the exact offset separately; the seed is only used by initial assembly.
+        this.originDistance = Math.clamp(previous.originDistance + offset, 0, route.length());
         indexEdges();
     }
 
@@ -142,7 +145,7 @@ public final class CreateRouteBinding {
         List<BoundGeometry> extra = new ArrayList<>(added);
         int first = forward ? nodes.size() - 1 : 0;
         for (int i = first; i < first + added; i++)
-            extra.add(new BoundGeometry(graph, extendedNodes.get(i), extendedNodes.get(i + 1), canonicalGeometry));
+            extra.add(new BoundGeometry(graph, extendedNodes.get(i), extendedNodes.get(i + 1), geometryVersion));
         TrackRoute extended = route.extendedDirected(forward ? List.of() : mapped(extra), forward ? mapped(extra) : List.of());
         double offset = forward ? 0 : extended.distanceAt(added, 0);
         List<BoundGeometry> geometry = new ArrayList<>(extendedNodes.size() - 1);
@@ -150,6 +153,49 @@ public final class CreateRouteBinding {
         geometry.addAll(segments);
         if (forward) geometry.addAll(extra);
         return new Extension(new CreateRouteBinding(this, extendedNodes, geometry, extended, offset), offset);
+    }
+
+    /** Release only unoccupied edges behind travel when a loop would revisit the old route. */
+    public Extension extend(boolean forward, RouteChoice choice, double minimumOccupied, double maximumOccupied) {
+        if (!Double.isFinite(minimumOccupied) || !Double.isFinite(maximumOccupied)
+                || minimumOccupied > maximumOccupied)
+            throw new IllegalArgumentException("Invalid occupied route interval");
+        // Release the unused history before checking backend objects: a removed node behind
+        // the entire train must not veto movement on its still-present occupied track.
+        int first = forward ? route.segmentIndex(boundDistance(minimumOccupied)) : 0;
+        int end = forward ? segments.size() : route.segmentIndex(boundDistance(maximumOccupied)) + 1;
+        if (first == 0 && end == segments.size()) return extend(forward, choice);
+        double shift = -route.distanceAt(first, 0);
+        var window = new CreateRouteBinding(this, nodes.subList(first, end + 1),
+                segments.subList(first, end), route.slice(first, end), shift);
+        var continued = window.extend(forward, choice);
+        return new Extension(continued.binding, shift + continued.distanceOffset);
+    }
+
+    /** Refresh only sampled/next-tick edges, not distant history or future selected track. */
+    public Extension refresh(double minimumNeeded, double maximumNeeded) {
+        int first = route.segmentIndex(boundDistance(minimumNeeded));
+        int end = route.segmentIndex(boundDistance(maximumNeeded)) + 1;
+        boolean current = true;
+        for (int i = first; i < end; i++) current &= segments.get(i).valid();
+        if (current) return new Extension(this, 0);
+        var currentGraph = Create.RAILWAYS.trackNetworks.get(graph.id);
+        if (currentGraph == null) throw new RouteInvalidException();
+        var resolved = new ArrayList<TrackNode>(end - first + 1);
+        for (int i = first; i <= end; i++) {
+            var node = currentGraph.locateNode(nodes.get(i).getLocation());
+            if (node == null) throw new RouteInvalidException();
+            if (!resolved.isEmpty()) {
+                var previous = resolved.getLast();
+                if (currentGraph.getConnectionsFrom(previous).get(node) == null
+                        || currentGraph.getConnectionsFrom(node).get(previous) == null)
+                    throw new RouteInvalidException();
+            }
+            resolved.add(node);
+        }
+        double shift = -route.distanceAt(first, 0);
+        var refreshed = new CreateRouteBinding(level, currentGraph, resolved, 0, null, geometryVersion);
+        return new Extension(refreshed, shift);
     }
 
     /**
@@ -252,7 +298,7 @@ public final class CreateRouteBinding {
             TrackNode from = plan.nodes.get(i), to = plan.nodes.get(i + 1);
             EdgePosition source = other.edgePositions.get(graph.getConnectionsFrom(from).get(to));
             BoundGeometry geometry = source != null && !source.reverse
-                    ? other.segments.get(source.segment) : new BoundGeometry(graph, from, to, canonicalGeometry);
+                    ? other.segments.get(source.segment) : new BoundGeometry(graph, from, to, geometryVersion);
             (i < plan.firstStart ? before : after).add(geometry);
         }
         TrackRoute joined = route.extendedDirected(mapped(before), mapped(after));
@@ -283,20 +329,27 @@ public final class CreateRouteBinding {
         return segments.stream().map(segment -> new TrackRoute.DirectedSegment(segment, segment.reversed)).toList();
     }
 
-    /** One-time conversion of old direction-dependent distances through their exact edge parameters. */
+    /** Upgrade old edge direction/tangent sampling through each support's exact edge parameter. */
     CreateRouteBinding canonicalized() {
-        if (canonicalGeometry) return this;
-        var upgraded = new CreateRouteBinding(level, graph, nodes, 0, null, true);
+        if (geometryVersion >= 3) return this;
+        var upgraded = new CreateRouteBinding(level, graph, nodes, 0, null, 3);
         return new CreateRouteBinding(upgraded, nodes, upgraded.segments, upgraded.route,
                 upgraded.distanceOf(pointAt(originDistance)));
     }
 
-    /**
-     * Starts with the station's exact target edge. Extend each end only through a unique
-     * traversable connection; junctions, foreign track, ends and already visited nodes stop extension.
-     */
+    /** Bind the station edge and cover at least the first assembly support. */
     public static CreateRouteBinding fromStation(StationBlockEntity station, Vec3 firstBogeyWorld,
                                                  Direction forward) {
+        return fromStation(station, firstBogeyWorld, forward, List.of());
+    }
+
+    /**
+     * Cover the captured supports along the station's straight assembly strip. A branch within
+     * that strip follows the unique straight continuation, just like Create's assembly scan.
+     * Beyond the supports, junctions remain undecided for the normal train controls.
+     */
+    public static CreateRouteBinding fromStation(StationBlockEntity station, Vec3 firstBogeyWorld,
+                                                 Direction forward, List<BlockPos> supportPositions) {
         if (!(station.getLevel() instanceof ServerLevel level) || !station.edgePoint.hasValidTrack())
             throw new IllegalArgumentException("Station needs a server level and a valid target track");
         if (!forward.getAxis().isHorizontal()) throw new IllegalArgumentException("Assembly direction must be horizontal");
@@ -319,9 +372,38 @@ public final class CreateRouteBinding {
         }
         LinkedList<TrackNode> nodes = new LinkedList<>(List.of(first, second));
         Set<TrackNode> visited = new HashSet<>(nodes);
-        extend(graph, nodes, visited, false);
-        extend(graph, nodes, visited, true);
+        double minimum = firstBogeyWorld.dot(direction), maximum = minimum;
+        for (BlockPos support : supportPositions) {
+            double coordinate = Vec3.atCenterOf(support).dot(direction);
+            minimum = Math.min(minimum, coordinate);
+            maximum = Math.max(maximum, coordinate);
+        }
+        RouteChoice assemblyChoice = assemblyContinuation(first.getLocation().getLocation(), direction, minimum, maximum);
+        // Preserve the station's assembly direction first. On a loop, extending backwards
+        // first can consume a node ahead of the station and truncate the assembly track.
+        extend(graph, nodes, visited, true, assemblyChoice);
+        extend(graph, nodes, visited, false, assemblyChoice);
         return new CreateRouteBinding(level, graph, nodes, 0, Objects.requireNonNull(firstBogeyWorld));
+    }
+
+    private static RouteChoice assemblyContinuation(Vec3 lineOrigin, Vec3 forward, double minimum, double maximum) {
+        return (graph, point, front, candidates) -> {
+            Vec3 position = point.node2.getLocation().getLocation();
+            double coordinate = position.dot(forward);
+            if (front ? coordinate >= maximum - 1e-6 : coordinate <= minimum + 1e-6) return null;
+            Vec3 offset = position.subtract(lineOrigin);
+            if (offset.subtract(forward.scale(offset.dot(forward))).lengthSqr() > 1e-12) return null;
+            Vec3 direction = front ? forward : forward.scale(-1);
+            Map.Entry<TrackNode, TrackEdge> selected = null;
+            for (var candidate : candidates) {
+                TrackEdge edge = candidate.getValue();
+                // A curved branch may start with the same tangent; it is not the scanned straight track.
+                if (edge.isTurn() || edge.isInterDimensional() || edge.getDirection(true).dot(direction) < 1 - 1e-6) continue;
+                if (selected != null) return null;
+                selected = candidate;
+            }
+            return selected;
+        };
     }
 
     /** Future train control supplies its chosen node sequence here; loading never chooses a junction. */
@@ -459,7 +541,7 @@ public final class CreateRouteBinding {
 
     public CompoundTag save() {
         CompoundTag tag = new CompoundTag();
-        tag.putInt("Version", canonicalGeometry ? 2 : 1);
+        tag.putInt("Version", geometryVersion);
         tag.putUUID("Graph", graph.id);
         tag.putString("Dimension", level.dimension().location().toString());
         tag.putDouble("Origin", originDistance);
@@ -470,7 +552,7 @@ public final class CreateRouteBinding {
     }
 
     public static CreateRouteBinding load(ServerLevel level, CompoundTag tag) {
-        if ((tag.getInt("Version") != 1 && tag.getInt("Version") != 2) || !tag.hasUUID("Graph") || !tag.contains("Origin", Tag.TAG_DOUBLE)
+        if (tag.getInt("Version") < 1 || tag.getInt("Version") > 3 || !tag.hasUUID("Graph") || !tag.contains("Origin", Tag.TAG_DOUBLE)
                 || !level.dimension().location().toString().equals(tag.getString("Dimension")))
             throw new IllegalArgumentException("Invalid saved route binding");
         ListTag saved = tag.getList("Nodes", Tag.TAG_COMPOUND);
@@ -490,7 +572,7 @@ public final class CreateRouteBinding {
             if (node == null) throw new IllegalArgumentException("Saved route node is no longer in the graph");
             resolved.add(node);
         }
-        return new CreateRouteBinding(level, graph, resolved, tag.getDouble("Origin"), null, tag.getInt("Version") >= 2);
+        return new CreateRouteBinding(level, graph, resolved, tag.getDouble("Origin"), null, tag.getInt("Version"));
     }
 
     /** Assembly-only nearest projection; returns geometric arc distance, never a Bezier parameter. */
@@ -588,7 +670,7 @@ public final class CreateRouteBinding {
         private final Map<TrackNode, TrackEdge> fromSmoothingEdges;
         private final Map<TrackNode, TrackEdge> toSmoothingEdges;
 
-        private BoundGeometry(TrackGraph graph, TrackNode from, TrackNode to, boolean canonical) {
+        private BoundGeometry(TrackGraph graph, TrackNode from, TrackNode to, int geometryVersion) {
             this.graph = graph;
             this.from = from;
             this.to = to;
@@ -598,12 +680,12 @@ public final class CreateRouteBinding {
             if (opposite == null) throw new IllegalArgumentException("Selected track needs a reverse edge");
             // Create renders primary curves. secondary() recomputes handles and can produce
             // a different curve, so both travel directions must measure that same primary.
-            boolean useOpposite = canonical && (edge.isTurn() && opposite.isTurn()
+            boolean useOpposite = geometryVersion >= 2 && (edge.isTurn() && opposite.isTurn()
                     && edge.getTurn().primary != opposite.getTurn().primary
                     ? opposite.getTurn().primary : orderedAfter(from, to));
             canonicalEdge = useOpposite ? opposite : edge;
             reversed = useOpposite;
-            geometry = new CreateTrackGeometry(graph, canonicalEdge);
+            geometry = new CreateTrackGeometry(graph, canonicalEdge, geometryVersion >= 3);
             boolean smoothed = !edge.isTurn()
                     && (from.getLocation().yOffsetPixels != 0 || to.getLocation().yOffsetPixels != 0);
             fromSmoothingEdges = smoothed ? Map.copyOf(graph.getConnectionsFrom(from)) : null;

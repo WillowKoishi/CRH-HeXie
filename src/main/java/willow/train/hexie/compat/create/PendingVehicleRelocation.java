@@ -23,14 +23,13 @@ final class PendingVehicleRelocation {
     private final ServerLevel level;
     private final CompoundTag saved;
     private final VehicleRuntime.Checkpoint checkpoint;
-    private final java.util.Map<UUID, AssembledVehicleMotion.Source> sources;
     private final List<Candidate> candidates = new ArrayList<>();
 
     PendingVehicleRelocation(ServerLevel level, CompoundTag saved) {
         this.level = level;
         this.saved = saved;
         checkpoint = VehicleRuntimeNbt.readCheckpoint(saved.getCompound("Runtime"));
-        sources = AssembledVehicleMotion.readSources(level, saved);
+        AssembledVehicleMotion.readSources(level, saved);
         var endpoints = new HashMap<UUID, UUID>();
         var remaining = new java.util.LinkedHashSet<UUID>();
         for (var carriage : checkpoint.carriages()) {
@@ -69,20 +68,10 @@ final class PendingVehicleRelocation {
             if (!(current instanceof CompatibilityTrain train) || train.bridge != null || train.graph == null
                     || train.derailed || !saved.getUUID("Assembly").equals(train.assemblyId)
                     || !candidate.ids.equals(Set.copyOf(train.carriageIds))) continue;
-            // Only the selected native consist is being repositioned. Its unrelated saved peers
-            // keep their native carriage/cargo records even when their entities are unloaded.
-            SnapshotCarriageEntity selectedOwner = null;
-            boolean loaded = true;
-            for (UUID id : candidate.ids) {
-                if (!(level.getEntity(id) instanceof SnapshotCarriageEntity carrier) || carrier.isRemoved()
-                        || !sources.get(id).assembly().equals(carrier.assemblyId())) {
-                    loaded = false;
-                    break;
-                }
-                if (selectedOwner == null) selectedOwner = carrier;
-            }
-            if (!loaded) continue;
+            // Native carriage records own the body payload and cargo. Logical recovery must
+            // also work before those bodies enter entity-ticking chunks.
             if (!candidate.changed(train)) continue;
+            boolean changedSinceObserved = candidate.previous != null;
             // Remember only an attempted placement; a changed native result is checked next tick,
             // while an unchanged bad graph never causes repeated decoding or route reconstruction.
             candidate.remember(train);
@@ -101,7 +90,10 @@ final class PendingVehicleRelocation {
                             return preview.steer(steer, preview.edge.getNormal(graph, .5))
                                     .apply(graph, Pair.of(true, choices));
                         });
-                boolean moved = !train.graph.id.equals(saved.getCompound("Route").getUUID("Graph"));
+                // Rebuilding a track can keep both its graph UUID and world geometry. A new
+                // native placement after the last observed points must still replace old edges.
+                boolean moved = changedSinceObserved
+                        || !train.graph.id.equals(saved.getCompound("Route").getUUID("Graph"));
                 for (var value : saved.getList("DerailedCarriages", net.minecraft.nbt.Tag.TAG_COMPOUND))
                     moved |= candidate.ids.contains(((CompoundTag) value).getUUID("Carriage"));
                 for (int i = 0; i < train.carriageIds.size(); i++) {
@@ -122,6 +114,15 @@ final class PendingVehicleRelocation {
                     moved |= next.tangent().dot(previous.tangent()) < 1 - 1e-8
                             || next.normal().dot(previous.normal()) < 1 - 1e-8;
                 }
+                if (!moved) {
+                    try { CreateRouteBinding.load(level, saved.getCompound("Route")); }
+                    catch (CreateRouteBinding.RouteInvalidException | IllegalArgumentException unavailable) {
+                        // The first valid native migration may already be at the same world
+                        // position when this detector starts. Do not require displacement to
+                        // recover a checkpoint whose original route cannot be reconstructed.
+                        moved = true;
+                    }
+                }
                 if (!moved) continue;
             } catch (CreateRouteBinding.RouteInvalidException | IllegalArgumentException unavailable) {
                 // Graph sync/rebuild may temporarily leave an old proxy point detached. Keep the
@@ -129,7 +130,7 @@ final class PendingVehicleRelocation {
                 continue;
             }
             // Do not swallow failures after the ownership transfer has begun.
-            if (AssembledVehicleMotion.recoverPendingRelocation(selectedOwner, saved, checkpoint, train, route, distances)) return true;
+            if (AssembledVehicleMotion.recoverPendingRelocation(level, saved, checkpoint, train, route, distances)) return true;
         }
         return false;
     }

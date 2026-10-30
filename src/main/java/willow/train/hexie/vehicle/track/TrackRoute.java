@@ -65,15 +65,20 @@ public final class TrackRoute implements TrackPath {
     public record Location(int segmentIndex, double parameter, TrackGeometry.Sample sample) {}
 
     public Location locate(double distance) {
-        if (!Double.isFinite(distance)) throw new IllegalArgumentException("Distance must be finite");
-        if (distance < 0 || distance > length())
-            throw new IndexOutOfBoundsException("Distance " + distance + " outside route [0, " + length() + "]");
-        int index = Arrays.binarySearch(ends, distance);
-        index = index >= 0 ? Math.min(index + 1, spans.size() - 1) : -index - 1;
+        int index = segmentIndex(distance);
         double start = index == 0 ? 0 : ends[index - 1];
         Span span = spans.get(index);
         double parameter = span.parameter(distance - start);
         return new Location(index, parameter, span.atParameter(parameter));
+    }
+
+    /** Cached arc coordinates remain available while the backend replaces its graph objects. */
+    public int segmentIndex(double distance) {
+        if (!Double.isFinite(distance)) throw new IllegalArgumentException("Distance must be finite");
+        if (distance < 0 || distance > length())
+            throw new IndexOutOfBoundsException("Distance " + distance + " outside route [0, " + length() + "]");
+        int index = Arrays.binarySearch(ends, distance);
+        return index >= 0 ? Math.min(index + 1, spans.size() - 1) : -index - 1;
     }
 
     /** Inverse of locate, using exactly the same measured arc table and exposed segment parameter. */
@@ -109,6 +114,14 @@ public final class TrackRoute implements TrackPath {
         for (DirectedSegment segment : after)
             mapped.add(new Span(new ArcMap(segment.geometry), segment.reversed, segment.reversed));
         return new TrackRoute(mapped, true);
+    }
+
+    /** Retain a moving route window without remeasuring any of its curve geometry. */
+    public TrackRoute slice(int firstSegment, int endSegment) {
+        if (firstSegment < 0 || endSegment > spans.size() || firstSegment >= endSegment)
+            throw new IndexOutOfBoundsException("Invalid route segment window");
+        return firstSegment == 0 && endSegment == spans.size() ? this
+                : new TrackRoute(spans.subList(firstSegment, endSegment), true);
     }
 
     /** Reuses the distance maps; reversing changes tangent and signed cant, not the reference up. */

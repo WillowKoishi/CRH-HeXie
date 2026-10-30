@@ -39,6 +39,7 @@ public final class CompatibilityTrain extends Train {
     CreateTrainBridge bridge;
     double requestedSpeed = Double.NaN;
     int mailTransferTicks;
+    UUID unresolvedGraphId;
     private CompoundTag savedMotion;
     private UUID savedMotionOwner;
     private String motionDimension;
@@ -66,18 +67,34 @@ public final class CompatibilityTrain extends Train {
     @SubscribeEvent
     public static void finishLogicalTicks(ServerTickEvent.Post event) {
         var pending = PENDING_TICKS.remove(event.getServer());
-        if (pending != null) for (var train : pending) train.tickLogical(event.getServer().overworld());
+        if (pending == null) return;
+        for (var train : pending) train.restoreForTick(event.getServer().overworld());
+        // Bring contacting domains together before either side advances. Preparation does not
+        // move a carriage or create a link; the runtime resolves the exact swept contact.
+        VehicleContactPreparation.prepare();
+        for (var value : List.copyOf(Create.RAILWAYS.trains.values()))
+            if (value instanceof CompatibilityTrain train) train.tickLogical(event.getServer().overworld());
     }
 
-    private void tickLogical(ServerLevel server) {
+    private void restoreForTick(ServerLevel server) {
         if (Create.RAILWAYS.trains.get(id) != this) return;
         if (bridge == null && savedMotionOwner != null) {
             if (Create.RAILWAYS.trains.get(savedMotionOwner) instanceof CompatibilityTrain ownerTrain
                     && ownerTrain != this) ownerTrain.restoreMotion(server);
             else restoreMotion(server);
         }
+    }
+
+    private void tickLogical(ServerLevel server) {
+        restoreForTick(server);
         var current = Create.RAILWAYS.trains.get(id);
-        if (current instanceof CompatibilityTrain train && train.bridge != null) train.bridge.motion().tickLogic();
+        if (!(current instanceof CompatibilityTrain train)) return;
+        if (train.bridge != null) train.bridge.motion().tickLogic();
+        else {
+            // Like native Train.tick with no graph: materialize the saved body in active
+            // chunks even while its route is unavailable. This does not move or load chunks.
+            train.carriages.forEach(carriage -> carriage.manageEntities(server));
+        }
     }
 
     private void restoreMotion(ServerLevel server) {
@@ -149,8 +166,10 @@ public final class CompatibilityTrain extends Train {
     }
 
     @Override public void earlyTick(Level level) {
+        if (Create.RAILWAYS.trains.get(id) != this) return;
         // Keep occupied/reserved groups visible even while the owning entity is unloaded.
         super.earlyTick(level);
+        if (graph != null) unresolvedGraphId = null;
     }
 
     @Override public void approachTargetSpeed(float accelerationMod) {
@@ -163,8 +182,14 @@ public final class CompatibilityTrain extends Train {
     }
 
     @Override public void crash() {
+        unresolvedGraphId = null;
         super.crash();
         if (bridge != null) bridge.crashed(this);
+    }
+
+    @Override public void detachFromTracks() {
+        unresolvedGraphId = null;
+        super.detachFromTracks();
     }
 
     /** World restoration always remains in the snapshot transaction. */
@@ -175,6 +200,7 @@ public final class CompatibilityTrain extends Train {
 
     @Override public CompoundTag write(DimensionPalette dimensions, HolderLookup.Provider registries) {
         CompoundTag tag = super.write(dimensions, registries);
+        if (graph == null && unresolvedGraphId != null) tag.putUUID("Graph", unresolvedGraphId);
         tag.putUUID(ASSEMBLY_KEY, assemblyId);
         ListTag ids = new ListTag();
         for (UUID id : carriageIds) { var entry = new CompoundTag(); entry.putUUID("Id", id); ids.add(entry); }
@@ -202,8 +228,16 @@ public final class CompatibilityTrain extends Train {
         var carriages = source.carriages;
         var result = new CompatibilityTrain(source.id, source.owner, tag.getUUID(ASSEMBLY_KEY), ids,
                 source.graph, carriages, source.carriageSpacing);
+        // A saved graph reference can be read before the railway graph itself is loaded.
+        // This differs from Create deliberately detaching a live train from its tracks.
+        if (source.graph == null && tag.hasUUID("Graph")) result.unresolvedGraphId = tag.getUUID("Graph");
         result.name = source.name; result.icon = source.icon; result.mapColorIndex = source.mapColorIndex;
         result.speed = source.speed; result.targetSpeed = source.targetSpeed; result.throttle = source.throttle;
+        result.speedBeforeStall = source.speedBeforeStall;
+        result.carriageWaitingForChunks = source.carriageWaitingForChunks;
+        result.migrationCooldown = source.migrationCooldown;
+        ((CreateTrainAccess) (Object) result).hexie$getMigratingPoints()
+                .addAll(((CreateTrainAccess) (Object) source).hexie$getMigratingPoints());
         result.currentStation = source.currentStation; result.currentlyBackwards = source.currentlyBackwards;
         result.derailed = source.derailed; result.updateSignalBlocks = source.updateSignalBlocks;
         result.occupiedSignalBlocks.putAll(source.occupiedSignalBlocks);
