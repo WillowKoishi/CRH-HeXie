@@ -534,6 +534,9 @@ public final class CarriageSnapshotStore extends SavedData {
 
     private static CarriageSnapshotStore load(ServerLevel level, CompoundTag tag) {
         requireServerThread(level);
+        var migrated = MissingBlockMigration.migrate(level, tag, "carriage-snapshots");
+        boolean changed = migrated != tag;
+        tag = migrated;
         if (!tag.contains("Schema", Tag.TAG_INT) || tag.getInt("Schema") < 1 || tag.getInt("Schema") > SCHEMA_VERSION)
             throw new IllegalArgumentException("Unsupported carriage store schema");
         if (!tag.contains("Dimension", Tag.TAG_STRING)
@@ -580,6 +583,7 @@ public final class CarriageSnapshotStore extends SavedData {
                     throw new IllegalArgumentException("Duplicate active assembly identity");
             }
         }
+        if (changed) result.setDirty();
         return result;
     }
 

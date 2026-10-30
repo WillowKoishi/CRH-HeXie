@@ -20,7 +20,8 @@ public final class VehicleCouplingCatalog {
             throw new IllegalArgumentException("Carriage forward direction must be horizontal");
         var endpoints = new ArrayList<CouplingEndpoint>();
         for (var block : snapshot.blocks()) {
-            if (!(block.state().getBlock() instanceof CouplerBlock coupler)) continue;
+            var coupler = CouplerBlock.of(block.state());
+            if (coupler == null) continue;
             Direction facing = coupler.facing(block.state());
             if (!facing.getAxis().isHorizontal())
                 throw new IllegalArgumentException("Coupling direction must be horizontal");

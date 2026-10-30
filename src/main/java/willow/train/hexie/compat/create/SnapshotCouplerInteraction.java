@@ -27,7 +27,7 @@ final class SnapshotCouplerInteraction {
 
     static boolean handle(SnapshotCarriageEntity entity, Player player, BlockPos position, InteractionHand hand) {
         var info = entity.getContraption() == null ? null : entity.getContraption().getBlocks().get(position);
-        if (info == null || !(info.state().getBlock() instanceof CouplerBlock)
+        if (info == null || CouplerBlock.of(info.state()) == null
                 || player.isSpectator() || !player.mayBuild() || !entity.canInteractWithBlock(player, position, 4))
             return false;
         // Keep the existing wrench relocation available on this block too.

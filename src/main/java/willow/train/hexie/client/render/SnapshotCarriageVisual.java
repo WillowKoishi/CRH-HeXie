@@ -10,20 +10,26 @@ import com.simibubi.create.content.trains.bogey.BogeyStyle;
 import com.simibubi.create.content.trains.bogey.BogeyVisual;
 import dev.engine_room.flywheel.api.visual.DynamicVisual;
 import dev.engine_room.flywheel.api.visualization.VisualizationContext;
+import dev.engine_room.flywheel.lib.instance.InstanceTypes;
+import net.neoforged.fml.ModList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import willow.train.hexie.compat.create.SnapshotCarriageEntity;
+import willow.train.hexie.client.render.carriage.CompatibleCarriageVisual;
 
 /** Dynamic support parts share the same body embedding and existing registered Flywheel models. */
 public final class SnapshotCarriageVisual extends ContraptionVisual<SnapshotCarriageEntity> {
     private record Entry(BlockPos position, AbstractBogeyBlockEntity blockEntity, BogeyStyle style, BogeyVisual visual) {}
     private final List<Entry> bogeys = new ArrayList<>();
     private final PoseStack pose = new PoseStack();
+    private final boolean compatibleTransparency = ModList.get().isLoaded("sable") && ModList.get().isLoaded("veil");
+    private int compatibleStructureVersion = Integer.MIN_VALUE;
 
     public SnapshotCarriageVisual(VisualizationContext context, SnapshotCarriageEntity entity, float partialTick) {
         super(context, entity, partialTick);
         lightPaddingBlocks = DEFAULT_LIGHT_PADDING + 2;
         animate(partialTick);
+        updateCompatibleTransparency();
     }
 
     @Override
@@ -37,7 +43,18 @@ public final class SnapshotCarriageVisual extends ContraptionVisual<SnapshotCarr
     @Override
     protected void beginFrame(DynamicVisual.Context context) {
         super.beginFrame(context);
+        updateCompatibleTransparency();
         animate(context.partialTick());
+    }
+
+    private void updateCompatibleTransparency() {
+        if (!compatibleTransparency || compatibleStructureVersion == lastStructureVersion) return;
+        var model = CompatibleCarriageVisual.createCompatibleStructure(entity.getContraption().getOrCreateClientContraptionLazy());
+        if (model != null) {
+            embedding.instancerProvider().instancer(InstanceTypes.TRANSFORMED, model).stealInstance(structure);
+            structure.setChanged();
+        }
+        compatibleStructureVersion = lastStructureVersion;
     }
 
     private void animate(float partialTick) {

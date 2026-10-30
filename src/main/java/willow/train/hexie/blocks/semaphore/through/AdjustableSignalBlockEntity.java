@@ -23,7 +23,8 @@ public class AdjustableSignalBlockEntity extends ThroughSignalBlockEntity {
     public void addBehaviours(List<BlockEntityBehaviour> behaviours) {
         super.addBehaviours(behaviours);
         orientation = new SignalOrientationBehaviour(this);
-        behaviours.add(orientation);
+        // Let wrench angle controls run before the general lamp settings.
+        behaviours.addFirst(orientation);
     }
 
     @Override
@@ -43,8 +44,7 @@ public class AdjustableSignalBlockEntity extends ThroughSignalBlockEntity {
     protected boolean applyAdditionalLightSetting(Player player, ValueSettings settings) {
         if (settings.row() == 0)
             return false;
-        if (settings.row() == 1 && player.mayBuild() && !player.isSpectator()
-                && player.getMainHandItem().isEmpty() && player.getOffhandItem().isEmpty()) {
+        if (settings.row() == 1 && player.mayBuild() && !player.isSpectator()) {
             orientation.setTrackAligned(settings.value() > LIGHT_MODE_DRAG_STEP);
         }
         return true;

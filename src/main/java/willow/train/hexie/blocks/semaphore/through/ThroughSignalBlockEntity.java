@@ -108,7 +108,7 @@ public class ThroughSignalBlockEntity extends SignalBlockEntity implements Trans
 
             @Override
             public boolean mayInteract(Player player) {
-                return player.getMainHandItem().isEmpty() && player.getOffhandItem().isEmpty();
+                return player.mayBuild() && !player.isSpectator();
             }
 
             @Override

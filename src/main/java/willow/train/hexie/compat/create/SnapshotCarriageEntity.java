@@ -70,8 +70,8 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import willow.train.hexie.init.EntityInit;
-import willow.train.hexie.blocks.coupler.TestCouplerBlock;
 import willow.train.hexie.blockentity.CouplerBlockEntity;
+import willow.train.hexie.blocks.coupler.CouplerBlock;
 import willow.train.hexie.vehicle.assembly.CarriageSnapshot;
 import willow.train.hexie.vehicle.assembly.CarriageSnapshotStore;
 import willow.train.hexie.vehicle.assembly.CarriageFloorView;
@@ -654,6 +654,13 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
 
     public void readWorkingState(CompoundTag tag) {
         if (!(contraption instanceof SnapshotView view)) return;
+        if (level() instanceof ServerLevel server && snapshot != null) {
+            var missing = new java.util.HashSet<Tag>();
+            for (var block : snapshot.blocks()) if (block.state().isAir())
+                missing.add(NbtUtils.writeBlockPos(block.position()));
+            tag = willow.train.hexie.vehicle.assembly.MissingBlockMigration.migrate(
+                    server, tag, "working-state-" + getUUID(), missing);
+        }
         for (var element : tag.getList("ChangedBlocks", Tag.TAG_COMPOUND)) {
             var data = (CompoundTag) element;
             BlockPos pos = NBTHelper.readBlockPos(data, "Pos");
@@ -724,6 +731,9 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
 
     @Override
     protected void readAdditional(CompoundTag tag, boolean spawnPacket) {
+        if (!spawnPacket && level() instanceof ServerLevel server)
+            tag = willow.train.hexie.vehicle.assembly.MissingBlockMigration.migrate(
+                    server, tag, "carriage-" + getUUID());
         assemblyId = tag.getUUID("HexieAssembly");
         trainId = tag.hasUUID("TrainId") ? tag.getUUID("TrainId") : assemblyId;
         carriageIndex = tag.getInt("CarriageIndex");
@@ -1239,11 +1249,11 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
                     return new RenderedBlocks(pos -> {
                         var info = SnapshotView.this.getBlocks().get(pos);
                         if (info == null) return net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
-                        if (info.state().getBlock() instanceof TestCouplerBlock
-                                && ((SnapshotCarriageEntity) entity).couplerAnimation().hasShiftedBase(pos))
-                            return net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
-                        return info.state().getBlock() instanceof TestCouplerBlock
-                                ? info.state().setValue(TestCouplerBlock.ASSEMBLED, true) : info.state();
+                        var hook = CouplerBlock.of(info.state());
+                        return hook != null
+                                ? hook.carriageRenderState(info.state(),
+                                        ((SnapshotCarriageEntity) entity).couplerAnimation().hasShiftedBase(pos))
+                                : info.state();
                     }, SnapshotView.this.getBlocks().keySet());
                 }
 

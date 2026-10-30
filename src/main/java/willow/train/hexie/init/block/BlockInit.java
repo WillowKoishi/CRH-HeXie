@@ -16,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import willow.train.hexie.Main;
 import willow.train.hexie.blocks.FluorescentLightBlock;
 import willow.train.hexie.blocks.MegaphoneBlock;
-import willow.train.hexie.blocks.coupler.TestCouplerBlock;
 import willow.train.hexie.blocks.locos.hxd3d.HXD3DCabDoorBlock;
 import willow.train.hexie.blocks.locos.hxd3d.HXD3DPanelBlocks;
 import willow.train.hexie.blocks.locos.PantographBlock;
@@ -51,11 +50,6 @@ public class BlockInit {
     public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(Registries.BLOCK,
             Main.MOD_ID);
     public static final DeferredRegister<Item> ITEMS = AllItemsInit.ITEMS;
-
-    public static final DeferredHolder<Block, TestCouplerBlock> TEST_COUPLER = register("test_coupler",
-            () -> new TestCouplerBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL)
-                    .strength(2.0f).sound(SoundType.METAL).noOcclusion()),
-            object -> () -> new BlockItem(object.get(), new Item.Properties()));
 
     public static final DeferredHolder<Block, willow.train.hexie.blocks.signs.GroundStationSignBlock> GROUND_STATION_SIGN = register("ground_station_sign",
             () -> new willow.train.hexie.blocks.signs.GroundStationSignBlock(BlockBehaviour.Properties.of()

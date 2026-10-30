@@ -17,7 +17,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.phys.AABB;
-import willow.train.hexie.blocks.coupler.TestCouplerBlock;
+import willow.train.hexie.blocks.coupler.AbstractCouplerBlock;
 
 /** Immutable structure data. Capturing or decoding this record never places or removes blocks. */
 public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos origin,
@@ -33,14 +33,15 @@ public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos o
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(dimension, "dimension");
         origin = Objects.requireNonNull(origin, "origin").immutable();
-        // The original test coupler had no block entity. Upgrade those captured blocks
-        // at their known world coordinates before enforcing the normal BE invariants.
+        // Initialize missing coupler storage through its registered block-entity factory.
         var upgradedBlocks = new ArrayList<Block>(blocks.size());
         for (Block block : blocks) {
-            if (block.state().getBlock() instanceof TestCouplerBlock && block.entityData == null) {
+            if (block.state().getBlock() instanceof AbstractCouplerBlock && block.entityData == null) {
                 BlockPos world = absolute(origin, block.position());
                 var data = new CompoundTag();
-                data.putString("id", "hexie:coupler");
+                var entity = ((AbstractCouplerBlock) block.state().getBlock()).newBlockEntity(world, block.state());
+                data.putString("id", net.minecraft.core.registries.BuiltInRegistries.BLOCK_ENTITY_TYPE
+                        .getKey(Objects.requireNonNull(entity).getType()).toString());
                 data.putInt("x", world.getX()); data.putInt("y", world.getY()); data.putInt("z", world.getZ());
                 block = new Block(block.position(), block.state(), data);
             }
@@ -81,9 +82,9 @@ public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos o
         public Block {
             position = Objects.requireNonNull(position, "position").immutable();
             Objects.requireNonNull(state, "state");
-            if (state.isAir()) throw new IllegalArgumentException("Air is not a captured block");
+            // Air may retain a removed block's local position during saved-data migration.
             if (state.hasBlockEntity() != (entityData != null)
-                    && !(state.getBlock() instanceof TestCouplerBlock && entityData == null))
+                    && !(state.getBlock() instanceof AbstractCouplerBlock && entityData == null))
                 throw new IllegalArgumentException("Block entity data does not match block state");
             if (entityData != null) {
                 require(entityData, "id", Tag.TAG_STRING);

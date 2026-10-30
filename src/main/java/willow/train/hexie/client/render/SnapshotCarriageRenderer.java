@@ -8,6 +8,7 @@ import dev.engine_room.flywheel.api.visualization.VisualizationManager;
 import net.createmod.catnip.nbt.NBTHelper;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -25,9 +26,10 @@ public final class SnapshotCarriageRenderer extends ContraptionEntityRenderer<Sn
 
     @Override
     public void render(SnapshotCarriageEntity entity, float yaw, float partialTick, PoseStack poseStack,
-                       MultiBufferSource buffers, int overlay) {
-        super.render(entity, yaw, partialTick, poseStack, buffers, overlay);
+                       MultiBufferSource buffers, int packedLight) {
+        super.render(entity, yaw, partialTick, poseStack, buffers, packedLight);
         if (entity.getContraption() == null) return;
+        int overlay = OverlayTexture.NO_OVERLAY;
         SnapshotCouplerRenderer.render(entity, partialTick, poseStack, buffers, overlay);
         if (VisualizationManager.supportsVisualization(entity.level())) return;
         var client = entity.getContraption().getOrCreateClientContraptionLazy();

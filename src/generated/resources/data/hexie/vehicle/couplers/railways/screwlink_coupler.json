@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "required_mod": "railways",
+  "type": "railways:screwlink",
+  "block": {
+    "id": "railways:link_and_pin",
+    "properties": {
+      "style": "screwlink"
+    }
+  },
+  "facing": {
+    "property": "facing",
+    "opposite": false
+  },
+  "pivot": [
+    0,
+    0,
+    0.5
+  ],
+  "start": [
+    0,
+    0,
+    -0.25
+  ],
+  "complete": [
+    0,
+    0,
+    0
+  ],
+  "max_extension": 0.5,
+  "stationary": null,
+  "moving": {
+    "block": "railways:link_and_pin",
+    "properties": {
+      "style": "screwlink",
+      "facing": "north",
+      "waterlogged": "false"
+    },
+    "offset": [
+      0,
+      0,
+      0
+    ]
+  }
+}

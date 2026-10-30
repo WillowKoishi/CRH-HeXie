@@ -34,6 +34,8 @@ public class HeXieClientInit {
 
     public static void init() {
         willow.train.hexie.client.render.track.BallastCurveBuffers.register();
+        willow.train.hexie.compat.HeXieSimulatedClientCompat.register(Main.bus);
+        willow.train.hexie.client.render.carriage.CarriageTransparencyCompat.register(Main.bus);
         willow.train.hexie.client.sign.SignTextClient.register(Main.bus);
         willow.train.hexie.client.carriage.browser.CarriageBrowserClient.register(Main.bus);
         Main.bus.addListener(HeXieClientInit::registerBlockExtensions);
@@ -41,7 +43,6 @@ public class HeXieClientInit {
         Main.bus.addListener(HeXieClientInit::registerRenderers);
         Main.bus.addListener(HeXieClientInit::registerEntityVisuals);
         PartialModelInit.init();
-        willow.train.hexie.client.render.SnapshotCouplerRenderer.init();
         ClientModEventSubscriber.registerModelLayers();
         Main.bus.addListener(HeXieClientInit::onModelLayerRegistration);
         NeoForge.EVENT_BUS.register(new HXInventoryEvents());

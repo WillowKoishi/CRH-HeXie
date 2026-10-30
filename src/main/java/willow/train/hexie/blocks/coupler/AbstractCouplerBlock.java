@@ -1,10 +1,7 @@
 package willow.train.hexie.blocks.coupler;
 
-import com.mojang.serialization.MapCodec;
-import java.util.EnumMap;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -22,30 +19,20 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.shapes.CollisionContext;
-import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import willow.train.hexie.vehicle.runtime.CouplingEndpoint;
-import willow.train.hexie.vehicle.runtime.CouplingEndpoint.Point;
 import willow.train.hexie.blockentity.CouplerBlockEntity;
 import willow.train.hexie.item.CouplerAdapterItem;
 import willow.train.hexie.vehicle.assembly.CarriageFloorView;
 
-/** Simple rigid coupler: rear-face pivot, central connection point, north-facing approach. */
-public final class TestCouplerBlock extends HorizontalDirectionalBlock implements CouplerBlock, EntityBlock {
-    public static final MapCodec<TestCouplerBlock> CODEC = simpleCodec(TestCouplerBlock::new);
+/** Reusable coupler block behaviour; concrete blocks provide their model, geometry and coupling points. */
+public abstract class AbstractCouplerBlock extends HorizontalDirectionalBlock implements CouplerBlock, EntityBlock {
     public static final BooleanProperty ASSEMBLED = BooleanProperty.create("assembled");
-    private static final Point PIVOT = new Point(0, 0, .5);
-    private static final Point START = new Point(0, 0, -.25);
-    private static final Point COMPLETE = new Point(0, 0, 0);
-    private static final double MAX_EXTENSION = CouplingEndpoint.DEFAULT_MAX_EXTENSION;
-    private static final Map<Direction, VoxelShape> SHAPES = shapes();
 
-    public TestCouplerBlock(Properties properties) {
+    protected AbstractCouplerBlock(Properties properties) {
         super(properties.dynamicShape());
         registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(ASSEMBLED, false));
     }
 
-    @Override protected MapCodec<? extends HorizontalDirectionalBlock> codec() { return CODEC; }
     @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(FACING, ASSEMBLED);
     }
@@ -60,15 +47,19 @@ public final class TestCouplerBlock extends HorizontalDirectionalBlock implement
     }
     @Override protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos position, CollisionContext context) {
         // The assembled flag changes only the static mesh; the complete coupler remains selectable.
-        VoxelShape shape = SHAPES.get(state.getValue(FACING));
+        VoxelShape shape = couplerShape(state);
         return level instanceof CarriageFloorView carriage ? shape.move(0, -carriage.floorOffset(), 0) : shape;
     }
 
     @Override public Direction facing(BlockState state) { return state.getValue(FACING); }
-    @Override public Point pivot() { return PIVOT; }
-    @Override public Point start() { return START; }
-    @Override public Point complete() { return COMPLETE; }
-    @Override public double maxExtension() { return MAX_EXTENSION; }
+    protected abstract VoxelShape couplerShape(BlockState state);
+
+    @Override public BlockState carriageRenderState(BlockState state, boolean shiftedBase) {
+        return shiftedBase ? net.minecraft.world.level.block.Blocks.AIR.defaultBlockState()
+                : state.setValue(ASSEMBLED, true);
+    }
+
+    @Override public boolean assembled(BlockState state) { return state.getValue(ASSEMBLED); }
 
     @Override public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new CouplerBlockEntity(pos, state);
@@ -103,19 +94,4 @@ public final class TestCouplerBlock extends HorizontalDirectionalBlock implement
         return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide);
     }
 
-    private static Map<Direction, VoxelShape> shapes() {
-        var result = new EnumMap<Direction, VoxelShape>(Direction.class);
-        VoxelShape north = Shapes.or(box(4, 4, 14, 12, 12, 16),
-                box(6.5, 6.5, 10, 9.5, 9.5, 16), box(5, 5, 8, 11, 11, 10));
-        result.put(Direction.NORTH, north);
-        VoxelShape current = north;
-        for (Direction facing : new Direction[] {Direction.EAST, Direction.SOUTH, Direction.WEST}) {
-            VoxelShape[] rotated = {Shapes.empty()};
-            current.forAllBoxes((x1, y1, z1, x2, y2, z2) -> rotated[0] = Shapes.or(rotated[0],
-                    Shapes.box(1 - z2, y1, x1, 1 - z1, y2, x2)));
-            current = rotated[0].optimize();
-            result.put(facing, current);
-        }
-        return Map.copyOf(result);
-    }
 }

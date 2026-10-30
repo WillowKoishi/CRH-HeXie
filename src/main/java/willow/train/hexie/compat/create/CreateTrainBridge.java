@@ -488,7 +488,11 @@ public final class CreateTrainBridge {
         int index = car.bogeys().indexOf(definition);
         var pos = snapshot.supports().get(index);
         var block = snapshot.blocks().stream().filter(b -> b.position().equals(pos)).findFirst().orElseThrow();
-        if (!(block.state().getBlock() instanceof AbstractBogeyBlock<?> type))
+        // A removed support keeps its saved motion parameters and an air position in the body.
+        // Create still requires a bogey type for its invisible compatibility carriage.
+        AbstractBogeyBlock<?> type = block.state().isAir() ? com.simibubi.create.AllBlocks.SMALL_BOGEY.get()
+                : block.state().getBlock() instanceof AbstractBogeyBlock<?> bogey ? bogey : null;
+        if (type == null)
             throw new IllegalStateException("Compatibility bogey has no registered Create block");
         CompoundTag data = block.entityData() == null ? new CompoundTag() : block.entityData().getCompound("BogeyData").copy();
         double half = type.getWheelPointSpacing() / 2;

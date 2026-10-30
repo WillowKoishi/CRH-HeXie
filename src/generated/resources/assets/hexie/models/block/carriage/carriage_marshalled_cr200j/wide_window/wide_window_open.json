@@ -1,6 +1,6 @@
 {
 	"credit": "Made with Blockbench",
-	"render_type": "translucent",
+	"render_type": "cutout_mipped",
 	"texture_size": [64, 64],
 	"textures": {
 		"27": "hexie:block/carriage/cr200j/cr200j_wide_window_openable",

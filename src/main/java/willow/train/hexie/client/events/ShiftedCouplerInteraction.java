@@ -48,7 +48,7 @@ public final class ShiftedCouplerInteraction {
             for (var hook : carriage.couplerAnimation().frames()) {
                 var position = hook.position();
                 var block = contraption.getBlocks().get(position);
-                if (block == null || !(block.state().getBlock() instanceof CouplerBlock)
+                if (block == null || CouplerBlock.of(block.state()) == null
                         || contraption.isHiddenInPortal(position)) continue;
                 var hit = block.state().getShape(world, position).clip(localOrigin, localTarget, position);
                 if (hit == null) continue;

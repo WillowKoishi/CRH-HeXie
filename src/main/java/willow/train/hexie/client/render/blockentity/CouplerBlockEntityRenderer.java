@@ -17,7 +17,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import willow.train.hexie.blockentity.CouplerBlockEntity;
 import willow.train.hexie.blocks.coupler.CouplerBlock;
-import willow.train.hexie.blocks.coupler.TestCouplerBlock;
 import willow.train.hexie.vehicle.runtime.CouplerAdapter;
 
 /** Adds the registered item model at the original hook head, in world and carriage rendering. */
@@ -31,7 +30,7 @@ public final class CouplerBlockEntityRenderer implements BlockEntityRenderer<Cou
         var adapter = entity.adapter();
         var state = entity.getBlockState();
         if (adapter == null || !(state.getBlock() instanceof CouplerBlock hook)
-                || state.getOptionalValue(TestCouplerBlock.ASSEMBLED).orElse(false)) return;
+                || hook.assembled(state)) return;
         stack.pushPose();
         stack.translate(.5, .5, .5);
         stack.mulPose(Axis.YP.rotationDegrees(yaw(hook.facing(state))));
