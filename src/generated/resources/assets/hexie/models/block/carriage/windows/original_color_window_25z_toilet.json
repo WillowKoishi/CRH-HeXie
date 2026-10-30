@@ -1,6 +1,6 @@
 {
 	"credit": "Made with Blockbench",
-	"render_type": "translucent",
+	"render_type": "cutout_mipped",
 	"texture_size": [64, 64],
 	"textures": {
 		"5": "hexie:block/windows/original_color_window_25z_toilet",

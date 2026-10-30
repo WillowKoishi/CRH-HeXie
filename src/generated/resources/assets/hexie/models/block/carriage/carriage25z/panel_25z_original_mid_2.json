@@ -1,4 +1,5 @@
 {
+	"render_type": "cutout_mipped",
 	"parent": "hexie:block/carriage/carriage25z/panel_25z_original_mid_0",
 	"textures": {
 		"28": "hexie:block/carriage_panel/original_25z/panel_25z_original_mid_2",

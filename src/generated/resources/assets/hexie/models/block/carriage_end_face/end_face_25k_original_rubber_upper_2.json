@@ -1,6 +1,6 @@
 {
 	"credit": "Made by WillowKoishi",
-	"render_type": "translucent",
+	"render_type": "cutout_mipped",
 	"texture_size": [128, 128],
 	"textures": {
 		"0": "hexie:block/carriage_end_face/end_face_25k_original_upper"

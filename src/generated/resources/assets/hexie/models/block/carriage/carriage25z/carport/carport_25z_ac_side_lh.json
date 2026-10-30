@@ -1,6 +1,6 @@
 {
 	"credit": "Made by WillowKoishi",
-	"render_type": "translucent",
+	"render_type": "cutout_mipped",
 	"textures": {
 		"23": "hexie:block/carriage/carriage_25z/aircondition25z_side",
 		"particle": "hexie:block/carriage/carriage_25z/aircondition25z_side"

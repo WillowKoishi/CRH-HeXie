@@ -1,6 +1,6 @@
 {
 	"credit": "Made with Blockbench",
-	"render_type": "translucent",
+	"render_type": "cutout_mipped",
 	"texture_size": [64, 64],
 	"textures": {
 		"26": "hexie:block/carriage_panel/original_25z/panel_25z_universal_color_1",
