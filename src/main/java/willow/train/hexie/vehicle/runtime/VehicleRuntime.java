@@ -32,14 +32,17 @@ public final class VehicleRuntime {
     private final List<Connection> connections = new ArrayList<>();
     private final List<Approach> approaches = new ArrayList<>();
     private final Map<UUID, Double> bogeySpeeds = new LinkedHashMap<>();
+    // Dynamics owns these cursors. A failed pose evaluation must not rewind the next step.
+    private final Map<UUID, Double> motionDistances = new LinkedHashMap<>();
     private final Map<UUID, Double> failedTravel = new HashMap<>();
     private final TrackPath path;
     private final VehicleConstraintSolver solver;
     private Solution placement = new Solution(Map.of(), Map.of(), Map.of());
     private String constraintFailure;
     private boolean collisionEnabled = true;
-    private ConstraintFailurePolicy constraintFailurePolicy = ConstraintFailurePolicy.STOP_ALL;
     private long consistRevision;
+    private long indexedConsistRevision = -1;
+    private final Map<UUID, UUID> couplingPartners = new HashMap<>();
 
     public VehicleRuntime() { this(TrackPath.straight()); }
     public VehicleRuntime(TrackPath path) {
@@ -49,17 +52,31 @@ public final class VehicleRuntime {
     public Solution placement() { return placement; }
     public CarriageDefinition definition(UUID id) { return car(id).definition; }
     public double bogeySpeed(UUID id) { return Objects.requireNonNull(bogeySpeeds.get(id), "Unknown bogey"); }
+    public double motionDistance(UUID bogey) { return Objects.requireNonNull(motionDistances.get(bogey), "Unknown bogey"); }
     public Optional<String> constraintFailure() { return Optional.ofNullable(constraintFailure); }
     public boolean collisionEnabled() { return collisionEnabled; }
     /** Backend policy: Create owns body impacts; manual and contact coupling remain active. */
     public void collisionEnabled(boolean enabled) { collisionEnabled = enabled; }
-    public ConstraintFailurePolicy constraintFailurePolicy() { return constraintFailurePolicy; }
-    /** Backend-owned motion can retry a failed consist without erasing its velocity or commands. */
+    public ConstraintFailurePolicy constraintFailurePolicy() { return ConstraintFailurePolicy.RETRY_CONSIST; }
+    /** Legacy API; pose failure handling is identical with and without a compatibility backend. */
     public void constraintFailurePolicy(ConstraintFailurePolicy policy) {
-        constraintFailurePolicy = Objects.requireNonNull(policy);
+        Objects.requireNonNull(policy);
     }
-    /** Changes only when membership/connections change, never for motion or controls. */
+    /** Changes for membership, connections and installed hook definitions, never for motion or controls. */
     public long consistRevision() { return consistRevision; }
+
+    /** Constant-time per-hook animation lookup, rebuilt only when independent topology changes. */
+    public UUID couplingPartner(UUID endpoint) {
+        if (indexedConsistRevision != consistRevision) {
+            couplingPartners.clear();
+            for (Connection connection : connections) {
+                couplingPartners.put(connection.first, connection.second);
+                couplingPartners.put(connection.second, connection.first);
+            }
+            indexedConsistRevision = consistRevision;
+        }
+        return couplingPartners.get(endpoint);
+    }
 
     public static final class RouteMismatchException extends IllegalArgumentException {
         private RouteMismatchException(RuntimeException cause) { super("Saved track geometry no longer matches its route", cause); }
@@ -101,7 +118,12 @@ public final class VehicleRuntime {
     }
 
     public record CouplingState(UUID first, UUID second, double progress, boolean connected,
-                                CouplingEndpoint.Kind kind) { }
+                                CouplingEndpoint.Kind kind, double extension,
+                                CouplerAngles firstAngles, CouplerAngles secondAngles) {
+        public CouplingState(UUID first, UUID second, double progress, boolean connected, CouplingEndpoint.Kind kind) {
+            this(first, second, progress, connected, kind, 0, CouplerAngles.ZERO, CouplerAngles.ZERO);
+        }
+    }
 
     public record SavedCarriage(CarriageDefinition definition, double distance, double speed,
                                 Map<UUID, Control> controls) {
@@ -109,13 +131,19 @@ public final class VehicleRuntime {
     }
 
     public record Checkpoint(List<SavedCarriage> carriages, List<Connection> connections,
-                             List<Approach> approaches, Solution placement, Map<UUID, Double> bogeySpeeds) {
+                             List<Approach> approaches, Solution placement, Map<UUID, Double> bogeySpeeds,
+                             Map<UUID, Double> motionDistances) {
+        public Checkpoint(List<SavedCarriage> carriages, List<Connection> connections,
+                          List<Approach> approaches, Solution placement, Map<UUID, Double> bogeySpeeds) {
+            this(carriages, connections, approaches, placement, bogeySpeeds, distances(placement));
+        }
         public Checkpoint {
             carriages = List.copyOf(carriages);
             connections = List.copyOf(connections);
             approaches = List.copyOf(approaches);
             Objects.requireNonNull(placement);
             bogeySpeeds = Map.copyOf(bogeySpeeds);
+            motionDistances = Map.copyOf(motionDistances);
         }
     }
 
@@ -161,7 +189,7 @@ public final class VehicleRuntime {
         var bogeys = new LinkedHashMap<>(placement.bogeys());
         var endpoints = new LinkedHashMap<>(placement.endpoints());
         bodies.remove(id);
-        car.definition.bogeys().forEach(b -> { bogeys.remove(b.id()); bogeySpeeds.remove(b.id()); });
+        car.definition.bogeys().forEach(b -> { bogeys.remove(b.id()); bogeySpeeds.remove(b.id()); motionDistances.remove(b.id()); });
         car.definition.couplings().forEach(e -> endpoints.remove(e.id()));
         placement = new Solution(bodies, bogeys, endpoints);
         consistRevision++;
@@ -202,7 +230,8 @@ public final class VehicleRuntime {
 
     /** Backend disappearance is a stopped runtime, never permission to use stale track samples. */
     public void halt(String reason) {
-        stopForConstraint(Objects.requireNonNull(reason));
+        constraintFailure = Objects.requireNonNull(reason);
+        groups().forEach(g -> g.velocity(0));
         cars.values().forEach(car -> car.controls.replaceAll((id, previous) -> Control.NEUTRAL));
         bogeySpeeds.replaceAll((id, previous) -> 0.0);
     }
@@ -237,21 +266,20 @@ public final class VehicleRuntime {
 
     public List<CarriageState> states() { return cars.keySet().stream().map(this::state).toList(); }
 
-    /** Only connects when the completion points actually coincide. It never snaps or attracts. */
+    /** The registered completion regions must meet before the connected constraint is installed. */
     public void couple(UUID first, UUID second) {
         validatePair(first, second);
-        if (endpointGap(placement, first, second) > PLACEMENT_TOLERANCE)
-            throw new IllegalStateException("Coupling completion points do not coincide");
+        if (!regionsMeet(placement, first, second, false))
+            throw new IllegalStateException("Coupling completion regions do not overlap");
         Group a = group(owner(first)), b = group(owner(second));
         double velocity = momentumVelocity(a, b);
         connections.add(new Connection(first, second));
         Solution connected;
         try {
             var current = distances(placement);
-            connected = constraintFailurePolicy == ConstraintFailurePolicy.RETRY_CONSIST
-                    ? overlay(placement, solveGroups(List.of(group(owner(first))), current))
-                    : solver.solve(definitions(), connections, current, pins(current), placement);
-            requireSamePlacement(placement, connected);
+            connected = overlay(placement, solveGroups(List.of(group(owner(first))), current));
+            // Contact accepts the block regions; the connected solver then places the joint.
+            // Requiring unchanged point poses here would reintroduce point-only contact.
         } catch (RuntimeException failure) {
             connections.removeLast();
             throw failure;
@@ -267,19 +295,19 @@ public final class VehicleRuntime {
 
     public void uncouple(UUID endpoint) {
         endpoint(endpoint);
-        List<Connection> previous = List.copyOf(connections);
-        connections.removeIf(c -> c.first.equals(endpoint) || c.second.equals(endpoint));
-        if (connections.size() == previous.size()) return;
-        try {
-            var current = distances(placement);
-            Solution unlinked = solver.solve(definitions(), connections, current, pins(current), placement);
-            requireSamePlacement(placement, unlinked, false);
-            commit(unlinked);
-            consistRevision++;
-        } catch (RuntimeException failure) {
-            connections.clear(); connections.addAll(previous);
-            throw failure;
+        // Releasing a link is a topology operation, never conditional on another pose solve.
+        var released = connections.stream().filter(c -> c.first.equals(endpoint) || c.second.equals(endpoint)).toList();
+        if (released.isEmpty()) return;
+        connections.removeAll(released);
+        var endpoints = new LinkedHashMap<>(placement.endpoints());
+        for (Connection link : released) for (UUID id : List.of(link.first, link.second)) {
+            var definition = endpoint(id);
+            var body = placement.bodies().get(owner(id));
+            endpoints.put(id, new VehicleConstraintSolver.EndpointPose(body.transform(definition.localPivot()),
+                    body.transform(definition.localStart()), body.transform(definition.localComplete())));
         }
+        placement = new Solution(placement.bodies(), placement.bogeys(), endpoints);
+        consistRevision++;
     }
 
     /** Explicit shunting request: the first car and its consist approach the second endpoint. */
@@ -287,7 +315,7 @@ public final class VehicleRuntime {
         validatePair(first, second);
         Approach approach = new Approach(first, second, approachSpeedMps);
         validateApproachParticipants(first, second);
-        if (endpointGap(placement, first, second) <= PLACEMENT_TOLERANCE) couple(first, second);
+        if (regionsMeet(placement, first, second, false)) couple(first, second);
         else approaches.add(approach);
     }
 
@@ -304,22 +332,79 @@ public final class VehicleRuntime {
         approaches.removeIf(a -> a.first.equals(endpoint) || a.second.equals(endpoint));
     }
 
+    /** Install on a free hook without moving its body, bogeys or independent dynamics cursors. */
+    public void installCouplerAdapter(UUID endpointId, CouplerAdapter adapter) {
+        Objects.requireNonNull(adapter, "adapter");
+        CouplingEndpoint previous = endpoint(endpointId);
+        replaceCouplerAdapter(endpointId, CouplerAdapter.append(previous.model(), previous.adapter(), adapter));
+    }
+
+    public CouplerAdapter removeCouplerAdapter(UUID endpointId) {
+        var previous = endpoint(endpointId);
+        if (previous.adapter() == null) return null;
+        var removed = previous.adapter().outer();
+        replaceCouplerAdapter(endpointId, previous.adapter().withoutOuter(previous.model()));
+        return removed;
+    }
+
+    private void replaceCouplerAdapter(UUID endpointId, CouplerAdapter adapter) {
+        var previous = endpoint(endpointId);
+        if (couplingPartner(endpointId) != null || approaches.stream().anyMatch(a ->
+                a.first.equals(endpointId) || a.second.equals(endpointId)))
+            throw new IllegalStateException("Release the coupling before changing adapters");
+        CouplingEndpoint updated = previous.withAdapter(adapter);
+        Car car = car(owner(endpointId));
+        CarriageDefinition old = car.definition;
+        car.definition = new CarriageDefinition(old.id(), old.bogeys(), old.couplings().stream()
+                .map(e -> e.id().equals(endpointId) ? updated : e).toList(), old.rearExtent(), old.frontExtent(), old.floorOffset());
+        var endpoints = new LinkedHashMap<>(placement.endpoints());
+        var body = placement.bodies().get(old.id());
+        endpoints.put(endpointId, new VehicleConstraintSolver.EndpointPose(body.transform(updated.localPivot()),
+                body.transform(updated.localStart()), body.transform(updated.localComplete())));
+        placement = new Solution(placement.bodies(), placement.bogeys(), endpoints);
+        consistRevision++;
+    }
+
+    /** Adjust the body floor without changing rail cursors, speed, bogeys or connected hooks. */
+    public void setFloorOffset(UUID carriageId, double offset) {
+        Car car = car(carriageId);
+        CarriageDefinition old = car.definition;
+        CarriageDefinition adjusted = old.withFloorOffset(offset);
+        if (adjusted == old) return;
+        var body = placement.bodies().get(carriageId);
+        var shift = body.rotate(new CouplingEndpoint.Point(0, offset - old.floorOffset(), 0));
+        var bodies = new LinkedHashMap<>(placement.bodies());
+        bodies.put(carriageId, new VehicleConstraintSolver.BodyPose(body.position().subtract(shift.scale(-1)),
+                body.yaw(), body.pitch(), body.roll()));
+        car.definition = adjusted;
+        placement = new Solution(bodies, placement.bogeys(), placement.endpoints(), placement.brokenConnections());
+    }
+
     public List<CouplingState> couplingStates() {
         var result = new ArrayList<CouplingState>();
         for (Connection connection : connections)
-            result.add(new CouplingState(connection.first, connection.second, 1, true, endpoint(connection.first).kind()));
+            result.add(couplingState(connection.first, connection.second, 1, true));
         for (Approach approach : approaches) {
-            double distance = endpointGap(placement, approach.first, approach.second);
+            double distance = Math.max(0, separation(placement, new Connection(approach.first, approach.second),
+                    couplingDirection(placement, approach.first)));
             double stroke = endpoint(approach.first).engagementLength() + endpoint(approach.second).engagementLength();
-            double progress = stroke > EPSILON ? Math.clamp(1 - distance / stroke, 0, 1) : distance <= EPSILON ? 1 : 0;
-            result.add(new CouplingState(approach.first, approach.second, progress, false, endpoint(approach.first).kind()));
+            double progress = !regionsMeet(placement, approach.first, approach.second, true) ? 0
+                    : stroke > EPSILON ? Math.clamp(1 - distance / stroke, 0, 1) : distance <= EPSILON ? 1 : 0;
+            result.add(couplingState(approach.first, approach.second, progress, false));
         }
         return List.copyOf(result);
     }
 
+    private CouplingState couplingState(UUID first, UUID second, double progress, boolean connected) {
+        return new CouplingState(first, second, progress, connected, endpoint(first).kind(),
+                connected ? endpointGap(placement, first, second) : 0,
+                CouplerAngles.from(endpoint(first), placement.bodies().get(owner(first)), placement.endpoints().get(first)),
+                CouplerAngles.from(endpoint(second), placement.bodies().get(owner(second)), placement.endpoints().get(second)));
+    }
+
     public Checkpoint checkpoint() {
         return new Checkpoint(cars.values().stream().map(c -> new SavedCarriage(c.definition,
-                c.distance, c.speed, c.controls)).toList(), connections, approaches, placement, bogeySpeeds);
+                c.distance, c.speed, c.controls)).toList(), connections, approaches, placement, bogeySpeeds, motionDistances);
     }
 
     /**
@@ -336,9 +421,9 @@ public final class VehicleRuntime {
                 p.distance() + distanceOffset, p.lateral(), p.vertical(), p.track(), p.pivot(), p.attachment(),
                 p.position(), p.suspensionLateral(), p.offRailOffset())));
         var rebound = restore(new Checkpoint(shiftedCars, connections, approaches,
-                new Solution(placement.bodies(), shiftedBogeys, placement.endpoints()), bogeySpeeds), target);
+                new Solution(placement.bodies(), shiftedBogeys, placement.endpoints()), bogeySpeeds,
+                mapDistances(motionDistances, distance -> distance + distanceOffset)), target);
         rebound.collisionEnabled = collisionEnabled;
-        rebound.constraintFailurePolicy = constraintFailurePolicy;
         rebound.consistRevision = consistRevision;
         return rebound;
     }
@@ -357,9 +442,9 @@ public final class VehicleRuntime {
         // primary. Re-solve the same links on the corrected geometry, retaining speeds/controls.
         updated.commit(updated.solver.solve(updated.definitions(), updated.connections,
                 proposed, updated.pins(proposed), null));
+        updated.motionDistances.putAll(mapDistances(motionDistances, mapDistance));
         updated.collisionEnabled = collisionEnabled;
-        updated.constraintFailurePolicy = constraintFailurePolicy;
-        updated.consistRevision = consistRevision;
+        updated.consistRevision += consistRevision;
         return updated;
     }
 
@@ -392,9 +477,10 @@ public final class VehicleRuntime {
         var bogeys = new LinkedHashMap<>(a.placement.bogeys()); bogeys.putAll(b.placement.bogeys());
         var endpoints = new LinkedHashMap<>(a.placement.endpoints()); endpoints.putAll(b.placement.endpoints());
         var speeds = new LinkedHashMap<>(a.bogeySpeeds); speeds.putAll(b.bogeySpeeds);
+        var cursors = new LinkedHashMap<>(a.motionDistances); cursors.putAll(b.motionDistances);
         // Strict restore checks every remapped rail frame and re-solves the existing constraints.
         // An incorrect offset/direction or duplicate identity fails before either source is changed.
-        return restore(new Checkpoint(carriages, links, pending, new Solution(bodies, bogeys, endpoints), speeds), target);
+        return restore(new Checkpoint(carriages, links, pending, new Solution(bodies, bogeys, endpoints), speeds, cursors), target);
     }
 
     private static Checkpoint remapCheckpoint(Checkpoint source, double offset, boolean reverse) {
@@ -412,9 +498,9 @@ public final class VehicleRuntime {
                             case EAST -> CouplingEndpoint.Facing.WEST;
                             case SOUTH -> CouplingEndpoint.Facing.NORTH;
                             case WEST -> CouplingEndpoint.Facing.EAST;
-                        }, e.pivot(), e.start(), e.complete(), e.kind())).toList();
+                        }, e.pivot(), e.start(), e.complete(), e.kind(), e.maxExtension(), e.model(), e.adapter())).toList();
                 definition = new CarriageDefinition(definition.id(), bogeys, endpoints,
-                        definition.frontExtent(), definition.rearExtent());
+                        definition.frontExtent(), definition.rearExtent(), definition.floorOffset());
             }
             var controls = new LinkedHashMap<UUID, Control>();
             saved.controls.forEach((id, control) -> controls.put(id, reverse
@@ -437,7 +523,8 @@ public final class VehicleRuntime {
         var speeds = new LinkedHashMap<UUID, Double>();
         source.bogeySpeeds.forEach((id, speed) -> speeds.put(id, sign * speed));
         return new Checkpoint(carriages, source.connections, source.approaches,
-                new Solution(bodies, bogeys, source.placement.endpoints()), speeds);
+                new Solution(bodies, bogeys, source.placement.endpoints()), speeds,
+                mapDistances(source.motionDistances, distance -> sign * distance + offset));
     }
 
     private static CouplingEndpoint.Point halfTurn(CouplingEndpoint.Point point) {
@@ -494,12 +581,15 @@ public final class VehicleRuntime {
             var bodies = new LinkedHashMap<>(placement.bodies()); bodies.putAll(solved.bodies());
             var bogeys = new LinkedHashMap<>(placement.bogeys()); bogeys.putAll(solved.bogeys());
             var endpoints = new LinkedHashMap<>(placement.endpoints()); endpoints.putAll(solved.endpoints());
-            placement = new Solution(bodies, bogeys, endpoints);
-            for (Car car : group.cars) {
-                var first = car.definition.bogeys().getFirst();
-                car.distance = placement.bogeys().get(first.id()).distance() - first.offset() - first.mount().trackPivot().z();
-            }
+            var uncorrected = new LinkedHashMap<>(motionDistances);
+            commit(new Solution(bodies, bogeys, endpoints, solved.brokenConnections()));
+            for (Car car : cars.values()) if (!group.contains(car.definition.id()))
+                car.definition.bogeys().forEach(b -> motionDistances.put(b.id(), uncorrected.get(b.id())));
         }
+        // A native stop owns the integrated target as well as velocity, even when the last
+        // visible pose was already at the requested point after a failed advance.
+        for (Car car : group.cars) for (BogeyDefinition bogey : car.definition.bogeys())
+            motionDistances.put(bogey.id(), placement.bogeys().get(bogey.id()).distance());
         group.velocity(0);
         for (var definition : definitions) for (var bogey : definition.bogeys()) bogeySpeeds.put(bogey.id(), 0.0);
     }
@@ -561,8 +651,7 @@ public final class VehicleRuntime {
             moved.approaches.add(approach);
         }
         moved.collisionEnabled = collisionEnabled;
-        moved.constraintFailurePolicy = constraintFailurePolicy;
-        moved.consistRevision = consistRevision;
+        moved.consistRevision += consistRevision;
         return moved;
     }
 
@@ -574,7 +663,6 @@ public final class VehicleRuntime {
     public VehicleRuntime subset(Set<UUID> carriageIds) {
         var copied = restore(subsetCheckpoint(checkpoint(), carriageIds), path);
         copied.collisionEnabled = collisionEnabled;
-        copied.constraintFailurePolicy = constraintFailurePolicy;
         copied.consistRevision = consistRevision;
         return copied;
     }
@@ -610,17 +698,19 @@ public final class VehicleRuntime {
         var bogeys = new LinkedHashMap<UUID, VehicleConstraintSolver.BogeyPosition>();
         var endpoints = new LinkedHashMap<UUID, VehicleConstraintSolver.EndpointPose>();
         var speeds = new LinkedHashMap<UUID, Double>();
+        var cursors = new LinkedHashMap<UUID, Double>();
         for (SavedCarriage car : selectedCars) {
             bodies.put(car.definition.id(), source.placement.bodies().get(car.definition.id()));
             for (BogeyDefinition bogey : car.definition.bogeys()) {
                 bogeys.put(bogey.id(), source.placement.bogeys().get(bogey.id()));
                 speeds.put(bogey.id(), source.bogeySpeeds.get(bogey.id()));
+                cursors.put(bogey.id(), source.motionDistances.get(bogey.id()));
             }
             for (CouplingEndpoint endpoint : car.definition.couplings())
                 endpoints.put(endpoint.id(), source.placement.endpoints().get(endpoint.id()));
         }
         return new Checkpoint(selectedCars, selectedConnections, selectedApproaches,
-                new Solution(bodies, bogeys, endpoints), speeds);
+                new Solution(bodies, bogeys, endpoints), speeds, cursors);
     }
 
     public static VehicleRuntime restore(Checkpoint checkpoint) {
@@ -671,17 +761,23 @@ public final class VehicleRuntime {
         if (!runtime.placement.bodies().keySet().equals(runtime.cars.keySet())
                 || !runtime.placement.bogeys().keySet().equals(runtime.bogeyOwners.keySet())
                 || !runtime.placement.endpoints().keySet().equals(runtime.endpointOwners.keySet())
-                || !checkpoint.bogeySpeeds.keySet().equals(runtime.bogeyOwners.keySet()))
+                || !checkpoint.bogeySpeeds.keySet().equals(runtime.bogeyOwners.keySet())
+                || !checkpoint.motionDistances.keySet().equals(runtime.bogeyOwners.keySet()))
             throw new IllegalArgumentException("Checkpoint placement does not match its definitions");
         checkpoint.bogeySpeeds.forEach((id, speed) -> { finite(speed, "bogey speed"); runtime.bogeySpeeds.put(id, speed); });
+        checkpoint.motionDistances.forEach((id, distance) -> {
+            finite(distance, "motion distance"); runtime.motionDistances.put(id, distance);
+        });
         for (Connection connection : checkpoint.connections) {
             double firstSpeed = runtime.car(runtime.owner(connection.first)).speed;
             double secondSpeed = runtime.car(runtime.owner(connection.second)).speed;
             if (Math.abs(firstSpeed - secondSpeed) > EPSILON)
                 throw new IllegalArgumentException("Connected checkpoint carriages have different velocities");
             runtime.validatePair(connection.first, connection.second);
-            if (endpointGap(runtime.placement, connection.first, connection.second) > PLACEMENT_TOLERANCE)
-                throw new IllegalArgumentException("Checkpoint connected endpoints do not coincide");
+            if (endpointGap(runtime.placement, connection.first, connection.second)
+                    > runtime.endpoint(connection.first).maxExtension() + runtime.endpoint(connection.second).maxExtension()
+                    + PLACEMENT_TOLERANCE)
+                throw new IllegalArgumentException("Checkpoint connected endpoints exceed their extension range");
             runtime.connections.add(connection);
         }
         for (Car car : runtime.cars.values()) {
@@ -718,12 +814,11 @@ public final class VehicleRuntime {
         failedTravel.clear();
         var motion = new TickMotion(Set.copyOf(pausedCarriages));
         int steps = (int) Math.ceil(seconds / MAX_STEP);
-        Map<UUID, Double> before = distances(placement);
+        Map<UUID, Double> before = new LinkedHashMap<>(motionDistances);
         for (int i = 0; i < steps; i++) {
             step(seconds / steps, heldCarriages, motion);
-            if (constraintFailure != null && constraintFailurePolicy == ConstraintFailurePolicy.STOP_ALL) break;
         }
-        placement.bogeys().forEach((id, position) -> bogeySpeeds.put(id, (position.distance() - before.get(id)) / seconds));
+        motionDistances.forEach((id, distance) -> bogeySpeeds.put(id, (distance - before.get(id)) / seconds));
         if (!motion.failures.isEmpty()) constraintFailure = String.join("; ", new java.util.LinkedHashSet<>(motion.failures.values()));
     }
 
@@ -755,63 +850,38 @@ public final class VehicleRuntime {
             double direction = endpoint(approach.first).facing() == CouplingEndpoint.Facing.NORTH ? 1 : -1;
             source.velocity(target.speed() + direction * approach.speedMps);
         }
-        // Forces and controls still update above, so applying traction wakes a stopped
-        // consist immediately. An unchanged parked placement needs no constraint solve.
-        if (approaches.isEmpty() && cars.values().stream().allMatch(car -> car.speed == 0)) return;
+        // Parked poses need no solve unless unavailable geometry left integrated travel
+        // unapplied. That pending pose must recover even if the driver has since stopped.
+        if (approaches.isEmpty() && cars.values().stream().allMatch(car -> car.speed == 0)
+                && motionDistances.entrySet().stream().allMatch(entry ->
+                        entry.getValue() == placement.bogeys().get(entry.getKey()).distance())) return;
         double remaining = dt;
         int eventsLeft = Math.max(32, cars.size() * cars.size() * 4);
         while (remaining > EPSILON) {
             List<Group> groups = groups();
             Event event;
-            Solution end;
-            try {
-                end = predicted(groups, remaining, motion);
-                event = firstEvent(groups, end, remaining, motion);
-            } catch (ConsistFailure failure) {
-                motion.fail(failure.carriages, failure.getMessage());
-                failedTravel.putAll(failure.travel);
-                continue;
-            } catch (VehicleConstraintSolver.ConstraintFailure failure) {
-                stopForConstraint(failure.getMessage());
-                return;
-            }
+            Prediction end = predicted(groups, remaining, motion);
+            TickMotion events = motion.withFailures(end.failures);
+            event = firstEvent(groups, end.placement, remaining, events);
             double travelTime = event == null ? remaining : event.time;
             // Reuse the contact sweep's end pose: ordinary motion still solves only once.
-            if (travelTime == remaining) commit(end);
-            else {
-                try {
-                    if (!move(groups, travelTime, motion)) return;
-                } catch (ConsistFailure failure) {
-                    motion.fail(failure.carriages, failure.getMessage());
-                    failedTravel.putAll(failure.travel);
-                    continue;
-                }
-            }
+            commit(travelTime == remaining ? end : predicted(groups, travelTime, motion), motion, groups, travelTime);
             remaining -= travelTime;
             if (event == null) break;
             if (--eventsLeft == 0) {
-                if (constraintFailurePolicy == ConstraintFailurePolicy.STOP_ALL)
-                    throw new IllegalStateException("Contact solver did not converge");
                 failEvent(motion, event, "Contact solver did not converge");
-                eventsLeft = Math.max(32, cars.size() * cars.size() * 4);
-                continue;
+                // A failed interaction cannot consume the rest of the dynamics step.
+                commit(predicted(groups(), remaining, motion), motion, groups(), remaining);
+                break;
             }
             if (event.coupling != null) {
-                if (endpointGap(placement, event.coupling.first, event.coupling.second) > PLACEMENT_TOLERANCE) {
-                    if (constraintFailurePolicy == ConstraintFailurePolicy.RETRY_CONSIST) {
-                        failEvent(motion, event, "Manual coupling route does not produce coincident world endpoints");
-                        continue;
-                    }
-                    constraintFailure = "Manual coupling route does not produce coincident world endpoints";
-                    groups().forEach(g -> g.velocity(0));
-                    approaches.removeIf(a -> a.first.equals(event.coupling.first)
-                            && a.second.equals(event.coupling.second));
-                    return;
+                if (!regionsMeet(placement, event.coupling.first, event.coupling.second, false)) {
+                    failEvent(motion, event, "Coupling completion regions do not overlap");
+                    continue;
                 }
                 try {
                     couple(event.coupling.first, event.coupling.second);
                 } catch (RuntimeException failure) {
-                    if (constraintFailurePolicy == ConstraintFailurePolicy.STOP_ALL) throw failure;
                     failEvent(motion, event, failureMessage(failure));
                 }
             }
@@ -878,7 +948,7 @@ public final class VehicleRuntime {
             for (CouplingEndpoint a : free.get(i)) for (CouplingEndpoint b : free.get(j)) {
                 boolean opposing = a.facing() == CouplingEndpoint.Facing.NORTH && b.facing() == CouplingEndpoint.Facing.SOUTH
                         || a.facing() == CouplingEndpoint.Facing.SOUTH && b.facing() == CouplingEndpoint.Facing.NORTH;
-                if (!opposing) continue;
+                if (!opposing || !a.matches(b)) continue;
                 var coupling = new Connection(a.id(), b.id());
                 double time = couplingContactTime(coupling, groups, end, duration, true, motion);
                 if (Double.isFinite(time) && time >= 0 && time <= duration && (event == null || time < event.time))
@@ -908,30 +978,40 @@ public final class VehicleRuntime {
 
     private double couplingContactTime(Connection coupling, List<Group> groups, Solution end, double duration,
                                        boolean natural, TickMotion motion) {
-        double gap = endpointGap(placement, coupling.first, coupling.second);
-        if (!natural && gap <= PLACEMENT_TOLERANCE) return 0;
-        var body = placement.bodies().get(owner(coupling.first));
-        var direction = body.transform(new CouplingEndpoint.Point(0, 0,
-                endpoint(coupling.first).facing() == CouplingEndpoint.Facing.NORTH ? -1 : 1))
-                .subtract(body.position()).normalized();
+        boolean contact = regionsMeet(placement, coupling.first, coupling.second, false);
+        if (!natural && contact) return 0;
+        var direction = couplingDirection(placement, coupling.first);
         double before = separation(placement, coupling, direction), after = separation(end, coupling, direction);
         // A freshly uncoupled pair at rest, moving together or separating must stay released.
         if (natural && after >= before - EPSILON) return Double.NaN;
-        if (gap <= PLACEMENT_TOLERANCE) return 0;
-        if (endpointGap(end, coupling.first, coupling.second) <= PLACEMENT_TOLERANCE) return duration;
+        if (contact) return 0;
         if (before < -PLACEMENT_TOLERANCE || after > 0) return Double.NaN;
         double low = 0, high = duration;
         Solution candidate = end;
         for (int i = 0; i < 40; i++) {
             double middle = (low + high) * .5;
-            candidate = predicted(groups, middle, motion);
+            Prediction prediction = predicted(groups, middle, motion);
+            if (prediction.failures.containsKey(owner(coupling.first))
+                    || prediction.failures.containsKey(owner(coupling.second))) return Double.NaN;
+            candidate = prediction.placement;
             if (separation(candidate, coupling, direction) > 0) low = middle;
             else high = middle;
         }
-        // Crossing the same longitudinal plane is insufficient: hooks on different tracks
-        // or at different heights must not latch or stop either carriage.
-        if (natural && endpointGap(candidate, coupling.first, coupling.second) > PLACEMENT_TOLERANCE) return Double.NaN;
+        // The completion plane partitions a block-sized region. Transverse overlap, not
+        // exact equality of the registered point coordinates, decides contact.
+        if (!regionsMeet(candidate, coupling.first, coupling.second, false)) return Double.NaN;
         return (low + high) * .5;
+    }
+
+    private TrackGeometry.Vector couplingDirection(Solution solution, UUID id) {
+        return solution.bodies().get(owner(id)).rotate(endpoint(id).rotated(new CouplingEndpoint.Point(0, 0, -1)));
+    }
+
+    private boolean regionsMeet(Solution solution, UUID first, UUID second, boolean engagement) {
+        CarriageDefinition a = car(owner(first)).definition, b = car(owner(second)).definition;
+        return CouplingRegion.of(endpoint(first), solution.bodies().get(a.id()), a.floorOffset(), engagement)
+                .intersects(CouplingRegion.of(endpoint(second), solution.bodies().get(b.id()), b.floorOffset(), engagement),
+                        PLACEMENT_TOLERANCE);
     }
 
     private static double separation(Solution solution, Connection coupling, TrackGeometry.Vector direction) {
@@ -939,48 +1019,55 @@ public final class VehicleRuntime {
                 .subtract(solution.endpoints().get(coupling.first).complete()).dot(direction);
     }
 
-    private boolean move(List<Group> groups, double seconds, TickMotion motion) {
-        if (seconds == 0) return true;
-        try {
-            commit(predicted(groups, seconds, motion));
-            return true;
-        } catch (VehicleConstraintSolver.ConstraintFailure failure) {
-            stopForConstraint(failure.getMessage());
-            return false;
-        }
-    }
-
-    private Solution predicted(List<Group> groups, double seconds, TickMotion motion) {
+    private Prediction predicted(List<Group> groups, double seconds, TickMotion motion) {
         List<Group> active = groups.stream().filter(group -> !motion.paused(group)).toList();
-        if (active.isEmpty()) return placement;
-        var proposed = distances(placement);
+        if (active.isEmpty()) return new Prediction(placement, new LinkedHashMap<>(motionDistances), Map.of());
+        var proposed = new LinkedHashMap<>(motionDistances);
         for (Group group : active) for (Car car : group.cars) for (BogeyDefinition bogey : car.definition.bogeys())
             proposed.compute(bogey.id(), (id, distance) -> distance + group.speed() * seconds);
         try {
             // Keep the ordinary single solve. Splitting is only necessary when a backend has
             // paused part of the domain or when that aggregate solve actually fails.
-            return active.size() == groups.size()
+            Solution solved = active.size() == groups.size()
                     ? solver.solve(definitions(), connections, proposed, pins(proposed), placement)
                     : overlay(placement, solveGroups(active, proposed));
+            return prediction(solved, proposed, Map.of());
         } catch (RuntimeException failure) {
-            if (constraintFailurePolicy == ConstraintFailurePolicy.STOP_ALL) throw failure;
-            if (active.size() == 1) throw new ConsistFailure(active, carriageIds(active), seconds, failureMessage(failure));
             Solution result = placement;
-            var failed = new HashSet<UUID>();
-            String reason = failureMessage(failure);
-            // All hard links remain inside their connected component; no constraint is dropped.
-            // A failed component keeps its last committed pose until a later tick can solve it.
+            var failed = new LinkedHashMap<UUID, String>();
+            if (active.size() == 1) {
+                carriageIds(active).forEach(id -> failed.put(id, failureMessage(failure)));
+                return prediction(result, proposed, failed);
+            }
+            // Isolate a missing pose without changing velocity, commands, topology or logical travel.
             for (Group group : active) {
                 try {
                     result = overlay(result, solveGroups(List.of(group), proposed));
                 } catch (RuntimeException componentFailure) {
-                    failed.addAll(carriageIds(List.of(group)));
-                    reason = failureMessage(componentFailure);
+                    carriageIds(List.of(group)).forEach(id -> failed.put(id, failureMessage(componentFailure)));
                 }
             }
-            if (!failed.isEmpty()) throw new ConsistFailure(active, failed, seconds, reason);
-            return result;
+            return prediction(result, proposed, failed);
         }
+    }
+
+    private Prediction prediction(Solution solved, Map<UUID, Double> proposed, Map<UUID, String> failures) {
+        // Successful follower placements determine their next starting cursors. Failed groups
+        // keep the integrated cursors, not the last rendered/compatible entity's old position.
+        solved.bogeys().forEach((id, position) -> {
+            if (position != placement.bogeys().get(id) && !failures.containsKey(bogeyOwners.get(id)))
+                proposed.put(id, position.distance());
+        });
+        return new Prediction(solved, proposed, failures);
+    }
+
+    private void commit(Prediction prediction, TickMotion motion, List<Group> groups, double seconds) {
+        commit(prediction.placement);
+        motionDistances.putAll(prediction.distances);
+        prediction.failures.forEach((id, reason) -> motion.failures.put(id, reason));
+        for (Group group : groups) for (Car car : group.cars)
+            if (prediction.failures.containsKey(car.definition.id()))
+                failedTravel.merge(car.definition.id(), group.speed() * seconds, Double::sum);
     }
 
     private Solution solveGroups(List<Group> selected, Map<UUID, Double> proposed) {
@@ -1000,7 +1087,8 @@ public final class VehicleRuntime {
         var bodies = new LinkedHashMap<>(base.bodies()); bodies.putAll(update.bodies());
         var bogeys = new LinkedHashMap<>(base.bogeys()); bogeys.putAll(update.bogeys());
         var endpoints = new LinkedHashMap<>(base.endpoints()); endpoints.putAll(update.endpoints());
-        return new Solution(bodies, bogeys, endpoints);
+        var broken = new ArrayList<>(base.brokenConnections()); broken.addAll(update.brokenConnections());
+        return new Solution(bodies, bogeys, endpoints, broken);
     }
 
     private static Set<UUID> carriageIds(List<Group> groups) {
@@ -1029,7 +1117,15 @@ public final class VehicleRuntime {
     }
 
     private void commit(Solution solved) {
-        placement = solved;
+        Solution previous = placement;
+        // The solver reports unavailable connections; only this independent topology owner removes them.
+        if (!solved.brokenConnections().isEmpty()) {
+            if (connections.removeAll(solved.brokenConnections())) consistRevision++;
+            placement = new Solution(solved.bodies(), solved.bogeys(), solved.endpoints());
+        } else placement = solved;
+        solved.bogeys().forEach((id, position) -> {
+            if (position != previous.bogeys().get(id)) motionDistances.put(id, position.distance());
+        });
         for (Car car : cars.values()) {
             var reference = car.definition.bogeys().getFirst();
             // A diagnostic reference coordinate, not the world position of the carriage origin.
@@ -1039,14 +1135,15 @@ public final class VehicleRuntime {
         constraintFailure = null;
     }
 
-    private void stopForConstraint(String reason) {
-        constraintFailure = reason;
-        groups().forEach(g -> g.velocity(0));
-    }
-
     private static Map<UUID, Double> distances(Solution solution) {
         var result = new LinkedHashMap<UUID, Double>();
         solution.bogeys().forEach((id, position) -> result.put(id, position.distance()));
+        return result;
+    }
+
+    private static Map<UUID, Double> mapDistances(Map<UUID, Double> source, java.util.function.DoubleUnaryOperator mapper) {
+        var result = new LinkedHashMap<UUID, Double>();
+        source.forEach((id, value) -> result.put(id, mapper.applyAsDouble(value)));
         return result;
     }
 
@@ -1132,6 +1229,7 @@ public final class VehicleRuntime {
                 || c.first.equals(second) || c.second.equals(second))) throw new IllegalStateException("Occupied coupling endpoint");
         if (a.kind() != CouplingEndpoint.Kind.RIGID || b.kind() != CouplingEndpoint.Kind.RIGID)
             throw new UnsupportedOperationException("Articulated constraints require their own animation/constraint adapter");
+        if (!a.matches(b)) throw new IllegalArgumentException("Coupler models do not match");
         boolean opposing = a.facing() == CouplingEndpoint.Facing.NORTH && b.facing() == CouplingEndpoint.Facing.SOUTH
                 || a.facing() == CouplingEndpoint.Facing.SOUTH && b.facing() == CouplingEndpoint.Facing.NORTH;
         if (!opposing)
@@ -1199,26 +1297,23 @@ public final class VehicleRuntime {
         double net() { return traction + brake + resistance; }
     }
     private record Event(double time, Group first, Group second, Connection coupling) { }
+    private record Prediction(Solution placement, Map<UUID, Double> distances, Map<UUID, String> failures) { }
     private static final class TickMotion {
         final Set<UUID> paused;
         final Map<UUID, String> failures = new LinkedHashMap<>();
         TickMotion(Set<UUID> paused) { this.paused = paused; }
         boolean paused(Group group) {
-            return group.cars.stream().anyMatch(car -> paused.contains(car.definition.id()) || failures.containsKey(car.definition.id()));
+            return group.cars.stream().anyMatch(car -> paused.contains(car.definition.id()));
         }
         boolean failed(Group group) {
             return group.cars.stream().anyMatch(car -> failures.containsKey(car.definition.id()));
         }
         void fail(Set<UUID> carriages, String reason) { carriages.forEach(id -> failures.putIfAbsent(id, reason)); }
-    }
-    private static final class ConsistFailure extends RuntimeException {
-        final Set<UUID> carriages;
-        final Map<UUID, Double> travel = new HashMap<>();
-        ConsistFailure(List<Group> groups, Set<UUID> carriages, double seconds, String reason) {
-            super(reason);
-            this.carriages = carriages;
-            for (Group group : groups) for (Car car : group.cars)
-                if (carriages.contains(car.definition.id())) travel.put(car.definition.id(), group.speed() * seconds);
+        TickMotion withFailures(Map<UUID, String> additional) {
+            var result = new TickMotion(paused);
+            result.failures.putAll(failures);
+            result.failures.putAll(additional);
+            return result;
         }
     }
     private record Group(List<Car> cars) {
@@ -1228,7 +1323,7 @@ public final class VehicleRuntime {
         boolean contains(UUID id) { return cars.stream().anyMatch(c -> c.definition.id().equals(id)); }
     }
     private static final class Car {
-        final CarriageDefinition definition;
+        CarriageDefinition definition;
         final Map<UUID, Control> controls = new LinkedHashMap<>();
         double distance, speed;
         Car(CarriageDefinition definition, double distance, double speed) {

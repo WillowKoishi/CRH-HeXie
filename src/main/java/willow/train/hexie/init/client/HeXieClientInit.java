@@ -75,6 +75,7 @@ public class HeXieClientInit {
         // renderer is present when the client dispatcher is created, including without Flywheel.
         event.registerEntityRenderer(EntityInit.ASSEMBLED_CARRIAGE.get(), SnapshotCarriageRenderer::new);
         event.registerBlockEntityRenderer(BlockEntitiesInit.GROUND_STATION_SIGN.get(), GroundStationSignRenderer::new);
+        event.registerBlockEntityRenderer(BlockEntitiesInit.COUPLER.get(), CouplerBlockEntityRenderer::new);
         // Register here so NeoForge has the renderer before it builds the dispatcher.
         event.registerBlockEntityRenderer(
                 BogeyEntityInit.HX_STANDARD_BOGEY.get(), BogeyBlockEntityRenderer::new);

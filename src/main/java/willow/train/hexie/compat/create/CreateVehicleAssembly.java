@@ -255,7 +255,10 @@ public final class CreateVehicleAssembly {
         Direction forward = carrier.motion().forward(carrier.getUUID());
         double sourceYaw = Math.atan2(-forward.getStepX(), -forward.getStepZ());
         float angle = (float) (Math.rint((pose.yaw() - sourceYaw) / (Math.PI / 2)) * 90);
-        return new StructureTransform(BlockPos.containing(pose.position().x(), pose.position().y(), pose.position().z()), 0, angle, 0);
+        // Floor selection offsets the assembled body, not the source block grid.
+        double floor = carrier.motion().runtime().definition(carrier.getUUID()).floorOffset();
+        return new StructureTransform(BlockPos.containing(pose.position().x(), pose.position().y() - floor,
+                pose.position().z()), 0, angle, 0);
     }
 
     /** Connected heads can share one cell while assembled; world blocks need separate cells. */
@@ -404,7 +407,7 @@ public final class CreateVehicleAssembly {
         double yaw = Math.atan2(-forward.getStepX(), -forward.getStepZ());
         var pose = runtime.placement().bodies().get(snapshot.id());
         if (pose == null || Math.abs(runtime.speed(snapshot.id())) > 1e-4) return false;
-        var expected = Vec3.atCenterOf(snapshot.origin());
+        var expected = Vec3.atCenterOf(snapshot.origin()).add(0, runtime.definition(snapshot.id()).floorOffset(), 0);
         var position = pose.position();
         double angle = Math.atan2(Math.sin(pose.yaw() - yaw), Math.cos(pose.yaw() - yaw));
         return Math.abs(position.x() - expected.x) <= 1e-4 && Math.abs(position.y() - expected.y) <= 1e-4

@@ -98,7 +98,7 @@ final class VehicleContactPreparation {
             for (var endpoint : carriage.couplings()) {
                 if (occupied.contains(endpoint.id()) || endpoint.kind() != CouplingEndpoint.Kind.RIGID) continue;
                 Vector facing = body.rotate(endpoint.rotated(new CouplingEndpoint.Point(0, 0, -1)));
-                result.add(new End(carriage.id(), endpoint.id(),
+                result.add(new End(carriage.id(), endpoint.id(), endpoint.effectiveModel(),
                         runtime.placement().endpoints().get(endpoint.id()).complete(), facing, velocity, travel,
                         accelerationBound * TICK_SECONDS));
             }
@@ -106,7 +106,7 @@ final class VehicleContactPreparation {
     }
 
     private static boolean nearby(End a, End b) {
-        if (a.facing.dot(b.facing) >= 0) return false;
+        if (!a.model.equals(b.model) || a.facing.dot(b.facing) >= 0) return false;
         Vector gap = b.position.subtract(a.position);
         Vector closing = a.velocity.subtract(b.velocity);
         // This is only a broad phase: a parked powered car can start and cross a tiny gap
@@ -117,7 +117,7 @@ final class VehicleContactPreparation {
         return gap.dot(gap) <= reach * reach;
     }
 
-    private record End(UUID carriage, UUID endpoint, Vector position, Vector facing, Vector velocity,
+    private record End(UUID carriage, UUID endpoint, String model, Vector position, Vector facing, Vector velocity,
                        double travel, double velocityChange) {}
     private record Pair(End first, End second) {}
 }

@@ -77,7 +77,6 @@ public final class AssembledVehicleMotion {
         // This adapter delegates train-crash detection to Create. Coupling and its momentum
         // transfer remain in the independent runtime; do not also resolve body contacts here.
         runtime.collisionEnabled(false);
-        runtime.constraintFailurePolicy(VehicleRuntime.ConstraintFailurePolicy.RETRY_CONSIST);
         this.carriages = runtime.definitions().stream().map(car -> car.id()).toArray(UUID[]::new);
         this.sources = Map.copyOf(sources);
         if (!this.sources.keySet().equals(Set.of(carriages)))
@@ -176,21 +175,30 @@ public final class AssembledVehicleMotion {
         if (lastTick != now) {
             lastTick = now;
             expireControls(now);
+            String geometryFailure = null;
+            CreateTrainBridge bridgeForTick = null;
             try {
                 ensureCompatibility();
-                if (compatibility != null) compatibility.beforeTick();
-                // Wrench relocation can split an independent consist out of this route owner.
-                if (compatibility == null) return;
-                runtime.tick(1.0 / 20, Set.of(), compatibility.motionPausedCarriages());
-                if (compatibility != null) compatibility.afterTick();
-                reportMotionFailure(runtime.constraintFailure().orElse(null));
+                bridgeForTick = compatibility;
+                if (bridgeForTick != null) bridgeForTick.beforeTick();
             } catch (CreateRouteBinding.RouteInvalidException | ConstraintFailure failure) {
-                // A failed geometry update retains the last valid pose. It does not decide
-                // whether the native train is stopped or disable future controls/recovery.
-                reportMotionFailure(failure.getMessage());
-            } finally {
-                if (compatibility != null) compatibility.manageEntities();
+                // Compatibility points and route previews cannot veto the independent drive step.
+                geometryFailure = failure.getMessage();
             }
+            // A wrench hand-off changes the real owner; a failed projection does not.
+            if (bridgeForTick != null && compatibility == null) return;
+            try {
+                runtime.tick(1.0 / 20, Set.of(), compatibility == null ? Set.of() : compatibility.motionPausedCarriages());
+                if (compatibility != null) compatibility.afterTick();
+            } catch (CreateRouteBinding.RouteInvalidException | ConstraintFailure failure) {
+                geometryFailure = failure.getMessage();
+            } finally {
+                try { if (compatibility != null) compatibility.manageEntities(); }
+                catch (CreateRouteBinding.RouteInvalidException | ConstraintFailure failure) {
+                    geometryFailure = failure.getMessage();
+                }
+            }
+            reportMotionFailure(geometryFailure != null ? geometryFailure : runtime.constraintFailure().orElse(null));
         }
     }
 
@@ -340,9 +348,14 @@ public final class AssembledVehicleMotion {
             Set<UUID> contactMembers) {
         if (other == null || level != other.level || !owns(firstCarriage) || !other.owns(secondCarriage))
             throw new IllegalArgumentException("Coupling requires two available carriages in this dimension");
-        if (runtime.definition(firstCarriage).couplings().stream().noneMatch(e -> e.id().equals(firstEndpoint))
-                || other.runtime.definition(secondCarriage).couplings().stream().noneMatch(e -> e.id().equals(secondEndpoint)))
+        var firstHook = runtime.definition(firstCarriage).couplings().stream()
+                .filter(e -> e.id().equals(firstEndpoint)).findFirst().orElse(null);
+        var secondHook = other.runtime.definition(secondCarriage).couplings().stream()
+                .filter(e -> e.id().equals(secondEndpoint)).findFirst().orElse(null);
+        if (firstHook == null || secondHook == null)
             throw new IllegalArgumentException("Coupler does not belong to the selected carriage");
+        if (!firstHook.matches(secondHook))
+            throw new IllegalArgumentException("车钩型号不匹配：" + firstHook.effectiveModel() + " / " + secondHook.effectiveModel());
         if (other == this) {
             if (approachSpeed != null) runtime.beginCoupling(firstEndpoint, secondEndpoint, approachSpeed);
             return this;
@@ -352,10 +365,12 @@ public final class AssembledVehicleMotion {
         var secondIds = contactMembers == null ? Set.copyOf(other.runtime.state(secondCarriage).consist())
                 : other.sources.keySet().stream().filter(contactMembers::contains).collect(java.util.stream.Collectors.toSet());
         requireNoApproach(firstIds); other.requireNoApproach(secondIds);
-        var routeMerge = route.merge(other.route);
+        var firstState = runtime.subset(firstIds).checkpoint();
+        var secondState = other.runtime.subset(secondIds).checkpoint();
+        double[] firstRange = couplingRange(firstState), secondRange = couplingRange(secondState);
+        var routeMerge = route.connectForCoupling(other.route, firstRange[0], firstRange[1], secondRange[0], secondRange[1]);
         var combined = VehicleRuntime.merge(routeMerge.route().path(),
-                runtime.subset(firstIds).checkpoint(), routeMerge.firstOffset(),
-                other.runtime.subset(secondIds).checkpoint(), routeMerge.secondOffset(), routeMerge.reverseSecond());
+                firstState, routeMerge.firstOffset(), secondState, routeMerge.secondOffset(), routeMerge.reverseSecond());
         // This validation is detached. An invalid route or endpoint cannot consume either live vehicle.
         if (approachSpeed != null) combined.beginCoupling(firstEndpoint, secondEndpoint, approachSpeed);
         var origins = new LinkedHashMap<UUID, Source>();
@@ -411,6 +426,14 @@ public final class AssembledVehicleMotion {
         if (runtime.couplingStates().stream().anyMatch(state -> !state.connected()
                 && (endpoints.contains(state.first()) || endpoints.contains(state.second()))))
             throw new IllegalStateException("A selected consist already has a coupling operation");
+    }
+
+    private static double[] couplingRange(VehicleRuntime.Checkpoint state) {
+        var distances = new java.util.DoubleSummaryStatistics();
+        state.carriages().forEach(car -> distances.accept(car.distance()));
+        state.motionDistances().values().forEach(distances::accept);
+        state.placement().bogeys().values().forEach(bogey -> distances.accept(bogey.distance()));
+        return new double[] {distances.getMin(), distances.getMax()};
     }
 
     private AssembledVehicleMotion remainder(Set<UUID> removed) {
@@ -545,7 +568,6 @@ public final class AssembledVehicleMotion {
         if (selected.equals(all)) {
             VehicleRuntime relocated = runtime.rebase(replacementRoute.path(), distances, true);
             relocated.collisionEnabled(false);
-            relocated.constraintFailurePolicy(VehicleRuntime.ConstraintFailurePolicy.RETRY_CONSIST);
             runtime = relocated;
             route = replacementRoute;
             lastMotionFailure = null;

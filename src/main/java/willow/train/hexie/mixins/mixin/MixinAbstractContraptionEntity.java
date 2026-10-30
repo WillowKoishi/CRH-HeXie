@@ -206,6 +206,11 @@ public abstract class MixinAbstractContraptionEntity extends Entity {
             return -1;
 
         BlockState state = contraption.getBlocks().get(localPos).state();
+        if (level().isClientSide && (Object) this instanceof willow.train.hexie.compat.create.SnapshotCarriageEntity car) {
+            var hit = willow.train.hexie.client.CarriageInteractionCoordinates.pick(player, car);
+            return hit != null && hit.getBlockPos().equals(localPos)
+                    ? SeatYZBlock.getPositionForHit(state, localPos, hit.getLocation()) : -1;
+        }
         Vec3 origin = player.getEyePosition();
         Vec3 target = origin.add(player.getViewVector(1.0F).scale(player.blockInteractionRange()));
         Vec3 localOrigin = hexie$toLocalVector(origin, 1.0F);

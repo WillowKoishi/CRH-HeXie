@@ -1,5 +1,11 @@
 {
   "block.hexie.test_coupler": "验证车钩",
+  "item.hexie.coupler_adapter": "车钩转换器",
+  "item.hexie.floor_switcher": "地板切换器",
+  "item.hexie.floor_switcher.height": "地板高度：%s",
+  "gui.hexie.floor_height.title": "地板高度",
+  "gui.hexie.floor_height.height": "高度",
+  "gui.hexie.floor_height.original": "原始高度",
   "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_dt206.bogey.name": "DT-206",
   "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_dt206.bogey.speed": "速度等级: 250km/h",
   "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_dt206.bogey.cart": "适用车型: · CRH2",

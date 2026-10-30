@@ -24,6 +24,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.Blocks;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
+import willow.train.hexie.blocks.bogeys.BogeyFloorData;
 
 /** Shares each bogey's animation transforms between Create's renderer and Flywheel visual. */
 public abstract class SimpleBogeyRenderer implements BogeyRenderer {
@@ -44,6 +45,7 @@ public abstract class SimpleBogeyRenderer implements BogeyRenderer {
         this.overlay = overlay;
         poseStack.pushPose();
         try {
+            applyFloorPreview(bogeyData, poseStack, inContraption);
             render(bogeyData, wheelAngle, poseStack, light,
                     buffers.getBuffer(RenderType.cutoutMipped()), inContraption);
         } finally {
@@ -54,6 +56,12 @@ public abstract class SimpleBogeyRenderer implements BogeyRenderer {
     public final BogeyVisual createVisual(VisualizationContext context, float partialTick,
             boolean inContraption) {
         return new AnimatedVisual(context, inContraption);
+    }
+
+    private static void applyFloorPreview(CompoundTag data, PoseStack pose, boolean inContraption) {
+        // Only these dynamic parts move in the world preview; the block's static top stays in place.
+        // Assembled vehicles already apply the setting through their actual support/body positions.
+        if (!inContraption) pose.translate(0, -BogeyFloorData.offset(BogeyFloorData.heightFromBogeyData(data)), 0);
     }
 
     protected final BogeyModelData getTransform(PartialModel model, PoseStack poseStack,
@@ -133,6 +141,7 @@ public abstract class SimpleBogeyRenderer implements BogeyRenderer {
             instanceOutput.set(output);
             poseStack.pushPose();
             try {
+                applyFloorPreview(bogeyData, poseStack, inContraption);
                 SimpleBogeyRenderer.this.render(bogeyData, wheelAngle, poseStack,
                         packedLight, null, inContraption);
             } finally {

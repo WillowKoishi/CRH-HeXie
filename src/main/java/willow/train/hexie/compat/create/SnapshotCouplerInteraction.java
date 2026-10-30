@@ -11,6 +11,9 @@ import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import willow.train.hexie.blocks.coupler.CouplerBlock;
+import willow.train.hexie.blocks.coupler.CouplerAdapterData;
+import willow.train.hexie.item.CouplerAdapterItem;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
 import willow.train.hexie.vehicle.assembly.VehicleCouplingCatalog;
 import willow.train.hexie.vehicle.runtime.CouplingEndpoint.Point;
 import willow.train.hexie.vehicle.track.TrackGeometry.Vector;
@@ -38,6 +41,37 @@ final class SnapshotCouplerInteraction {
         var data = player.getPersistentData();
         var level = (ServerLevel) entity.level();
         try {
+            var held = player.getItemInHand(hand);
+            if (held.getItem() instanceof CouplerAdapterItem converter) {
+                var adapter = converter.adapter(held);
+                if (adapter == null) throw new IllegalArgumentException("转换器参数无效");
+                CompoundTag blockData = info.nbt() == null ? new CompoundTag() : info.nbt().copy();
+                if (!blockData.contains("id")) blockData.putString("id", "hexie:coupler");
+                runtime.installCouplerAdapter(endpoint, adapter);
+                CouplerAdapterData.write(blockData, runtime.definition(entity.getUUID()).couplings().stream()
+                        .filter(e -> e.id().equals(endpoint)).findFirst().orElseThrow().adapter());
+                entity.setBlock(position, new StructureBlockInfo(position, info.state(), blockData));
+                motion.applyCurrent(entity);
+                entity.syncCarriage();
+                data.remove(SELECTION);
+                if (!player.getAbilities().instabuild) held.shrink(1);
+                return true;
+            }
+            if (player.isShiftKeyDown() && held.isEmpty()) {
+                var removed = runtime.removeCouplerAdapter(endpoint);
+                if (removed == null) return true;
+                CompoundTag blockData = info.nbt() == null ? new CompoundTag() : info.nbt().copy();
+                if (!blockData.contains("id")) blockData.putString("id", "hexie:coupler");
+                CouplerAdapterData.write(blockData, runtime.definition(entity.getUUID()).couplings().stream()
+                        .filter(e -> e.id().equals(endpoint)).findFirst().orElseThrow().adapter());
+                entity.setBlock(position, new StructureBlockInfo(position, info.state(), blockData));
+                motion.applyCurrent(entity);
+                entity.syncCarriage();
+                data.remove(SELECTION);
+                var item = CouplerAdapterItem.stack(removed);
+                if (!player.getInventory().add(item)) player.drop(item, false);
+                return true;
+            }
             for (var state : runtime.couplingStates()) {
                 if (!state.first().equals(endpoint) && !state.second().equals(endpoint)) continue;
                 data.remove(SELECTION);

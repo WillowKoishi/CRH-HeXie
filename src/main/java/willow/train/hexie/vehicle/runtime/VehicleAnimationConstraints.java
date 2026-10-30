@@ -24,7 +24,7 @@ public final class VehicleAnimationConstraints {
         ArticulatedPose solve(ArticulatedInput input);
     }
 
-    /** Ordinary coupler animation receives geometric progress; articulated discs use Articulated. */
+    /** Couplers receive engagement progress, shared head gap and each hook's local angles; discs use Articulated. */
     @FunctionalInterface public interface Coupler {
         void update(VehicleRuntime.CouplingState state);
     }

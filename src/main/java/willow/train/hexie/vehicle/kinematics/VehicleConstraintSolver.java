@@ -20,12 +20,13 @@ import willow.train.hexie.vehicle.track.TrackPath;
 
 /**
  * Position constraints, independent of rendering and force integration. Every registered
- * body mount participates; connected couplers form a rigid link between their pivots.
+ * body mount participates; connected couplers have unrestricted rotation and a finite reach.
  * One bogey of each connected component is the fixed rail anchor. Its cursor is
  * prescribed by the runtime and reversing does not replace that anchor. Carriages
- * close the rigid end-support chord and upstream coupler length in order. When both
- * cannot remain on the rail, the upstream joint stays rigid and the downstream body
- * turns about its near support before allowing that support to depart as well.
+ * close the rigid end-support chord and an upstream coupler's allowed length interval in order.
+ * End supports remain on their rails, with registered bolsterless lateral travel included
+ * in the body pose. A proven excess over coupler reach is reported as a topology event;
+ * it never pulls the body away from its end supports to keep the hooks visually together.
  * Intermediate supports never move the chosen body pose.
  * Cyclic/multi-anchor inputs retain the general constraint solver. Transverse/vertical mismatch
  * between the track reference and a body mount is allowed: model penetration is not
@@ -75,9 +76,14 @@ public final class VehicleConstraintSolver {
         public EndpointPose { Objects.requireNonNull(pivot); Objects.requireNonNull(start); Objects.requireNonNull(complete); }
     }
     public record Solution(Map<UUID, BodyPose> bodies, Map<UUID, BogeyPosition> bogeys,
-                           Map<UUID, EndpointPose> endpoints) {
+                           Map<UUID, EndpointPose> endpoints, List<VehicleRuntime.Connection> brokenConnections) {
+        public Solution(Map<UUID, BodyPose> bodies, Map<UUID, BogeyPosition> bogeys,
+                        Map<UUID, EndpointPose> endpoints) {
+            this(bodies, bogeys, endpoints, List.of());
+        }
         public Solution {
             bodies = Map.copyOf(bodies); bogeys = Map.copyOf(bogeys); endpoints = Map.copyOf(endpoints);
+            brokenConnections = List.copyOf(brokenConnections);
         }
     }
     public static final class ConstraintFailure extends IllegalStateException {
@@ -97,6 +103,7 @@ public final class VehicleConstraintSolver {
         var bodies = new LinkedHashMap<UUID, BodyPose>();
         var bogeys = new LinkedHashMap<UUID, BogeyPosition>();
         var endpoints = new LinkedHashMap<UUID, EndpointPose>();
+        var broken = new ArrayList<VehicleRuntime.Connection>();
         for (SolveStep step : ordered) {
             var localPins = new HashMap<UUID, Double>();
             for (BogeyDefinition bogey : step.definition.bogeys())
@@ -107,8 +114,9 @@ public final class VehicleConstraintSolver {
                     step.connection == null ? List.of() : List.of(step.connection),
                     proposedDistances, localPins, previous, fixed);
             bodies.putAll(part.bodies); bogeys.putAll(part.bogeys); endpoints.putAll(part.endpoints);
+            broken.addAll(part.brokenConnections);
         }
-        return new Solution(bodies, bogeys, endpoints);
+        return new Solution(bodies, bogeys, endpoints, broken);
     }
 
     private Solution solveCarriage(CarriageDefinition definition, List<VehicleRuntime.Connection> connections,
@@ -318,10 +326,11 @@ public final class VehicleConstraintSolver {
                         || !used.add(a.id()) || !used.add(b.id())) throw new IllegalArgumentException("Invalid connection topology");
                 if (a.kind() != CouplingEndpoint.Kind.RIGID || b.kind() != CouplingEndpoint.Kind.RIGID)
                     throw new ConstraintFailure("Articulated joints require their registered constraint adapter");
-                double firstLength = length(vector(a.complete()).subtract(vector(a.pivot())));
-                double secondLength = length(vector(b.complete()).subtract(vector(b.pivot())));
+                if (!a.matches(b)) throw new IllegalArgumentException("Coupler models do not match");
+                double firstLength = length(vector(a.effectiveComplete()).subtract(vector(a.pivot())));
+                double secondLength = length(vector(b.effectiveComplete()).subtract(vector(b.pivot())));
                 links.add(new Link(a, b, firstLength, secondLength));
-                int rows = firstLength + secondLength < 1e-12 ? 3 : 1;
+                int rows = firstLength + secondLength + a.maxExtension() + b.maxExtension() < 1e-12 ? 3 : 1;
                 for (int i = 0; i < rows; i++) labels.add("coupler " + a.id() + " / " + b.id());
             }
             angularColumns = new boolean[initial.size()];
@@ -402,9 +411,12 @@ public final class VehicleConstraintSolver {
                 Vector a = endpointBody(link.first, bodyPoses).transform(link.first.localPivot());
                 Vector b = endpointBody(link.second, bodyPoses).transform(link.second.localPivot());
                 Vector difference = b.subtract(a);
-                if (link.length() < 1e-12) {
+                if (link.maximumLength() < 1e-12) {
                     result[row++] = difference.x(); result[row++] = difference.y(); result[row++] = difference.z();
-                } else result[row++] = length(difference) - link.length();
+                } else {
+                    double distance = length(difference);
+                    result[row++] = distance - Math.clamp(distance, link.length(), link.maximumLength());
+                }
             }
             return result;
         }
@@ -432,16 +444,14 @@ public final class VehicleConstraintSolver {
             for (Support support : supports) bogeyPositions.put(support.definition.id(), bogey(support, x));
             for (Link link : links) {
                 var a = endpointPoses.get(link.first.id()); var b = endpointPoses.get(link.second.id());
-                if (link.length() < 1e-12) {
-                    Vector shared = add(a.pivot, b.pivot).scale(.5);
-                    endpointPoses.put(link.first.id(), new EndpointPose(a.pivot, a.start, shared));
-                    endpointPoses.put(link.second.id(), new EndpointPose(b.pivot, b.start, shared));
-                } else {
+                if (length(b.pivot.subtract(a.pivot)) > 1e-12) {
                     Vector direction = b.pivot.subtract(a.pivot).normalized();
                     // Registered facing rotates the local points; it is not a joint-angle limit.
-                    Vector shared = add(a.pivot, direction.scale(link.firstLength));
-                    endpointPoses.put(link.first.id(), orientedEndpoint(a, shared, direction));
-                    endpointPoses.put(link.second.id(), orientedEndpoint(b, shared, direction.scale(-1)));
+                    // Each visible arm retains its registered length; an extended link may have a gap.
+                    endpointPoses.put(link.first.id(), orientedEndpoint(a,
+                            add(a.pivot, direction.scale(link.firstLength)), direction));
+                    endpointPoses.put(link.second.id(), orientedEndpoint(b,
+                            add(b.pivot, direction.scale(-link.secondLength)), direction.scale(-1)));
                 }
             }
             return new Solution(bodyPoses, bogeyPositions, endpointPoses);
@@ -578,6 +588,7 @@ public final class VehicleConstraintSolver {
                              VehicleRuntime.Connection connection, CouplingEndpoint parentEndpoint) {}
     private record Link(CouplingEndpoint first, CouplingEndpoint second, double firstLength, double secondLength) {
         double length() { return firstLength + secondLength; }
+        double maximumLength() { return length() + first.maxExtension() + second.maxExtension(); }
     }
     static Vector vector(Point point) { return new Vector(point.x(), point.y(), point.z()); }
     static Vector add(Vector a, Vector b) { return a.subtract(b.scale(-1)); }

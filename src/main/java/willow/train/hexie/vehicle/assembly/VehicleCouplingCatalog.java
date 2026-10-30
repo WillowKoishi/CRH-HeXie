@@ -7,6 +7,7 @@ import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import willow.train.hexie.blocks.coupler.CouplerBlock;
+import willow.train.hexie.blocks.coupler.CouplerAdapterData;
 import willow.train.hexie.vehicle.runtime.CouplingEndpoint;
 import willow.train.hexie.vehicle.runtime.CouplingEndpoint.Point;
 
@@ -32,7 +33,8 @@ public final class VehicleCouplingCatalog {
             };
             endpoints.add(new CouplingEndpoint(endpointId(snapshot.id(), block.position()),
                     northForward(block.position(), forward), CouplingEndpoint.Facing.valueOf(relative.name()),
-                    coupler.pivot(), coupler.start(), coupler.complete(), coupler.kind()));
+                    coupler.pivot(), coupler.start(), coupler.complete(), coupler.kind(), coupler.maxExtension(),
+                    coupler.model(), CouplerAdapterData.read(block.entityData())));
         }
         return List.copyOf(endpoints);
     }

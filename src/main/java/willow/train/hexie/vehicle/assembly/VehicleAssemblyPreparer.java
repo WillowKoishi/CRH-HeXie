@@ -7,6 +7,7 @@ import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import willow.train.hexie.blocks.bogeys.BogeyFloorData;
 import willow.train.hexie.vehicle.runtime.BogeyDefinition;
 import willow.train.hexie.vehicle.runtime.BogeyMount;
 import willow.train.hexie.vehicle.runtime.CarriageDefinition;
@@ -47,6 +48,11 @@ public final class VehicleAssemblyPreparer {
         for (var snapshot : snapshots) {
             var byPosition = new java.util.HashMap<BlockPos, CarriageSnapshot.Block>();
             for (var block : snapshot.blocks()) byPosition.put(block.position(), block);
+            int floorHeight = BogeyFloorData.value(byPosition.get(snapshot.supports().getFirst()).entityData());
+            for (var position : snapshot.supports())
+                if (BogeyFloorData.value(byPosition.get(position).entityData()) != floorHeight)
+                    throw new IllegalArgumentException("同一节车厢的转向架地板高度设置不一致，请统一后再组装。");
+            double floorOffset = BogeyFloorData.offset(floorHeight);
             var bogeys = new ArrayList<BogeyDefinition>();
             for (var position : snapshot.supports()) {
                 var model = catalog.resolve(byPosition.get(position));
@@ -65,7 +71,7 @@ public final class VehicleAssemblyPreparer {
                 maximum = Math.max(maximum, centre + .5);
             }
             var definition = new CarriageDefinition(snapshot.id(), bogeys, connections.decode(snapshot, forward),
-                    Math.max(0, -minimum), Math.max(0, maximum));
+                    Math.max(0, -minimum), Math.max(0, maximum)).withFloorOffset(floorOffset);
             result.add(new Carriage(snapshot, definition, project(snapshot.origin().subtract(routeOrigin), forward)));
         }
         return new Prepared(forward, result);

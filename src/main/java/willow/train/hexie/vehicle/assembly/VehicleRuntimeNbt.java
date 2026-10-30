@@ -19,7 +19,8 @@ import willow.train.hexie.vehicle.track.TrackPath;
 
 /** Runtime state serialization; structure blocks remain in their separate carriage snapshots. */
 public final class VehicleRuntimeNbt {
-    private static final int VERSION = 5;
+    private static final int VERSION = 7;
+    private static final int STRICT_PLACEMENT_VERSION = 6;
     private VehicleRuntimeNbt() {}
 
     public static CompoundTag save(VehicleRuntime runtime) {
@@ -38,6 +39,7 @@ public final class VehicleRuntimeNbt {
             number(car, "Speed", saved.speed());
             number(car, "RearExtent", definition.rearExtent());
             number(car, "FrontExtent", definition.frontExtent());
+            number(car, "FloorOffset", definition.floorOffset());
             var bogeys = new ListTag();
             for (var bogey : definition.bogeys()) {
                 var b = new CompoundTag();
@@ -71,6 +73,13 @@ public final class VehicleRuntimeNbt {
                 e.putUUID("Id", endpoint.id());
                 e.putString("Facing", endpoint.facing().name());
                 e.putString("Kind", endpoint.kind().name());
+                e.putString("Model", endpoint.model());
+                if (endpoint.adapter() != null) {
+                    var adapterTag = willow.train.hexie.blocks.coupler.CouplerAdapterData.encode(endpoint.adapter());
+                    number(adapterTag, "Thickness", endpoint.adapter().thickness());
+                    e.put("Adapter", adapterTag);
+                }
+                number(e, "MaxExtension", endpoint.maxExtension());
                 e.put("Block", point(endpoint.blockCenter()));
                 e.put("Pivot", point(endpoint.pivot()));
                 e.put("Start", point(endpoint.start()));
@@ -91,7 +100,7 @@ public final class VehicleRuntimeNbt {
             approaches.add(entry);
         }
         tag.put("Approaches", approaches);
-        tag.put("Placement", placement(checkpoint.placement(), checkpoint.bogeySpeeds()));
+        tag.put("Placement", placement(checkpoint.placement(), checkpoint.bogeySpeeds(), checkpoint.motionDistances()));
         return tag;
     }
 
@@ -102,15 +111,16 @@ public final class VehicleRuntimeNbt {
     /** The caller resolves the saved route on its owning backend before restoring motion. */
     public static VehicleRuntime load(CompoundTag tag, TrackPath path) {
         var checkpoint = readCheckpoint(tag);
-        // Older versions may have distributed interior mismatch into the end suspensions.
-        return tag.getInt("Version") < VERSION ? VehicleRuntime.restoreLegacyPlacement(checkpoint, path)
+        // Older poses predate bolsterless body fitting and independent rigid-hook head positions.
+        return tag.getInt("Version") < STRICT_PLACEMENT_VERSION ? VehicleRuntime.restoreLegacyPlacement(checkpoint, path)
                 : VehicleRuntime.restore(checkpoint, path);
     }
 
     /** Decode saved state without requiring its previous track backend to still exist. */
     public static VehicleRuntime.Checkpoint readCheckpoint(CompoundTag tag) {
         require(tag, "Version", Tag.TAG_INT);
-        if (tag.getInt("Version") < 2 || tag.getInt("Version") > VERSION)
+        int version = tag.getInt("Version");
+        if (version < 2 || version > VERSION)
             throw new IllegalArgumentException("Unknown vehicle runtime version");
         var cars = new ArrayList<VehicleRuntime.SavedCarriage>();
         for (var car : entries(tag, "Carriages")) {
@@ -132,12 +142,26 @@ public final class VehicleRuntimeNbt {
                 controls.put(id, new VehicleRuntime.Control(number(b,"Throttle"), number(b,"Brake")));
             }
             var endpoints = new ArrayList<CouplingEndpoint>();
-            for (var e : entries(car, "Endpoints"))
+            for (var e : entries(car, "Endpoints")) {
+                double maxExtension = version < 6 && !e.contains("MaxExtension")
+                        ? CouplingEndpoint.DEFAULT_MAX_EXTENSION : number(e, "MaxExtension");
+                String model = version < 7 && !e.contains("Model")
+                        ? CouplingEndpoint.DEFAULT_MODEL : string(e, "Model");
+                CouplerAdapter adapter = null;
+                if (e.contains("Adapter")) {
+                    require(e, "Adapter", Tag.TAG_COMPOUND);
+                    var a = e.getCompound("Adapter");
+                    var decoded = a.copy();
+                    decoded.putDouble("Thickness", number(a, "Thickness"));
+                    adapter = willow.train.hexie.blocks.coupler.CouplerAdapterData.decode(decoded);
+                }
                 endpoints.add(new CouplingEndpoint(uuid(e,"Id"), point(e,"Block"),
                         CouplingEndpoint.Facing.valueOf(string(e,"Facing")), point(e,"Pivot"), point(e,"Start"),
-                        point(e,"Complete"), CouplingEndpoint.Kind.valueOf(string(e,"Kind"))));
+                        point(e,"Complete"), CouplingEndpoint.Kind.valueOf(string(e,"Kind")), maxExtension, model, adapter));
+            }
             var definition = new CarriageDefinition(uuid(car,"Id"), bogeys, endpoints,
-                    number(car,"RearExtent"), number(car,"FrontExtent"));
+                    number(car,"RearExtent"), number(car,"FrontExtent"),
+                    car.contains("FloorOffset") ? number(car, "FloorOffset") : 0);
             cars.add(new VehicleRuntime.SavedCarriage(definition, number(car,"Distance"), number(car,"Speed"), controls));
         }
         var connections = entries(tag,"Connections").stream()
@@ -152,6 +176,7 @@ public final class VehicleRuntimeNbt {
                         number(entry, "Pitch"), number(entry, "Roll")));
         var positions = new LinkedHashMap<UUID, VehicleConstraintSolver.BogeyPosition>();
         var speeds = new LinkedHashMap<UUID, Double>();
+        var motionDistances = new LinkedHashMap<UUID, Double>();
         for (var entry : entries(placement, "Bogeys")) {
             var id = uuid(entry, "Id");
             var sample = TrackGeometry.Sample.restoreNormalized(vector(entry, "TrackPosition"), vector(entry, "TrackTangent"),
@@ -163,15 +188,18 @@ public final class VehicleRuntimeNbt {
             double speed = number(entry, "Speed");
             if (!Double.isFinite(speed)) throw new IllegalArgumentException("Non-finite saved bogey speed");
             unique(speeds, id, speed);
+            unique(motionDistances, id, version < 6 && !entry.contains("MotionDistance")
+                    ? number(entry, "Distance") : number(entry, "MotionDistance"));
         }
         var solvedEndpoints = new LinkedHashMap<UUID, VehicleConstraintSolver.EndpointPose>();
         for (var entry : entries(placement, "Endpoints")) unique(solvedEndpoints, uuid(entry, "Id"),
                 new VehicleConstraintSolver.EndpointPose(vector(entry, "Pivot"), vector(entry, "Start"), vector(entry, "Complete")));
         var solution = new VehicleConstraintSolver.Solution(bodies, positions, solvedEndpoints);
-        return new VehicleRuntime.Checkpoint(cars, connections, approaches, solution, speeds);
+        return new VehicleRuntime.Checkpoint(cars, connections, approaches, solution, speeds, motionDistances);
     }
 
-    private static CompoundTag placement(VehicleConstraintSolver.Solution solution, Map<UUID, Double> speeds) {
+    private static CompoundTag placement(VehicleConstraintSolver.Solution solution, Map<UUID, Double> speeds,
+                                        Map<UUID, Double> motionDistances) {
         var tag = new CompoundTag();
         var bodies = new ListTag();
         // Map equality ignores iteration order; NBT lists do not. UUID hash collisions
@@ -186,6 +214,7 @@ public final class VehicleRuntimeNbt {
         new TreeMap<>(solution.bogeys()).forEach((id, position) -> {
             var entry = new CompoundTag(); entry.putUUID("Id", id);
             number(entry, "Distance", position.distance()); number(entry, "Lateral", position.lateral());
+            number(entry, "MotionDistance", motionDistances.get(id));
             number(entry, "Vertical", position.vertical()); number(entry, "Speed", speeds.get(id));
             entry.put("Pivot", vector(position.pivot())); entry.put("Attachment", vector(position.attachment()));
             entry.put("Position", vector(position.position())); number(entry, "SuspensionLateral", position.suspensionLateral());

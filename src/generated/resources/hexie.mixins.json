@@ -5,6 +5,8 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "MixinVehicleAssemblyStation",
+    "MixinCarriagePlayerCollision",
+    "MixinCarriedPlayerConnection",
     "MixinCompatibilityTrain",
     "MixinTrackBallastData",
     "MixinCurvedTrackSelectionPacket",
@@ -14,6 +16,9 @@
     "MixinSchematicSyncPacket"
   ],
   "client": [
+    "client.MixinCarriageLocalPlayer",
+    "client.MixinCarriageCamera",
+    "client.MixinCarriageInteraction",
     "client.MixinCurvedBallastInteraction",
     "client.MixinBallastModelData",
     "client.MixinTrackGraphVisualizer",

@@ -12,6 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import willow.train.hexie.Main;
+import willow.train.hexie.item.CouplerAdapterItem;
+import willow.train.hexie.item.FloorSwitcherItem;
 
 public class AllItemsInit {
 
@@ -19,6 +21,12 @@ public class AllItemsInit {
 
     public static final DeferredRegister<Item> ITEMS =
             DeferredRegister.create(Registries.ITEM, Main.MOD_ID);
+
+    public static final DeferredHolder<Item, CouplerAdapterItem> COUPLER_ADAPTER = ITEMS.register("coupler_adapter",
+            () -> new CouplerAdapterItem(new Item.Properties(), "hexie:test", "hexie:standard", .25));
+
+    public static final DeferredHolder<Item, FloorSwitcherItem> FLOOR_SWITCHER = ITEMS.register("floor_switcher",
+            () -> new FloorSwitcherItem(new Item.Properties().stacksTo(1)));
 
     public static void registerAllItems(IEventBus bus) {
         fireAllInit();

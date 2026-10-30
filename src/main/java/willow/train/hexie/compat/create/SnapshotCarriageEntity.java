@@ -22,6 +22,8 @@ import com.simibubi.create.api.behaviour.movement.MovementBehaviour;
 import com.simibubi.create.api.contraption.storage.fluid.MountedFluidStorageWrapper;
 import com.simibubi.create.api.contraption.storage.item.MountedItemStorage;
 import com.simibubi.create.content.contraptions.ContraptionBlockChangedPacket;
+import com.simibubi.create.content.contraptions.Contraption;
+import com.simibubi.create.content.contraptions.ContraptionWorld;
 import com.simibubi.create.content.contraptions.MountedStorageManager;
 import com.simibubi.create.content.contraptions.StructureTransform;
 import com.simibubi.create.content.contraptions.actors.seat.SeatBlock;
@@ -69,8 +71,10 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import willow.train.hexie.init.EntityInit;
 import willow.train.hexie.blocks.coupler.TestCouplerBlock;
+import willow.train.hexie.blockentity.CouplerBlockEntity;
 import willow.train.hexie.vehicle.assembly.CarriageSnapshot;
 import willow.train.hexie.vehicle.assembly.CarriageSnapshotStore;
+import willow.train.hexie.vehicle.assembly.CarriageFloorView;
 import willow.train.hexie.vehicle.runtime.CouplingEndpoint;
 import willow.train.hexie.vehicle.kinematics.VehicleConstraintSolver.BodyPose;
 
@@ -122,6 +126,9 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
     private final SnapshotBogeyAnimation bogeyAnimation = new SnapshotBogeyAnimation();
     private final SnapshotCouplerAnimation couplerAnimation = new SnapshotCouplerAnimation();
     private StructureTransform nativeDisassemblyTransform;
+    private AABB floorBoundsSource;
+    private AABB floorBounds;
+    private double boundsFloorOffset = Double.NaN;
     private boolean nativeManaged;
     private boolean restoringNativeEntity;
 
@@ -207,9 +214,10 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
     @Override public CarriageSyncData getCarriageData() { return entityData.get(COMPATIBILITY_POINTS); }
 
     @Override public void syncCarriage() {
-        if (level().isClientSide || compatibilityCarriage == null) return;
+        if (level().isClientSide) return;
         entityData.set(BOGEY_ANIMATION, bogeyAnimation.write());
         entityData.set(COUPLER_ANIMATION, couplerAnimation.write());
+        if (compatibilityCarriage == null) return;
         var train = compatibilityCarriage.train;
         entityData.set(COMPATIBILITY_TRAIN, Optional.of(train.id));
         entityData.set(COMPATIBILITY_INDEX, carriageIndex);
@@ -297,7 +305,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         if (key.equals(BOGEY_ANIMATION) && level().isClientSide)
             readBogeyAnimation(entityData.get(BOGEY_ANIMATION), getType().updateInterval());
         if (key.equals(COUPLER_ANIMATION) && level().isClientSide)
-            couplerAnimation.read(entityData.get(COUPLER_ANIMATION), getType().updateInterval());
+            readCouplerAnimation(entityData.get(COUPLER_ANIMATION), getType().updateInterval());
         if (key.equals(COMPATIBILITY_POINTS) || key.equals(COMPATIBILITY_GRAPH)
                 || key.equals(COMPATIBILITY_TRAIN) || key.equals(COMPATIBILITY_INDEX)
                 || key.equals(COMPATIBILITY_SPEED) || key.equals(COMPATIBILITY_DERAILED))
@@ -379,6 +387,10 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             bounds = bounds == null ? box : bounds.minmax(box);
         }
         view.bounds = bounds;
+        // Keep the same persistent envelope as a native station-assembled carriage.
+        // Create reuses contraption.bounds when aligning its compatibility entity;
+        // updating only this entity's box loses the interaction reach on that pass.
+        view.expandBoundsAroundAxis(Direction.Axis.Y);
         view.configureDirection(originalForward);
         setInitialOrientation(Direction.SOUTH);
         startAtInitialYaw();
@@ -388,6 +400,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         firstPositionUpdate = false;
         BlockPos origin = snapshot.origin();
         setPos(origin.getX() + .5, origin.getY(), origin.getZ() + .5);
+        updateRotatedBounds();
         xo = getX(); yo = getY(); zo = getZ();
     }
 
@@ -758,7 +771,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         pitch = prevPitch = tag.getFloat("BodyPitch");
         roll = prevRoll = tag.getFloat("BodyRoll");
         if (tag.contains("BogeyAnimation")) readBogeyAnimation(tag.getCompound("BogeyAnimation"), 0);
-        if (tag.contains("CouplerAnimation")) couplerAnimation.read(tag.getCompound("CouplerAnimation"), 0);
+        if (tag.contains("CouplerAnimation")) readCouplerAnimation(tag.getCompound("CouplerAnimation"), 0);
         validForRender = true;
         firstPositionUpdate = false;
         if (ownedMotion != null) {
@@ -806,9 +819,14 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             entityData.set(BODY_YAW, yaw); entityData.set(BODY_PITCH, pitch); entityData.set(BODY_ROLL, roll);
             var owner = motion();
             if (owner != null) {
+                double oldFloor = couplerAnimation.floorOffset();
                 bogeyAnimation.update(owner.runtime(), snapshot, forward, level().getGameTime(),
                         owner.isDerailed(getUUID()), modelForward);
                 couplerAnimation.update(owner.runtime(), snapshot, forward);
+                if (oldFloor != couplerAnimation.floorOffset() && contraption != null) {
+                    contraption.invalidateColliders();
+                    updateRotatedBounds();
+                }
             }
         }
     }
@@ -821,6 +839,25 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         for (int i = 0; !supportsChanged && i < before.size(); i++)
             supportsChanged = !before.get(i).position().equals(after.get(i).position());
         if (supportsChanged && contraption != null) contraption.invalidateClientContraptionChildren();
+    }
+
+    private void readCouplerAnimation(CompoundTag tag, int steps) {
+        var before = couplerAnimation.frames();
+        double oldFloor = couplerAnimation.floorOffset();
+        couplerAnimation.read(tag, steps);
+        var after = couplerAnimation.frames();
+        boolean hooksChanged = before.size() != after.size();
+        for (int i = 0; !hooksChanged && i < before.size(); i++)
+            hooksChanged = !before.get(i).position().equals(after.get(i).position());
+        if (contraption != null) {
+            boolean floorChanged = oldFloor != couplerAnimation.floorOffset();
+            if (hooksChanged) floorBoundsSource = null;
+            if (floorChanged || hooksChanged && (oldFloor != 0 || couplerAnimation.floorOffset() != 0))
+                contraption.invalidateClientContraptionStructure();
+            else if (hooksChanged) contraption.invalidateClientContraptionChildren();
+            if (floorChanged) contraption.invalidateColliders();
+            if (floorChanged || hooksChanged) updateRotatedBounds();
+        }
     }
 
     @Override public void lerpTo(double x, double y, double z, float yRot, float xRot, int steps) {
@@ -875,6 +912,12 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             movingBackwards = reverseRotation(movement, 1).dot(Vec3.atLowerCornerOf(originalForward.getNormal())) > 0;
         if (!level().isClientSide && tickCount % Math.max(1, getType().updateInterval()) == 0) syncCarriage();
         tickActors();
+        CarriagePlayerSupport.advance(this);
+    }
+
+    @Override public void registerColliding(Entity entity) {
+        super.registerColliding(entity);
+        CarriagePlayerSupport.contact(this, entity);
     }
 
     @Override public void tickActors() {
@@ -979,7 +1022,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
 
     private void updateRotatedBounds() {
         if (contraption == null || contraption.bounds == null) return;
-        AABB b = contraption.bounds;
+        AABB b = localFloorBounds();
         var rotation = rotation(1);
         var point = new org.joml.Vector3f();
         double minX = Double.POSITIVE_INFINITY, minY = minX, minZ = minX;
@@ -994,6 +1037,23 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         }
         setBoundingBox(new AABB(minX + getX(), minY + getY() + .5, minZ + getZ(),
                 maxX + getX(), maxY + getY() + .5, maxZ + getZ()));
+    }
+
+    /** Rebuild only when the floor changes, so broad-phase collision still contains the lowered hooks. */
+    private AABB localFloorBounds() {
+        double floor = couplerAnimation.floorOffset();
+        if (floor == 0) return contraption.bounds;
+        if (floorBoundsSource == contraption.bounds && boundsFloorOffset == floor) return floorBounds;
+        AABB result = contraption.bounds;
+        for (var frame : couplerAnimation.frames()) {
+            var info = contraption.getBlocks().get(frame.position());
+            if (info == null) continue;
+            var shape = info.state().getShape(contraption.getContraptionWorld(), frame.position());
+            if (!shape.isEmpty()) result = result.minmax(shape.bounds().move(frame.position()));
+        }
+        floorBoundsSource = contraption.bounds;
+        boundsFloorOffset = floor;
+        return floorBounds = result;
     }
 
     @Override public void applyLocalTransforms(PoseStack stack, float partialTicks) {
@@ -1036,7 +1096,8 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
 
     @Override
     public boolean handlePlayerInteraction(Player player, BlockPos localPos, Direction side, InteractionHand hand) {
-        return behavioursActive && (SnapshotCouplerInteraction.handle(this, player, localPos, hand)
+        return behavioursActive && (SnapshotFloorInteraction.handle(this, player, localPos, hand)
+                || SnapshotCouplerInteraction.handle(this, player, localPos, hand)
                 || super.handlePlayerInteraction(player, localPos, side, hand));
     }
 
@@ -1063,6 +1124,10 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         private boolean backwardControls;
         private final Map<BlockPos, Entity> initialSeatPassengers = new HashMap<>();
         SnapshotView() { storage = new SnapshotCargoManager(); }
+        @Override public ContraptionWorld getContraptionWorld() {
+            if (!(collisionLevel instanceof FloorWorld)) collisionLevel = new FloorWorld(entity.level(), this);
+            return collisionLevel;
+        }
         void update(BlockPos position, CompoundTag tag) { updateTags.put(position, tag); }
 
         Map<BlockPos, StructureBlockInfo> copyBlocks() {
@@ -1174,6 +1239,9 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
                     return new RenderedBlocks(pos -> {
                         var info = SnapshotView.this.getBlocks().get(pos);
                         if (info == null) return net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
+                        if (info.state().getBlock() instanceof TestCouplerBlock
+                                && ((SnapshotCarriageEntity) entity).couplerAnimation().hasShiftedBase(pos))
+                            return net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
                         return info.state().getBlock() instanceof TestCouplerBlock
                                 ? info.state().setValue(TestCouplerBlock.ASSEMBLED, true) : info.state();
                     }, SnapshotView.this.getBlocks().keySet());
@@ -1183,10 +1251,16 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
                     if (maskedVersion != childrenVersion()) {
                         var animated = ((SnapshotCarriageEntity) entity).bogeyAnimation().frames().stream()
                                 .map(SnapshotBogeyAnimation.Frame::position).collect(java.util.stream.Collectors.toSet());
+                        var animatedHooks = ((SnapshotCarriageEntity) entity).couplerAnimation().frames().stream()
+                                .map(SnapshotBogeyAnimation.Frame::position).collect(java.util.stream.Collectors.toSet());
                         staticBlocks.clear();
                         for (int i = 0; i < renderedBlockEntityView.size(); i++) {
                             var blockEntity = renderedBlockEntityView.get(i);
-                            if (!(blockEntity instanceof AbstractBogeyBlockEntity) || !animated.contains(blockEntity.getBlockPos()))
+                            boolean independentSupport = blockEntity instanceof AbstractBogeyBlockEntity
+                                    && animated.contains(blockEntity.getBlockPos());
+                            boolean independentHook = blockEntity instanceof CouplerBlockEntity
+                                    && animatedHooks.contains(blockEntity.getBlockPos());
+                            if (!independentSupport && !independentHook)
                                 staticBlocks.set(i);
                         }
                         maskedVersion = childrenVersion();
@@ -1278,6 +1352,17 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             tag.putBoolean("FrontControls", forwardControls);
             tag.putBoolean("BackControls", backwardControls);
             return tag;
+        }
+    }
+
+    /** Exposes the carriage floor to native shape queries without altering saved block states. */
+    private static final class FloorWorld extends ContraptionWorld implements CarriageFloorView {
+        private final SnapshotView view;
+
+        FloorWorld(Level level, SnapshotView view) { super(level, view); this.view = view; }
+
+        @Override public double floorOffset() {
+            return view.entity instanceof SnapshotCarriageEntity carrier ? carrier.couplerAnimation.floorOffset() : 0;
         }
     }
 

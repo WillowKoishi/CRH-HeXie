@@ -1,5 +1,11 @@
 {
   "block.hexie.test_coupler": "Test Coupler",
+  "item.hexie.coupler_adapter": "Coupler Adapter",
+  "item.hexie.floor_switcher": "Floor Switcher",
+  "item.hexie.floor_switcher.height": "Floor height: %s",
+  "gui.hexie.floor_height.title": "Floor Height",
+  "gui.hexie.floor_height.height": "Height",
+  "gui.hexie.floor_height.original": "Original Height",
   "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_dt206.bogey.name": "DT-206",
   "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_dt206.bogey.speed": "Speed level: 250km/h",
   "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_dt206.bogey.cart": "Cart: · CRH2",

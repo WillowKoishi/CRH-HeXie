@@ -5,8 +5,11 @@ import java.util.Objects;
 /**
  * A registered attachment between a carriage and a bogey. Both frames face north (-Z).
  * The body point stays fixed in the carriage; the track pivot is relative to the bogey's
- * track-following base. The lateral limit only separates suspension displacement from
- * off-track displacement; exceeding it never prevents movement.
+ * track-following base. For a bolsterless end support, lateralLimit bounds the suspension
+ * offset used while solving the rigid body pose: the track/chord midpoint difference is
+ * projected into that support's own lateral axis. This symmetric geometric approximation
+ * introduces no spring constants or steering-angle limit. Intermediate supports follow
+ * the solved body, using their local suspension travel before any remaining off-rail offset.
  */
 public record BogeyMount(CouplingEndpoint.Point bodyPoint, CouplingEndpoint.Point trackPivot,
                          Type type, double lateralLimit) {

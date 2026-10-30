@@ -16,6 +16,7 @@ import willow.train.hexie.blocks.semaphore.through.ThroughSignalBlockEntity;
 import willow.train.hexie.blocks.semaphore.through.AdjustableSignalBlockEntity;
 import willow.train.hexie.client.screens.CenteredSemaphoreValueSettingsScreen;
 import willow.train.hexie.client.screens.AdjustableSemaphoreSettingsScreen;
+import willow.train.hexie.client.screens.FloorHeightSettingsScreen;
 
 @EventBusSubscriber(modid = Main.MOD_ID, value = Dist.CLIENT)
 public final class SemaphoreScreenEvents {
@@ -24,6 +25,8 @@ public final class SemaphoreScreenEvents {
 
     @SubscribeEvent
     public static void onScreenOpening(ScreenEvent.Opening event) {
+        if (event.getNewScreen() instanceof FloorHeightSettingsScreen)
+            return;
         if (!(event.getNewScreen() instanceof ValueSettingsScreen))
             return;
 

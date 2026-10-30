@@ -108,7 +108,7 @@ public final class SnapshotBogeyAnimation {
                     .transform(new Vector3f(position.getX(), position.getY(), position.getZ()));
             Point mount = definitionBogey.mount().bodyPoint();
             var pivotOffset = trackFrame.rotate(new Point(mount.x() - normalizedBlock.x,
-                    mount.y() - normalizedBlock.y, mount.z() - normalizedBlock.z));
+                    mount.y() + definition.floorOffset() - normalizedBlock.y, mount.z() - normalizedBlock.z));
             var centre = support.pivot().subtract(pivotOffset).subtract(body.position());
             Vector3f local = inverseBody.transform(new Vector3f((float) centre.x(), (float) centre.y(), (float) centre.z()));
             // Preserve the actual placed model's axis, including asymmetric and backward variants.

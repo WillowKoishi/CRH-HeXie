@@ -1,6 +1,7 @@
 package willow.train.hexie.vehicle.kinematics;
 
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,10 +18,11 @@ import willow.train.hexie.vehicle.track.TrackGeometry.Vector;
 import willow.train.hexie.vehicle.track.TrackPath;
 import static willow.train.hexie.vehicle.kinematics.VehicleConstraintSolver.*;
 
-/** Rigid end supports place the body; each intermediate suspension absorbs only its own mismatch. */
+/** End-support suspension participates in the rigid pose; intermediate supports follow that pose. */
 final class RigidCarriageSolver {
     private static final double TOLERANCE = 1e-8;
     private final TrackPath path;
+    private final Map<Double, TrackReference> trackCache = new HashMap<>();
 
     RigidCarriageSolver(TrackPath path) { this.path = path; }
 
@@ -49,51 +51,55 @@ final class RigidCarriageSolver {
             distance = proposed.get(first.id());
             if (coupling.kind() != CouplingEndpoint.Kind.RIGID || parent.definition().kind() != CouplingEndpoint.Kind.RIGID)
                 throw new ConstraintFailure("Articulated joints require their registered constraint adapter");
-            parentLength = length(vector(parent.definition().complete()).subtract(vector(parent.definition().pivot())));
-            ownLength = length(vector(coupling.complete()).subtract(vector(coupling.pivot())));
+            if (!coupling.matches(parent.definition()))
+                throw new IllegalArgumentException("Coupler models do not match");
+            parentLength = length(vector(parent.definition().effectiveComplete()).subtract(vector(parent.definition().pivot())));
+            ownLength = length(vector(coupling.effectiveComplete()).subtract(vector(coupling.pivot())));
             Vector parentPivot = parent.body().transform(parent.definition().localPivot());
             Point ownPivot = coupling.localPivot();
             double linkLength = parentLength + ownLength;
             closure = new CouplerClosure(parentPivot, ownPivot, linkLength,
+                    coupling.maxExtension() + parent.definition().maxExtension(),
                     Math.max(1, car.frontExtent() + car.rearExtent()),
                     coupling.facing() == CouplingEndpoint.Facing.NORTH ? -1 : 1);
         }
-        Placed placed = place(car, first, last, distance, closure);
-        Shape shape = placed.shape;
+        CoupledShape coupled = closure == null ? new CoupledShape(shape(first, last, distance), false)
+                : coupledShape(first, last, distance, closure);
+        Shape shape = coupled.shape;
+        if (coupled.broken) {
+            // The released carriage keeps the independent reference prescribed by motion.
+            // Never use the searched minimum as a new anchor or snap it toward the old parent.
+            first = car.referenceBogey();
+            last = high;
+            shape = shape(first, last, proposed.get(first.id()));
+        }
+        Placed placed = place(car, first, last, shape);
         var positions = placed.positions;
         var endpoints = new LinkedHashMap<UUID, EndpointPose>();
         for (CouplingEndpoint endpoint : car.couplings()) endpoints.put(endpoint.id(), endpoint(endpoint, shape.pose));
-        if (parent != null) {
+        if (parent != null && !coupled.broken) {
             EndpointPose a = endpoint(parent.definition(), parent.body()), b = endpoints.get(coupling.id());
             Vector separation = b.pivot().subtract(a.pivot());
-            if (parentLength + ownLength < TOLERANCE) {
-                Vector shared = add(a.pivot(), b.pivot()).scale(.5);
-                endpoints.put(parent.definition().id(), new EndpointPose(a.pivot(), a.start(), shared));
-                endpoints.put(coupling.id(), new EndpointPose(b.pivot(), b.start(), shared));
-            } else {
+            if (length(separation) > TOLERANCE) {
                 Vector direction = separation.normalized();
                 // Registered facing rotates the local points; it is not a joint-angle limit.
-                Vector shared = add(a.pivot(), direction.scale(parentLength));
-                endpoints.put(parent.definition().id(), orientedEndpoint(a, shared, direction));
-                endpoints.put(coupling.id(), orientedEndpoint(b, shared, direction.scale(-1)));
+                // The visible arms keep their normal lengths even when the connection extends.
+                endpoints.put(parent.definition().id(), orientedEndpoint(a,
+                        add(a.pivot(), direction.scale(parentLength)), direction));
+                endpoints.put(coupling.id(), orientedEndpoint(b,
+                        add(b.pivot(), direction.scale(-ownLength)), direction.scale(-1)));
             }
         }
-        return new Solution(Map.of(car.id(), shape.pose), positions, endpoints);
+        return new Solution(Map.of(car.id(), shape.pose), positions, endpoints,
+                coupled.broken ? List.of(connections.getFirst()) : List.of());
     }
 
-    private Placed place(CarriageDefinition car, BogeyDefinition first, BogeyDefinition last, double distance,
-                         CouplerClosure closure) {
-        Shape shape = closure == null ? shape(first, last, distance) : coupledShape(first, last, distance, closure);
+    private Placed place(CarriageDefinition car, BogeyDefinition first, BogeyDefinition last, Shape shape) {
         var positions = new LinkedHashMap<UUID, BogeyPosition>();
         for (BogeyDefinition bogey : car.bogeys()) {
             if (bogey.id().equals(first.id())) positions.put(bogey.id(), position(bogey, shape.first, shape.pose));
             else if (bogey.id().equals(last.id())) {
-                RailPoint reference = shape.last;
-                Vector attachment = shape.pose.transform(bogey.mount().bodyPoint());
-                if (length(attachment.subtract(reference.pivot)) > POSITION_TOLERANCE)
-                    reference = projectedReference(bogey, attachment, reference.distance,
-                            Math.max(1, Math.abs(last.offset() - first.offset())));
-                positions.put(bogey.id(), position(bogey, reference, shape.pose));
+                positions.put(bogey.id(), position(bogey, shape.last, shape.pose));
             }
             else {
                 Vector attachment = shape.pose.transform(bogey.mount().bodyPoint());
@@ -120,18 +126,16 @@ final class RigidCarriageSolver {
         return rail(bogey, fit.distance);
     }
 
-    private Shape coupledShape(BogeyDefinition first, BogeyDefinition last, double guess, CouplerClosure closure) {
+    private CoupledShape coupledShape(BogeyDefinition first, BogeyDefinition last, double guess, CouplerClosure closure) {
         DoubleUnaryOperator error = s -> length(shape(first, last, s).pose
                 .transform(closure.localPivot).subtract(closure.parentPivot)) - closure.length;
         var fit = refine(error, guess, path.minimumDistance(), path.maximumDistance(), closure.maximumStep);
         double slope = derivative(error, fit.distance, fit.error, path.minimumDistance(), path.maximumDistance());
         if (Math.abs(fit.error) <= TOLERANCE && slope * closure.branch > TOLERANCE)
-            return shape(first, last, fit.distance);
+            return new CoupledShape(shape(first, last, fit.distance), false);
 
-        // Only the consist's prescribed anchor is a hard rail constraint. A follower's
-        // two on-rail end supports are a preference: at a short bend their coupler path
-        // can miss the upstream joint entirely. Find that local turning point, without
-        // scanning the route or introducing a general body-pose matrix solver.
+        // Search the same local rail-pose branch for its closest possible coupler distance.
+        // The first/last rail supports are never relaxed to close a shorter visual joint.
         // Canonical bracket boundaries keep cold and reverse solves independent of their guesses.
         double middle = Math.clamp(Math.rint(fit.distance * 4) / 4,
                 path.minimumDistance(), path.maximumDistance()), step = .25;
@@ -143,7 +147,7 @@ final class RigidCarriageSolver {
         int expansions = 0;
         while (leftError < centreError || rightError < centreError) {
             if (++expansions > 12)
-                throw new ConstraintFailure("Route does not contain a local coupler placement");
+                throw new ConstraintFailure("Local coupler minimum search exceeded its expansion budget");
             if (leftError < rightError) { right = middle; rightError = centreError; middle = left; centreError = leftError; }
             else { left = middle; leftError = centreError; middle = right; centreError = rightError; }
             step = Math.min(step * 2, closure.maximumStep);
@@ -151,18 +155,23 @@ final class RigidCarriageSolver {
             right = Math.min(path.maximumDistance(), middle + step);
             leftError = trial(error, left); rightError = trial(error, right);
         }
+        // Missing samples and an endpoint-clipped interval do not establish physical overreach.
+        if (!(left < middle && middle < right) || !Double.isFinite(leftError) || !Double.isFinite(rightError))
+            throw new ConstraintFailure("Local coupler minimum needs unavailable route geometry");
         double fraction = (Math.sqrt(5) - 1) / 2;
         double a = right - fraction * (right - left), b = left + fraction * (right - left);
-        double fa = trial(error, a), fb = trial(error, b);
-        for (int i = 0; i < 36 && right - left > 1e-7; i++) {
+        double fa = error.applyAsDouble(a), fb = error.applyAsDouble(b);
+        for (int i = 0; i < 48 && right - left > 1e-7; i++) {
             if (fa <= fb) {
                 right = b; b = a; fb = fa;
-                a = right - fraction * (right - left); fa = trial(error, a);
+                a = right - fraction * (right - left); fa = error.applyAsDouble(a);
             } else {
                 left = a; a = b; fa = fb;
-                b = left + fraction * (right - left); fb = trial(error, b);
+                b = left + fraction * (right - left); fb = error.applyAsDouble(b);
             }
         }
+        if (right - left > 1e-7 || !Double.isFinite(fa) || !Double.isFinite(fb))
+            throw new ConstraintFailure("Local coupler minimum did not converge");
         double minimum = fa <= fb ? a : b;
         double minimumError = Math.min(fa, fb);
         if (minimumError < -TOLERANCE) {
@@ -177,6 +186,8 @@ final class RigidCarriageSolver {
                 farError = trial(error, far);
                 if (far == previous) break;
             }
+            if (!Double.isFinite(farError))
+                throw new ConstraintFailure("Directed coupler branch needs unavailable route geometry");
             if (farError < -POSITION_TOLERANCE) throw new ConstraintFailure("Route does not contain the directed coupler length");
             double best = far, bestError = farError;
             for (int i = 0; i < 40; i++) {
@@ -187,64 +198,12 @@ final class RigidCarriageSolver {
             }
             if (Math.abs(bestError) > POSITION_TOLERANCE)
                 throw new ConstraintFailure("Could not close directed coupler length; residual=" + bestError);
-            return shape(first, last, best);
+            return new CoupledShape(shape(first, last, best), false);
         }
         Shape preferred = shape(first, last, minimum);
-        if (Math.abs(minimumError) <= TOLERANCE) return preferred;
-        double reach = length(vector(closure.localPivot).subtract(vector(first.mount().bodyPoint())));
-        double separationFromSupport = length(closure.parentPivot.subtract(preferred.first.pivot));
-        double reachableDistance = Math.clamp(separationFromSupport,
-                Math.abs(reach - closure.length), reach + closure.length);
-        if (Math.abs(reachableDistance - separationFromSupport) > TOLERANCE) {
-            var reachable = refine(s -> length(rail(first, s).pivot.subtract(closure.parentPivot)) - reachableDistance,
-                    minimum, path.minimumDistance(), path.maximumDistance(), closure.maximumStep);
-            if (Math.abs(reachable.error) <= TOLERANCE) {
-                // The nearby end can still remain on the rail by moving its cursor.
-                // A trial beyond the other end's available route is not a usable preference.
-                try { preferred = shape(first, last, reachable.distance); }
-                catch (ConstraintFailure ignored) { }
-            }
-        }
-        // Keep the support nearest the connected coupler on the rail whenever its
-        // pivot and the registered coupler arms can reach. The far support follows
-        // the rigid body; its independent rail reference still supplies animation.
-        Vector anchor = preferred.first.pivot;
-        Vector arm = preferred.pose.transform(closure.localPivot).subtract(anchor);
-        Vector towardParent = closure.parentPivot.subtract(anchor);
-        double radius = length(arm), parentDistance = length(towardParent);
-        if (radius > TOLERANCE && parentDistance > TOLERANCE) {
-            double cosine = (radius * radius + parentDistance * parentDistance - closure.length * closure.length)
-                    / (2 * radius * parentDistance);
-            boolean reachable = Math.abs(cosine) <= 1;
-            cosine = Math.clamp(cosine, -1, 1);
-            Vector axis = towardParent.scale(1 / parentDistance);
-            Vector from = arm.scale(1 / radius);
-            Vector radial = from.subtract(axis.scale(from.dot(axis)));
-            if (length(radial) < TOLERANCE) {
-                Vector up = Math.abs(axis.y()) < .9 ? new Vector(0, 1, 0) : new Vector(1, 0, 0);
-                radial = perpendicular(up, axis);
-            }
-            else radial = radial.normalized();
-            Vector to = add(axis.scale(cosine), radial.scale(Math.sqrt(Math.max(0, 1 - cosine * cosine))));
-            BodyPose old = preferred.pose;
-            Vector x = rotateBetween(old.rotate(new Point(1, 0, 0)), from, to);
-            Vector y = rotateBetween(old.rotate(new Point(0, 1, 0)), from, to);
-            Vector z = rotateBetween(old.rotate(new Point(0, 0, 1)), from, to);
-            BodyPose rotation = rotation(x, y, z);
-            BodyPose pose = new BodyPose(anchor.subtract(rotation.rotate(first.mount().bodyPoint())),
-                    rotation.yaw(), rotation.pitch(), rotation.roll());
-            preferred = new Shape(pose, preferred.first, preferred.last);
-            if (reachable) return preferred;
-        }
-        Vector separation = preferred.pose.transform(closure.localPivot).subtract(closure.parentPivot);
-        double separationLength = length(separation);
-        if (separationLength < TOLERANCE) return preferred;
-        Vector correction = separation.scale(closure.length / separationLength - 1);
-        var pose = preferred.pose;
-        // If even the near support cannot reach, it too may depart: only the
-        // consist's prescribed anchor is absolute. Never stretch the connected arms.
-        return new Shape(new BodyPose(add(pose.position(), correction), pose.yaw(), pose.pitch(), pose.roll()),
-                preferred.first, preferred.last);
+        // The minimum is bracketed by valid rail poses and has converged. Only this
+        // geometric evidence can release a connection; numerical failures never do.
+        return new CoupledShape(preferred, minimumError > closure.extension + POSITION_TOLERANCE);
     }
 
     private static BogeyPosition position(BogeyDefinition bogey, RailPoint point, BodyPose pose) {
@@ -265,10 +224,9 @@ final class RigidCarriageSolver {
 
     private Shape shape(BogeyDefinition first, BogeyDefinition last, double distance) {
         RailPoint a = rail(first, distance);
-        Vector firstAttachment = a.pivot;
         if (first.id().equals(last.id())) {
             BodyPose frame = a.frame;
-            BodyPose pose = new BodyPose(firstAttachment.subtract(frame.rotate(first.mount().bodyPoint())), frame.yaw(), frame.pitch(), frame.roll());
+            BodyPose pose = new BodyPose(a.pivot.subtract(frame.rotate(first.mount().bodyPoint())), frame.yaw(), frame.pitch(), frame.roll());
             return new Shape(pose, a, a);
         }
         Vector localChord = vector(last.mount().bodyPoint()).subtract(vector(first.mount().bodyPoint()));
@@ -280,16 +238,18 @@ final class RigidCarriageSolver {
         double upper = direction < 0 ? Math.min(path.maximumDistance(), start - TOLERANCE) : path.maximumDistance();
         double end = root(s -> {
             RailPoint point = rail(last, s);
-            return length(point.pivot.subtract(firstAttachment)) - span;
+            EndAttachments attached = attachments(first, last, a, point);
+            return length(attached.last.subtract(attached.first)) - span;
         },
                 start + last.offset() - first.offset(), lower, upper, Math.max(1, span), "rigid end-support distance");
         RailPoint b = rail(last, end);
+        EndAttachments attached = attachments(first, last, a, b);
+        Vector firstAttachment = attached.first, lastAttachment = attached.last;
         // Match the registered local support chord to the actual world chord. This also
         // preserves unequal mount heights and transverse offsets, not just a Z-axis wheelbase.
         Vector localForward = localChord.normalized();
         Vector localUp = perpendicular(new Vector(0, 1, 0), localForward);
         Vector localRight = cross(localForward, localUp);
-        Vector lastAttachment = b.pivot;
         Vector forward = lastAttachment.subtract(firstAttachment).normalized();
         Vector up = perpendicular(add(a.sample.normal(), b.sample.normal()), forward);
         Vector right = cross(forward, up);
@@ -302,12 +262,40 @@ final class RigidCarriageSolver {
         return new Shape(pose, a, b);
     }
 
+    /**
+     * A bounded geometric suspension approximation, not an invented spring/force model.
+     * The track's midpoint departs from the chord midpoint on a curve. Project that sagitta
+     * into each end's own lateral axis, limited by its registered travel, so the body can
+     * follow the bend while the bogey bases remain on rail. Both offsets are evaluated
+     * inside the rigid-chord equation; reversing or swapping ends uses the same midpoint.
+     * Intermediate supports do not contribute to this body-pose construction.
+     */
+    private EndAttachments attachments(BogeyDefinition first, BogeyDefinition last, RailPoint a, RailPoint b) {
+        double firstLimit = limit(first), lastLimit = limit(last);
+        if (firstLimit == 0 && lastLimit == 0) return new EndAttachments(a.pivot, b.pivot);
+        var middle = track((a.distance + b.distance) * .5);
+        Point firstPivot = first.mount().trackPivot(), lastPivot = last.mount().trackPivot();
+        Point middlePivot = new Point((firstPivot.x() + lastPivot.x()) * .5,
+                (firstPivot.y() + lastPivot.y()) * .5, (firstPivot.z() + lastPivot.z()) * .5);
+        Vector sagitta = middle.frame.transform(middlePivot).subtract(add(a.pivot, b.pivot).scale(.5));
+        Vector firstRight = a.frame.rotate(new Point(1, 0, 0));
+        Vector lastRight = b.frame.rotate(new Point(1, 0, 0));
+        return new EndAttachments(add(a.pivot, firstRight.scale(Math.clamp(sagitta.dot(firstRight), -firstLimit, firstLimit))),
+                add(b.pivot, lastRight.scale(Math.clamp(sagitta.dot(lastRight), -lastLimit, lastLimit))));
+    }
+
     private RailPoint rail(BogeyDefinition bogey, double distance) {
+        TrackReference reference = track(distance);
+        return new RailPoint(distance, reference.sample, reference.frame, reference.frame.transform(bogey.mount().trackPivot()));
+    }
+
+    private TrackReference track(double distance) {
         if (!Double.isFinite(distance) || distance < path.minimumDistance() || distance > path.maximumDistance())
             throw new ConstraintFailure("Support cursor is outside the supplied route: " + distance);
-        var sample = path.sample(distance);
-        var frame = trackFrame(sample);
-        return new RailPoint(distance, sample, frame, frame.transform(bogey.mount().trackPivot()));
+        return trackCache.computeIfAbsent(distance, cursor -> {
+            var sample = path.sample(cursor);
+            return new TrackReference(sample, trackFrame(sample));
+        });
     }
 
     /** Local scalar roots only; no body-pose matrix or per-support finite-difference columns. */
@@ -372,8 +360,12 @@ final class RigidCarriageSolver {
                 pose.transform(endpoint.localComplete()));
     }
     private record RailPoint(double distance, TrackGeometry.Sample sample, BodyPose frame, Vector pivot) {}
+    private record TrackReference(TrackGeometry.Sample sample, BodyPose frame) {}
     private record Shape(BodyPose pose, RailPoint first, RailPoint last) {}
+    private record EndAttachments(Vector first, Vector last) {}
+    private record CoupledShape(Shape shape, boolean broken) {}
     private record Placed(Shape shape, Map<UUID, BogeyPosition> positions) {}
     private record RootResult(double distance, double error) {}
-    private record CouplerClosure(Vector parentPivot, Point localPivot, double length, double maximumStep, int branch) {}
+    private record CouplerClosure(Vector parentPivot, Point localPivot, double length, double extension,
+                                  double maximumStep, int branch) {}
 }

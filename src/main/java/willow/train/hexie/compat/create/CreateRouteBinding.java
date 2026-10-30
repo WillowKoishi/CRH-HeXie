@@ -135,6 +135,30 @@ public final class CreateRouteBinding {
                 provisional.distanceOf(anchor));
     }
 
+    /** Reconstruct the occupied native corridor without making another steering decision. */
+    public static CreateRouteBinding fromPoints(ServerLevel level, TrackGraph graph, TravellingPoint anchor,
+                                                List<TravellingPoint> occupied) {
+        try {
+            var selected = new CreateRouteBinding(level, graph, List.of(anchor.node1, anchor.node2), 0, null);
+            selected.distanceOf(anchor);
+            for (var point : occupied) {
+                if (!selected.edgePositions.containsKey(point.edge)) {
+                    var segment = new CreateRouteBinding(level, graph, List.of(point.node1, point.node2), 0, null);
+                    segment.distanceOf(point);
+                    selected = selected.merge(segment).route();
+                }
+                selected.distanceOf(point);
+            }
+            return new CreateRouteBinding(selected, selected.nodes, selected.segments, selected.route,
+                    selected.distanceOf(anchor));
+        } catch (IllegalArgumentException changed) {
+            // A partially migrated native graph is unavailable geometry, not a fatal server tick.
+            var unavailable = new RouteInvalidException();
+            unavailable.initCause(changed);
+            throw unavailable;
+        }
+    }
+
     /** Called when control has selected new exits, not every tick; old edge arc tables are reused. */
     public Extension extend(boolean forward, RouteChoice choice) {
         if (!isValid()) throw new RouteInvalidException();
@@ -198,6 +222,23 @@ public final class CreateRouteBinding {
         return new Extension(refreshed, shift);
     }
 
+    /** Build the coupling corridor from occupied track, not obsolete choices outside the trains. */
+    public Merge connectForCoupling(CreateRouteBinding other, double firstMin, double firstMax,
+            double secondMin, double secondMax) {
+        Extension a = occupied(firstMin, firstMax), b = other.occupied(secondMin, secondMax);
+        Merge joined = a.binding.merge(b.binding);
+        return new Merge(joined.route, joined.firstOffset + a.distanceOffset,
+                joined.secondOffset + (joined.reverseSecond ? -b.distanceOffset : b.distanceOffset), joined.reverseSecond);
+    }
+
+    private Extension occupied(double min, double max) {
+        int first = route.segmentIndex(boundDistance(min));
+        int last = route.segmentIndex(boundDistance(max)) + 1;
+        double offset = -route.distanceAt(first, 0);
+        return new Extension(new CreateRouteBinding(this, nodes.subList(first, last + 1),
+                segments.subList(first, last), route.slice(first, last), offset), offset);
+    }
+
     /**
      * Join two already selected paths while retaining this path's direction. Node/edge identity,
      * never a world-space projection, determines the correspondence. Paths must overlap without
@@ -245,9 +286,63 @@ public final class CreateRouteBinding {
                 }
             }
         }
-        if (selected == null)
-            throw new IllegalArgumentException("Selected coupling routes do not form one directly connected path");
-        return merge(other, selected);
+        if (selected != null) return merge(other, selected);
+        return connectGraph(other);
+    }
+
+    private record SearchStep(TrackNode previous, TrackNode node, double distance, SearchStep parent) {}
+    private record SearchKey(TrackNode previous, TrackNode node) {}
+
+    /** Only run when coupling; ordinary train ticks do not perform graph searches. */
+    private Merge connectGraph(CreateRouteBinding other) {
+        List<TrackNode> best = null;
+        boolean bestReverse = false;
+        int bestFirst = 0, bestSecond = 0;
+        double bestLength = Double.POSITIVE_INFINITY;
+        for (boolean prepend : new boolean[] {false, true}) for (boolean reverse : new boolean[] {false, true}) {
+            List<TrackNode> left = prepend ? oriented(other.nodes, reverse) : nodes;
+            List<TrackNode> right = prepend ? nodes : oriented(other.nodes, reverse);
+            TrackNode from = left.getLast(), target = right.getFirst();
+            var queue = new java.util.PriorityQueue<SearchStep>(java.util.Comparator.comparingDouble(SearchStep::distance));
+            var visited = new java.util.HashMap<SearchKey, Double>();
+            queue.add(new SearchStep(left.get(left.size() - 2), from, 0, null));
+            while (!queue.isEmpty()) {
+                SearchStep current = queue.remove();
+                var key = new SearchKey(current.previous, current.node);
+                if (current.distance >= bestLength || visited.getOrDefault(key, Double.POSITIVE_INFINITY) <= current.distance) continue;
+                visited.put(key, current.distance);
+                if (current.node == target) {
+                    TrackEdge incoming = graph.getConnectionsFrom(current.previous).get(current.node);
+                    TrackEdge outgoing = graph.getConnectionsFrom(target).get(right.get(1));
+                    if (!incoming.canTravelTo(outgoing)) continue;
+                    var bridge = new LinkedList<TrackNode>();
+                    for (SearchStep step = current; step != null; step = step.parent) bridge.addFirst(step.node);
+                    var combined = new ArrayList<>(left);
+                    combined.addAll(bridge.subList(1, bridge.size()));
+                    combined.addAll(right.subList(1, right.size()));
+                    best = combined; bestLength = current.distance; bestReverse = reverse;
+                    int rightStart = left.size() + bridge.size() - 2;
+                    bestFirst = prepend ? rightStart : 0;
+                    bestSecond = (prepend ? 0 : rightStart) + (reverse ? other.segments.size() : 0);
+                    break;
+                }
+                TrackEdge incoming = graph.getConnectionsFrom(current.previous).get(current.node);
+                for (var next : graph.getConnectionsFrom(current.node).entrySet()) {
+                    if (next.getKey() == current.previous || left.contains(next.getKey())
+                            || next.getKey() != target && right.contains(next.getKey())) continue;
+                    TrackEdge edge = next.getValue();
+                    if (!isOwnTrack(edge) || edge.isInterDimensional() || !incoming.canTravelTo(edge)) continue;
+                    if (graph.getConnectionsFrom(next.getKey()).get(current.node) == null) continue;
+                    queue.add(new SearchStep(current.node, next.getKey(), current.distance + edge.getLength(), current));
+                }
+            }
+        }
+        if (best == null) throw new IllegalArgumentException("两车所在轨道不连通");
+        return merge(other, new MergePlan(List.copyOf(best), bestFirst, bestSecond, bestReverse));
+    }
+
+    private static List<TrackNode> oriented(List<TrackNode> input, boolean reverse) {
+        return reverse ? input.reversed() : input;
     }
 
     private boolean joins(TrackNode from, TrackNode to) {

@@ -1,6 +1,9 @@
 package willow.train.hexie.init;
 
 import net.minecraft.core.registries.Registries;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -14,6 +17,14 @@ import willow.train.hexie.blockentity.MegaphoneBlockEntity;
 public class BlockEntitiesInit {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, Main.MOD_ID);
+
+    /** Blocks are registered before entity types; add-on CouplerBlocks may reuse this entity. */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CouplerBlockEntity>> COUPLER =
+            BLOCK_ENTITIES.register("coupler", () -> BlockEntityType.Builder.of(CouplerBlockEntity::new,
+                    BuiltInRegistries.BLOCK.stream()
+                            .filter(block -> block instanceof willow.train.hexie.blocks.coupler.CouplerBlock
+                                    && block instanceof EntityBlock)
+                            .toArray(Block[]::new)).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<GroundStationSignEntity>> GROUND_STATION_SIGN =
             BLOCK_ENTITIES.register("ground_station_sign", () -> BlockEntityType.Builder.of(
