@@ -33,10 +33,11 @@ public record FloorHeightPacket(InteractionHand hand, int hotbarSlot, int height
     }
 
     public boolean applyTo(ServerPlayer player) {
-        if (player.isSpectator() || !player.mayBuild() || !BogeyFloorData.valid(height)) return false;
+        if (player.isSpectator() || !player.mayBuild()) return false;
         int selected = hand == InteractionHand.MAIN_HAND ? player.getInventory().selected : Inventory.SLOT_OFFHAND;
         if (hotbarSlot != selected || hand == InteractionHand.MAIN_HAND && (hotbarSlot < 0 || hotbarSlot > 8)
                 || !(player.getItemInHand(hand).getItem() instanceof FloorSwitcherItem)) return false;
+        if (!FloorSwitcherItem.valid(player.getItemInHand(hand), height)) return false;
         if (action == Action.OPEN) {
             // Retain the target, but remove it from the short-release path even under low server TPS.
             FloorSwitcherItem.beginConfiguration(player);

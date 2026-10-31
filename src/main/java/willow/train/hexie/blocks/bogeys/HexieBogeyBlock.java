@@ -15,8 +15,20 @@ import net.minecraft.world.phys.Vec3;
 import willow.train.hexie.init.track.TrackMaterialInit;
 
 public abstract class HexieBogeyBlock<T extends AbstractBogeyBlockEntity> extends AbstractBogeyBlock<T> {
+    /** The floor owns the block/collision; neither top nor the swivelling frame moves this footprint. */
+    @Override public net.minecraft.world.phys.shapes.VoxelShape getShape(BlockState state,
+            net.minecraft.world.level.BlockGetter world, BlockPos pos, net.minecraft.world.phys.shapes.CollisionContext context) {
+        double height = world instanceof willow.train.hexie.vehicle.assembly.CarriageFloorView ? 0
+                : world.getBlockEntity(pos) instanceof HexieBogeyBlockEntity be && !be.isCarriageView()
+                ? BogeyFloorData.offset(BogeyFloorData.get(be)) : 0;
+        return net.minecraft.world.phys.shapes.Shapes.block().move(0, height, 0);
+    }
+    @Override public net.minecraft.world.phys.shapes.VoxelShape getCollisionShape(BlockState state,
+            net.minecraft.world.level.BlockGetter world, BlockPos pos, net.minecraft.world.phys.shapes.CollisionContext context) {
+        return getShape(state, world, pos, context);
+    }
     protected HexieBogeyBlock(Properties properties, BogeySizes.BogeySize size) {
-        super(properties, size);
+        super(properties.dynamicShape(), size);
     }
 
     @Override

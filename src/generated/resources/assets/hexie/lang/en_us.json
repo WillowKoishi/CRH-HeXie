@@ -1,8 +1,12 @@
 {
+  "gui.hexie.bogey_offset.title": "Bogey Longitudinal Position",
+  "gui.hexie.bogey_offset.axis": "Offset (1/16 block)",
+  "gui.hexie.bogey_offset.value": "Bogey offset: %s / 16 block",
+  "gui.hexie.bogey_offset.failed": "Cannot fit this support position on the current track; bogey unchanged",
   "block.hexie.test_driving_console": "Temporary Test Cab",
   "block.hexie.crh2a_driver_seat": "CRH2A Driver Seat",
   "block.hexie.crh2a_driving_console": "CRH2A Driving Console",
-  "item.hexie.floor_switcher": "Floor Switcher",
+  "item.hexie.floor_switcher": "HeXie Wrench",
   "item.hexie.floor_switcher.height": "Floor height: %s",
   "gui.hexie.floor_height.title": "Floor Height",
   "gui.hexie.floor_height.height": "Height",

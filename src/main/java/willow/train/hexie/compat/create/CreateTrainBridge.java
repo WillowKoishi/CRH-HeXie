@@ -101,6 +101,9 @@ public final class CreateTrainBridge {
         for (var train : List.copyOf(trains.values())) {
             if (removed) return;
             boolean hasSchedule = train.runtime.getSchedule() != null;
+            train.displayRoute = willow.train.hexie.vehicle.control.TrainDisplayReadings.Route.unavailable();
+            train.automaticTarget = null;
+            CreateSignalAspects.publish(motion.level(), train.id, List.of());
             if (train.hadSchedule && !hasSchedule
                     && !motion.isManuallyControlled(train.carriageIds.getFirst())) {
                 train.navigation.cancelNavigation();
@@ -136,7 +139,15 @@ public final class CreateTrainBridge {
                     && (train.manualTick || train.runtime.getSchedule() != null && !train.runtime.paused);
             boolean driverAvailable = motion.hasTestCab(member) || train.manualTick || (train.navigation.destinationBehindTrain
                     ? train.hasBackwardConductor() : train.hasForwardConductor());
+            train.displayRoute = CreateDmiRouteSource.read(motion, train);
             train.automaticTarget = automatic && driverAvailable ? CreateAutomaticRouteData.read(train, deceleration) : null;
+            if (train.automaticTarget != null) {
+                var target = train.automaticTarget;
+                double continuousLimit = train.displayRoute.ctcs().speedAt(0, deceleration,
+                        willow.train.hexie.vehicle.control.TrainControl.LINE_SPEED_LIMIT_KMH) / 3.6;
+                train.automaticTarget = new willow.train.hexie.vehicle.control.AutomaticTrainControl.Target(
+                        target.direction(), target.distanceM(), Math.min(target.speedLimitMps(), continuousLimit), target.station());
+            }
             if (automatic)
                 motion.controlAutomatic(member, train.automaticTarget, deceleration);
             else if (train.automaticControlActive && !motion.isManuallyControlled(member))

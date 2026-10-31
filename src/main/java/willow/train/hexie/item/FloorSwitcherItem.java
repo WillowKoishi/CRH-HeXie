@@ -25,6 +25,26 @@ import willow.train.hexie.compat.create.SnapshotFloorInteraction;
 
 /** Short release applies the stored height; a held slider applies its confirmed value to the same target. */
 public final class FloorSwitcherItem extends Item {
+    public enum Mode { HEIGHT, LONGITUDINAL }
+    public static Mode mode(ItemStack stack) {
+        return stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().getBoolean("LongitudinalMode")
+                ? Mode.LONGITUDINAL : Mode.HEIGHT;
+    }
+    public static boolean valid(ItemStack stack, int value) {
+        return mode(stack) == Mode.HEIGHT ? BogeyFloorData.valid(value) : BogeyFloorData.validLongitudinal(value);
+    }
+    public static void switchMode(Player player, InteractionHand hand) {
+        cancelPending(player);
+        if (player.level().isClientSide) return;
+        var stack = player.getItemInHand(hand);
+        var data = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        data.putBoolean("LongitudinalMode", mode(stack) == Mode.HEIGHT);
+        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(data));
+        player.displayClientMessage(Component.translatable(mode(stack) == Mode.HEIGHT
+                ? "gui.hexie.floor_height.title" : "gui.hexie.bogey_offset.title"), true);
+        if (player instanceof net.minecraft.server.level.ServerPlayer server)
+            willow.train.hexie.network.ServerHeldItemSync.afterInteraction(server, hand);
+    }
     public static final int HOLD_TICKS = 10;
     private static final int USE_DURATION = 72000;
     // Server-only, temporary interaction state. No target is written to player saves or item data.
@@ -33,20 +53,21 @@ public final class FloorSwitcherItem extends Item {
     // Accessed only on the client thread, independently of the integrated server's target maps.
     private static final Map<Player, Integer> CLIENT_INITIAL_HEIGHTS = new WeakHashMap<>();
     private record Target(InteractionHand hand, ItemStack tool, ResourceKey<Level> dimension,
-                          UUID carriage, BlockPos position, int initialHeight) {}
+                          UUID carriage, BlockPos position, int initialHeight, Mode mode) {}
 
     public FloorSwitcherItem(Properties properties) { super(properties); }
 
     public static int height(ItemStack stack) {
         CompoundTag data = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        if (mode(stack) == Mode.LONGITUDINAL) return BogeyFloorData.longitudinal(data);
         int height = data.getInt(BogeyFloorData.KEY);
         return BogeyFloorData.valid(height) ? height : BogeyFloorData.DEFAULT_HEIGHT;
     }
 
     public static void setHeight(ItemStack stack, int height) {
-        if (!BogeyFloorData.valid(height)) throw new IllegalArgumentException("Invalid floor height: " + height);
+        if (!valid(stack, height)) throw new IllegalArgumentException("Invalid wrench setting: " + height);
         CompoundTag data = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        data.putInt(BogeyFloorData.KEY, height);
+        data.putInt(mode(stack) == Mode.HEIGHT ? BogeyFloorData.KEY : BogeyFloorData.LONGITUDINAL_KEY, height);
         stack.set(DataComponents.CUSTOM_DATA, CustomData.of(data));
     }
 
@@ -57,7 +78,8 @@ public final class FloorSwitcherItem extends Item {
 
     public static void beginUsing(Player player, InteractionHand hand, UUID carriage, BlockPos position) {
         int current = player.level().getBlockEntity(position) instanceof HexieBogeyBlockEntity bogey
-                ? BogeyFloorData.get(bogey) : BogeyFloorData.DEFAULT_HEIGHT;
+                ? mode(player.getItemInHand(hand)) == Mode.HEIGHT ? BogeyFloorData.get(bogey)
+                : BogeyFloorData.longitudinal(bogey.getBogeyData()) : height(player.getItemInHand(hand));
         beginUsing(player, hand, carriage, position, current);
     }
 
@@ -67,7 +89,7 @@ public final class FloorSwitcherItem extends Item {
             CLIENT_INITIAL_HEIGHTS.put(player, currentHeight);
         else
             PENDING.put(player, new Target(hand, player.getItemInHand(hand), player.level().dimension(),
-                    carriage, position.immutable(), currentHeight));
+                    carriage, position.immutable(), currentHeight, mode(player.getItemInHand(hand))));
         player.startUsingItem(hand);
     }
 
@@ -107,6 +129,11 @@ public final class FloorSwitcherItem extends Item {
     @Override public int getUseDuration(ItemStack stack, LivingEntity entity) { return USE_DURATION; }
 
     @Override public InteractionResult useOn(UseOnContext context) {
+        if (context.getPlayer() != null && context.getPlayer().isShiftKeyDown()) {
+            if (context.getPlayer().isSpectator() || !context.getPlayer().mayBuild()) return InteractionResult.FAIL;
+            switchMode(context.getPlayer(), context.getHand());
+            return InteractionResult.sidedSuccess(context.getLevel().isClientSide);
+        }
         var level = context.getLevel();
         var pos = context.getClickedPos();
         if (!(level.getBlockState(pos).getBlock() instanceof HexieBogeyBlock<?>)
@@ -119,6 +146,10 @@ public final class FloorSwitcherItem extends Item {
 
     @Override public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         if (player.isSpectator() || !player.mayBuild()) return InteractionResultHolder.fail(player.getItemInHand(hand));
+        if (player.isShiftKeyDown()) {
+            switchMode(player, hand);
+            return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand), level.isClientSide);
+        }
         beginUsing(player, hand);
         return InteractionResultHolder.consume(player.getItemInHand(hand));
     }
@@ -143,16 +174,21 @@ public final class FloorSwitcherItem extends Item {
         Level level = player.level();
         if (level.isClientSide || player.isSpectator() || !player.mayBuild()
                 || !target.dimension().equals(level.dimension()) || player.getItemInHand(target.hand()) != target.tool()
-                || target.tool() != stack || !(stack.getItem() instanceof FloorSwitcherItem)) return;
+                || target.tool() != stack || !(stack.getItem() instanceof FloorSwitcherItem)
+                || target.mode() != mode(stack) || !valid(stack, height)) return;
         if (target.carriage() != null) {
-            SnapshotFloorInteraction.apply(player, target.carriage(), target.position(), target.hand(), height);
+            if (target.mode() == Mode.LONGITUDINAL)
+                SnapshotFloorInteraction.applyLongitudinal(player, target.carriage(), target.position(), target.hand(), height);
+            else SnapshotFloorInteraction.apply(player, target.carriage(), target.position(), target.hand(), height);
             return;
         }
         BlockPos pos = target.position();
         if (!level.hasChunkAt(pos) || !level.mayInteract(player, pos) || !player.canInteractWithBlock(pos, 1)
                 || !(level.getBlockState(pos).getBlock() instanceof HexieBogeyBlock<?>)
                 || !(level.getBlockEntity(pos) instanceof HexieBogeyBlockEntity bogey)) return;
-        BogeyFloorData.set(bogey, height);
-        player.displayClientMessage(message(height), true);
+        if (target.mode() == Mode.HEIGHT) BogeyFloorData.set(bogey, height);
+        else BogeyFloorData.setLongitudinal(bogey, height);
+        player.displayClientMessage(target.mode() == Mode.HEIGHT ? message(height)
+                : Component.translatable("gui.hexie.bogey_offset.value", height), true);
     }
 }

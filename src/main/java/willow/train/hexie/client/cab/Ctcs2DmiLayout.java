@@ -20,7 +20,7 @@ public final class Ctcs2DmiLayout {
         void fitted(String s,float x,float y,float width,float scale,int c);
     }
     public static void render(CabDisplayState state,int range,Canvas d) {
-        var data=state.dmi(); var target=data.target(); var guide=DmiGuidance.from(state);
+        var data=state.dmi(); var target=DmiGuidance.target(state); var guide=DmiGuidance.from(state);
         boolean curve=DmiGuidance.hasTargetCurve(state);
         boolean tsm=curve && (data.lineLimitKmh()<0 || guide.speedKmh()<data.lineLimitKmh());
         boolean overspeed=guide.available() && state.speedKmh()>guide.speedKmh()+.5;
@@ -69,8 +69,20 @@ public final class Ctcs2DmiLayout {
         if(lit(state,"dmi.brake.emergency")) d.icon("brake_emergency",5,401,54,27);
         else if(data.brake()>0) d.icon("brake_service",5,401,54,27);
         // D: no invented titles, advice text, percentages or point markers.
+        signal(d,data.ctcs().code());
         d.rect(416,64,304,182,PLOT);
         if(guide.available()) {
+            if(data.ctcs().targets().size()>1 || !data.ctcs().targets().isEmpty()
+                    && data.target()!=null && data.target().kind()==DmiState.TargetKind.STATION) {
+                // Intersect all supplied speed constraints, including later station stops.
+                double end=data.target()!=null && data.target().speedKmh()==0?Math.min(range,data.target().distanceM()):range;
+                for(var point:data.ctcs().targets()) if(point.speedKmh()==0) end=Math.min(end,point.distanceM());
+                float px=distanceX(0,range),py=speedY(guide.speedKmh());
+                for(int i=1;i<=128;i++) {
+                    double m=end*i/128;float x=distanceX(m,range),y=speedY(DmiGuidance.speedAtDistance(state,m));
+                    d.quad(px,py,x,y,x,246,px,246,BLUE);px=x;py=y;
+                }
+            } else {
             double end=curve?Math.min(range,target.distanceM()):range;
             float px=distanceX(0,range),py=speedY(guide.speedKmh());
             // The manual draws the first descending segment as a straight line in the plan.
@@ -80,6 +92,7 @@ public final class Ctcs2DmiLayout {
             float ex=distanceX(end,range),ey=curve && target.distanceM()<=range?speedY(target.speedKmh()):speedY(DmiGuidance.speedAtDistance(state,end));
             d.quad(px,py,ex,ey,ex,246,px,246,BLUE);
             if(curve && start<=range) d.line(distanceX(start,range),58,distanceX(start,range),246,2,YELLOW);
+            }
         }
         for(int v=0;v<=300;v+=50) {float y=speedY(v);d.line(416,y,720,y,1,DARK);d.text(Integer.toString(v),418,y-12,1.2f,WHITE);}
         for(int m:new int[]{0,1000,2000,4000,8000,16000}) if(m<=range) {
@@ -110,6 +123,22 @@ public final class Ctcs2DmiLayout {
         for(int i=0;i<8;i++){outline(d,720,i*75,80,75,BORDER);d.center(keys[i],760,i*75+27,2.3f,WHITE);}
     }
     private static boolean lit(CabDisplayState s,String key){var l=s.lamps().get(key);return l!=null&&l.lit();}
+    /** Manual table 2-11: green numbered discs, green/yellow LU, yellow U, yellow/red HU. */
+    private static void signal(Canvas d,willow.train.hexie.vehicle.control.CtcsControl.Code code) {
+        if(code==willow.train.hexie.vehicle.control.CtcsControl.Code.UNKNOWN) return;
+        float x=448,y=32,r=23;
+        circle(d,x,y,r+1,BLACK);
+        int top=switch(code){case HU,U->YELLOW;default->0xff00ff00;};
+        circle(d,x,y,r,top);
+        if(code==willow.train.hexie.vehicle.control.CtcsControl.Code.LU || code==willow.train.hexie.vehicle.control.CtcsControl.Code.HU) {
+            int bottom=code==willow.train.hexie.vehicle.control.CtcsControl.Code.HU?0xffff0000:YELLOW;
+            for(int i=0;i<32;i++){double a=i*Math.PI/32,b=(i+1)*Math.PI/32;
+                d.quad(x,y,x+(float)Math.cos(a)*r,y+(float)Math.sin(a)*r,x+(float)Math.cos(b)*r,y+(float)Math.sin(b)*r,x,y,bottom);}
+            d.line(x-r,y,x+r,y,1,BLACK);
+        }
+        String number=switch(code){case L2->"2";case L3->"3";case L4->"4";case L5->"5";default->"";};
+        if(!number.isEmpty()) d.center(number,x,y-8,1.8f,BLACK);
+    }
     private static void arrow(Canvas d,float x,float y,boolean down,int c){float sign=down?1:-1;d.rect(x-6,down?y-30:y,12,30,c);d.quad(x-16,y,x+16,y,x,y+sign*15,x,y+sign*15,c);}
     private static void outline(Canvas d,float x,float y,float w,float h,int c){d.line(x,y,x+w,y,1,c);d.line(x,y,x,y+h,1,c);d.line(x+w,y,x+w,y+h,1,c);d.line(x,y+h,x+w,y+h,1,c);}
     private static double angle(double v){v=Math.clamp(v,0,400);return Math.toRadians(135+(v<=150?v*.9:135+(v-150)*.54));}

@@ -5,9 +5,17 @@ import java.util.Objects;
 /** Backend-neutral readings. No target / a negative line limit means unavailable, never zero. */
 public record DmiState(Mode mode, Target target, double lineLimitKmh, double serviceDeceleration,
                        double traction, double brake, String compatibilityStatus,
-                       String stationName, String trainNumber, String time, String kilometerMarker) {
+                       String stationName, String trainNumber, String time, String kilometerMarker,
+                       willow.train.hexie.vehicle.control.CtcsControl.Profile ctcs) {
+    public DmiState(Mode mode, Target target, double lineLimitKmh, double serviceDeceleration,
+                    double traction, double brake, String compatibilityStatus,
+                    String stationName, String trainNumber, String time, String kilometerMarker) {
+        this(mode, target, lineLimitKmh, serviceDeceleration, traction, brake, compatibilityStatus,
+                stationName, trainNumber, time, kilometerMarker,
+                willow.train.hexie.vehicle.control.CtcsControl.Profile.EMPTY);
+    }
     public enum Mode { UNKNOWN, MANUAL, AUTOMATIC }
-    public enum TargetKind { STATION, SIGNAL }
+    public enum TargetKind { STATION, SIGNAL, SPEED_RESTRICTION }
 
     /** Distance in metres along the selected direction of travel, speed in km/h. */
     public record Target(TargetKind kind, String name, double distanceM, double speedKmh) {
@@ -21,6 +29,7 @@ public record DmiState(Mode mode, Target target, double lineLimitKmh, double ser
 
     public DmiState {
         Objects.requireNonNull(mode);
+        Objects.requireNonNull(ctcs);
         Objects.requireNonNull(compatibilityStatus);
         Objects.requireNonNull(stationName);
         Objects.requireNonNull(trainNumber);

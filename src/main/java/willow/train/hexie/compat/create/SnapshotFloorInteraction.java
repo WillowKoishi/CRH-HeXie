@@ -21,11 +21,14 @@ public final class SnapshotFloorInteraction {
         var info = entity.getContraption().getBlocks().get(position);
         if (info == null || !(info.state().getBlock() instanceof HexieBogeyBlock<?>)
                 || !entity.canInteractWithBlock(player, position, 4)) return false;
+        if (player.isShiftKeyDown()) { FloorSwitcherItem.switchMode(player, hand); return true; }
         // Client block-entity tags can lag behind a moving carriage's synchronized floor pose.
         double offset = entity.couplerAnimation().floorOffset();
         int height = Math.clamp((int) Math.round(BogeyFloorData.DEFAULT_HEIGHT + offset * 10),
                 BogeyFloorData.MIN_HEIGHT, BogeyFloorData.MAX_HEIGHT);
-        FloorSwitcherItem.beginUsing(player, hand, entity.getUUID(), position, height);
+        FloorSwitcherItem.beginUsing(player, hand, entity.getUUID(), position,
+                FloorSwitcherItem.mode(player.getItemInHand(hand)) == FloorSwitcherItem.Mode.HEIGHT ? height
+                        : BogeyFloorData.longitudinalFromEntity(info.nbt()));
         return true;
     }
 
@@ -52,5 +55,34 @@ public final class SnapshotFloorInteraction {
         motion.applyCurrent(entity);
         entity.syncCarriage();
         player.displayClientMessage(FloorSwitcherItem.message(height), true);
+    }
+
+    public static void applyLongitudinal(Player player, UUID carriage, BlockPos position, InteractionHand hand, int value) {
+        if (!(player.level() instanceof ServerLevel level) || player.isSpectator() || !player.mayBuild()
+                || !BogeyFloorData.validLongitudinal(value)
+                || !(player.getItemInHand(hand).getItem() instanceof FloorSwitcherItem)
+                || !(level.getEntity(carriage) instanceof SnapshotCarriageEntity entity)
+                || entity.isRemoved() || entity.getContraption() == null || !entity.canInteractWithBlock(player, position, 4)) return;
+        var info = entity.getContraption().getBlocks().get(position);
+        if (info == null || !(info.state().getBlock() instanceof HexieBogeyBlock<?>)) return;
+        var motion = entity.motion();
+        var snapshot = willow.train.hexie.vehicle.assembly.CarriageSnapshotStore.get(level).find(carriage).orElse(null);
+        if (motion == null || snapshot == null) return;
+        int index = snapshot.supports().indexOf(position);
+        if (index < 0) return;
+        int previous = BogeyFloorData.longitudinalFromEntity(info.nbt());
+        var shift = BogeyFloorData.displacement(info.state(), value).subtract(BogeyFloorData.displacement(info.state(), previous));
+        try {
+            motion.runtime().shiftBogeyMount(carriage, index,
+                    willow.train.hexie.vehicle.assembly.VehicleAssemblyPreparer.northForward(shift, motion.forward(carriage)));
+        } catch (RuntimeException failure) {
+            player.displayClientMessage(net.minecraft.network.chat.Component.translatable("gui.hexie.bogey_offset.failed"), true);
+            return;
+        }
+        var data = info.nbt() == null ? new CompoundTag() : info.nbt().copy();
+        BogeyFloorData.writeLongitudinal(data, value);
+        entity.setBlock(position, new StructureBlockInfo(position, info.state(), data));
+        motion.applyCurrent(entity); entity.syncCarriage();
+        player.displayClientMessage(net.minecraft.network.chat.Component.translatable("gui.hexie.bogey_offset.value", value), true);
     }
 }

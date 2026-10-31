@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 public class HeXieClientInit {
 
     public static void init() {
+        Main.bus.addListener(willow.train.hexie.client.render.bogey.BogeyTopModel::register);
         willow.train.hexie.client.render.track.BallastCurveBuffers.register();
         willow.train.hexie.compat.HeXieSimulatedClientCompat.register(Main.bus);
         willow.train.hexie.client.render.carriage.CarriageTransparencyCompat.register(Main.bus);

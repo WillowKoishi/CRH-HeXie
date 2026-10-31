@@ -7,6 +7,32 @@ import willow.train.hexie.init.track.TrackMaterialInit;
 /** Floor height in tenths of a block, persisted in the bogey's existing synchronized data. */
 public final class BogeyFloorData {
     public static final String KEY = "HexieFloorHeight";
+    public static final String LONGITUDINAL_KEY = "HexieBogeyLongitudinal";
+    public static boolean validLongitudinal(int value) { return value >= -8 && value <= 8; }
+    public static int longitudinal(CompoundTag data) {
+        int value = data.getInt(LONGITUDINAL_KEY);
+        return validLongitudinal(value) ? value : 0;
+    }
+    public static int longitudinalFromEntity(CompoundTag data) {
+        return data == null ? 0 : longitudinal(data.getCompound(BOGEY_DATA));
+    }
+    public static net.minecraft.world.phys.Vec3 displacement(net.minecraft.world.level.block.state.BlockState state, int value) {
+        if (!validLongitudinal(value)) throw new IllegalArgumentException("Bogey offset must be -8..8");
+        return state.getOptionalValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_AXIS)
+                .orElse(net.minecraft.core.Direction.Axis.Z) == net.minecraft.core.Direction.Axis.X
+                ? new net.minecraft.world.phys.Vec3(value / 16d, 0, 0) : new net.minecraft.world.phys.Vec3(0, 0, value / 16d);
+    }
+    public static void writeLongitudinal(CompoundTag entityData, int value) {
+        if (!validLongitudinal(value)) throw new IllegalArgumentException("Bogey offset must be -8..8");
+        var data = entityData.getCompound(BOGEY_DATA);
+        data.putInt(LONGITUDINAL_KEY, value); entityData.put(BOGEY_DATA, data);
+    }
+    public static void setLongitudinal(HexieBogeyBlockEntity bogey, int value) {
+        if (!validLongitudinal(value)) throw new IllegalArgumentException("Bogey offset must be -8..8");
+        bogey.getBogeyData().putInt(LONGITUDINAL_KEY, value);
+        bogey.setChanged();
+        if (bogey.getLevel() != null && !bogey.getLevel().isClientSide) bogey.sendData();
+    }
     public static final int MIN_HEIGHT = 10, DEFAULT_HEIGHT = 20, MAX_HEIGHT = 30;
     private static final String LEGACY_KEY = "HexieFloorMode";
     private static final String BOGEY_DATA = "BogeyData";

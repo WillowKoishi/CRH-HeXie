@@ -11,7 +11,10 @@ public final class TrainDisplayReadings {
     private TrainDisplayReadings() {}
 
     /** A route adapter supplies facts only; mode and actuator limits belong to the controller. */
-    public record Route(DmiState.Target target, String station, double lineLimitKmh, String status) {
+    public record Route(DmiState.Target target, String station, double lineLimitKmh, String status, CtcsControl.Profile ctcs) {
+        public Route(DmiState.Target target, String station, double lineLimitKmh, String status) {
+            this(target, station, lineLimitKmh, status, CtcsControl.Profile.EMPTY);
+        }
         public static Route unavailable() { return new Route(null, "", -1, ""); }
     }
 
@@ -31,6 +34,6 @@ public final class TrainDisplayReadings {
         }
         double deceleration = mass > 0 ? force / mass * runtime.brakingMultiplier() * source.serviceBrakeLimit() : 0;
         return new CabDisplayState(state.speed() * 3.6, Map.of(), new DmiState(mode, route.target(), TrainControl.LINE_SPEED_LIMIT_KMH,
-                deceleration, traction, brake, route.status(), route.station(), "", "", ""));
+                deceleration, traction, brake, route.status(), route.station(), "", "", "", route.ctcs()));
     }
 }

@@ -22,6 +22,14 @@ public final class CabDisplayStateNbt {
         tag.putString("TrainNumber", d.trainNumber());
         tag.putString("Time", d.time());
         tag.putString("Kilometer", d.kilometerMarker());
+        tag.putString("CtcsCode", d.ctcs().code().name());
+        var constraints = new net.minecraft.nbt.ListTag();
+        for (var point : d.ctcs().targets()) {
+            var value = new CompoundTag();
+            value.putDouble("Distance", point.distanceM()); value.putDouble("Speed", point.speedKmh());
+            constraints.add(value);
+        }
+        tag.put("CtcsTargets", constraints);
         if (d.target() != null) {
             var target = new CompoundTag();
             target.putString("Kind", d.target().kind().name());
@@ -59,10 +67,23 @@ public final class CabDisplayStateNbt {
             var lamp = values.getCompound(key);
             lamps.put(key, new CabDisplayState.Lamp(lamp.getInt("Rgb"), lamp.getBoolean("Lit")));
         }
+        var code = willow.train.hexie.vehicle.control.CtcsControl.Code.UNKNOWN;
+        try { code = willow.train.hexie.vehicle.control.CtcsControl.Code.valueOf(tag.getString("CtcsCode")); }
+        catch (IllegalArgumentException ignored) { }
+        var constraints = new java.util.ArrayList<willow.train.hexie.vehicle.control.CtcsControl.SpeedTarget>();
+        var points = tag.getList("CtcsTargets", Tag.TAG_COMPOUND);
+        for (int i = 0; i < points.size(); i++) {
+            var point = points.getCompound(i);
+            if (!point.contains("Distance", Tag.TAG_ANY_NUMERIC) || !point.contains("Speed", Tag.TAG_ANY_NUMERIC)) continue;
+            try { constraints.add(new willow.train.hexie.vehicle.control.CtcsControl.SpeedTarget(
+                    point.getDouble("Distance"), point.getDouble("Speed"))); }
+            catch (IllegalArgumentException ignored) { }
+        }
         return new CabDisplayState(tag.getDouble("Speed"), lamps, new DmiState(mode, target,
                 tag.contains("Limit", Tag.TAG_ANY_NUMERIC) ? tag.getDouble("Limit") : -1,
                 tag.getDouble("Deceleration"), tag.getDouble("Traction"), tag.getDouble("Brake"),
                 tag.getString("Compatibility"), tag.getString("Station"), tag.getString("TrainNumber"),
-                tag.getString("Time"), tag.getString("Kilometer")));
+                tag.getString("Time"), tag.getString("Kilometer"),
+                new willow.train.hexie.vehicle.control.CtcsControl.Profile(code, constraints)));
     }
 }

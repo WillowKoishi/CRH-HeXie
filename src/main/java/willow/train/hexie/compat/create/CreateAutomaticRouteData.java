@@ -39,29 +39,28 @@ final class CreateAutomaticRouteData {
             var node = event.getSecond().getSecond();
             var groupId = signal.getGroup(node);
             var group = Create.RAILWAYS.signalEdgeGroups.get(groupId);
-            boolean primary = java.util.Objects.equals(groupId, signal.groups.getFirst());
+            boolean primary = signal.isPrimary(node);
+            if (signal.blockEntities.get(primary).isEmpty()) return false;
             boolean chained = signal.types.get(primary) == SignalType.CROSS_SIGNAL;
             if (chained && scan.chainStart == null) {
                 scan.chainStart = Pair.of(signal.id, primary);
                 scan.chainDistance = distance;
             }
-            // Unknown groups are not permission to depart. The next read retries after graph updates.
-            boolean blocked = group == null || signal.isForcedRed(node) || group.isOccupiedUnless(train);
+            // Missing data is not a stop authority. Only observed red/occupancy creates a target.
+            boolean blocked = signal.isForcedRed(node) || CreateSignalData.occupancy(groupId, train)
+                    == willow.train.hexie.vehicle.control.CtcsControl.Occupancy.BLOCKED;
             if (blocked) {
                 scan.blocked = scan.chainStart == null ? Pair.of(signal.id, primary) : scan.chainStart;
                 scan.distance = scan.chainStart == null ? distance : scan.chainDistance;
                 return true;
             }
-            scan.chain.put(groupId, signal);
+            if (group != null) scan.chain.put(groupId, signal);
             if (!chained) {
                 reserve(train, scan);
             }
             return false;
         }, scout.ignoreTurns());
-        // Do not clear an unresolved chain at the edge of our look-ahead window.
-        if (scan.blocked == null && scan.chainStart != null) {
-            scan.blocked = scan.chainStart; scan.distance = scan.chainDistance;
-        }
+        // An unresolved chain supplies no additional target; retain the known station target.
         if (scan.blocked == null) nav.ticksWaitingForSignal = 0;
         else nav.ticksWaitingForSignal++;
         nav.waitingForSignal = scan.blocked;

@@ -46,7 +46,8 @@ public final class FloorSwitcherClient {
         waitingForRelease = true;
         // Keep the target for confirmation, while preventing a short-release application during screen opening.
         PacketDistributor.sendToServer(new FloorHeightPacket(hand, slot, height, FloorHeightPacket.Action.OPEN));
-        minecraft.setScreen(new FloorHeightSettingsScreen(hand, slot, height));
+        minecraft.setScreen(new FloorHeightSettingsScreen(hand, slot, height,
+                FloorSwitcherItem.mode(player.getUseItem()) == FloorSwitcherItem.Mode.LONGITUDINAL));
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)

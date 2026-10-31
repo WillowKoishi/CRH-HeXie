@@ -57,7 +57,9 @@ public final class VehicleAssemblyPreparer {
             for (var position : snapshot.supports()) {
                 var model = catalog.resolve(byPosition.get(position));
                 UUID id = UUID.nameUUIDFromBytes((snapshot.id() + ":bogey:" + position.asLong()).getBytes(StandardCharsets.UTF_8));
-                var bodyPoint = northForward(position, forward).plus(model.pivot());
+                var captured = byPosition.get(position);
+                var displacement = BogeyFloorData.displacement(captured.state(), BogeyFloorData.longitudinalFromEntity(captured.entityData()));
+                var bodyPoint = northForward(position, forward).plus(model.pivot()).plus(northForward(displacement, forward));
                 var trackPivot = model.pivot().plus(new CouplingEndpoint.Point(0, model.blockCenterHeight(), 0));
                 var mount = new BogeyMount(bodyPoint, trackPivot, model.type(), model.lateralLimit());
                 bogeys.add(new BogeyDefinition(id, model.id().toString(), -bodyPoint.z(),
@@ -84,11 +86,15 @@ public final class VehicleAssemblyPreparer {
 
     /** Coordinates are between block centres, so their common half-block offset cancels. */
     private static CouplingEndpoint.Point northForward(BlockPos position, Direction forward) {
+        return northForward(new net.minecraft.world.phys.Vec3(position.getX(), position.getY(), position.getZ()), forward);
+    }
+
+    public static CouplingEndpoint.Point northForward(net.minecraft.world.phys.Vec3 position, Direction forward) {
         return switch (forward) {
-            case NORTH -> new CouplingEndpoint.Point(position.getX(), position.getY(), position.getZ());
-            case EAST -> new CouplingEndpoint.Point(position.getZ(), position.getY(), -position.getX());
-            case SOUTH -> new CouplingEndpoint.Point(-position.getX(), position.getY(), -position.getZ());
-            case WEST -> new CouplingEndpoint.Point(-position.getZ(), position.getY(), position.getX());
+            case NORTH -> new CouplingEndpoint.Point(position.x, position.y, position.z);
+            case EAST -> new CouplingEndpoint.Point(position.z, position.y, -position.x);
+            case SOUTH -> new CouplingEndpoint.Point(-position.x, position.y, -position.z);
+            case WEST -> new CouplingEndpoint.Point(-position.z, position.y, position.x);
             default -> throw new IllegalArgumentException("Carriage forward direction must be horizontal");
         };
     }

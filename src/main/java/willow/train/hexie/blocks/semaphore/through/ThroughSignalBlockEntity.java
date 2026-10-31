@@ -224,7 +224,7 @@ public class ThroughSignalBlockEntity extends SignalBlockEntity implements Trans
     }
 
     public SignalBlockEntity.SignalState getState() {
-        return state;
+        return willow.train.hexie.compat.create.CreateSignalAspects.visibleState(this, state);
     }
 
     public SignalBlockEntity.OverlayState getOverlay() {

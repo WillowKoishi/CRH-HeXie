@@ -59,9 +59,9 @@ public abstract class SimpleBogeyRenderer implements BogeyRenderer {
     }
 
     private static void applyFloorPreview(CompoundTag data, PoseStack pose, boolean inContraption) {
-        // Only these dynamic parts move in the world preview; the block's static top stays in place.
-        // Assembled vehicles already apply the setting through their actual support/body positions.
-        if (!inContraption) pose.translate(0, -BogeyFloorData.offset(BogeyFloorData.heightFromBogeyData(data)), 0);
+        // Wheels keep their rail height; the separate top model follows height and longitudinal settings.
+        // Assembled vehicles already apply longitudinal displacement through the real support pivot.
+        if (!inContraption) pose.translate(0, 0, BogeyFloorData.longitudinal(data) / 16d);
     }
 
     protected final BogeyModelData getTransform(PartialModel model, PoseStack poseStack,

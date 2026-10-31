@@ -1,8 +1,12 @@
 {
+  "gui.hexie.bogey_offset.title": "转向架前后位置",
+  "gui.hexie.bogey_offset.axis": "前后（1/16格）",
+  "gui.hexie.bogey_offset.value": "转向架前后偏移：%s / 16格",
+  "gui.hexie.bogey_offset.failed": "此位置无法满足当前轨道约束，未修改转向架",
   "block.hexie.test_driving_console": "临时测试驾驶台",
   "block.hexie.crh2a_driver_seat": "CRH2A 驾驶座",
   "block.hexie.crh2a_driving_console": "CRH2A 驾驶台",
-  "item.hexie.floor_switcher": "地板切换器",
+  "item.hexie.floor_switcher": "和谐扳手",
   "item.hexie.floor_switcher.height": "地板高度：%s",
   "gui.hexie.floor_height.title": "地板高度",
   "gui.hexie.floor_height.height": "高度",

@@ -5,7 +5,7 @@ public record DmiGuidance(boolean available, double speedKmh, double brakingDist
                           double secondsToBrake, boolean brakeNow) {
     public static DmiGuidance from(CabDisplayState state) {
         var dmi = state.dmi();
-        var target = dmi.target();
+        var target = target(state);
         double a = dmi.serviceDeceleration();
         if (!hasTargetCurve(state)) {
             boolean known = dmi.lineLimitKmh() >= 0;
@@ -21,15 +21,32 @@ public record DmiGuidance(boolean available, double speedKmh, double brakingDist
     }
 
     public static boolean hasTargetCurve(CabDisplayState state) {
-        return state.dmi().target() != null && state.dmi().serviceDeceleration() > 0;
+        return target(state) != null && state.dmi().serviceDeceleration() > 0;
+    }
+
+    /** Pick the most restrictive supplied endpoint; keep the station identity when constraints tie. */
+    public static DmiState.Target target(CabDisplayState state) {
+        var best = state.dmi().target();
+        double a = state.dmi().serviceDeceleration();
+        double bound = best == null ? Double.POSITIVE_INFINITY
+                : Math.pow(best.speedKmh() / 3.6, 2) + 2 * a * best.distanceM();
+        for (var point : state.dmi().ctcs().targets()) {
+            double value = Math.pow(point.speedKmh() / 3.6, 2) + 2 * a * point.distanceM();
+            if (value < bound) {
+                bound = value;
+                best = new DmiState.Target(point.speedKmh() == 0 ? DmiState.TargetKind.SIGNAL : DmiState.TargetKind.SPEED_RESTRICTION,
+                        "", point.distanceM(), point.speedKmh());
+            }
+        }
+        return best;
     }
 
     /** Same envelope for the dial and planning area; -1 means no supplied guidance. */
     public static double speedAtDistance(CabDisplayState state, double aheadM) {
         if (!Double.isFinite(aheadM) || aheadM < 0) throw new IllegalArgumentException("Invalid look-ahead distance");
         var data = state.dmi();
-        double speed = data.lineLimitKmh();
-        if (hasTargetCurve(state)) {
+        double speed = data.ctcs().speedAt(aheadM, data.serviceDeceleration(), data.lineLimitKmh());
+        if (data.target() != null && data.serviceDeceleration() > 0) {
             var target = data.target();
             double end = target.speedKmh() / 3.6;
             double curve = Math.sqrt(end * end + 2 * data.serviceDeceleration()

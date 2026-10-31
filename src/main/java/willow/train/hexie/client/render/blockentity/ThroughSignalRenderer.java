@@ -75,6 +75,7 @@ public class ThroughSignalRenderer<T extends ThroughSignalBlockEntity> extends S
             case 2 -> lowerLight ? 0xFFFF28 : 0xFF3030;
             default -> lowerLight ? 0x1EAAFF : 0xFFFFFF;
         };
+        if (lightMode != 0 && signalState == SignalBlockEntity.SignalState.YELLOW) color = 0xFFFF28;
         float glowScale = 0.6f;
         float glowSideLength = 0.375f * glowScale;
         float glowDepth = 0.375f + 0.15f + glowSideLength * 0.9f;

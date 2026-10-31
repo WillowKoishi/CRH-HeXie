@@ -192,6 +192,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         firstPositionUpdate = false;
         if (level().isClientSide) compatibilitySyncPending = true;
         else {
+            CreateConsoleTimetable.importPending(this, carriage.train);
             if (restoringNativeEntity && motion() != null) {
                 motion().applyCurrent(this);
                 prevYaw = yaw; prevPitch = pitch; prevRoll = roll;
@@ -240,6 +241,15 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             frame.putString("Forward", originalForward.getName());
             frame.putDouble("Vx", motionVelocity.x); frame.putDouble("Vy", motionVelocity.y); frame.putDouble("Vz", motionVelocity.z);
             frame.put("Bogeys", bogeyAnimation.write()); frame.put("Couplers", couplerAnimation.write());
+            var settings = new ListTag();
+            if (contraption != null) for (var info : contraption.getBlocks().values()) {
+                if (!(info.state().getBlock() instanceof willow.train.hexie.blocks.bogeys.HexieBogeyBlock<?>)) continue;
+                var entry = new CompoundTag(); entry.putLong("Pos", info.pos().asLong());
+                entry.putInt("Height", willow.train.hexie.blocks.bogeys.BogeyFloorData.value(info.nbt()));
+                entry.putInt("Longitudinal", willow.train.hexie.blocks.bogeys.BogeyFloorData.longitudinalFromEntity(info.nbt()));
+                settings.add(entry);
+            }
+            frame.put("BogeySettings", settings);
             entityData.set(MOTION_FRAME, frame);
             motionFrameTick = now;
         }
@@ -341,6 +351,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
     }
 
     private void applyClientMotionFrame(CompoundTag frame) {
+        readBogeySettings(frame.getList("BogeySettings", Tag.TAG_COMPOUND));
             cabDisplayState = frame.contains("CabDisplay", net.minecraft.nbt.Tag.TAG_COMPOUND)
                     ? CabDisplayStateNbt.read(frame.getCompound("CabDisplay"))
                     : CabDisplayState.speedOnly(frame.getDouble("DisplaySpeedKmh"));
@@ -898,6 +909,38 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         }
     }
 
+    private void readBogeySettings(ListTag settings) {
+        if (contraption == null) return;
+        boolean changed = false;
+        for (int i = 0; i < settings.size(); i++) {
+            var entry = settings.getCompound(i);
+            var pos = BlockPos.of(entry.getLong("Pos"));
+            var info = contraption.getBlocks().get(pos);
+            if (info == null || !(info.state().getBlock() instanceof willow.train.hexie.blocks.bogeys.HexieBogeyBlock<?>)) continue;
+            int height = entry.getInt("Height"), offset = entry.getInt("Longitudinal");
+            if (!willow.train.hexie.blocks.bogeys.BogeyFloorData.valid(height)
+                    || !willow.train.hexie.blocks.bogeys.BogeyFloorData.validLongitudinal(offset)) continue;
+            if (height == willow.train.hexie.blocks.bogeys.BogeyFloorData.value(info.nbt())
+                    && offset == willow.train.hexie.blocks.bogeys.BogeyFloorData.longitudinalFromEntity(info.nbt())) continue;
+            var data = info.nbt() == null ? new CompoundTag() : info.nbt().copy();
+            willow.train.hexie.blocks.bogeys.BogeyFloorData.write(data, height);
+            willow.train.hexie.blocks.bogeys.BogeyFloorData.writeLongitudinal(data, offset);
+            setBlock(pos, new StructureBlockInfo(pos, info.state(), data));
+            // Invalidating the mesh does not reload ClientContraption's virtual BEs.
+            // The top model reads its offset from that live BE, not the saved block map.
+            var rendered = contraption.getBlockEntityClientSide(pos);
+            if (rendered instanceof willow.train.hexie.blocks.bogeys.HexieBogeyBlockEntity bogey) {
+                bogey.setBogeyData(data.getCompound("BogeyData").copy());
+                bogey.markCarriageView();
+            }
+            changed = true;
+        }
+        if (changed) {
+            contraption.invalidateClientContraptionStructure();
+            contraption.invalidateClientContraptionChildren();
+        }
+    }
+
     private void readBogeyAnimation(CompoundTag tag, int steps) {
         var before = bogeyAnimation.frames();
         bogeyAnimation.read(tag, steps);
@@ -1325,6 +1368,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
                         net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo info,
                         boolean legacy) {
                     var be = super.readBlockEntity(level, info, legacy);
+                    if (be instanceof willow.train.hexie.blocks.bogeys.HexieBogeyBlockEntity bogey) bogey.markCarriageView();
                     // ClientContraption's constructor creates BEs without calling resetRenderLevel.
                     // Bind at creation so the first render and every rebuild read live state.
                     if (be instanceof willow.train.hexie.api.cab.CabDisplayHost console)

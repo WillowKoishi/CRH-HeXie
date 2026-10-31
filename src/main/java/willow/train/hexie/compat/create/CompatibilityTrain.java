@@ -41,6 +41,8 @@ public final class CompatibilityTrain extends Train {
     CreateTrainBridge bridge;
     willow.train.hexie.vehicle.control.AutomaticTrainControl.Target automaticTarget;
     boolean automaticControlActive;
+    willow.train.hexie.vehicle.control.TrainDisplayReadings.Route displayRoute =
+            willow.train.hexie.vehicle.control.TrainDisplayReadings.Route.unavailable();
     boolean hadSchedule;
     boolean retiringProxy;
     int mailTransferTicks;

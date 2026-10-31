@@ -15,6 +15,9 @@ import java.util.function.Supplier;
 public class InteractionBehaviourInit {
 
     public static void register() {
+        var timetable = new willow.train.hexie.compat.create.CreateConsoleTimetable();
+        MovingInteractionBehaviour.REGISTRY.registerProvider(block ->
+                block instanceof willow.train.hexie.blocks.locos.CRH2DrivingConsoleBlock ? timetable : null);
         // Create supports replacing tag-provided behaviors through its public registry.
         // This preserves its door handling while adding HeXie's coupler behavior.
         MovingInteractionBehaviour.REGISTRY.registerProvider(

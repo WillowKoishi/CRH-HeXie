@@ -391,6 +391,29 @@ public final class VehicleRuntime {
         placement = new Solution(bodies, placement.bogeys(), placement.endpoints(), placement.brokenConnections());
     }
 
+    /** Move one real support mount; fixed block/collision coordinates stay in the body frame. */
+    public void shiftBogeyMount(UUID carriageId, int index, CouplingEndpoint.Point shift) {
+        var car = car(carriageId);
+        var old = car.definition;
+        var bogeys = new ArrayList<>(old.bogeys());
+        var previous = bogeys.get(index);
+        var mount = previous.mount();
+        var point = mount.bodyPoint().plus(shift);
+        bogeys.set(index, new BogeyDefinition(previous.id(), previous.modelId(), -point.z(),
+                previous.geometry(), previous.parameters(), new BogeyMount(point, mount.trackPivot(), mount.type(), mount.lateralLimit())));
+        var updated = new CarriageDefinition(old.id(), bogeys, old.couplings(), old.rearExtent(), old.frontExtent(), old.floorOffset());
+        var proposed = new LinkedHashMap<>(motionDistances);
+        proposed.compute(previous.id(), (id, distance) -> distance - shift.z());
+        car.definition = updated;
+        try {
+            var solved = solver.solve(definitions(), connections, proposed, pins(proposed), placement);
+            if (!solved.brokenConnections().isEmpty()) throw new IllegalArgumentException("Mount adjustment would break a coupling");
+            commit(solved);
+            motionDistances.clear(); motionDistances.putAll(distances(solved));
+            consistRevision++;
+        } catch (RuntimeException failure) { car.definition = old; throw failure; }
+    }
+
     public List<CouplingState> couplingStates() {
         var result = new ArrayList<CouplingState>();
         for (Connection connection : connections)

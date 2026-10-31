@@ -13,6 +13,13 @@ import java.util.function.DoubleSupplier;
 
 /** Live display sources, plus stationary test-fixture handles. Moving train control remains with the runtime owner. */
 public final class DrivingConsoleEntity extends BlockEntity implements CabDisplayHost {
+    public static final String PENDING_TIMETABLE = "PendingTimetable";
+    private net.minecraft.nbt.CompoundTag pendingTimetable = new net.minecraft.nbt.CompoundTag();
+    /** Opaque backend data; the console does not interpret Create's schedule format. */
+    public void readTimetable(net.minecraft.nbt.CompoundTag data) {
+        pendingTimetable = data.copy();
+        setChanged();
+    }
     private CabDisplaySource source = () -> CabDisplayState.speedOnly(0);
     private willow.train.hexie.vehicle.control.TestCabControls benchControls = new willow.train.hexie.vehicle.control.TestCabControls();
     private java.util.function.Supplier<willow.train.hexie.vehicle.control.TestCabControls> testSource = () -> benchControls;
@@ -29,11 +36,13 @@ public final class DrivingConsoleEntity extends BlockEntity implements CabDispla
     }
     @Override protected void saveAdditional(net.minecraft.nbt.CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
+        if (!pendingTimetable.isEmpty()) tag.put(PENDING_TIMETABLE, pendingTimetable.copy());
         if (getBlockState().getBlock() instanceof willow.train.hexie.blocks.locos.TestDrivingConsoleBlock)
             tag.put("TestControls", benchControls.write());
     }
     @Override protected void loadAdditional(net.minecraft.nbt.CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
+        pendingTimetable = tag.getCompound(PENDING_TIMETABLE).copy();
         benchControls = willow.train.hexie.vehicle.control.TestCabControls.read(tag.getCompound("TestControls"));
     }
     @Override public net.minecraft.nbt.CompoundTag getUpdateTag(net.minecraft.core.HolderLookup.Provider registries) { return saveWithoutMetadata(registries); }
