@@ -100,6 +100,14 @@ public final class CreateTrainBridge {
         // Consume its result before checking the local geometry used by this frame.
         for (var train : List.copyOf(trains.values())) {
             if (removed) return;
+            boolean hasSchedule = train.runtime.getSchedule() != null;
+            if (train.hadSchedule && !hasSchedule
+                    && !motion.isManuallyControlled(train.carriageIds.getFirst())) {
+                train.navigation.cancelNavigation();
+                motion.runtime().controlsForConsist(train.carriageIds.getFirst(),
+                        willow.train.hexie.vehicle.runtime.VehicleRuntime.Control.NEUTRAL);
+            }
+            train.hadSchedule = hasSchedule;
             if (train.graph != null && detectRelocation(train)) {
                 if (removed) return;
                 break;
@@ -120,19 +128,20 @@ public final class CreateTrainBridge {
             }
             train.speed = motion.runtime().speed(train.carriageIds.getFirst()) / 20;
             train.manualTick = motion.isManuallyControlled(train.carriageIds.getFirst());
-            train.requestedSpeed = Double.NaN;
             train.runtime.tick(motion.level());
-            boolean navigating = train.navigation.destination != null;
-            double actual = train.speed;
-            train.navigation.tick(motion.level());
-            if (navigating || train.navigation.destination != null) {
-                double desired = Double.isFinite(train.requestedSpeed) ? train.requestedSpeed : train.speed;
-                boolean brake = Math.abs(desired) + 1e-6 < Math.abs(actual) || desired * actual < 0;
-                motion.controlFromCreate(train.carriageIds.getFirst(), desired * 20, brake);
-            }
-            // Navigation may assign speed directly while approaching a station; this is a request,
-            // never permission to bypass the independent mass/traction/braking integration.
-            train.speed = actual;
+            var member = train.carriageIds.getFirst();
+            double deceleration = willow.train.hexie.vehicle.control.TrainControl.serviceDeceleration(
+                    motion.runtime(), member, motion.controlSource(member));
+            boolean automatic = motion.acceptsAutomaticControl(member)
+                    && (train.manualTick || train.runtime.getSchedule() != null && !train.runtime.paused);
+            boolean driverAvailable = motion.hasTestCab(member) || train.manualTick || (train.navigation.destinationBehindTrain
+                    ? train.hasBackwardConductor() : train.hasForwardConductor());
+            train.automaticTarget = automatic && driverAvailable ? CreateAutomaticRouteData.read(train, deceleration) : null;
+            if (automatic)
+                motion.controlAutomatic(member, train.automaticTarget, deceleration);
+            else if (train.automaticControlActive && !motion.isManuallyControlled(member))
+                motion.controlAutomatic(member, null, deceleration);
+            train.automaticControlActive = automatic;
         }
     }
 
@@ -314,6 +323,7 @@ public final class CreateTrainBridge {
     }
 
     private void unregister(CompatibilityTrain train) {
+        train.retiringProxy = true;
         if (Create.RAILWAYS.trains.get(train.id) != train) { train.bridge = null; return; }
         var station = train.getCurrentStation();
         if (station != null) station.cancelReservation(train);
@@ -400,6 +410,7 @@ public final class CreateTrainBridge {
                 var station = previous.getCurrentStation();
                 if (station != null) station.cancelReservation(previous);
                 previous.bridge = null;
+                previous.retiringProxy = true;
                 // addTrain replaces only the UUID map entry, not Create's tick queues.
                 // Remove the prior object before installing this same-identity replacement.
                 Create.RAILWAYS.removeTrain(previous.id);
@@ -460,6 +471,7 @@ public final class CreateTrainBridge {
         if (station != null) station.cancelReservation(previous);
         var dimensions = new DimensionPalette();
         target.runtime.read(motion.level().registryAccess(), previous.runtime.write(motion.level().registryAccess()));
+        target.hadSchedule = previous.hadSchedule || target.runtime.getSchedule() != null;
         target.navigation.read(previous.navigation.write(dimensions), target.graph, dimensions);
     }
 
@@ -563,8 +575,11 @@ public final class CreateTrainBridge {
         if (target == leading.distance) return false;
         boolean[] intercepted = { false };
         var listener = train.frontSignalListener();
+        boolean manualTestCab = motion.hasTestCab(train.carriageIds.getFirst())
+                && motion.isManuallyControlled(train.carriageIds.getFirst());
         double allowed = motion.route().traversePoints(leading.distance, target, (travelled, event) ->
-                intercepted[0] = listener.test(travelled, event),
+                intercepted[0] = !(manualTestCab && event.getFirst() instanceof GlobalStation)
+                        && listener.test(travelled, event),
                 (preview, selected) -> train.navigation.control(preview).apply(train.graph,
                         net.createmod.catnip.data.Pair.of(requested > 0, selected)));
         if (!intercepted[0] && trackEnd == null) {
@@ -581,7 +596,7 @@ public final class CreateTrainBridge {
             train.runtime.tick(motion.level());
             train.status.endOfTrack();
         } else if (train.navigation.destination == null && train.getCurrentStation() != null)
-            motion.controlFromCreate(train.carriageIds.getFirst(), 0, true);
+            motion.controlAutomatic(train.carriageIds.getFirst(), null, 0);
         motion.route().traversePoints(trailing.distance, currentDistance(trailing), train.backSignalListener());
         if (train.navigation.destination != null) train.navigation.distanceToDestination -=
                 (train.navigation.destinationBehindTrain ? -1 : 1) * (allowed - leading.distance);
@@ -729,11 +744,14 @@ public final class CreateTrainBridge {
                                     Object steer, Object destination, double distanceStarted, Object retainedEdge) { }
 
     float brakingAcceleration(CompatibilityTrain train) {
+        // Navigation assumes constant deceleration: keep the brake-only lower bound.
+        // Using current-speed resistance would overestimate braking as the train slows.
         double mass = 0, force = 0;
         for (UUID id : train.carriageIds) for (var bogey : definitions.get(id).bogeys()) {
             mass += bogey.parameters().loadKg(); force += bogey.parameters().brakeForceN();
         }
-        return (float) Math.max(1e-8, force / mass / 400);
+        return (float) Math.max(1e-8, force / mass * motion.controlSource(train.carriageIds.getFirst()).serviceBrakeLimit()
+                * motion.runtime().brakingMultiplier() / 400);
     }
 
     void crashed(CompatibilityTrain train) {

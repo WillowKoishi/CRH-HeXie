@@ -19,7 +19,7 @@ import willow.train.hexie.vehicle.track.TrackPath;
 
 /** Runtime state serialization; structure blocks remain in their separate carriage snapshots. */
 public final class VehicleRuntimeNbt {
-    private static final int VERSION = 7;
+    private static final int VERSION = 9;
     private static final int STRICT_PLACEMENT_VERSION = 6;
     private VehicleRuntimeNbt() {}
 
@@ -53,8 +53,11 @@ public final class VehicleRuntimeNbt {
                 var p = bogey.parameters();
                 number(b, "LoadKg", p.loadKg());
                 number(b, "TractionN", p.tractionForceN());
+                number(b, "TractionPowerW", p.tractionPowerW());
                 number(b, "BrakeN", p.brakeForceN());
                 number(b, "ResistanceN", p.rollingResistanceN());
+                number(b, "ResistanceLinearNsPerM", p.resistanceLinearNsPerM());
+                number(b, "ResistanceQuadraticNs2PerM2", p.resistanceQuadraticNs2PerM2());
                 number(b, "WheelRadius", p.wheelRadiusM());
                 number(b, "GeometryWheelRadius", bogey.geometry().wheelRadius());
                 number(b, "DriveRatio", p.driveRatio());
@@ -129,7 +132,10 @@ public final class VehicleRuntimeNbt {
             for (var b : entries(car, "Bogeys")) {
                 var id = uuid(b, "Id");
                 var parameters = new BogeyParameters(number(b,"LoadKg"), number(b,"TractionN"), number(b,"BrakeN"),
-                        number(b,"ResistanceN"), number(b,"WheelRadius"), number(b,"DriveRatio"));
+                        number(b,"ResistanceN"), number(b,"WheelRadius"), number(b,"DriveRatio"),
+                        version >= 8 ? number(b, "ResistanceLinearNsPerM") : 0,
+                        version >= 8 ? number(b, "ResistanceQuadraticNs2PerM2") : 0,
+                        version >= 9 ? number(b, "TractionPowerW") : Double.MAX_VALUE);
                 require(b, "Axles", Tag.TAG_LIST);
                 var axles = (ListTag) b.get("Axles");
                 if (axles.isEmpty() || axles.getElementType() != Tag.TAG_LONG)

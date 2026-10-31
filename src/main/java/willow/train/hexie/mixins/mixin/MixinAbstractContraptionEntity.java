@@ -236,6 +236,11 @@ public abstract class MixinAbstractContraptionEntity extends Entity {
             return original.call(passenger, partialTicks);
 
         BlockState state = contraption.getBlocks().get(seatPos).state();
+        if (state.getBlock() instanceof willow.train.hexie.blocks.locos.CRH2DriverSeatBlock) {
+            Vec3 eye = Vec3.atLowerCornerOf(seatPos).add(
+                    willow.train.hexie.blocks.locos.CRH2DriverSeatBlock.driverEyePosition(state));
+            return hexie$toGlobalVector(eye, partialTicks).subtract(0, passenger.getEyeHeight(), 0);
+        }
         if (!(state.getBlock() instanceof SeatYZBlock))
             return original.call(passenger, partialTicks);
 

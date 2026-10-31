@@ -23,7 +23,8 @@ public class GroundStationSignEntity extends SmartBlockEntity implements MenuPro
     public int fontStyle() { return fontStyle; }
     public void cycleFont() { fontStyle = (fontStyle + 1) % FONT_COUNT; setChanged(); sendData(); }
     private static final String[] KEYS = {"StationName", "Pinyin", "PreviousStation", "NextStation"};
-    private final String[] fields = {"", "", "", ""};
+    private static final String DEFAULT_TEXT = "滚滚长江东逝水";
+    private final String[] fields = {DEFAULT_TEXT, DEFAULT_TEXT, DEFAULT_TEXT, DEFAULT_TEXT};
     public GroundStationSignEntity(BlockPos pos, BlockState state) { super(BlockEntitiesInit.GROUND_STATION_SIGN.get(), pos, state); }
     @Override public void addBehaviours(List<BlockEntityBehaviour> behaviours) {}
     public String[] fields() { return fields.clone(); }
@@ -47,7 +48,8 @@ public class GroundStationSignEntity extends SmartBlockEntity implements MenuPro
         super.read(tag, registries, clientPacket);
         int savedStyle = tag.getInt("FontStyle");
         fontStyle = savedStyle >= 0 && savedStyle < FONT_COUNT ? savedStyle : 0;
-        for (int i = 0; i < fields.length; i++) fields[i] = clean(tag.getString(KEYS[i]));
+        for (int i = 0; i < fields.length; i++)
+            fields[i] = tag.contains(KEYS[i]) ? clean(tag.getString(KEYS[i])) : DEFAULT_TEXT;
     }
     @Override public Component getDisplayName() { return Component.translatable("block.hexie.ground_station_sign"); }
     @Override public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) { return new GroundStationSignMenu(id, inventory, worldPosition, fields()); }

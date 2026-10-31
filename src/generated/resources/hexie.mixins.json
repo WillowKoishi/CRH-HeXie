@@ -6,16 +6,21 @@
   "mixins": [
     "MixinVehicleAssemblyStation",
     "MixinCarriagePlayerCollision",
+    "MixinCarriagePlayerPosition",
     "MixinCarriedPlayerConnection",
     "MixinCompatibilityTrain",
+    "MixinNativeTrainRemoval",
     "MixinTrackBallastData",
     "MixinCurvedTrackSelectionPacket",
     "MixinAbstractContraptionEntity",
+    "MixinDriverSeat",
     "MixinDeployerMovementBehavior",
     "MixinSchematicannonInventory",
     "MixinSchematicSyncPacket"
   ],
   "client": [
+    "client.MixinDrivingConsoleKeyboard",
+    "client.MixinDrivingConsoleLook",
     "client.MixinCarriageLocalPlayer",
     "client.MixinCarriageCamera",
     "client.MixinCarriageInteraction",

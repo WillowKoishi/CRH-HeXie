@@ -229,6 +229,8 @@ public class TrainPanelBlock extends SignBlockBase implements IWrenchable {
             net.minecraft.core.BlockPos pos, net.minecraft.world.entity.player.Player player,
             net.minecraft.world.InteractionHand hand, net.minecraft.world.phys.BlockHitResult hit) {
         if (stack.isEmpty()) return net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        var placement = willow.train.hexie.blocks.carriage.TrainPanelPlacement.place(stack, state, level, pos, player, hand, hit);
+        if (placement != null) return placement;
         net.minecraft.world.InteractionResult result = use(state, level, pos, player, hand, hit);
         return willow.train.hexie.compat.InteractionResults.toItemResult(result);
     }

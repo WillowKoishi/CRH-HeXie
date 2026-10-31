@@ -1,7 +1,10 @@
 package willow.train.hexie.client.sign;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.platform.TextureUtil;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -28,8 +31,90 @@ public final class SignTextRenderer {
     }
     public enum Alignment { LEFT, CENTER, RIGHT }
     private record Key(ResourceLocation profile, String text) {}
-    private record Entry(ResourceLocation texture, int width, int height, int inkWidth, int inkHeight) {
-        long bytes() { return (long) width * height * 4; }
+    private static final class Entry {
+        final ResourceLocation texture;
+        final int width, height, inkWidth, inkHeight;
+        private final DynamicTexture dynamic;
+        private RenderType smoothType;
+        private long mipBytes;
+
+        Entry(ResourceLocation texture, DynamicTexture dynamic, int width, int height, int inkWidth, int inkHeight) {
+            this.texture = texture;
+            this.dynamic = dynamic;
+            this.width = width;
+            this.height = height;
+            this.inkWidth = inkWidth;
+            this.inkHeight = inkHeight;
+        }
+
+        long bytes() { return (long) width * height * 4 + mipBytes; }
+
+        RenderType renderType(boolean smooth) {
+            if (!smooth) return RenderType.text(texture);
+            if (smoothType == null) {
+                prepareMipmaps();
+                smoothType = SmoothTextType.createFor(texture);
+            }
+            return smoothType;
+        }
+
+        private void prepareMipmaps() {
+            int levels = Math.min(4, 31 - Integer.numberOfLeadingZeros(Math.min(width, height)));
+            NativeImage[] images = new NativeImage[levels + 1];
+            images[0] = dynamic.getPixels();
+            try {
+                for (int level = 1; level <= levels; level++) {
+                    images[level] = new NativeImage(width >> level, height >> level, false);
+                    writeCoverageMip(images[level - 1], images[level]);
+                }
+                // Reallocate this same texture with mip storage, then restore its unchanged base image.
+                TextureUtil.prepareImage(dynamic.getId(), levels, width, height);
+                for (int level = 0; level <= levels; level++) {
+                    NativeImage image = images[level];
+                    // Apply once after the linear mip chain is complete; never feed adjusted coverage
+                    // into the next level. Small display numerals otherwise lose their visible weight.
+                    if (level > 0) strengthenCoverage(image);
+                    image.upload(level, 0, 0, 0, 0, image.getWidth(), image.getHeight(),
+                            true, false, levels > 0, false);
+                }
+                for (int level = 1; level <= levels; level++)
+                    mipBytes += (long) images[level].getWidth() * images[level].getHeight() * 4;
+                SignTextRenderer.bytes += mipBytes;
+            } finally {
+                // Level zero remains owned by DynamicTexture; temporary CPU mips are no longer needed.
+                for (int level = 1; level <= levels; level++)
+                    if (images[level] != null) images[level].close();
+            }
+        }
+    }
+
+    private static void strengthenCoverage(NativeImage image) {
+        for (int y = 0; y < image.getHeight(); y++) for (int x = 0; x < image.getWidth(); x++) {
+            int alpha = image.getPixelRGBA(x, y) >>> 24;
+            int adjusted = (int) Math.round(255 * Math.pow(alpha / 255.0, .8));
+            image.setPixelRGBA(x, y, (adjusted << 24) | 0x00ffffff);
+        }
+    }
+
+    /** Area-average coverage without the block-texture mip generator's alpha-cutout threshold. */
+    private static void writeCoverageMip(NativeImage source, NativeImage target) {
+        double scaleX = (double) source.getWidth() / target.getWidth();
+        double scaleY = (double) source.getHeight() / target.getHeight();
+        for (int y = 0; y < target.getHeight(); y++) {
+            double top = y * scaleY, bottom = (y + 1) * scaleY;
+            for (int x = 0; x < target.getWidth(); x++) {
+                double left = x * scaleX, right = (x + 1) * scaleX, coverage = 0;
+                for (int sy = (int) top; sy < Math.min(source.getHeight(), (int) Math.ceil(bottom)); sy++) {
+                    double weightY = Math.min(bottom, sy + 1) - Math.max(top, sy);
+                    for (int sx = (int) left; sx < Math.min(source.getWidth(), (int) Math.ceil(right)); sx++) {
+                        double weightX = Math.min(right, sx + 1) - Math.max(left, sx);
+                        coverage += (source.getPixelRGBA(sx, sy) >>> 24) * weightX * weightY;
+                    }
+                }
+                int alpha = (int) Math.round(coverage / (scaleX * scaleY));
+                target.setPixelRGBA(x, y, (alpha << 24) | 0x00ffffff);
+            }
+        }
     }
     private static final LinkedHashMap<Key, Entry> CACHE = new LinkedHashMap<>(32, .75f, true);
     private static long serial, bytes;
@@ -38,6 +123,13 @@ public final class SignTextRenderer {
     /** Local units may be blocks or model pixels. Height means visible ink height, not font line height. */
     public static void drawLine(ResourceLocation profile, String text, PoseStack pose, MultiBufferSource buffers,
                                 float x, float y, float height, float maxWidth, int color, int light, Alignment alignment) {
+        drawLine(profile, text, pose, buffers, x, y, height, maxWidth, color, light, alignment, false);
+    }
+
+    /** Enables filtered mip sampling for this rasterized line without changing global font settings. */
+    public static void drawLine(ResourceLocation profile, String text, PoseStack pose, MultiBufferSource buffers,
+                                float x, float y, float height, float maxWidth, int color, int light,
+                                Alignment alignment, boolean smooth) {
         if (text == null || text.isBlank() || !Float.isFinite(height) || !Float.isFinite(maxWidth) || height <= 0 || maxWidth <= 0) return;
         text = normalize(text);
         if (text.isBlank()) return;
@@ -53,7 +145,7 @@ public final class SignTextRenderer {
         float width = entry.inkWidth * scale;
         float left = x - (alignment == Alignment.CENTER ? width / 2 : alignment == Alignment.RIGHT ? width : 0);
         float x0 = left - 2 * scale, x1 = x0 + entry.width * scale, y0 = y + 2 * scale, y1 = y0 - entry.height * scale;
-        var vertex = buffers.getBuffer(RenderType.text(entry.texture)); var matrix = pose.last().pose();
+        var vertex = buffers.getBuffer(entry.renderType(smooth)); var matrix = pose.last().pose();
         vertex.addVertex(matrix, x0, y1, 0).setColor(color).setUv(0, 1).setLight(light);
         vertex.addVertex(matrix, x1, y1, 0).setColor(color).setUv(1, 1).setLight(light);
         vertex.addVertex(matrix, x1, y0, 0).setColor(color).setUv(1, 0).setLight(light);
@@ -82,7 +174,7 @@ public final class SignTextRenderer {
             ResourceLocation texture = ResourceLocation.fromNamespaceAndPath("hexie", "dynamic/sign_text/" + serial++);
             DynamicTexture dynamic = new DynamicTexture(nativeImage); dynamic.setFilter(true, false);
             Minecraft.getInstance().getTextureManager().register(texture, dynamic);
-            entry = new Entry(texture, image.getWidth(), image.getHeight(), raster.inkWidth(), raster.inkHeight());
+            entry = new Entry(texture, dynamic, image.getWidth(), image.getHeight(), raster.inkWidth(), raster.inkHeight());
             CACHE.put(key, entry); bytes += entry.bytes();
         }
         return entry;
@@ -108,6 +200,23 @@ public final class SignTextRenderer {
     public static void clear() {
         for (Entry entry : CACHE.values()) Minecraft.getInstance().getTextureManager().release(entry.texture);
         CACHE.clear(); RETAINED.clear(); bytes = 0;
+    }
+
+    /** The normal text render state, with trilinear filtering fixed for this texture only. */
+    private static final class SmoothTextType extends RenderType {
+        private SmoothTextType() {
+            super("hexie_smooth_sign_text", DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP,
+                    VertexFormat.Mode.QUADS, 256, false, true, () -> {}, () -> {});
+        }
+
+        static RenderType createFor(ResourceLocation texture) {
+            return create("hexie_smooth_sign_text", DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP,
+                    VertexFormat.Mode.QUADS, 256, false, true,
+                    CompositeState.builder().setShaderState(RENDERTYPE_TEXT_SHADER)
+                            .setTextureState(new TextureStateShard(texture, true, true))
+                            .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
+                            .setLightmapState(LIGHTMAP).createCompositeState(false));
+        }
     }
     private SignTextRenderer() {}
 }

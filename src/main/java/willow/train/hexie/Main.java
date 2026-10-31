@@ -88,6 +88,8 @@ public class Main {
     public Main(IEventBus modBus, ModContainer container) {
         bus = modBus;
         modContainer = container;
+        container.registerConfig(net.neoforged.fml.config.ModConfig.Type.SERVER,
+                willow.train.hexie.config.VehicleConfig.SPEC, "hexie-server.toml");
         bus.addListener(HexieNetworkHandler::registerPackets);
         CreativeTabsInit.register(bus);
 
@@ -126,7 +128,11 @@ public class Main {
     }
 
     protected void setup(final FMLCommonSetupEvent event) {
+        if (ModList.get().isLoaded("create")) {
+            event.enqueueWork(willow.train.hexie.compat.create.CreateDrivingConsoleSeats::register);
+        }
         event.enqueueWork(InteractionBehaviourInit::register);
+        event.enqueueWork(willow.train.hexie.blocks.carriage.TrainPanelPlacement::register);
         if (ModList.get().isLoaded("simurail")) {
             event.enqueueWork(HeXieSimurailCompat::register);
         }

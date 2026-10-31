@@ -501,6 +501,19 @@ public final class CarriageSnapshotStore extends SavedData {
         setDirty();
     }
 
+    /** Permanently delete assembled carriages without installing their blocks into the world. */
+    public void discardCarriages(java.util.Set<UUID> ids) {
+        requireServerThread();
+        for (var entry : List.copyOf(active.values())) {
+            var remaining = entry.carriages().stream().filter(id -> !ids.contains(id)).toList();
+            if (remaining.size() == entry.carriages().size()) continue;
+            if (remaining.isEmpty()) active.remove(entry.id());
+            else active.put(entry.id(), new ActiveAssembly(entry.id(), entry.owner(), entry.station(), entry.forward(), remaining));
+        }
+        ids.forEach(snapshots::remove);
+        setDirty();
+    }
+
     public boolean remove(UUID id) {
         requireServerThread();
         if (active.values().stream().anyMatch(entry -> entry.carriages().contains(id)))

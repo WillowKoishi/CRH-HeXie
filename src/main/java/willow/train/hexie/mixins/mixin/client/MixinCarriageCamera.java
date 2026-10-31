@@ -21,5 +21,6 @@ public abstract class MixinCarriageCamera {
             boolean reverse, float partial, CallbackInfo ci) {
         if (entity instanceof Player player)
             setPosition(getPosition().add(CarriagePlayerSupport.renderOffset(player, partial)));
+        setPosition(willow.train.hexie.client.events.DrivingConsoleCamera.position(entity, detached, partial, getPosition()));
     }
 }

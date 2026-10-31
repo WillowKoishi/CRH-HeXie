@@ -52,7 +52,7 @@ public final class CreateVehicleAssembly {
                 structures.stream().flatMap(structure -> structure.supports().stream()
                         .map(structure.origin()::offset)).toList());
         var prepared = VehicleAssemblyPreparer.prepare(structures, request.forward(),
-                BogeyModelCatalog.production(level.getServer().getResourceManager()), VehicleCouplingCatalog::decode);
+                BogeyModelCatalog.production(), VehicleCouplingCatalog::decode);
         UUID assembly = UUID.randomUUID();
         var motion = AssembledVehicleMotion.create(level, assembly, prepared, route);
         requireOriginalPose(motion, structures, request.forward(),

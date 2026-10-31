@@ -1,0 +1,8 @@
+{
+  "loader": "neoforge:obj",
+  "flip_v": true,
+  "model": "hexie:models/component/dmi/lkc_x_2000s_ab.obj",
+  "textures": {
+    "particle": "hexie:component/dmi/dmi_palette"
+  }
+}

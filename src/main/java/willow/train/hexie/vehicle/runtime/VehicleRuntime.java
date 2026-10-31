@@ -40,6 +40,8 @@ public final class VehicleRuntime {
     private Solution placement = new Solution(Map.of(), Map.of(), Map.of());
     private String constraintFailure;
     private boolean collisionEnabled = true;
+    private double accelerationMultiplier = 1;
+    private double brakingMultiplier = 1;
     private long consistRevision;
     private long indexedConsistRevision = -1;
     private final Map<UUID, UUID> couplingPartners = new HashMap<>();
@@ -55,6 +57,15 @@ public final class VehicleRuntime {
     public double motionDistance(UUID bogey) { return Objects.requireNonNull(motionDistances.get(bogey), "Unknown bogey"); }
     public Optional<String> constraintFailure() { return Optional.ofNullable(constraintFailure); }
     public boolean collisionEnabled() { return collisionEnabled; }
+    /** Backend-supplied policy; never changes saved bogey specifications. */
+    public void dynamicsMultipliers(double acceleration, double braking) {
+        if (!Double.isFinite(acceleration) || acceleration <= 0
+                || !Double.isFinite(braking) || braking <= 0)
+            throw new IllegalArgumentException("Dynamics multipliers must be finite and positive");
+        accelerationMultiplier = acceleration;
+        brakingMultiplier = braking;
+    }
+    public double brakingMultiplier() { return brakingMultiplier; }
     /** Backend policy: Create owns body impacts; manual and contact coupling remain active. */
     public void collisionEnabled(boolean enabled) { collisionEnabled = enabled; }
     public ConstraintFailurePolicy constraintFailurePolicy() { return ConstraintFailurePolicy.RETRY_CONSIST; }
@@ -216,7 +227,7 @@ public final class VehicleRuntime {
         double traction = 0;
         for (Car member : group(carriage).cars) for (BogeyDefinition bogey : member.definition.bogeys()) {
             Control control = member.controls.get(bogey.id());
-            if (control.brake == 0) traction += control.throttle * bogey.parameters().tractionForceN();
+            if (control.brake == 0) traction += control.throttle * bogey.parameters().availableTractionN(group(carriage).speed());
         }
         return Math.signum(traction);
     }
@@ -424,6 +435,7 @@ public final class VehicleRuntime {
                 new Solution(placement.bodies(), shiftedBogeys, placement.endpoints()), bogeySpeeds,
                 mapDistances(motionDistances, distance -> distance + distanceOffset)), target);
         rebound.collisionEnabled = collisionEnabled;
+        rebound.dynamicsMultipliers(accelerationMultiplier, brakingMultiplier);
         rebound.consistRevision = consistRevision;
         return rebound;
     }
@@ -444,6 +456,7 @@ public final class VehicleRuntime {
                 proposed, updated.pins(proposed), null));
         updated.motionDistances.putAll(mapDistances(motionDistances, mapDistance));
         updated.collisionEnabled = collisionEnabled;
+        updated.dynamicsMultipliers(accelerationMultiplier, brakingMultiplier);
         updated.consistRevision += consistRevision;
         return updated;
     }
@@ -651,6 +664,7 @@ public final class VehicleRuntime {
             moved.approaches.add(approach);
         }
         moved.collisionEnabled = collisionEnabled;
+        moved.dynamicsMultipliers(accelerationMultiplier, brakingMultiplier);
         moved.consistRevision += consistRevision;
         return moved;
     }
@@ -663,6 +677,7 @@ public final class VehicleRuntime {
     public VehicleRuntime subset(Set<UUID> carriageIds) {
         var copied = restore(subsetCheckpoint(checkpoint(), carriageIds), path);
         copied.collisionEnabled = collisionEnabled;
+        copied.dynamicsMultipliers(accelerationMultiplier, brakingMultiplier);
         copied.consistRevision = consistRevision;
         return copied;
     }
@@ -1199,23 +1214,27 @@ public final class VehicleRuntime {
 
     private Map<UUID, Force> forces(Group group) {
         double traction = 0, opposition = 0;
+        boolean braking = false;
         for (Car car : group.cars) for (BogeyDefinition bogey : car.definition.bogeys()) {
             Control control = car.controls.get(bogey.id());
-            traction += control.brake > 0 ? 0 : control.throttle * bogey.parameters().tractionForceN();
-            opposition += control.brake * bogey.parameters().brakeForceN() + bogey.parameters().rollingResistanceN();
+            braking |= control.brake > 0;
+            traction += control.brake > 0 ? 0 : control.throttle * bogey.parameters().availableTractionN(group.speed());
+            opposition += control.brake * bogey.parameters().brakeForceN() + bogey.parameters().runningResistanceN(group.speed());
         }
         double direction = Math.signum(group.speed() == 0 ? traction : group.speed());
         double scale = group.speed() == 0 && opposition > 0 ? Math.min(1, Math.abs(traction) / opposition) : 1;
+        // Scale all forces together to preserve equilibrium speed and stopped force balance.
+        double multiplier = braking ? brakingMultiplier : traction != 0 ? accelerationMultiplier : 1;
         var result = new HashMap<UUID, Force>();
         for (Car car : group.cars) for (BogeyDefinition bogey : car.definition.bogeys()) {
             BogeyParameters parameters = bogey.parameters();
             Control control = car.controls.get(bogey.id());
-            double drive = control.brake > 0 ? 0 : control.throttle * parameters.tractionForceN();
+            double drive = control.brake > 0 ? 0 : control.throttle * parameters.availableTractionN(group.speed());
             double brake = -direction * control.brake * parameters.brakeForceN() * scale;
-            double resistance = -direction * parameters.rollingResistanceN() * scale;
+            double resistance = -direction * parameters.runningResistanceN(group.speed()) * scale;
             DriveMode mode = control.brake > 0 ? DriveMode.BRAKING
                     : drive != 0 ? DriveMode.TRACTION : DriveMode.COASTING;
-            result.put(bogey.id(), new Force(drive, brake, resistance,
+            result.put(bogey.id(), new Force(drive * multiplier, brake * multiplier, resistance * multiplier,
                     mode == DriveMode.BRAKING ? control.brake : mode == DriveMode.TRACTION ? Math.abs(control.throttle) : 0, mode));
         }
         return result;

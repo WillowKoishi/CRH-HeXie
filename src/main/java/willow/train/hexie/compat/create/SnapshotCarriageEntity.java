@@ -1,5 +1,8 @@
 package willow.train.hexie.compat.create;
 
+import willow.train.hexie.api.cab.CabDisplayState;
+import willow.train.hexie.api.cab.CabDisplayStateNbt;
+
 import java.util.Collection;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -83,18 +86,10 @@ import willow.train.hexie.vehicle.kinematics.VehicleConstraintSolver.BodyPose;
  * Our runtime owns movement; Create's logical carriage owns unloading, cargo and recreation.
  */
 public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
-    private static final EntityDataAccessor<Float> BODY_YAW = SynchedEntityData.defineId(
-            SnapshotCarriageEntity.class, EntityDataSerializers.FLOAT);
-    private static final EntityDataAccessor<Float> BODY_PITCH = SynchedEntityData.defineId(
-            SnapshotCarriageEntity.class, EntityDataSerializers.FLOAT);
-    private static final EntityDataAccessor<Float> BODY_ROLL = SynchedEntityData.defineId(
-            SnapshotCarriageEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<CompoundTag> MOTION_FRAME = SynchedEntityData.defineId(
+            SnapshotCarriageEntity.class, EntityDataSerializers.COMPOUND_TAG);
     private static final EntityDataAccessor<Direction> BASIS_FORWARD = SynchedEntityData.defineId(
             SnapshotCarriageEntity.class, EntityDataSerializers.DIRECTION);
-    private static final EntityDataAccessor<CompoundTag> BOGEY_ANIMATION = SynchedEntityData.defineId(
-            SnapshotCarriageEntity.class, EntityDataSerializers.COMPOUND_TAG);
-    private static final EntityDataAccessor<CompoundTag> COUPLER_ANIMATION = SynchedEntityData.defineId(
-            SnapshotCarriageEntity.class, EntityDataSerializers.COMPOUND_TAG);
     private static final EntityDataAccessor<CarriageSyncData> COMPATIBILITY_POINTS = SynchedEntityData.defineId(
             SnapshotCarriageEntity.class, AllEntityDataSerializers.CARRIAGE_DATA);
     private static final EntityDataAccessor<Optional<UUID>> COMPATIBILITY_GRAPH = SynchedEntityData.defineId(
@@ -121,6 +116,22 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
     private float roll, prevRoll;
     private Vec3 interpolationTarget;
     private int interpolationSteps;
+    private CompoundTag pendingClientMotionFrame;
+    private CabDisplayState cabDisplayState = CabDisplayState.speedOnly(0);
+    public double displaySpeedKmh() { return cabDisplayState.speedKmh(); }
+    public CabDisplayState cabDisplayState() { return cabDisplayState; }
+    private CompoundTag testCabFrame = new CompoundTag();
+    public willow.train.hexie.vehicle.control.TestCabControls testCabControls(BlockPos position) {
+        return testCabFrame.contains("Position") && testCabFrame.getLong("Position") == position.asLong()
+                ? willow.train.hexie.vehicle.control.TestCabControls.read(testCabFrame.getCompound("Controls"))
+                : new willow.train.hexie.vehicle.control.TestCabControls();
+    }
+    private final CarriagePoseInterpolation poseInterpolation = new CarriagePoseInterpolation();
+    private float targetYaw, targetPitch, targetRoll;
+    private Vec3 motionSamplePosition, previousMotionPosition, olderMotionPosition, motionVelocity = Vec3.ZERO;
+    private long motionSampleTick = Long.MIN_VALUE;
+    private long motionFrameTick = Long.MIN_VALUE;
+    private boolean continuousMotionSamples;
     private Carriage compatibilityCarriage;
     private boolean compatibilitySyncPending;
     private final SnapshotBogeyAnimation bogeyAnimation = new SnapshotBogeyAnimation();
@@ -215,8 +226,23 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
 
     @Override public void syncCarriage() {
         if (level().isClientSide) return;
-        entityData.set(BOGEY_ANIMATION, bogeyAnimation.write());
-        entityData.set(COUPLER_ANIMATION, couplerAnimation.write());
+        long now = level().getGameTime();
+        if (motionFrameTick == Long.MIN_VALUE || now - motionFrameTick >= Math.max(1, getType().updateInterval())) {
+            // Native lifecycle alignment changes the body before calling this method.
+            // Refresh every animated part from that same authoritative solution first.
+            var owner = motion();
+            if (owner != null) owner.applyCurrent(this);
+            var frame = new CompoundTag();
+            frame.put("CabDisplay", CabDisplayStateNbt.write(CreateCabDisplaySource.read(owner, getUUID())));
+            if (owner != null) frame.put("TestCab", owner.testCabFrame(getUUID()));
+            frame.putDouble("X", getX()); frame.putDouble("Y", getY()); frame.putDouble("Z", getZ());
+            frame.putFloat("Yaw", yaw); frame.putFloat("Pitch", pitch); frame.putFloat("Roll", roll);
+            frame.putString("Forward", originalForward.getName());
+            frame.putDouble("Vx", motionVelocity.x); frame.putDouble("Vy", motionVelocity.y); frame.putDouble("Vz", motionVelocity.z);
+            frame.put("Bogeys", bogeyAnimation.write()); frame.put("Couplers", couplerAnimation.write());
+            entityData.set(MOTION_FRAME, frame);
+            motionFrameTick = now;
+        }
         if (compatibilityCarriage == null) return;
         var train = compatibilityCarriage.train;
         entityData.set(COMPATIBILITY_TRAIN, Optional.of(train.id));
@@ -302,14 +328,37 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             setInitialOrientation(originalForward.getClockWise());
             if (contraption instanceof SnapshotView view) view.configureDirection(originalForward);
         }
-        if (key.equals(BOGEY_ANIMATION) && level().isClientSide)
-            readBogeyAnimation(entityData.get(BOGEY_ANIMATION), getType().updateInterval());
-        if (key.equals(COUPLER_ANIMATION) && level().isClientSide)
-            readCouplerAnimation(entityData.get(COUPLER_ANIMATION), getType().updateInterval());
+        if (key.equals(MOTION_FRAME) && level().isClientSide) {
+            var frame = entityData.get(MOTION_FRAME);
+            if (!frame.contains("X")) return;
+            if (!poseInterpolation.initialized()) applyClientMotionFrame(frame);
+            else pendingClientMotionFrame = frame.copy();
+        }
         if (key.equals(COMPATIBILITY_POINTS) || key.equals(COMPATIBILITY_GRAPH)
                 || key.equals(COMPATIBILITY_TRAIN) || key.equals(COMPATIBILITY_INDEX)
                 || key.equals(COMPATIBILITY_SPEED) || key.equals(COMPATIBILITY_DERAILED))
             compatibilitySyncPending = true;
+    }
+
+    private void applyClientMotionFrame(CompoundTag frame) {
+            cabDisplayState = frame.contains("CabDisplay", net.minecraft.nbt.Tag.TAG_COMPOUND)
+                    ? CabDisplayStateNbt.read(frame.getCompound("CabDisplay"))
+                    : CabDisplayState.speedOnly(frame.getDouble("DisplaySpeedKmh"));
+            testCabFrame = frame.getCompound("TestCab");
+            setCoordinateBasis(Direction.byName(frame.getString("Forward")));
+            boolean initial = !poseInterpolation.initialized();
+            int steps = initial ? 0 : getType().updateInterval();
+            targetYaw = frame.getFloat("Yaw"); targetPitch = frame.getFloat("Pitch"); targetRoll = frame.getFloat("Roll");
+            poseInterpolation.accept(new Vec3(frame.getDouble("X"), frame.getDouble("Y"), frame.getDouble("Z")),
+                    new Vec3(frame.getDouble("Vx"), frame.getDouble("Vy"), frame.getDouble("Vz")), steps);
+            interpolationSteps = steps;
+            readBogeyAnimation(frame.getCompound("Bogeys"), steps);
+            readCouplerAnimation(frame.getCompound("Couplers"), steps);
+            if (initial) {
+                setPos(poseInterpolation.position(1));
+                xo = getX(); yo = getY(); zo = getZ();
+                yaw = prevYaw = targetYaw; pitch = prevPitch = targetPitch; roll = prevRoll = targetRoll;
+            }
     }
 
     @Override public void onClientRemoval() {
@@ -789,17 +838,13 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             prevYaw = yaw; prevPitch = pitch; prevRoll = roll;
             xo = getX(); yo = getY(); zo = getZ();
         }
-        if (!level().isClientSide) {
-            entityData.set(BODY_YAW, yaw); entityData.set(BODY_PITCH, pitch); entityData.set(BODY_ROLL, roll);
-        }
+        if (!level().isClientSide) syncCarriage();
         updateRotatedBounds();
     }
 
     @Override protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
-        builder.define(BODY_YAW, 0f); builder.define(BODY_PITCH, 0f); builder.define(BODY_ROLL, 0f);
-        builder.define(BOGEY_ANIMATION, new CompoundTag());
-        builder.define(COUPLER_ANIMATION, new CompoundTag());
+        builder.define(MOTION_FRAME, new CompoundTag());
         builder.define(BASIS_FORWARD, Direction.NORTH);
         builder.define(COMPATIBILITY_POINTS, new CarriageSyncData());
         builder.define(COMPATIBILITY_GRAPH, Optional.empty());
@@ -826,8 +871,20 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         updateRotatedBounds();
         setContraptionMotion(position().subtract(xo, yo, zo));
         if (!level().isClientSide) {
-            entityData.set(BODY_YAW, yaw); entityData.set(BODY_PITCH, pitch); entityData.set(BODY_ROLL, roll);
             var owner = motion();
+            // Entity ticks may consume yesterday's solution before the logical train advances.
+            // Sampling by world time would manufacture a zero (or reversed) tangent there.
+            long now = owner == null ? level().getGameTime() : owner.poseTick();
+            if (motionSampleTick != now) {
+                continuousMotionSamples = motionSampleTick == now - 1;
+                olderMotionPosition = previousMotionPosition;
+                previousMotionPosition = motionSamplePosition;
+                motionSampleTick = now;
+            }
+            motionSamplePosition = position();
+            Vec3 delta = previousMotionPosition == null ? Vec3.ZERO : position().subtract(previousMotionPosition);
+            motionVelocity = continuousMotionSamples && olderMotionPosition != null
+                    ? delta.scale(1.5).subtract(previousMotionPosition.subtract(olderMotionPosition).scale(.5)) : delta;
             if (owner != null) {
                 double oldFloor = couplerAnimation.floorOffset();
                 bogeyAnimation.update(owner.runtime(), snapshot, forward, level().getGameTime(),
@@ -871,8 +928,11 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
     }
 
     @Override public void lerpTo(double x, double y, double z, float yRot, float xRot, int steps) {
-        interpolationTarget = new Vec3(x, y, z);
-        interpolationSteps = Math.max(1, steps);
+        // Vanilla position packets must not restart the independently received pose clock.
+        if (!poseInterpolation.initialized()) {
+            interpolationTarget = new Vec3(x, y, z);
+            interpolationSteps = Math.max(1, steps);
+        }
     }
 
     @Override protected void tickContraption() {
@@ -882,14 +942,21 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             couplerAnimation.tick();
             bindClientCompatibility();
             prevYaw = yaw; prevPitch = pitch; prevRoll = roll;
-            int steps = Math.max(1, interpolationSteps);
-            if (interpolationSteps > 0) {
-                setPos(position().lerp(interpolationTarget, 1.0 / steps));
-                interpolationSteps--;
+            if (pendingClientMotionFrame != null) {
+                applyClientMotionFrame(pendingClientMotionFrame);
+                pendingClientMotionFrame = null;
             }
-            yaw = AngleHelper.angleLerp(1f / steps, yaw, entityData.get(BODY_YAW));
-            pitch = AngleHelper.angleLerp(1f / steps, pitch, entityData.get(BODY_PITCH));
-            roll = AngleHelper.angleLerp(1f / steps, roll, entityData.get(BODY_ROLL));
+            int steps = Math.max(1, interpolationSteps);
+            if (poseInterpolation.initialized()) {
+                poseInterpolation.tick();
+                setPos(poseInterpolation.position(1));
+            } else if (interpolationSteps > 0 && interpolationTarget != null) {
+                setPos(position().lerp(interpolationTarget, 1.0 / steps));
+            }
+            if (interpolationSteps > 0) interpolationSteps--;
+            yaw = AngleHelper.angleLerp(1f / steps, yaw, targetYaw);
+            pitch = AngleHelper.angleLerp(1f / steps, pitch, targetPitch);
+            roll = AngleHelper.angleLerp(1f / steps, roll, targetRoll);
             updateRotatedBounds();
         } else {
             if (pendingMotionState != null) {
@@ -1067,9 +1134,20 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
     }
 
     @Override public void applyLocalTransforms(PoseStack stack, float partialTicks) {
+        if (level().isClientSide && poseInterpolation.initialized()) {
+            Vec3 correction = renderPosition(partialTicks)
+                    .subtract(getPrevPositionVec().lerp(position(), partialTicks));
+            stack.translate(correction.x, correction.y, correction.z);
+        }
         stack.translate(0, .5, 0);
         stack.mulPose(rotation(partialTicks));
         stack.translate(-.5, -.5, -.5);
+    }
+
+    /** Shared by rendering, picking and player following; tick collision uses position(). */
+    public Vec3 renderPosition(float partialTicks) {
+        return level().isClientSide && poseInterpolation.initialized() ? poseInterpolation.position(partialTicks)
+                : getPrevPositionVec().lerp(position(), partialTicks);
     }
 
     @Override public float getYawOffset() { return (float) Math.toDegrees(sourceYaw()); }
@@ -1242,6 +1320,41 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
                 private final java.util.BitSet staticBlocks = new java.util.BitSet();
                 private final java.util.BitSet visible = new java.util.BitSet();
                 private int maskedVersion = -1;
+
+                @Override public BlockEntity readBlockEntity(net.minecraft.world.level.Level level,
+                        net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo info,
+                        boolean legacy) {
+                    var be = super.readBlockEntity(level, info, legacy);
+                    // ClientContraption's constructor creates BEs without calling resetRenderLevel.
+                    // Bind at creation so the first render and every rebuild read live state.
+                    if (be instanceof willow.train.hexie.api.cab.CabDisplayHost console)
+                        console.displaySource(() -> ((SnapshotCarriageEntity) SnapshotView.this.entity).cabDisplayState());
+                    if (be instanceof willow.train.hexie.blockentity.DrivingConsoleEntity console)
+                        console.testSource(() -> ((SnapshotCarriageEntity) SnapshotView.this.entity).testCabControls(info.pos()));
+                    return be;
+                }
+
+                @Override public void resetRenderLevel() {
+                    // Create recreates every display BE after any block changes. Preserve the
+                    // door's current progress, including a transition still in flight.
+                    var previousDoors = new java.util.HashMap<BlockPos, BlockEntity>();
+                    for (var be : renderedBlockEntityView)
+                        if (be instanceof willow.train.hexie.blockentity.CustomRenderedDoorEntity
+                                || be instanceof willow.train.hexie.blockentity.OBJRenderableEndFaceEntity)
+                            previousDoors.put(be.getBlockPos(), be);
+                    super.resetRenderLevel();
+                    for (var entry : previousDoors.entrySet()) {
+                        var before = entry.getValue();
+                        var after = getBlockEntity(entry.getKey());
+                        if (after == null || before.getBlockState().getBlock() != after.getBlockState().getBlock()) continue;
+                        if (before instanceof willow.train.hexie.blockentity.CustomRenderedDoorEntity oldDoor
+                                && after instanceof willow.train.hexie.blockentity.CustomRenderedDoorEntity door)
+                            door.animation_controller = oldDoor.animation_controller;
+                        if (before instanceof willow.train.hexie.blockentity.OBJRenderableEndFaceEntity oldDoor
+                                && after instanceof willow.train.hexie.blockentity.OBJRenderableEndFaceEntity door)
+                            door.counter = oldDoor.counter;
+                    }
+                }
 
                 @Override public RenderedBlocks getRenderedBlocks() {
                     // Change only the rendered state. Saved blocks, collision and native

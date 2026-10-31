@@ -1,4 +1,7 @@
 {
+  "block.hexie.test_driving_console": "临时测试驾驶台",
+  "block.hexie.crh2a_driver_seat": "CRH2A 驾驶座",
+  "block.hexie.crh2a_driving_console": "CRH2A 驾驶台",
   "item.hexie.floor_switcher": "地板切换器",
   "item.hexie.floor_switcher.height": "地板高度：%s",
   "gui.hexie.floor_height.title": "地板高度",

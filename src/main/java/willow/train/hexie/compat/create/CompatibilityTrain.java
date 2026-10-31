@@ -33,11 +33,16 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 public final class CompatibilityTrain extends Train {
     private static final java.util.Map<MinecraftServer, java.util.LinkedHashSet<CompatibilityTrain>> PENDING_TICKS
             = new java.util.WeakHashMap<>();
+    private static final java.util.Map<MinecraftServer, java.util.LinkedHashSet<CompatibilityTrain>> PENDING_REMOVALS
+            = new java.util.WeakHashMap<>();
     public static final String ASSEMBLY_KEY = "HeXieAssembly";
     public final UUID assemblyId;
     public final List<UUID> carriageIds;
     CreateTrainBridge bridge;
-    double requestedSpeed = Double.NaN;
+    willow.train.hexie.vehicle.control.AutomaticTrainControl.Target automaticTarget;
+    boolean automaticControlActive;
+    boolean hadSchedule;
+    boolean retiringProxy;
     int mailTransferTicks;
     UUID unresolvedGraphId;
     private CompoundTag savedMotion;
@@ -59,6 +64,7 @@ public final class CompatibilityTrain extends Train {
     /** Create's global railway tick also runs outside entity-ticking chunks. */
     @Override public void tick(Level level) {
         if (!(level instanceof ServerLevel server) || Create.RAILWAYS.trains.get(id) != this) return;
+        if (invalid) { queueSourceRemoval(); return; }
         // Restoring/regrouping can add/remove native trains. Run after Create finishes iterating
         // its live train lists, on this same server tick, rather than mutating those iterators.
         PENDING_TICKS.computeIfAbsent(server.getServer(), ignored -> new java.util.LinkedHashSet<>()).add(this);
@@ -66,6 +72,7 @@ public final class CompatibilityTrain extends Train {
 
     @SubscribeEvent
     public static void finishLogicalTicks(ServerTickEvent.Post event) {
+        finishSourceRemovals(event.getServer());
         var pending = PENDING_TICKS.remove(event.getServer());
         if (pending == null) return;
         for (var train : pending) train.restoreForTick(event.getServer().overworld());
@@ -74,6 +81,102 @@ public final class CompatibilityTrain extends Train {
         VehicleContactPreparation.prepare();
         for (var value : List.copyOf(Create.RAILWAYS.trains.values()))
             if (value instanceof CompatibilityTrain train) train.tickLogical(event.getServer().overworld());
+    }
+
+    /** Defer ownership changes until Create has finished iterating its train lists. */
+    public void queueSourceRemoval() {
+        var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        if (server != null && !retiringProxy && hasLifecycleData())
+            PENDING_REMOVALS.computeIfAbsent(server, ignored -> new java.util.LinkedHashSet<>()).add(this);
+    }
+
+    static void finishSourceRemovals(MinecraftServer server) {
+        var removed = PENDING_REMOVALS.remove(server);
+        if (removed == null) return;
+        var retained = new HashSet<UUID>();
+        for (var value : Create.RAILWAYS.trains.values())
+            if (value instanceof CompatibilityTrain train && !train.invalid) retained.addAll(train.carriageIds);
+        var candidates = removed.stream().filter(train -> !train.retiringProxy && train.hasLifecycleData()
+                && train.carriageIds.stream().noneMatch(retained::contains)).toList();
+        var processed = new HashSet<CompatibilityTrain>();
+        for (var train : candidates) {
+            // Rebuilding proxies transfers the same carriage identities to new records.
+            if (train.carriageIds.stream().allMatch(retained::contains)) continue;
+            if (train.bridge == null && train.savedMotionOwner == null) continue;
+            if (!processed.add(train)) continue;
+            var group = candidates.stream().filter(other -> other == train
+                    || train.bridge != null && other.bridge == train.bridge
+                    || train.bridge == null && other.bridge == null
+                            && java.util.Objects.equals(train.savedMotionOwner, other.savedMotionOwner)).toList();
+            processed.addAll(group);
+            train.discardSourceCarriages(server, group);
+        }
+    }
+
+    private void discardSourceCarriages(MinecraftServer server, List<CompatibilityTrain> removed) {
+        ServerLevel level = bridge != null ? bridge.motion().level()
+                : server.getLevel(ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(motionDimension)));
+        if (level == null) throw new IllegalStateException("Missing removed train dimension " + motionDimension);
+        Set<UUID> selected = removed.stream().flatMap(train -> train.carriageIds.stream())
+                .collect(java.util.stream.Collectors.toSet());
+        Runnable retain;
+        if (bridge != null) retain = bridge.motion().prepareDisassembly(selected);
+        else {
+            var source = savedMotion != null ? this
+                    : Create.RAILWAYS.trains.get(savedMotionOwner) instanceof CompatibilityTrain owner ? owner : null;
+            if (source == null) source = removed.stream().filter(train -> train.savedMotion != null).findFirst().orElse(null);
+            if (source == null || source.savedMotion == null)
+                throw new IllegalStateException("Removed train has no saved motion owner");
+            var pending = source.savedMotion.copy();
+            var checkpoint = willow.train.hexie.vehicle.assembly.VehicleRuntimeNbt.readCheckpoint(pending.getCompound("Runtime"));
+            var remaining = new HashSet<UUID>();
+            checkpoint.carriages().forEach(car -> remaining.add(car.definition().id()));
+            remaining.removeAll(selected);
+            if (remaining.isEmpty()) retain = () -> {};
+            else {
+                pending.put("Runtime", willow.train.hexie.vehicle.assembly.VehicleRuntimeNbt.saveCheckpoint(
+                        willow.train.hexie.vehicle.runtime.VehicleRuntime.subsetCheckpoint(checkpoint, remaining)));
+                for (String key : List.of("CarriageSources", "DerailedCarriages", "StalledCarriages")) {
+                    if (!pending.contains(key)) continue;
+                    var entries = new ListTag();
+                    for (var value : pending.getList(key, Tag.TAG_COMPOUND))
+                        if (remaining.contains(((CompoundTag) value).getUUID("Carriage"))) entries.add(value.copy());
+                    pending.put(key, entries);
+                }
+                retain = () -> {
+                    UUID owner = retainPendingMotion(level, remaining, pending);
+                    var sources = AssembledVehicleMotion.readSources(level, pending);
+                    for (UUID id : remaining) if (level.getEntity(id) instanceof SnapshotCarriageEntity entity) {
+                        entity.setMotionOwner(owner, sources.get(id).forward());
+                        entity.installMotion(null);
+                    }
+                };
+            }
+        }
+        var store = willow.train.hexie.vehicle.assembly.CarriageSnapshotStore.get(level);
+        var oldAssemblies = store.active();
+        store.discardCarriages(selected);
+        retain.run();
+        for (UUID id : selected) if (level.getEntity(id) instanceof SnapshotCarriageEntity entity) {
+            entity.installMotion(null);
+            entity.discard();
+        }
+        for (var train : removed) {
+            var station = train.getCurrentStation();
+            if (station != null) station.cancelReservation(train);
+            if (train.navigation.destination != null) train.navigation.destination.cancelReservation(train);
+            train.bridge = null;
+            train.savedMotion = null;
+            train.savedMotionOwner = null;
+            train.pendingRelocation = null;
+            net.createmod.catnip.platform.CatnipServices.NETWORK.sendToAllClients(
+                    new com.simibubi.create.content.trains.entity.RemoveTrainPacket(train));
+        }
+        for (var entry : oldAssemblies)
+            if (entry.carriages().stream().anyMatch(selected::contains) && store.active(entry.id()).isEmpty()
+                    && level.isLoaded(entry.station()) && level.getBlockEntity(entry.station()) instanceof CreateAssemblyStationAccess access
+                    && entry.id().equals(access.hexie$getAssemblyId())) access.hexie$setAssemblyId(null);
+        Create.RAILWAYS.markTracksDirty();
     }
 
     private void restoreForTick(ServerLevel server) {
@@ -173,8 +276,8 @@ public final class CompatibilityTrain extends Train {
     }
 
     @Override public void approachTargetSpeed(float accelerationMod) {
-        requestedSpeed = targetSpeed;
-        if (manualTick) leaveStation();
+        // Compatibility callbacks must never become velocity/actuator commands.
+        // AutomaticTrainControl owns driving; Create supplies the route and retains docking events.
     }
 
     @Override public float acceleration() {
@@ -185,6 +288,13 @@ public final class CompatibilityTrain extends Train {
         unresolvedGraphId = null;
         super.crash();
         if (bridge != null) bridge.crashed(this);
+    }
+
+    @Override public boolean hasForwardConductor() {
+        return bridge != null && bridge.motion().hasTestCab(carriageIds.getFirst()) || super.hasForwardConductor();
+    }
+    @Override public boolean hasBackwardConductor() {
+        return bridge != null && bridge.motion().hasTestCab(carriageIds.getFirst()) || super.hasBackwardConductor();
     }
 
     @Override public void detachFromTracks() {

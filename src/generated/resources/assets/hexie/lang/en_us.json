@@ -1,4 +1,7 @@
 {
+  "block.hexie.test_driving_console": "Temporary Test Cab",
+  "block.hexie.crh2a_driver_seat": "CRH2A Driver Seat",
+  "block.hexie.crh2a_driving_console": "CRH2A Driving Console",
   "item.hexie.floor_switcher": "Floor Switcher",
   "item.hexie.floor_switcher.height": "Floor height: %s",
   "gui.hexie.floor_height.title": "Floor Height",

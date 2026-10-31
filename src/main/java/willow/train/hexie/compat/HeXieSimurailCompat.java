@@ -20,7 +20,7 @@ import willow.train.hexie.init.track.TrackMaterialInit;
 
 import java.util.List;
 import willow.train.hexie.vehicle.bogey.BogeyGeometry;
-import willow.train.hexie.vehicle.bogey.HexieBogeyGeometries;
+import willow.train.hexie.vehicle.bogey.BuiltinBogeyProfile;
 
 /** Only loaded from common setup when Simurail is installed. */
 public final class HeXieSimurailCompat {
@@ -82,18 +82,18 @@ public final class HeXieSimurailCompat {
     /** Nominal rolling radii and axle positions from HeXie's sizes and renderers, in blocks. */
     private static void configureParameters() {
         // CW2 shares the passenger wheel dimensions; forward/backward DF11G share one wheel model.
-        configureBogey(DT206, HexieBogeyGeometries.DT206);
-        configureBogey(CW2, HexieBogeyGeometries.CW2);
-        configureBogey(PK209P, HexieBogeyGeometries.PK209P);
-        configureBogey(PK209P_NO_MOTOR, HexieBogeyGeometries.PK209P);
-        configureBogey(PK209P_BACKWARD, HexieBogeyGeometries.PK209P);
-        configureBogey(SW220K, HexieBogeyGeometries.SW220K);
-        configureBogey(SW220K_BACKWARD, HexieBogeyGeometries.SW220K);
-        configureBogey(SW160, HexieBogeyGeometries.SW160);
-        configureBogey(DF11G, HexieBogeyGeometries.DF11G);
-        configureBogey(DF11G_BACKWARD, HexieBogeyGeometries.DF11G);
-        configureBogey(QJ, HexieBogeyGeometries.QJ);
-        configureBogey(QJ_BACKWARD, HexieBogeyGeometries.QJ);
+        configureBogey(DT206, BuiltinBogeyProfile.DT206.geometry());
+        configureBogey(CW2, BuiltinBogeyProfile.CW2.geometry());
+        configureBogey(PK209P, BuiltinBogeyProfile.PK209P.geometry());
+        configureBogey(PK209P_NO_MOTOR, BuiltinBogeyProfile.PK209P.geometry());
+        configureBogey(PK209P_BACKWARD, BuiltinBogeyProfile.PK209P.geometry());
+        configureBogey(SW220K, BuiltinBogeyProfile.SW220K.geometry());
+        configureBogey(SW220K_BACKWARD, BuiltinBogeyProfile.SW220K.geometry());
+        configureBogey(SW160, BuiltinBogeyProfile.SW160.geometry());
+        configureBogey(DF11G, BuiltinBogeyProfile.DF11G.geometry());
+        configureBogey(DF11G_BACKWARD, BuiltinBogeyProfile.DF11G.geometry());
+        configureBogey(QJ, BuiltinBogeyProfile.QJ.geometry());
+        configureBogey(QJ_BACKWARD, BuiltinBogeyProfile.QJ.geometry());
     }
 
     private static void configureBogey(BogeyEntry entry, BogeyGeometry geometry) {

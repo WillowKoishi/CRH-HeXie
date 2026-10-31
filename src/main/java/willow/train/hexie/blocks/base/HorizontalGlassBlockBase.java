@@ -43,4 +43,12 @@ public class HorizontalGlassBlockBase extends Block {
     public List<ItemStack> getDrops(BlockState pState, LootParams.Builder pBuilder) {
         return List.of(this.asItem().getDefaultInstance());
     }
+    @Override
+    public net.minecraft.world.ItemInteractionResult useItemOn(net.minecraft.world.item.ItemStack stack,
+            net.minecraft.world.level.block.state.BlockState state, net.minecraft.world.level.Level level,
+            net.minecraft.core.BlockPos pos, net.minecraft.world.entity.player.Player player,
+            net.minecraft.world.InteractionHand hand, net.minecraft.world.phys.BlockHitResult hit) {
+        var placement = willow.train.hexie.blocks.carriage.TrainPanelPlacement.place(stack, state, level, pos, player, hand, hit);
+        return placement != null ? placement : super.useItemOn(stack, state, level, pos, player, hand, hit);
+    }
 }

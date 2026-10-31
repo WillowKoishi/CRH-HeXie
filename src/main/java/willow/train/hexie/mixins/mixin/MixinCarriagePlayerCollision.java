@@ -19,6 +19,14 @@ import willow.train.hexie.compat.create.SnapshotCarriageEntity;
 /** Keep Create's shape collision, replace only platform movement for our supported players. */
 @Mixin(ContraptionCollider.class)
 public abstract class MixinCarriagePlayerCollision {
+    @Inject(method = "collideEntities", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/world/entity/Entity;setPos(DDD)V", ordinal = 0,
+            shift = At.Shift.AFTER), remap = false)
+    private static void hexie$touchBody(AbstractContraptionEntity contraption, CallbackInfo ci,
+            @Local(name = "entity") Entity entity) {
+        if (contraption instanceof SnapshotCarriageEntity car) CarriagePlayerSupport.contact(car, entity);
+    }
+
     @Inject(method = "collideEntities", at = @At("HEAD"), remap = false)
     private static void hexie$carry(AbstractContraptionEntity entity, CallbackInfo ci) {
         if (entity instanceof SnapshotCarriageEntity car) CarriagePlayerSupport.advance(car);

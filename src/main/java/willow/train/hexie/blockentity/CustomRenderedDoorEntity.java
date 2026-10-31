@@ -26,6 +26,7 @@ public class CustomRenderedDoorEntity extends SmartBlockEntity implements IContr
 
     public CustomRenderedDoorEntity(BlockPos pPos, BlockState pBlockState) {
         super(BlockEntitiesInit.CUSTOM_RENDERED_DOOR_ENTITY.get(), pPos, pBlockState);
+        open = pBlockState.getValue(DoorBlock.OPEN);
         if(pBlockState.getBlock() instanceof CustomRenderedDoorBlock block)
             this.isSlideDoor = block.isSlideDoor();
     }

@@ -51,6 +51,21 @@ public class BlockInit {
             Main.MOD_ID);
     public static final DeferredRegister<Item> ITEMS = AllItemsInit.ITEMS;
 
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.locos.CRH2DriverSeatBlock> CRH2A_DRIVER_SEAT = register("crh2a_driver_seat",
+            () -> new willow.train.hexie.blocks.locos.CRH2DriverSeatBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_GRAY).strength(1.5f).sound(SoundType.WOOL).noOcclusion()),
+            object -> () -> new BlockItem(object.get(), new Item.Properties()));
+
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.locos.CRH2DrivingConsoleBlock> CRH2A_DRIVING_CONSOLE = register("crh2a_driving_console",
+            () -> new willow.train.hexie.blocks.locos.CRH2DrivingConsoleBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL).strength(2.0f).sound(SoundType.METAL).noOcclusion()),
+            object -> () -> new BlockItem(object.get(), new Item.Properties()));
+
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.locos.TestDrivingConsoleBlock> TEST_DRIVING_CONSOLE = register("test_driving_console",
+            () -> new willow.train.hexie.blocks.locos.TestDrivingConsoleBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL).strength(2).sound(SoundType.METAL).noOcclusion()),
+            object -> () -> new BlockItem(object.get(), new Item.Properties()));
+
     public static final DeferredHolder<Block, willow.train.hexie.blocks.signs.GroundStationSignBlock> GROUND_STATION_SIGN = register("ground_station_sign",
             () -> new willow.train.hexie.blocks.signs.GroundStationSignBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.QUARTZ).strength(1.5f).sound(SoundType.STONE).noOcclusion()),

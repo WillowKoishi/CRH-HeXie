@@ -36,19 +36,23 @@ public record CarriagePlayerMovePacket(int carriageId, UUID carriageUuid, Vec3 p
         SnapshotCarriageEntity car = carriageId < 0 ? null
                 : player.level().getEntity(carriageId) instanceof SnapshotCarriageEntity found
                     && found.getUUID().equals(carriageUuid) ? found : null;
-        if (carriageId >= 0 && car == null) { CarriagePlayerSupport.detach(player, false); return; }
+        if (carriageId >= 0 && car == null) { CarriagePlayerSupport.detach(player); return; }
         if (car != null) CarriagePlayerSupport.advance(car);
-        else CarriagePlayerSupport.detach(player, false);
+        else CarriagePlayerSupport.detach(player);
         Vec3 world = car == null ? position : CarriagePlayerSupport.frame(car, 1).world(position);
         // Vanilla still checks the player's own movement and world collisions. Only known
         // platform displacement was added to its baselines by advance(), never the requested walk.
         player.connection.handleMovePlayer(new ServerboundMovePlayerPacket.PosRot(
                 world.x, world.y, world.z, yaw, pitch, onGround));
         boolean accepted = player.position().distanceToSqr(world) < 1e-6;
-        if (accepted && onGround && car != null && CarriagePlayerSupport.hasFloor(car, world, player.getBbWidth())) {
+        if (accepted && car != null && !player.getAbilities().flying && !player.isFallFlying()
+                && !player.isSpectator() && !CarriagePlayerSupport.touchesWorld(player)
+                && (CarriagePlayerSupport.carriage(player) == car || CarriagePlayerSupport.touchesCarriage(car, player))) {
             CarriagePlayerSupport.accept(player, car, position);
             if (player.connection instanceof CarriedPlayerConnection connection) connection.hexie$grounded();
-        } else CarriagePlayerSupport.detach(player, false);
+        }
+        // A corrected movement packet does not end an established attachment.
+        // carriage() clears it on world contact, flight or invalid lifecycle state.
         SnapshotCarriageEntity support = CarriagePlayerSupport.carriage(player);
         PacketDistributor.sendToPlayersTrackingEntity(player, new CarriagePlayerStatePacket(player.getId(),
                 support == null ? -1 : support.getId(), support == null ? new UUID(0, 0) : support.getUUID(),

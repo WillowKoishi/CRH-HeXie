@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "flip_v": true,
+  "model": "hexie:models/block/crh2a/driver_seat/driver_seat.obj",
+  "textures": {
+    "particle": "hexie:block/crh2a/driver_seat"
+  }
+}
