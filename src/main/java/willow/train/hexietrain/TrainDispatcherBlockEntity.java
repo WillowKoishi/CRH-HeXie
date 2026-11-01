@@ -1001,10 +1001,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
                 stallTicks = 0;
                 try { tr.navigation.cancelNavigation(); } catch (Throwable ignored) { }
             }
-            // 切回自动驾驶：手动模式下 driveToStation 不会运行
-            if (manualMode) {
-                setManualMode(false);
-            }
+            // 选站只调整时刻表执行位置，绝不改动操控模式。
             HexieTrain.LOGGER.info("[HexieTrain][ui] 前往第 {} 站（时刻表条目未改动）", selectedStop);
         } catch (Throwable t) {
             HexieTrain.LOGGER.warn("[HexieTrain][ui] 确认站点失败: {}", t.toString());
