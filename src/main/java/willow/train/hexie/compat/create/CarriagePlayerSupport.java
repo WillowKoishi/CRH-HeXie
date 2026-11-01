@@ -24,12 +24,25 @@ public final class CarriagePlayerSupport {
     // equal client/server network IDs distinct and allow unloaded players to be collected.
     private static final ThreadLocal<Map<Player, Standing>> STANDING =
             ThreadLocal.withInitial(() -> new MapMaker().weakKeys().makeMap());
-    private record ClientRestore(int id, java.util.UUID uuid, Vec3 local) {}
+    private record ClientRestore(int id, java.util.UUID uuid, Vec3 local, boolean dismount) {}
     private static final ThreadLocal<Map<Player, ClientRestore>> CLIENT_RESTORE =
             ThreadLocal.withInitial(() -> new MapMaker().weakKeys().makeMap());
 
     public static void queueClientRestore(Player player, int id, java.util.UUID uuid, Vec3 local) {
-        CLIENT_RESTORE.get().put(player, new ClientRestore(id, uuid, local));
+        CLIENT_RESTORE.get().put(player, new ClientRestore(id, uuid, local, false));
+    }
+
+    public static void queueClientDismount(Player player, SnapshotCarriageEntity car, Vec3 local) {
+        CLIENT_RESTORE.get().put(player, new ClientRestore(car.getId(), car.getUUID(), local, true));
+    }
+
+    public static Vec3 dismount(Player player, SnapshotCarriageEntity car, Vec3 local) {
+        Standing standing = new Standing(car, local);
+        STANDING.get().put(player, standing);
+        Vec3 world = standing.frame.world(local);
+        // Placement must not be counted again as movement within the carriage.
+        placeFromLocal(player, standing, world);
+        return world;
     }
 
     private static final class Standing {
@@ -240,10 +253,17 @@ public final class CarriagePlayerSupport {
         for (Player player : CLIENT_RESTORE.get().keySet().toArray(Player[]::new)) {
             var restore = CLIENT_RESTORE.get().get(player);
             if (player.isRemoved()) { CLIENT_RESTORE.get().remove(player); continue; }
+            if (restore.dismount() && player.isPassenger()) continue;
             if (player.level().getEntity(restore.id()) instanceof SnapshotCarriageEntity car
                     && car.getUUID().equals(restore.uuid())) {
-                accept(player, car, restore.local());
-                placeFromLocal(player, STANDING.get().get(player), frame(car, 1).world(restore.local()));
+                if (restore.dismount()) {
+                    player.getPersistentData().remove("ContraptionDismountLocation");
+                    dismount(player, car, restore.local());
+                    player.setOnGround(false);
+                } else {
+                    accept(player, car, restore.local());
+                    placeFromLocal(player, STANDING.get().get(player), frame(car, 1).world(restore.local()));
+                }
                 player.xo = player.getX(); player.yo = player.getY(); player.zo = player.getZ();
                 CLIENT_RESTORE.get().remove(player);
             }

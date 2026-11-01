@@ -284,6 +284,10 @@ public abstract class MixinAbstractContraptionEntity extends Entity {
                 && contraption instanceof com.simibubi.create.content.trains.entity.CarriageContraption) {
             Vec3 feet = willow.train.hexie.compat.create.TrainSeatDismount.behind(
                     (AbstractContraptionEntity) (Object) this, dismountSeat);
+            if (feet != null && (Object) this instanceof willow.train.hexie.compat.create.SnapshotCarriageEntity car) {
+                Vec3 local = willow.train.hexie.compat.create.TrainSeatDismount.localBehind(car, dismountSeat);
+                feet = willow.train.hexie.compat.create.CarriagePlayerSupport.dismount((Player) passenger, car, local);
+            }
             if (feet != null) passenger.getPersistentData().put("ContraptionDismountLocation",
                     net.createmod.catnip.math.VecHelper.writeNBT(feet));
         }

@@ -1,6 +1,9 @@
 package willow.train.hexie.blocks.locos.head;
 
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.WeakHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -20,15 +23,24 @@ import willow.train.hexie.blocks.bogeys.*;
 import willow.train.hexie.blockentity.CRH2HeadEntity;
 import willow.train.hexie.init.block.BlockInit;
 import willow.train.hexie.init.track.TrackBlockInit;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
+@EventBusSubscriber(modid = willow.train.hexie.Main.MOD_ID)
 public final class CRH2HeadBlock extends Block implements EntityBlock {
     public static final DirectionProperty FACING=BlockStateProperties.HORIZONTAL_FACING;
+    private static final Map<ServerLevel, Map<BlockPos, Direction>> MOVED_HEADS = new WeakHashMap<>();
     public CRH2HeadBlock(Properties properties) {
         super(properties.dynamicShape());
         registerDefaultState(stateDefinition.any().setValue(FACING,Direction.NORTH));
     }
     @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> builder) { builder.add(FACING); }
-    @Override public BlockState getStateForPlacement(BlockPlaceContext c) { return defaultBlockState().setValue(FACING,c.getHorizontalDirection()); }
+    @Override public BlockState getStateForPlacement(BlockPlaceContext c) {
+        Direction face = c.getClickedFace();
+        Direction facing = face.getAxis().isHorizontal() ? face : c.getHorizontalDirection();
+        return defaultBlockState().setValue(FACING, facing);
+    }
     @Override public BlockState rotate(BlockState s,Rotation r) { return s.setValue(FACING,r.rotate(s.getValue(FACING))); }
     @Override public BlockState mirror(BlockState s,Mirror m) { return rotate(s,m.getRotation(s.getValue(FACING))); }
     @Override public RenderShape getRenderShape(BlockState s) { return RenderShape.ENTITYBLOCK_ANIMATED; }
@@ -70,16 +82,37 @@ public final class CRH2HeadBlock extends Block implements EntityBlock {
             BogeyFloorData.setLongitudinal(bogey,3*facing.getAxisDirection().getStep());
     }
     @Override protected void onRemove(BlockState s,Level w,BlockPos p,BlockState replacement,boolean moved) {
-        if (!w.isClientSide && !moved && !s.is(replacement.getBlock())) {
+        if (!w.isClientSide && !s.is(replacement.getBlock())) {
             var facing=s.getValue(FACING);
-            for(int i=0;i<HeadGeometry.PARTS;i++) {
-                if(i==HeadGeometry.ROOT_PART) continue;
-                var at=p.offset(HeadGeometry.offset(i,facing));var part=w.getBlockState(at);
-                boolean floor=part.getBlock() instanceof HeadFloorBlock && part.getValue(HeadFloorBlock.PART)==i && part.getValue(FACING)==facing;
-                boolean support=i==HeadGeometry.BOGEY_PART && part.getBlock() instanceof HexieBogeyBlock<?> && part.getValue(HexieBogeyBlock.HEAD_MOUNTED);
-                if(floor||support) w.removeBlock(at,false);
-            }
+            if (moved && w instanceof ServerLevel server)
+                MOVED_HEADS.computeIfAbsent(server, ignored -> new HashMap<>()).put(p.immutable(), facing);
+            else if (!moved)
+                removeRemainingParts(w,p,facing);
         }
         super.onRemove(s,w,p,replacement,moved);
+    }
+
+    @SubscribeEvent
+    public static void cleanMovedHeadRemainders(LevelTickEvent.Post event) {
+        if (!(event.getLevel() instanceof ServerLevel world)) return;
+        var pending = MOVED_HEADS.remove(world);
+        if (pending == null) return;
+        // Assembly removes the complete snapshot synchronously. Wait until it has
+        // finished so source cleanup cannot delete blocks still being captured.
+        pending.forEach((root, facing) -> {
+            // A rollback or reinstallation owns its parts again.
+            if (!(world.getBlockState(root).getBlock() instanceof CRH2HeadBlock))
+                removeRemainingParts(world,root,facing);
+        });
+    }
+
+    private static void removeRemainingParts(Level w,BlockPos root,Direction facing) {
+        for(int i=0;i<HeadGeometry.PARTS;i++) {
+            if(i==HeadGeometry.ROOT_PART) continue;
+            var at=root.offset(HeadGeometry.offset(i,facing));var part=w.getBlockState(at);
+            boolean floor=part.getBlock() instanceof HeadFloorBlock && part.getValue(HeadFloorBlock.PART)==i && part.getValue(FACING)==facing;
+            boolean support=i==HeadGeometry.BOGEY_PART && part.getBlock() instanceof HexieBogeyBlock<?> && part.getValue(HexieBogeyBlock.HEAD_MOUNTED);
+            if(floor||support) w.removeBlock(at,false);
+        }
     }
 }

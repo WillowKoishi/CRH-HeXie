@@ -1,6 +1,9 @@
 package willow.train.hexie.blocks.carriage;
 
 import java.util.function.Predicate;
+import willow.train.hexie.blocks.locos.crh2a.CRH2PanelBlock;
+import willow.train.hexie.blocks.locos.crh2a.CRH2PartBlock;
+import willow.train.hexie.item.CRH2PartItem;
 import net.createmod.catnip.placement.IPlacementHelper;
 import net.createmod.catnip.placement.PlacementHelpers;
 import net.createmod.catnip.placement.PlacementOffset;
@@ -40,6 +43,7 @@ public final class TrainPanelPlacement implements IPlacementHelper {
 
     private static boolean isPanel(BlockState state) {
         Block block = state.getBlock();
+        if (block instanceof CRH2PanelBlock) return true;
         boolean supported = block instanceof OrdinaryTrainPanelBlock || block instanceof OrdinaryTrainUpperPanelBlock
                 || block instanceof TrainPanelBlock || block instanceof TrainNoBlock || block instanceof LacqueredBoardBlock
                 || block instanceof PanelBlock25Side || block instanceof TrainGlassPanelBlock
@@ -83,8 +87,14 @@ public final class TrainPanelPlacement implements IPlacementHelper {
         if (player.isShiftKeyDown() || !player.mayBuild()) return null;
         var helper = PlacementHelpers.get(HELPER);
         if (!helper.matchesState(state) || !helper.matchesItem(stack)) return null;
-        helper.getOffset(player, level, state, pos, hit, stack)
-                .placeInWorld(level, (BlockItem) stack.getItem(), player, hand, hit);
+        var offset = helper.getOffset(player, level, state, pos, hit, stack);
+        if (stack.getItem() instanceof CRH2PartItem item) {
+            if (!offset.isSuccessful()) return ItemInteractionResult.FAIL;
+            var placed = offset.getTransform().apply(item.getBlock().defaultBlockState());
+            var context = new BlockPlaceContext(level,player,hand,stack,hit);
+            return willow.train.hexie.compat.InteractionResults.toItemResult(item.placeAtRoot(context,offset.getBlockPos(),placed.getValue(CRH2PartBlock.FACING)));
+        }
+        offset.placeInWorld(level, (BlockItem) stack.getItem(), player, hand, hit);
         return ItemInteractionResult.SUCCESS;
     }
 
@@ -108,15 +118,17 @@ public final class TrainPanelPlacement implements IPlacementHelper {
                 new BlockPlaceContext(level, player, InteractionHand.MAIN_HAND, stack, hit));
         if (prototype == null) return PlacementOffset.fail();
         var aligned = align(prototype, state);
-        var sourceBounds = state.getShape(level, pos).bounds();
-        var targetBounds = aligned.getShape(level, pos).bounds();
-        var directions = IPlacementHelper.orderedByDistanceExceptAxis(pos, hit.getLocation(),
+        var selectedCell=pos;
+        if(state.getBlock() instanceof CRH2PartBlock source) pos=source.root(pos,state);
+        var sourceBounds = state.getBlock() instanceof CRH2PartBlock source ? source.placementBounds(state) : state.getShape(level,pos).bounds();
+        var targetBounds = aligned.getBlock() instanceof CRH2PartBlock targetBlock ? targetBlock.placementBounds(aligned) : aligned.getShape(level,pos).bounds();
+        var directions = IPlacementHelper.orderedByDistanceExceptAxis(selectedCell, hit.getLocation(),
                 state.getValue(SideMirrorBlockBase.FACING).getAxis());
         for (var direction : directions) {
             var axis = direction.getAxis();
             double separation = direction.getAxisDirection() == Direction.AxisDirection.POSITIVE
                     ? sourceBounds.max(axis) - targetBounds.min(axis) : targetBounds.max(axis) - sourceBounds.min(axis);
-            int step = Math.max(1, (int) Math.ceil(separation - 1e-6));
+            int step = Math.max(1, (int) Math.ceil(separation - ((state.getBlock() instanceof CRH2PanelBlock || item.getBlock() instanceof CRH2PanelBlock) ? 1.0/64 : 1e-6)));
             var target = pos.relative(direction, step);
             if (!level.getBlockState(target).canBeReplaced()) continue;
             // Use the held item's selected panel type, instead of Copycat's default-state-only placement.
@@ -125,6 +137,7 @@ public final class TrainPanelPlacement implements IPlacementHelper {
             var initial = item.getBlock().getStateForPlacement(context);
             if (initial == null) continue;
             var placed = align(initial, state);
+            if (item instanceof CRH2PartItem crhItem && !crhItem.canFit(context,target,placed)) continue;
             return PlacementOffset.success(target, ignored -> placed).withGhostState(placed);
         }
         return PlacementOffset.fail();

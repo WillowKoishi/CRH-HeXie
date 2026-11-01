@@ -21,6 +21,7 @@
     "MixinSchematicSyncPacket"
   ],
   "client": [
+    "client.MixinDrivingConsoleDismountSync",
     "client.MixinDrivingConsoleKeyboard",
     "client.MixinDrivingConsoleLook",
     "client.MixinCarriageLocalPlayer",

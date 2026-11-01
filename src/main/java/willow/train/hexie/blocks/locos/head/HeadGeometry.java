@@ -14,7 +14,7 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import willow.train.hexie.blocks.bogeys.HexieBogeyBlock;
 
-/** Authored marker coordinates: install (0,-16,0), floor end (0,-16,-128), bogey (0,-16,-83). */
+/** Installation transform: model pixels + (8,16,8); floor top is local y=1. */
 public final class HeadGeometry {
     public static final int PARTS = 45;
     public static final int ROOT_PART = 42;
@@ -65,7 +65,9 @@ public final class HeadGeometry {
     }
     public static List<AABB> boxes(Direction facing) { return COLLISION.get(facing); }
     public static AABB bounds(Direction facing) {
-        return COLLISION.get(facing).stream().reduce(AABB::minmax).orElseThrow();
+        // The simplified collision markers do not include every visible trim piece.
+        return COLLISION.get(facing).stream().reduce(
+                rotate(new AABB(-20/16d,-2/16d,-144/16d,36/16d,60/16d,17/16d), facing), AABB::minmax);
     }
     public static BlockPos owner(BlockGetter world, BlockPos pos) {
         var state=world.getBlockState(pos);

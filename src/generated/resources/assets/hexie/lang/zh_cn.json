@@ -597,5 +597,14 @@
   "gui.hexie.ground_station_sign.switch_font": "切换字体",
   "gui.hexie.vehicle.assembled": "已组装",
   "block.hexie.crh2a_head": "CRH2A 头车",
-  "block.hexie.crh2a_head_floor": "CRH2A 头车 / floor"
+  "block.hexie.crh2a_head_floor": "CRH2A 头车 / floor",
+  "block.hexie.crh2a_carport_mid_antenna": "CRH2A 中部车顶（带天线）",
+  "block.hexie.crh2a_carport_side": "CRH2A 侧车顶",
+  "block.hexie.crh2a_panel_nowindow": "CRH2A 无窗车厢板",
+  "block.hexie.crh2a_panel_nowindow_thick": "CRH2A 加厚无窗车厢板",
+  "block.hexie.crh2a_panel_small_window": "CRH2A 小窗车厢板",
+  "block.hexie.crh2a_panel_wide_window": "CRH2A 宽窗车厢板",
+  "block.hexie.crh2a_skirt_forbogey": "CRH2A 转向架裙板",
+  "block.hexie.crh2a_skirt_normal": "CRH2A 仪器舱裙板",
+  "block.hexie.crh2a_floor": "CRH2A 中间地板"
 }

@@ -593,5 +593,14 @@
   "gui.hexie.ground_station_sign.switch_font": "Switch font",
   "gui.hexie.vehicle.assembled": "Assembled",
   "block.hexie.crh2a_head": "CRH2A Cab Car Head",
-  "block.hexie.crh2a_head_floor": "CRH2A Cab Car Head / floor"
+  "block.hexie.crh2a_head_floor": "CRH2A Cab Car Head / floor",
+  "block.hexie.crh2a_carport_mid_antenna": "CRH2A Center Roof with Antenna",
+  "block.hexie.crh2a_carport_side": "CRH2A Side Roof",
+  "block.hexie.crh2a_panel_nowindow": "CRH2A Solid Body Panel",
+  "block.hexie.crh2a_panel_nowindow_thick": "CRH2A Thick Solid Body Panel",
+  "block.hexie.crh2a_panel_small_window": "CRH2A Small Window Body Panel",
+  "block.hexie.crh2a_panel_wide_window": "CRH2A Wide Window Body Panel",
+  "block.hexie.crh2a_skirt_forbogey": "CRH2A Bogie Skirt",
+  "block.hexie.crh2a_skirt_normal": "CRH2A Equipment Skirt",
+  "block.hexie.crh2a_floor": "CRH2A Center Floor"
 }
