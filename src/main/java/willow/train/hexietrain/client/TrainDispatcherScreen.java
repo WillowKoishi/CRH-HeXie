@@ -76,6 +76,10 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
         g.fill(x + 37, y + 20, x + 169, y + 40, C_SLOT_BG);
         g.fill(x + 38, y + 21, x + 168, y + 39, C_SLOT_INNER);
         g.fill(x + 39, y + 22, x + 167, y + 38, 0xFFB4B4B4);
+        // 右侧确认按钮
+        boolean hoverOk = isIn(mouseX, mouseY, 150, 21, 18, 18);
+        g.fill(x + 150, y + 21, x + 168, y + 39, hoverOk ? C_BUTTON_HOT : C_BUTTON);
+        g.renderOutline(x + 150, y + 21, 18, 18, C_BORDER);
 
         // 分隔线
         g.fill(x + 8, y + 46, x + PANEL_W - 8, y + 47, C_PANEL_DARK);
@@ -145,7 +149,7 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
         } else if (be9 != null && be9.nextTargetName() != null && !be9.nextTargetName().isEmpty()) {
             station9 = be9.nextTargetName();
         }
-        int maxW9 = 168 - 42;
+        int maxW9 = 150 - 42 - 4;   // 右侧留给确认按钮
         String shown9 = station9;
         if (font.width(shown9) > maxW9) {
             while (shown9.length() > 1 && font.width(shown9 + "...") > maxW9) {
@@ -154,6 +158,7 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
             shown9 = shown9 + "...";
         }
         g.drawString(font, shown9, 42, 27, C_TEXT, false);
+        g.drawString(font, "\\u2714", 155, 27, C_TEXT, false);
 
         // 调度器工作状态（与右上角操控模态无关）
         // 只有装了时刻表才显示调度状态；拔掉时刻表就完全不显示
@@ -203,6 +208,17 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
     // ══════════════════ 交互 ══════════════════
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        int x = (int) (mouseX - leftPos);
+        int y = (int) (mouseY - topPos);
+        int cnt9 = menu.stopCount();
+        if (cnt9 > 0 && isIn(x, y, 38, 20, 130, 20)
+                && minecraft != null && minecraft.gameMode != null) {
+            int next9 = menu.selectedStop() + (scrollY < 0 ? 1 : -1);
+            if (next9 < 0) next9 = cnt9 - 1;
+            if (next9 >= cnt9) next9 = 0;
+            minecraft.gameMode.handleInventoryButtonClick(menu.containerId, 100 + next9);
+            return true;
+        }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
@@ -211,6 +227,10 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
         int x = (int) (mouseX - leftPos);
         int y = (int) (mouseY - topPos);
         if (button == 0 && minecraft != null && minecraft.gameMode != null) {
+            if (isIn(x, y, 150, 21, 18, 18)) {
+                minecraft.gameMode.handleInventoryButtonClick(menu.containerId, 200 + menu.selectedStop());
+                return true;
+            }
             // 右上角徽标 = 驾驶模式切换
             if (menu.bound() && isIn(x, y, PANEL_W - 74, 1, 70, 15)) {
                 minecraft.gameMode.handleInventoryButtonClick(menu.containerId, 3);
