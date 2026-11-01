@@ -65,11 +65,6 @@ public final class TrainBinder {
         }
     }
 
-    // ── 诊断用：最近一次建的车，逐 tick 观察它在 RAILWAYS 里的存活情况 ──
-    public static Train debugTrain;
-    public static UUID debugId;
-    public static int debugMapHash;
-    public static int debugTicks;
 
     /** 属于本模组的列车 id：混入用它识别"这节车厢是我们的"。 */
     public static final Set<UUID> OUR_TRAINS = ConcurrentHashMap.newKeySet();
@@ -122,14 +117,12 @@ public static Result bind(ServerLevel level, BlockPos dispatcherPos, ItemStack s
         }
 
         // ① 找转向架
-        HexieTrain.LOGGER.info("[HexieTrain][bind] 1/6 开始，锚点 {}", dispatcherPos);
         PhysicsBogeyBlockEntity bogey = findBogey(level, dispatcherPos);
         if (bogey == null) {
             return Result.fail("附近没有物理转向架");
         }
 
         // ② 组编组
-        HexieTrain.LOGGER.info("[HexieTrain][bind] 2/6 找到转向架 {}", bogey.getBlockPos());
         PhysicsBogeyGroup group;
         try {
             group = PhysicsBogeyGroup.createAndAssign(bogey);
@@ -141,7 +134,6 @@ public static Result bind(ServerLevel level, BlockPos dispatcherPos, ItemStack s
         }
 
         // ③ 轨道图（前后轴不在同一张图时为 null）
-        HexieTrain.LOGGER.info("[HexieTrain][bind] 3/6 编组 {} 个转向架", group.bogeys.size());
         TrackGraph graph = group.getTrackGraph();
         if (graph == null) {
             return Result.fail("物理结构不在轨道上（或跨图）");
@@ -240,8 +232,6 @@ public static Result bind(ServerLevel level, BlockPos dispatcherPos, ItemStack s
         if (carriages.isEmpty()) {
             return Result.fail("无法从物理结构构造车厢");
         }
-        HexieTrain.LOGGER.info("[HexieTrain][bind] 5/6 构造了 {} 节车厢（来自 {} 个转向架）",
-                carriages.size(), group.bogeys.size());
         // ⑤ 建车
         UUID trainId = UUID.randomUUID();
         UUID owner = UUID.randomUUID();
@@ -270,7 +260,6 @@ public static Result bind(ServerLevel level, BlockPos dispatcherPos, ItemStack s
         // 诊断开关：true = 不注册进 RAILWAYS（用于二分定位崩溃源）
         final boolean skipRegister = false;
         if (skipRegister) {
-            HexieTrain.LOGGER.warn("[HexieTrain][bind] 诊断模式：Train {} 已构造但【不注册】进 RAILWAYS", trainId);
         } else {
             Create.RAILWAYS.addTrain(train);
             // 拥有者 = 放置方块的玩家
@@ -284,74 +273,24 @@ public static Result bind(ServerLevel level, BlockPos dispatcherPos, ItemStack s
             }
             // 一列车只允许一个主调度器输出传动
             TRAIN_DISPATCHERS.put(trainId, dispatcherPos.immutable());
-            HexieTrain.LOGGER.info("[HexieTrain][bind] 6/6 Train 建好 {}, 注册进 RAILWAYS", trainId);
 
             // ── 寻路自检：把 findPathTo 的输入和输出一次性打出来 ──
+            // 兜底：车站点若没挂到边的 EdgeData 上，寻路将认不出目的地 —— 这里补挂一次
             try {
-                Carriage c0 = train.carriages.get(0);
-                HexieTrain.LOGGER.info(
-                        "[HexieTrain][path] 车厢数={} bogeySpacing={} 车厢间距数组={} 双转向架={}",
-                        train.carriages.size(), c0.bogeySpacing, train.carriageSpacing.size(),
-                        c0.isOnTwoBogeys());
-
-                TravellingPoint lp0 = c0.getLeadingPoint();
-                HexieTrain.LOGGER.info(
-                        "[HexieTrain][path] 车头点 edge={} pos={} node1={} node2={}",
-                        lp0.edge != null, String.format("%.2f", lp0.position),
-                        lp0.node1 == null ? "null" : lp0.node1.getLocation(),
-                        lp0.node2 == null ? "null" : lp0.node2.getLocation());
-
                 var stations0 = train.graph.getPoints(
                         com.simibubi.create.content.trains.graph.EdgePointType.STATION);
                 for (GlobalStation st : stations0) {
-                    HexieTrain.LOGGER.info(
-                            "[HexieTrain][path] 车站 {} 边={}->{} 边上位置={}",
-                            st.name, st.edgeLocation.getFirst(), st.edgeLocation.getSecond(),
-                            String.format("%.2f", st.position));
-                    // 车站记录的两个节点是否还存在于当前轨道图里
-                    boolean hasA = train.graph.getNodes().contains(st.edgeLocation.getFirst());
-                    boolean hasB = train.graph.getNodes().contains(st.edgeLocation.getSecond());
-                    HexieTrain.LOGGER.info(
-                            "[HexieTrain][path] 车站边节点存在? first={} second={}  全图节点数={}",
-                            hasA, hasB, train.graph.getNodes().size());
-
-                    // 车站点是否真的挂在这条边的 EdgeData 上（搜索靠它识别目的地）
                     var nA = train.graph.locateNode(st.edgeLocation.getFirst());
                     var nB = train.graph.locateNode(st.edgeLocation.getSecond());
                     var edgeAB = (nA == null || nB == null) ? null
                             : train.graph.getConnectionsFrom(nA).get(nB);
-                    boolean attached = edgeAB != null
-                            && edgeAB.getEdgeData().getPoints().contains(st);
-                    HexieTrain.LOGGER.info(
-                            "[HexieTrain][path] 车站边存在={} 点已挂载={} 边上点数={}",
-                            edgeAB != null, attached,
-                            edgeAB == null ? -1 : edgeAB.getEdgeData().getPoints().size());
-
-                    if (edgeAB != null && !attached) {
-                        // 用 Create 自己的 API 补挂，和放置车站方块时的行为一致
+                    if (edgeAB != null && !edgeAB.getEdgeData().getPoints().contains(st)) {
                         edgeAB.getEdgeData().addPoint(train.graph, st);
-                        HexieTrain.LOGGER.info("[HexieTrain][path] 车站点未挂载，已补挂到边上");
                     }
                 }
-
-                var list = new java.util.ArrayList<GlobalStation>(stations0);
-                var found = train.navigation.findPathTo(list, Double.MAX_VALUE);
-
-                HexieTrain.LOGGER.info("[HexieTrain][path] findPathTo 结果={}",
-                        found == null ? "null（找不到路）" : "找到，终点=" + found.destination.name);
-
-                // 用 Create 原生的列车状态机制播报给车主（橙色）
-            } catch (Throwable t) {
-                HexieTrain.LOGGER.warn("[HexieTrain][path] 自检异常: {}", t.toString());
+            } catch (Throwable ignored) {
             }
 
-            // 诊断快照
-            debugTrain = train;
-            debugId = trainId;
-            debugMapHash = System.identityHashCode(Create.RAILWAYS.trains);
-            debugTicks = 0;
-            HexieTrain.LOGGER.info("[HexieTrain][dbg] 注册后 containsKey={} invalid={} mapHash={}",
-                    Create.RAILWAYS.trains.containsKey(trainId), train.invalid, debugMapHash);
         }
         HexieTrain.LOGGER.info("[HexieTrain][bind] 完成");
         return Result.success(trainId, "已注册为列车（" + group.bogeys.size() + " 个转向架）");

@@ -34,7 +34,6 @@ public class TrainDispatcherBlock extends DirectionalAxisKineticBlock
 
     public static final BooleanProperty LEFT_POWERED = BooleanProperty.create("left_powered");
     public static final BooleanProperty RIGHT_POWERED = BooleanProperty.create("right_powered");
-    private static int destroyLogs = 0;
 
     public TrainDispatcherBlock(Properties properties) {
         super(properties);
@@ -174,19 +173,6 @@ public class TrainDispatcherBlock extends DirectionalAxisKineticBlock
 
     @Override
     public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
-        // 诊断：方块被破坏时打印调用栈（限 12 次）
-        if (destroyLogs < 12) {
-            destroyLogs++;
-            StackTraceElement[] st9 = new Throwable().getStackTrace();
-            StringBuilder sb9 = new StringBuilder();
-            for (int i9 = 1; i9 < Math.min(8, st9.length); i9++) {
-                String cls9 = st9[i9].getClassName();
-                int dot9 = cls9.lastIndexOf(46);
-                if (dot9 >= 0) cls9 = cls9.substring(dot9 + 1);
-                sb9.append(cls9).append(".").append(st9[i9].getMethodName()).append(" <- ");
-            }
-            HexieTrain.LOGGER.warn("[HexieTrain][destroy] 调用栈: {}", sb9);
-        }
         try {
             if (!level.isClientSide && level.getBlockEntity(pos) instanceof TrainDispatcherBlockEntity be) {
                 be.dissolve();

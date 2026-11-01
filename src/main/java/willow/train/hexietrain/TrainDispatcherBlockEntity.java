@@ -100,7 +100,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     private double lastDistance = 0;
 
     /** 诊断日志计时。 */
-    private int diagTicks = 0;
 
     /** 简化自动驾驶的巡航速度（格/tick）。 */
     private static final double AUTO_SPEED = 0.15;
@@ -130,9 +129,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     private int routeTicks = 0;
     private int brakeLogTicks = 0;
     private int derailLogTicks = 0;
-    private int kineticTicks = 0;
-    private int modifierLogs = 0;
-    private int neighborProbe = 0;
 
     /** 所有已加载的调度台（由全局 ticker 驱动，不依赖方块实体自身 tick）。 */
     private static final Set<TrainDispatcherBlockEntity> ACTIVE = ConcurrentHashMap.newKeySet();
@@ -142,7 +138,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     }
 
     /** tick 存活探针计时。 */
-    private int tickProbe = 0;
 
     /** 上一 tick 的车头世界坐标，用于"是否跨过车站"的精确判定。 */
     private net.minecraft.world.phys.Vec3 lastLeadPos = null;
@@ -175,8 +170,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     /** true = 对刹车通道做平方根补偿（抵消转向架的 Mth.square）。 */
     private boolean linearizeBrake = true;
 
-    private int lastLeft = -1;
-    private int lastRight = -1;
 
     public TrainDispatcherBlockEntity(BlockPos pos, BlockState state) {
         this(HexieRegistries.TRAIN_DISPATCHER_BE.get(), pos, state);
@@ -227,35 +220,19 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         return facing.getAxis().isHorizontal() ? facing : null;
     }
 
+    /** 传动比（照抄参考实现）。 */
     @Override
     public float getRotationSpeedModifier(Direction face) {
-        float result = 0.0f;
-        String why = "noSource";
         if (hasSource()) {
-            if (face == getSourceFacing()) {
-                result = 1.0f;
-                why = "sourceSide";
-            } else {
-                boolean left = getBlockState().getValue(TrainDispatcherBlock.LEFT_POWERED);
-                boolean right = getBlockState().getValue(TrainDispatcherBlock.RIGHT_POWERED);
-                if (left && right) { result = 0.0f; why = "both"; }
-                else if (left)     { result = 1.0f; why = "left"; }
-                else if (right)    { result = -1.0f; why = "right"; }
-                else               { result = 0.0f; why = "none"; }
-            }
+            if (face == getSourceFacing()) return 1.0f;
+
+            boolean left = getBlockState().getValue(TrainDispatcherBlock.LEFT_POWERED);
+            boolean right = getBlockState().getValue(TrainDispatcherBlock.RIGHT_POWERED);
+            if (left && right) return 0.0f;
+            if (left) return 1.0f;
+            if (right) return -1.0f;
         }
-        if (modifierLogs < 40) {
-            modifierLogs++;
-            try {
-                HexieTrain.LOGGER.info("[HexieTrain][mod] face={} srcFace={} L/R={}/{} -> {} ({})",
-                        face, hasSource() ? getSourceFacing() : null,
-                        getBlockState().getValue(TrainDispatcherBlock.LEFT_POWERED),
-                        getBlockState().getValue(TrainDispatcherBlock.RIGHT_POWERED),
-                        result, why);
-            } catch (Throwable ignored) {
-            }
-        }
-        return result;
+        return 0.0f;
     }
 
     // ══════════════════════ tick ══════════════════════
@@ -268,50 +245,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
 
     /** 由全局 ticker 每 tick 调用。 */
     public void serverTick() {
-        // 诊断：读两侧邻居的转速，看下游到底拿到什么
-        if (++neighborProbe >= 20) {
-            neighborProbe = 0;
-            try {
-                if (level != null && !level.isClientSide && level.getBlockEntity(worldPosition) != null) {
-                    Direction f9 = getBlockState().getValue(TrainDispatcherBlock.FACING);
-                    Direction l9 = getBlockState().getValue(TrainDispatcherBlock.AXIS_ALONG_FIRST_COORDINATE)
-                            ? f9.getClockWise() : f9.getCounterClockWise();
-                    float self9 = getSpeed();
-                    String n1 = neighborSpeed(l9);
-                    String n2 = neighborSpeed(l9.getOpposite());
-                    HexieTrain.LOGGER.info("[HexieTrain][net] self={} L/R={}/{} 侧A({})={} 侧B({})={}",
-                            String.format("%.1f", self9),
-                            getBlockState().getValue(TrainDispatcherBlock.LEFT_POWERED),
-                            getBlockState().getValue(TrainDispatcherBlock.RIGHT_POWERED),
-                            l9, n1, l9.getOpposite(), n2);
-                }
-            } catch (Throwable t8) {
-                HexieTrain.LOGGER.warn("[HexieTrain][net] 测量失败: {}", t8.toString());
-            }
-        }
 
-        if (level == null || level.isClientSide || isRemoved()) return;
-        // ── 动力学自检 ──
-        if (++kineticTicks >= 600) {
-            kineticTicks = 0;
-            try {
-                BlockState st9 = getBlockState();
-                StringBuilder sb = new StringBuilder();
-                for (Direction d : Direction.Plane.HORIZONTAL) {
-                    int sig = level == null ? -1 : level.getSignal(worldPosition.relative(d), d);
-                    sb.append(d.name()).append("=").append(sig).append(" ");
-                }
-                HexieTrain.LOGGER.info(
-                        "[HexieTrain][kinetics] speed={} src={} hasSrc={} srcFace={} FACING={} L/R={}/{} 四面[{}]",
-                        String.format("%.1f", getSpeed()),
-                        isSource(), hasSource(), hasSource() ? getSourceFacing() : null, horizontalFacing(),
-                        st9.getValue(TrainDispatcherBlock.LEFT_POWERED),
-                        st9.getValue(TrainDispatcherBlock.RIGHT_POWERED),
-                        sb.toString().trim());
-            } catch (Throwable t9) {
-                HexieTrain.LOGGER.warn("[HexieTrain][kinetics] 自检失败: {}", t9.toString());
-            }
-        }
 
         // 把红石状态写进 blockstate —— 只有 blockstate 变化，
         // Create 的动力学网络才会重新计算传动比。
@@ -387,7 +321,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         // 红石一介入 → 自动切到"玩家操控"，并暂停自动寻路
         if (redstonePresent && !manualMode) {
             setManualMode(true);
-            HexieTrain.LOGGER.info("[HexieTrain][mode] 检测到红石输入 → 切换到玩家操控");
         }
 
         // ③b 手动接管：左右红石直接给影子车速度（位置由 TravellingPoint 推进，
@@ -451,7 +384,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
                             if (before >= 0 && after <= 0) {
                                 train.arriveAt(arriveTarget);
                                 HexieTrain.LOGGER.info(
-                                        "[HexieTrain][arrive] 跨越车站点 {} @{} (车头={})",
                                         arriveTarget.name, arriveTarget.getBlockEntityPos(),
                                         String.format("%.2f,%.2f,%.2f", cur.x, cur.y, cur.z));
                             }
@@ -461,7 +393,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
 
                 }
             } catch (Throwable t9) {
-                HexieTrain.LOGGER.warn("[HexieTrain][arrive] 到站判定失败: {}", t9.toString());
             }
         } else {
             lastLeadPos = null;
@@ -471,99 +402,11 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         // 卡滞检测：时刻表在 PRE_TRANSIT 且没有目的地 = 目标车站不存在/无可行路径
         if (train.navigation.destination == null && !redstonePresent
                 && train.runtime.state == com.simibubi.create.content.trains.schedule.ScheduleRuntime.State.PRE_TRANSIT) {
-            if (++stallTicks % 100 == 1) {
-                String wanted = stopNames.isEmpty() ? "（时刻表为空）" : stopNames.get(
-                        Math.min(selectedStop, stopNames.size() - 1));
-                // 把"这张轨道图上到底有哪些车站"打出来，区分是名字不匹配还是图不对
-                String stationInfo;
-                try {
-                    var stations = train.graph.getPoints(
-                            com.simibubi.create.content.trains.graph.EdgePointType.STATION);
-                    stationInfo = stations.size() + " 个车站" + (stations.isEmpty() ? ""
-                            : "：" + stations.stream().limit(6)
-                                    .map(s -> "\"" + s.name + "\"")
-                                    .collect(java.util.stream.Collectors.joining(", ")));
-                } catch (Throwable t3) {
-                    stationInfo = "读取失败: " + t3;
-                }
-                String startInfo;
-                try {
-                    var lp = train.carriages.get(0).getLeadingPoint();
-                    startInfo = "起点边=" + (lp.edge != null)
-                            + " node1=" + (lp.node1 != null)
-                            + " node2=" + (lp.node2 != null)
-                            + " pos=" + String.format("%.2f", lp.position)
-                            + " 起点连接数=" + train.graph.getConnectionsFrom(lp.node1).size();
-                } catch (Throwable t4) {
-                    startInfo = "起点读取失败: " + t4;
-                }
-                // ── 连通性诊断（用轨道边点坐标，不用站台方块坐标）──
-                // TrackEdgePoint 暴露的是 edgeLocation（所在边的两个端点）+ position（边上的位置），
-                // 这才是车站"在轨道上的位置"。站台方块坐标在轨道旁边，不能拿来比距离。
-                String reachInfo = "未测";
-                try {
-                    var lp9 = train.carriages.get(0).getLeadingPoint();
-                    var lpA = lp9.node1.getLocation();
-                    var lpB = lp9.node2.getLocation();
-
-                    // 从边的两端各自 BFS，取并集（避免只沿单向走）
-                    var visited = new java.util.HashSet<com.simibubi.create.content.trains.graph.TrackNode>();
-                    var queue = new java.util.ArrayDeque<com.simibubi.create.content.trains.graph.TrackNode>();
-                    queue.add(lp9.node1);
-                    queue.add(lp9.node2);
-                    while (!queue.isEmpty() && visited.size() < 8000) {
-                        var node9 = queue.poll();
-                        if (!visited.add(node9)) continue;
-                        for (var nb : train.graph.getConnectionsFrom(node9).keySet()) queue.add(nb);
-                    }
-
-                    boolean onStationEdge = false;
-                    double stationPosOnEdge = -1;
-                    for (GlobalStation st9 : train.graph.getPoints(
-                            com.simibubi.create.content.trains.graph.EdgePointType.STATION)) {
-                        var sA = st9.edgeLocation.getFirst();
-                        var sB = st9.edgeLocation.getSecond();
-                        stationPosOnEdge = st9.position;
-                        // 车头所在的边 == 车站所在的边（端点顺序可能相反）
-                        if ((lpA.equals(sA) && lpB.equals(sB)) || (lpA.equals(sB) && lpB.equals(sA))) {
-                            onStationEdge = true;
-                        }
-                        // 图上能否走到车站那条边
-                        for (var n9 : visited) {
-                            var nl = n9.getLocation();
-                            if (nl.equals(sA) || nl.equals(sB)) onStationEdge = onStationEdge || false;
-                        }
-                    }
-
-                    reachInfo = "车头段节点=" + visited.size()
-                            + " 车头边=" + (lpA.getX() + "," + lpA.getZ()) + "→" + (lpB.getX() + "," + lpB.getZ())
-                            + " 车站边位置=" + String.format("%.1f", stationPosOnEdge)
-                            + " 同边=" + onStationEdge;
-                } catch (Throwable t6) {
-                    reachInfo = "诊断异常:" + t6.getClass().getSimpleName();
-                }
-
-                HexieTrain.LOGGER.warn(
-                        "[HexieTrain][stall] 目标=\"{}\" 找不到（已卡 {} tick）。图上有 {}；{}；{}",
-                        wanted, stallTicks, stationInfo, startInfo, reachInfo);
-
-                // 导航被 Create 取消后，用 Create 原生寻路重试一次
-                try {
-                    if (train.navigation.destination == null) {
-                        var stationsR = new java.util.ArrayList<GlobalStation>(train.graph.getPoints(
-                                com.simibubi.create.content.trains.graph.EdgePointType.STATION));
-                        if (!stationsR.isEmpty()) {
-                            var again = train.navigation.findPathTo(stationsR, Double.MAX_VALUE);
-                            if (again != null) {
-                                double d = train.navigation.startNavigation(again);
-                                HexieTrain.LOGGER.info("[HexieTrain][rearm] 重新挂上导航，距离={}",
-                                        String.format("%.2f", d));
-                            }
-                        }
-                    }
-                } catch (Throwable t7) {
-                    HexieTrain.LOGGER.warn("[HexieTrain][rearm] 异常: {}", t7.toString());
-                }
+            if (++stallTicks % 200 == 1) {
+                String wanted = stopNames.isEmpty() ? "（空）"
+                        : stopNames.get(Math.min(selectedStop, stopNames.size() - 1));
+                HexieTrain.LOGGER.warn("[HexieTrain] 时刻表卡住：目标 \"{}\" 找不到（已 {} tick）",
+                        wanted, stallTicks);
             }
         } else {
             stallTicks = 0;
@@ -579,26 +422,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
             driveToStation(train);
         }
 
-        if (++diagTicks >= 40) {
-            diagTicks = 0;
-            HexieTrain.LOGGER.info(
-                    "[HexieTrain][run] speed={} derailed={} invalid={} dest={} dist={} stage={} rs={}/{}",
-                    String.format("%.3f", train.speed),
-                    train.derailed, train.invalid,
-                    train.navigation != null && train.navigation.destination != null
-                            ? train.navigation.destination.name : "无",
-                    String.format("%.1f", lastDistance),
-                    0, left, right);
-
-            HexieTrain.LOGGER.info(
-                    "[HexieTrain][gate] graph={} schedule={} paused={} state={} dest={} doubleEnded={}",
-                    train.graph != null,
-                    train.runtime.schedule != null,
-                    train.runtime.paused,
-                    train.runtime.state,
-                    train.navigation.destination != null,
-                    train.doubleEnded);
-        }
     }
 
     /** 红石状态变化回调：手动模式下立刻重算转速，不用等下一 tick 的轮询。 */
@@ -662,7 +485,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     public void selectStop(int index) {
         if (stopNames.isEmpty()) return;
         selectedStop = Math.floorMod(index, stopNames.size());
-        HexieTrain.LOGGER.info("[HexieTrain][ui] 预览站点 → {}/{}", selectedStop, stopNames.size());
         setChanged();
         sendData();
     }
@@ -684,7 +506,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
                         train.navigation.cancelNavigation();   // 只取消寻路目标，不冻结列车
                         train.runtime.paused = false;           // 关键：不能暂停，否则列车的点不再推进
                         // 播报：玩家接管
-                        HexieTrain.LOGGER.info("[HexieTrain][mode] 玩家接管，自动寻路已暂停");
                     } else {
                         train.runtime.paused = false;          // 恢复自动巡航
                         // 切回自动驾驶：立刻试一次寻路，并把结果播报给车主
@@ -877,13 +698,9 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
                 lastBindMessage = "已取消列车身份";
             }
         }
-        HexieTrain.LOGGER.info("[HexieTrain][ui] 开始 refreshStopNames");
         refreshStopNames();
-        HexieTrain.LOGGER.info("[HexieTrain][ui] refreshStopNames 完成，共 {} 个站", stopNames.size());
         setChanged();
-        HexieTrain.LOGGER.info("[HexieTrain][ui] 开始 sendData");
         sendData();
-        HexieTrain.LOGGER.info("[HexieTrain][ui] sendData 完成");
     }
 
     /** 拆除列车身份：解除寻路 → 离站 → 从 RAILWAYS 移除。 */
@@ -987,10 +804,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
 
         // 瞬态状态：读档后一律复位，等本 tick 重新判定
         suspended = false;
-        lastLeft = -1;
-        lastRight = -1;
         stallTicks = 0;
-        diagTicks = 0;
         lastLeadPos = null;
         lastDestination = null;
         linearizeBrake = !tag.contains("LinearizeBrake") || tag.getBoolean("LinearizeBrake");
@@ -1071,7 +885,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
                 if (train.runtime != null && train.runtime.currentEntry != stoppedEntry) {
                     waitingForSchedule = false;
                     SetOutputBrake(0);
-                    HexieTrain.LOGGER.info("[HexieTrain][auto] 时刻表放行");
                 } else {
                     train.speed = 0;
                     SetOutputBrake(15);
@@ -1124,9 +937,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
 
             if (++brakeLogTicks >= 10) {
                 brakeLogTicks = 0;
-                HexieTrain.LOGGER.info("[HexieTrain][brake] 距离={} 速度={} 目标速度={} 刹车={} 传动={}",
-                        String.format("%.1f", d), String.format("%.3f", v),
-                        String.format("%.3f", targetV), output(SignalChannel.BRAKE), autoDirection);
             }
         } catch (Throwable t) {
             HexieTrain.LOGGER.warn("[HexieTrain][auto] 驱动异常: {}", t.toString());
@@ -1141,7 +951,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     private void setAutoDirection(float dir) {
         if (Math.abs(dir - autoDirection) < 1.0E-4f) return;
         autoDirection = dir;
-        HexieTrain.LOGGER.info("[HexieTrain][auto] 传动方向 = {}", dir);
         if (level != null && !level.isClientSide
                 && getBlockState().getBlock() instanceof TrainDispatcherBlock block) {
             level.blockUpdated(worldPosition, block);   // 安全刷新，不再摘网络
@@ -1254,7 +1063,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     private void setDispatcherState(DispatcherState state) {
         if (dispatcherState == state) return;
         dispatcherState = state;
-        HexieTrain.LOGGER.info("[HexieTrain][state] 调度器状态 → {}", state.label());
         sendData();
     }
 
@@ -1298,7 +1106,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
             } catch (Throwable ignored) {
             }
         }
-        HexieTrain.LOGGER.info("[HexieTrain][link] 无线通道已按新频率重新注册");
     }
 
     /**
@@ -1412,16 +1219,4 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         }
     }
 
-    /** 读某个方向上邻居动力学方块的转速，没有则返回 "-"。 */
-    private String neighborSpeed(Direction dir) {
-        try {
-            var be = level.getBlockEntity(worldPosition.relative(dir));
-            if (be instanceof com.simibubi.create.content.kinetics.base.KineticBlockEntity k) {
-                return String.format("%.1f", k.getSpeed());
-            }
-            return "-";
-        } catch (Throwable t) {
-            return "?";
-        }
-    }
 }

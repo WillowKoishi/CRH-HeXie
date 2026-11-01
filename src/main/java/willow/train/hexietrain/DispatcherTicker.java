@@ -1,6 +1,5 @@
 package willow.train.hexietrain;
 
-import com.simibubi.create.Create;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -19,22 +18,6 @@ public final class DispatcherTicker {
 
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
-        // 诊断：观察刚建的列车在 RAILWAYS 里的存活情况（前 60 tick）
-        if (TrainBinder.debugTrain != null && TrainBinder.debugTicks < 60) {
-            TrainBinder.debugTicks++;
-            var trains = Create.RAILWAYS.trains;
-            HexieTrain.LOGGER.info("[HexieTrain][dbg] t={} present={} invalid={} mapHash={} bindHash={} carriages={} speed={}",
-                    TrainBinder.debugTicks,
-                    trains.containsKey(TrainBinder.debugId),
-                    TrainBinder.debugTrain.invalid,
-                    System.identityHashCode(trains),
-                    TrainBinder.debugMapHash,
-                    TrainBinder.debugTrain.carriages.size(),
-                    TrainBinder.debugTrain.speed);
-            if (TrainBinder.debugTicks >= 60) {
-                TrainBinder.debugTrain = null;   // 用完即释放，避免强引用泄漏
-            }
-        }
         for (TrainDispatcherBlockEntity be : TrainDispatcherBlockEntity.activeDispatchers()) {
             try {
                 be.serverTick();
