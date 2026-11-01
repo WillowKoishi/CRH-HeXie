@@ -39,6 +39,8 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
     private static final int CELLS_X = 86;
     private static final int CELL_W = 4;
     private static final int CELL_GAP = 1;
+    /** 确认按钮的短暂高亮计时。 */
+    private int confirmFlash = 0;
     private static final int CELL_COUNT = 15;
     public TrainDispatcherScreen(TrainDispatcherMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -119,6 +121,7 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
 
     @Override
     protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
+        if (confirmFlash > 0) confirmFlash--;
         int text = C_TEXT;
         int dim = C_TEXT_DIM;
 
@@ -158,7 +161,9 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
             shown9 = shown9 + "...";
         }
         g.drawString(font, shown9, 42, 27, C_TEXT, false);
-        g.drawString(font, "\\u2714", 155, 27, C_TEXT, false);
+        String okText = confirmFlash > 0 ? "✓" : ">>";
+        g.drawString(font, okText, 150 + 9 - font.width(okText) / 2, 27,
+                confirmFlash > 0 ? 0xFF2E7D32 : C_TEXT, false);
 
         // 调度器工作状态（与右上角操控模态无关）
         // 只有装了时刻表才显示调度状态；拔掉时刻表就完全不显示
@@ -166,9 +171,12 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
             String[] stateNames = {"待命", "行驶中", "滑车", "急刹"};
             int[] stateColors = {0xFF6E6E6E, 0xFF2E7D32, 0xFFB8860B, 0xFFB00020};
             int stIdx = Math.max(0, Math.min(stateNames.length - 1, menu.dispatcherState()));
-            g.drawString(font, "调度：" + stateNames[stIdx], 8, 128, stateColors[stIdx], false);
+            g.drawString(font, "调度：" + stateNames[stIdx], 8, 118, stateColors[stIdx], false);
         }
-        // 三通道 + 15 格信号灯
+        // 当前速度：照抄 simulated 的速度传感器 —— 单位 m/s，死区 0.05
+        double mps = menu.speedMillis() / 5.0;   // speedMillis 是"百分之一格/tick"
+        if (Math.abs(menu.speedMillis()) / 100.0 <= 0.05) mps = 0.0;
+        String spd = String.format("%.1f m/s", mps);
         for (int row = 0; row < 3; row++) {
             int value = switch (row) {
                 case 0 -> menu.brakeOutput();
@@ -189,7 +197,7 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
             }
         }
 
-        g.drawString(font, "物品栏", 8, 137, C_TEXT_DIM, false);
+        g.drawString(font, "物品栏", 8, 138, C_TEXT_DIM, false);
     }
 
     /**
@@ -229,6 +237,7 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
         if (button == 0 && minecraft != null && minecraft.gameMode != null) {
             if (isIn(x, y, 150, 21, 18, 18)) {
                 minecraft.gameMode.handleInventoryButtonClick(menu.containerId, 200 + menu.selectedStop());
+                confirmFlash = 30;
                 return true;
             }
             // 右上角徽标 = 驾驶模式切换
