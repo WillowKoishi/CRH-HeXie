@@ -978,19 +978,10 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     }
 
     /**
-     * 确认前往滚动选中的那一站。
+     * 确认前往选中的站。
      *
-     * <p>只是把时刻表的执行位置提前到该条，不会让列车一直停在那儿。</p>
-     */
-    /**
-     * 确认前往选中的站：**改时刻表本身**（把该条目挪到当前执行位），
-     * 不动 Create 的导航与运行时状态。
-     */
-    /**
-     * 确认前往选中的站：只把时刻表游标挪到那一条。
-     *
-     * <p>不改条目顺序、不动导航、不重置状态机 —— 列车走完当前这程，
-     * 下一步自然就轮到选中那条。</p>
+     * <p>**不改时刻表条目**（A→B→C 原样保留），只把"当前执行到第几条"挪到选中的那条，
+     * 并清掉到站/等待跟踪 —— 于是列车立刻改为前往 B，走完 B 之后照常继续 C。
      */
     public void confirmSelectedStop(int index) {
         try {
@@ -1003,9 +994,18 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
                 if (count > 0) {
                     tr.runtime.currentEntry = Math.max(0, Math.min(count - 1, selectedStop));
                 }
+                // 清掉本调度器的跟踪状态，否则会卡在"已到站、等时刻表放行"
+                arrivedEntry = -1;
+                stoppedEntry = -1;
+                waitingForSchedule = false;
+                stallTicks = 0;
+                try { tr.navigation.cancelNavigation(); } catch (Throwable ignored) { }
             }
-            HexieTrain.LOGGER.info("[HexieTrain][ui] 时刻表游标 → 第 {} 条（共 {} 条）",
-                    selectedStop, stopNames.size());
+            // 切回自动驾驶：手动模式下 driveToStation 不会运行
+            if (manualMode) {
+                setManualMode(false);
+            }
+            HexieTrain.LOGGER.info("[HexieTrain][ui] 前往第 {} 站（时刻表条目未改动）", selectedStop);
         } catch (Throwable t) {
             HexieTrain.LOGGER.warn("[HexieTrain][ui] 确认站点失败: {}", t.toString());
         }

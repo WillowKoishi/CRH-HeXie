@@ -171,7 +171,7 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
             String[] stateNames = {"待命", "行驶中", "滑车", "急刹"};
             int[] stateColors = {0xFF6E6E6E, 0xFF2E7D32, 0xFFB8860B, 0xFFB00020};
             int stIdx = Math.max(0, Math.min(stateNames.length - 1, menu.dispatcherState()));
-            g.drawString(font, "调度：" + stateNames[stIdx], 8, 118, stateColors[stIdx], false);
+            g.drawString(font, "调度：" + stateNames[stIdx], 8, 126, stateColors[stIdx], false);
         }
         // 当前速度：照抄 simulated 的速度传感器 —— 单位 m/s，死区 0.05
         double mps = menu.speedMillis() / 5.0;   // speedMillis 是"百分之一格/tick"
@@ -185,6 +185,8 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
             };
             value = Math.max(0, Math.min(CELL_COUNT, value));
 
+            String[] chLabels = {"刹车", "左进岔道", "右进岔道"};
+            g.drawString(font, chLabels[row], 8, ROW_Y[row] + 4, C_TEXT, false);
             int cy = ROW_Y[row] + 4;
             for (int i = 0; i < CELL_COUNT; i++) {
                 int cx = CELLS_X + i * (CELL_W + CELL_GAP);
@@ -197,7 +199,7 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
             }
         }
 
-        g.drawString(font, "物品栏", 8, 138, C_TEXT_DIM, false);
+        g.drawString(font, "物品栏", 8, 136, C_TEXT_DIM, false);
     }
 
     /**
