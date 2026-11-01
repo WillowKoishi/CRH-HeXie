@@ -1,4 +1,5 @@
 package willow.train.hexietrain;
+import net.minecraft.core.component.DataComponentType;
 
 import com.simibubi.create.Create;
 import com.simibubi.create.content.kinetics.transmission.SplitShaftBlockEntity;
@@ -983,28 +984,121 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
      * <p>**不改时刻表条目**（A→B→C 原样保留），只把"当前执行到第几条"挪到选中的那条，
      * 并清掉到站/等待跟踪 —— 于是列车立刻改为前往 B，走完 B 之后照常继续 C。
      */
+    /** 读取当前时刻表：优先列车运行时（全局数据），其次槽里的物品（存档载体）。 */
+    public Schedule readSchedule() {
+        try {
+            Train tr = Create.RAILWAYS.trains.get(boundTrain);
+            if (tr != null && tr.runtime != null && tr.runtime.schedule != null) {
+                return tr.runtime.schedule;
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            if (level != null && !scheduleSlot.isEmpty() && scheduleSlot.getItem() instanceof ScheduleItem) {
+                return ScheduleItem.getSchedule(level.registryAccess(), scheduleSlot);
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
+    /**
+     * 把时刻表同时写回两个地方：
+     * <ul>
+     *   <li>槽里的物品 —— 这是时刻表在世界存档里的载体</li>
+     *   <li>列车运行时 —— 这是列车的全局数据，驱动实际运行</li>
+     * </ul>
+     */
+    public boolean applySchedule(Schedule schedule) {
+        if (schedule == null) return false;
+        boolean toItem = false;
+        boolean toTrain = false;
+
+        try {
+            if (level != null && !scheduleSlot.isEmpty()
+                    && scheduleSlot.getItem() instanceof ScheduleItem item) {
+                @SuppressWarnings("unchecked")
+                DataComponentType<CompoundTag> type =
+                        (DataComponentType<CompoundTag>) item.getComponentType();
+                scheduleSlot.set(type, schedule.write(level.registryAccess()));
+                toItem = true;
+            }
+        } catch (Throwable t) {
+            HexieTrain.LOGGER.warn("[HexieTrain][schedule] 写入物品失败: {}", t.toString());
+        }
+
+        try {
+            Train tr = Create.RAILWAYS.trains.get(boundTrain);
+            if (tr != null && tr.runtime != null) {
+                tr.runtime.setSchedule(schedule, false);
+                toTrain = true;
+            }
+        } catch (Throwable t) {
+            HexieTrain.LOGGER.warn("[HexieTrain][schedule] 应用到列车失败: {}", t.toString());
+        }
+
+        setChanged();
+        sendData();
+        HexieTrain.LOGGER.info("[HexieTrain][schedule] 写物品={} 写列车={} 条目数={}",
+                toItem, toTrain, schedule.entries.size());
+        return toItem || toTrain;
+    }
+
+    /**
+     * 确认前往选中的站 —— **真正修改时刻表**。
+     *
+     * <p>做法：把选中的条目移动到"当前执行位"，然后
+     * <ul>
+     *   <li>写回槽里的物品（时刻表在世界存档里的载体）</li>
+     *   <li>写回列车运行时（列车的全局数据，驱动实际运行）</li>
+     * </ul>
+     * 两处同时生效，游标指向移动后的位置。
+     */
     public void confirmSelectedStop(int index) {
         try {
             if (!stopNames.isEmpty()) {
                 selectedStop = Math.floorMod(index, stopNames.size());
             }
+
+            Schedule sc = readSchedule();
+            if (sc == null || sc.entries.isEmpty()) {
+                HexieTrain.LOGGER.warn("[HexieTrain][schedule] 没有可用的时刻表，确认无效");
+                setChanged();
+                sendData();
+                return;
+            }
+
+            int n = sc.entries.size();
+            int chosen = Math.floorMod(index, n);
+
             Train tr = Create.RAILWAYS.trains.get(boundTrain);
-            if (tr != null && tr.runtime != null && tr.runtime.schedule != null) {
-                int count = tr.runtime.schedule.entries.size();
-                if (count > 0) {
-                    tr.runtime.currentEntry = Math.max(0, Math.min(count - 1, selectedStop));
-                }
-                // 清掉本调度器的跟踪状态，否则会卡在"已到站、等时刻表放行"
+            int at = 0;
+            if (tr != null && tr.runtime != null) {
+                at = Math.max(0, Math.min(n - 1, tr.runtime.currentEntry));
+            }
+
+            // 真正改动：把选中的条目移到当前执行位
+            ScheduleEntry entry = sc.entries.remove(chosen);
+            sc.entries.add(at, entry);
+            selectedStop = at;
+
+            // 同时写回物品（存档）与列车（全局数据）
+            applySchedule(sc);
+
+            if (tr != null && tr.runtime != null) {
+                tr.runtime.currentEntry = at;
+                tr.runtime.state = com.simibubi.create.content.trains.schedule.ScheduleRuntime.State.PRE_TRANSIT;
                 arrivedEntry = -1;
                 stoppedEntry = -1;
                 waitingForSchedule = false;
                 stallTicks = 0;
                 try { tr.navigation.cancelNavigation(); } catch (Throwable ignored) { }
             }
-            // 选站只调整时刻表执行位置，绝不改动操控模式。
-            HexieTrain.LOGGER.info("[HexieTrain][ui] 前往第 {} 站（时刻表条目未改动）", selectedStop);
+
+            refreshStopNames();
+            HexieTrain.LOGGER.info("[HexieTrain][schedule] 第 {} 条已移到执行位 {}", chosen, at);
         } catch (Throwable t) {
-            HexieTrain.LOGGER.warn("[HexieTrain][ui] 确认站点失败: {}", t.toString());
+            HexieTrain.LOGGER.warn("[HexieTrain][schedule] 确认站点失败: {}", t.toString());
         }
         setChanged();
         sendData();
