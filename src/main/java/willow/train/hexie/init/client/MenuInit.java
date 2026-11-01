@@ -10,7 +10,6 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.DeferredHolder;
 
 import willow.train.hexie.Main;
-import willow.train.hexie.menu.AutomaticControlCouplingMenu;
 import willow.train.hexie.menu.*;
 
 public class MenuInit {
@@ -32,12 +31,6 @@ public class MenuInit {
                     registerMenuType(TrainSpeedSignEditMenu::new, "train_speed_sign_edit_menu");
     public static final DeferredHolder<MenuType<?>, MenuType<TicketVendorMenu>> TICKET_VENDOR_MENU =
             registerMenuType(TicketVendorMenu::new, "ticket_vendor_menu");
-
-    public static final DeferredHolder<MenuType<?>, MenuType<AnimatableBlockControllerMenu>> ANIMATABLE_BLOCK_CONTROLLER_MENU =
-            registerMenuType(AnimatableBlockControllerMenu::new, "animatable_block_controller_menu");
-
-    public static final DeferredHolder<MenuType<?>, MenuType<AutomaticControlCouplingMenu>> AUTOMATIC_CONTROL_COUPLING_MENU =
-            registerMenuType(AutomaticControlCouplingMenu::new, "automatic_control_coupling_menu");
 
     private static <T extends AbstractContainerMenu> DeferredHolder<MenuType<?>, MenuType<T>> registerMenuType(
             IContainerFactory<T> factory, String name) {

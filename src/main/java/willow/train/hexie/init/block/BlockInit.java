@@ -14,12 +14,10 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import willow.train.hexie.Main;
-import willow.train.hexie.blocks.FluorescentLightBlock;
 import willow.train.hexie.blocks.MegaphoneBlock;
 import willow.train.hexie.blocks.locos.hxd3d.HXD3DCabDoorBlock;
 import willow.train.hexie.blocks.locos.hxd3d.HXD3DPanelBlocks;
 import willow.train.hexie.blocks.locos.PantographBlock;
-import willow.train.hexie.blocks.locos.SS8PantographBlock;
 import willow.train.hexie.blocks.locos.cr200j.CR200jPanelBlocks;
 import willow.train.hexie.blocks.locos.df11g.*;
 import willow.train.hexie.blocks.seats.RZSeatBlock;
@@ -907,11 +905,6 @@ public static final DeferredHolder<Block, HXD3DPanelBlocks> CARPORT_25BGZKT_WATE
 
      */
 
-    public static final DeferredHolder<Block, SS8PantographBlock> SS8_PANTOGRAPH = register("ss8_pantograph",
-            () -> new SS8PantographBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
-                    .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),
-            object -> () -> new ToolTipsItemHelper(object.get(), new Item.Properties()));
-
     public static final DeferredHolder<Block, PanelBlockHalf> SMOOTH_QUARTZ_PANEL_HALF = register("smooth_quartz_panel_half",
             () -> new PanelBlockHalf(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                     .sound(SoundType.STONE).requiresCorrectToolForDrops()),
@@ -953,40 +946,6 @@ public static final DeferredHolder<Block, HXD3DPanelBlocks> CARPORT_25BGZKT_WATE
 
     //接触网
     //Catenary_Pole
-
-    public static final DeferredHolder<Block, PlatformLineBlock> Platform_Line_Block = register("platform_line_block",
-            () -> new PlatformLineBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
-                    .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),object -> () -> new BlockItem(object.get(),
-                    new Item.Properties()));
-
-    public static final DeferredHolder<Block, TrainSignBlock> No_Double_Pantograph = register("no_double_pantograph",
-            () -> new TrainSignBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
-                    .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),object -> () -> new BlockItem(object.get(),
-                    new Item.Properties()));
-    public static final DeferredHolder<Block, TrainSignBlock> Switch_Off_Sign = register("switch_off_sign",
-            () -> new TrainSignBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
-                    .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),object -> () -> new BlockItem(object.get(),
-                    new Item.Properties()));
-
-    public static final DeferredHolder<Block, TrainSignBlock> Switch_On_Sign = register("switch_on_sign",
-            () -> new TrainSignBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
-                    .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),object -> () -> new BlockItem(object.get(),
-                    new Item.Properties()));
-
-    public static final DeferredHolder<Block, TactilePavingBlock> TactilePavingStraight = register("tactile_paving_straight",
-            () -> new TactilePavingBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
-                    .sound(SoundType.STONE).requiresCorrectToolForDrops().noOcclusion()),object -> () -> new BlockItem(object.get(),
-                    new Item.Properties()));
-
-    public static final DeferredHolder<Block, TactilePavingBlock> TactilePavingPin = register("tactile_paving_pin",
-            () -> new TactilePavingBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
-                    .sound(SoundType.STONE).requiresCorrectToolForDrops().noOcclusion()),object -> () -> new BlockItem(object.get(),
-                    new Item.Properties()));
-
-    public static final DeferredHolder<Block, FluorescentLightBlock> FLUORESCENT_LIGHT = register("flourescent_light",
-            () -> new FluorescentLightBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
-                    .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion().lightLevel(state -> 15)),object -> () -> new BlockItem(object.get(),
-                    new Item.Properties()));
 
     public static final DeferredHolder<Block, MegaphoneBlock> MEGAPHONE = register("megaphone",
             () -> new MegaphoneBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)

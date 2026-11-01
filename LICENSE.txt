@@ -19,3 +19,17 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+License scope
+-------------
+The MIT License above applies to the project's code, build scripts and
+documentation, unless a separate notice states otherwise. It does not
+apply to the artwork in art_assets/.
+
+The artwork in art_assets/, including its subdirectories and asset archives,
+is licensed under the GNU General Public License, version 3 only
+(SPDX-License-Identifier: GPL-3.0-only). See art_assets/README.md for the
+scope and art_assets/LICENSE.txt for the complete license text.
+
+Third-party components retain their own licenses and copyright notices.
+See THIRD_PARTY_NOTICES.txt and any notices accompanying those components.

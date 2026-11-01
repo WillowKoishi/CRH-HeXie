@@ -5,7 +5,6 @@ import com.simibubi.create.content.decoration.slidingDoor.SlidingDoorShapes;
 import com.simibubi.create.foundation.block.IBE;
 import net.createmod.catnip.data.Couple;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -28,7 +27,6 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import willow.train.hexie.Main;
 import willow.train.hexie.init.BlockEntitiesInit;
 import willow.train.hexie.blockentity.CustomRenderedDoorEntity;
-import willow.train.hexie.blocks.api.ContraptionAnimatableBlockEntity;
 
 import java.util.List;
 
@@ -114,12 +112,6 @@ public class CustomRenderedDoorBlock extends DoorBlock implements IBE<CustomRend
     }
 
     public InteractionResult use(BlockState pState, Level pLevel, BlockPos pPos, Player pPlayer, InteractionHand pHand, BlockHitResult pHit) {
-        boolean open = pState.getValue(DoorBlock.OPEN);
-        if(pLevel.getBlockEntity(pPos) instanceof ContraptionAnimatableBlockEntity entity) {
-            CompoundTag tag = new CompoundTag();
-            tag.putBoolean("open", !open);
-            entity.onNormalUse(pLevel, pPlayer, pHand, pPos, pState, tag);
-        }
         return super.useWithoutItem(pState, pLevel, pPos, pPlayer, pHit);
     }
 

@@ -4,7 +4,6 @@ import com.simibubi.create.content.kinetics.base.HorizontalKineticBlock;
 import com.simibubi.create.foundation.block.IBE;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -17,7 +16,6 @@ import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.phys.BlockHitResult;
 import willow.train.hexie.init.BlockEntitiesInit;
 import willow.train.hexie.blockentity.CR200jFrontBlockEntity;
-import willow.train.hexie.blocks.api.ContraptionAnimatableBlockEntity;
 
 import java.util.List;
 
@@ -52,8 +50,6 @@ public class CR200jFrontBlock extends HorizontalKineticBlock implements IBE<CR20
     }
 
     public InteractionResult use(BlockState pState, Level pLevel, BlockPos pPos, Player pPlayer, InteractionHand pHand, BlockHitResult pHit) {
-        if(pLevel.getBlockEntity(pPos) instanceof ContraptionAnimatableBlockEntity entity)
-            entity.onNormalUse(pLevel, pPlayer, pHand, pPos, pState, new CompoundTag());
         return super.useWithoutItem(pState, pLevel, pPos, pPlayer, pHit);
     }
 

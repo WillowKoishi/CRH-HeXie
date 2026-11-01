@@ -33,7 +33,6 @@ import willow.train.hexie.init.semaphore.SemaphoreEntityInit;
 import willow.train.hexie.init.track.TrackBlockInit;
 import willow.train.hexie.init.track.TrackItems;
 import willow.train.hexie.init.track.TrackMaterialInit;
-import willow.train.hexie.interaction.InteractionProcessor;
 import willow.train.hexie.network.HexieNetworkHandler;
 import willow.train.hexie.util.enums.PanelTypesUtil;
 
@@ -153,7 +152,6 @@ public class Main {
         BogeySizesInit.register();
         TrackBlockInit.register();
         BogeyEntityInit.register();
-        InteractionProcessor.invoke();
         SemaphoreBlockInit.register();
         SemaphoreEntityInit.register();
         //HXConfig.register(modContainer);

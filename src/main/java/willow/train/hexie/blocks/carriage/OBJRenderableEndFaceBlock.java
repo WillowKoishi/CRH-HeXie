@@ -6,7 +6,6 @@ import com.simibubi.create.foundation.block.IBE;
 import net.createmod.catnip.data.Couple;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -41,7 +40,6 @@ import net.neoforged.api.distmarker.OnlyIn;
 import willow.train.hexie.Main;
 import willow.train.hexie.init.BlockEntitiesInit;
 import willow.train.hexie.blockentity.OBJRenderableEndFaceEntity;
-import willow.train.hexie.blocks.api.ContraptionAnimatableBlockEntity;
 
 import javax.annotation.Nullable;
 
@@ -366,8 +364,6 @@ public class OBJRenderableEndFaceBlock extends BaseEntityBlock implements IWrenc
             pLevel.playSound(
                     pPlayer, pPos, SoundEvents.IRON_DOOR_CLOSE, SoundSource.BLOCKS, 10, 10);
         }
-        if(pLevel.getBlockEntity(pPos) instanceof ContraptionAnimatableBlockEntity entity)
-            entity.onNormalUse(pLevel, pPlayer, pHand, pPos, pState, new CompoundTag());
         return InteractionResult.sidedSuccess(pLevel.isClientSide);
     }
 

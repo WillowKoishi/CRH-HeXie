@@ -13,8 +13,6 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import willow.train.hexie.Main;
 import willow.train.hexie.client.screens.*;
-import willow.train.hexie.client.screens.controls.AnimatableBlockControllerScreen;
-import willow.train.hexie.client.screens.controls.AutomaticControlCouplingScreen;
 import willow.train.hexie.client.overlay.OverlayManager;
 import willow.train.hexie.event.client.HXInventoryEvents;
 import willow.train.hexie.init.BlockEntitiesInit;
@@ -131,7 +129,5 @@ public class HeXieClientInit {
         event.register(
                 MenuInit.TRAIN_SPEED_SIGN_EDIT_MENU.get(), TrainSpeedSignEditScreen::new);
         event.register(MenuInit.TICKET_VENDOR_MENU.get(), TicketVendorScreen::new);
-        event.register(MenuInit.ANIMATABLE_BLOCK_CONTROLLER_MENU.get(), AnimatableBlockControllerScreen::new);
-        event.register(MenuInit.AUTOMATIC_CONTROL_COUPLING_MENU.get(), AutomaticControlCouplingScreen::new);
     }
 }
