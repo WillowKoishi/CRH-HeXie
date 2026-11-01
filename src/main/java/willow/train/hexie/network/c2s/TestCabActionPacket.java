@@ -14,14 +14,14 @@ public record TestCabActionPacket(int vehicleId, int action) implements HexiePac
         context.enqueueWork(() -> {
             var player = context.player();
             if (player.isSpectator() || player.getVehicle() == null || player.getVehicle().getId() != vehicleId
-                    || action < -1 || action > 6) return;
+                    || action < -1 || action > 8) return;
             var cab = DrivingConsoleContext.find(player);
             if (cab == null || !(cab.seatAccess().blockState(cab.console()).getBlock() instanceof TestDrivingConsoleBlock)) return;
             if (cab.seatAccess().vehicle() instanceof SnapshotCarriageEntity car && car.motion() != null)
                 car.motion().testCabAction(car, cab, player, action);
             else if (!(cab.seatAccess().vehicle() instanceof com.simibubi.create.content.contraptions.AbstractContraptionEntity)
                     && player.level().getBlockEntity(cab.console()) instanceof willow.train.hexie.blockentity.DrivingConsoleEntity bench
-                    && action >= 0) bench.benchAction(action);
+                    && action >= 0 && action <= 6) bench.benchAction(action);
         });
         return true;
     }

@@ -54,9 +54,10 @@ public final class CabController {
         if (emergencyLatched || input.parkingBrake) return TrainControl.fullBrake();
         if (mode == Mode.MANUAL)
             return TrainControl.service(TrainControl.Source.CAB_MANUAL, input.power * input.reverser, input.serviceBrake);
-        // A driver's service brake remains authoritative over an automatic traction request.
-        if (input.serviceBrake > 0)
-            return TrainControl.service(TrainControl.Source.CAB_AUTOMATIC, 0, input.serviceBrake);
-        return automatic;
+        // Compare actuator outputs after applying the service limit exactly once.
+        // The power handle has no authority in automatic mode; either brake cuts traction.
+        double manualBrake = TrainControl.service(TrainControl.Source.CAB_AUTOMATIC, 0, input.serviceBrake).brake();
+        double brake = Math.max(automatic.brake(), manualBrake);
+        return new VehicleRuntime.Control(brake > 0 ? 0 : automatic.throttle(), brake);
     }
 }

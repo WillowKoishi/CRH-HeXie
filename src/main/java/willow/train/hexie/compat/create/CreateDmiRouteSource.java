@@ -15,6 +15,7 @@ final class CreateDmiRouteSource {
 
     static TrainDisplayReadings.Route read(AssembledVehicleMotion motion, CompatibilityTrain train) {
         var schedule = train.runtime.getSchedule();
+        boolean waypoint = CreateWaypointSupport.currentInstruction(train);
         String filter = null, stationLabel = "";
         int index = train.runtime.currentEntry;
         if (schedule != null && index >= 0 && index < schedule.entries.size()
@@ -23,6 +24,7 @@ final class CreateDmiRouteSource {
             filter = destination.getFilterForRegex();
             stationLabel = destination.getFilter();
         }
+        if (train.navigation.destination != null) stationLabel = train.navigation.destination.name;
         var route = motion.route();
         if (train.graph == null)
             return new TrainDisplayReadings.Route(null, stationLabel, -1, "Create / 路径待更新");
@@ -36,7 +38,7 @@ final class CreateDmiRouteSource {
                 if (distance > 16000) return true;
                 var edgePoint = event.getFirst();
                 var enteringNode = event.getSecond().getSecond();
-                if (edgePoint instanceof GlobalStation station && scan.station == null && scan.filter != null
+                if (!waypoint && edgePoint instanceof GlobalStation station && scan.station == null && scan.filter != null
                         && station.canApproachFrom(enteringNode)
                         && (train.navigation.destination != null ? station == train.navigation.destination : station.name.matches(scan.filter))) {
                     scan.station = new DmiState.Target(DmiState.TargetKind.STATION, station.name, distance, 0);
@@ -68,7 +70,7 @@ final class CreateDmiRouteSource {
             // Navigation's selector follows the chosen switches without consuming the live itinerary.
             if (train.navigation.destination != null && forward == !train.navigation.destinationBehindTrain && point.edge != null) {
                 var scout = new TravellingPoint(point.node1, point.node2, point.edge, point.position, false);
-                scout.travel(train.graph, Math.min(16000, Math.max(0, train.navigation.distanceToDestination) + 50)
+                scout.travel(train.graph, (waypoint ? 16000 : Math.min(16000, Math.max(0, train.navigation.distanceToDestination) + 50))
                         * (forward ? 1 : -1), train.navigation.controlSignalScout(), listener, scout.ignoreTurns());
             } else {
                 double start = route.distanceOf(point);

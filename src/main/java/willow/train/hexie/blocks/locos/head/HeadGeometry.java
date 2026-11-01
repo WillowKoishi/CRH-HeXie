@@ -65,7 +65,7 @@ public final class HeadGeometry {
     }
     public static List<AABB> boxes(Direction facing) { return COLLISION.get(facing); }
     public static AABB bounds(Direction facing) {
-        return rotate(new AABB(-20/16d,-2/16d,-144/16d,36/16d,60/16d,1),facing);
+        return COLLISION.get(facing).stream().reduce(AABB::minmax).orElseThrow();
     }
     public static BlockPos owner(BlockGetter world, BlockPos pos) {
         var state=world.getBlockState(pos);

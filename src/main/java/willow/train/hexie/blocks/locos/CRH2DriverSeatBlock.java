@@ -38,7 +38,7 @@ public class CRH2DriverSeatBlock extends SeatBlock implements IWrenchable {
     }
 
     @Override public BlockState getStateForPlacement(BlockPlaceContext context) {
-        return super.getStateForPlacement(context).setValue(FACING, context.getHorizontalDirection().getOpposite());
+        return super.getStateForPlacement(context).setValue(FACING, ConsoleSeatPlacement.facing(context));
     }
 
     @Override public BlockState rotate(BlockState state, Rotation rotation) {

@@ -60,7 +60,7 @@ public class RZSeatBlock extends SeatBlock implements IWrenchable {
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext ctx) {
         return this.defaultBlockState()
-                .setValue(FACING, ctx.getHorizontalDirection().getOpposite())
+                .setValue(FACING, willow.train.hexie.blocks.locos.ConsoleSeatPlacement.facing(ctx))
                 .setValue(WATERLOGGED, false);
     }
 

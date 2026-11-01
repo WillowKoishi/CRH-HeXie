@@ -135,23 +135,31 @@ public final class CreateTrainBridge {
             var member = train.carriageIds.getFirst();
             double deceleration = willow.train.hexie.vehicle.control.TrainControl.serviceDeceleration(
                     motion.runtime(), member, motion.controlSource(member));
-            boolean automatic = motion.acceptsAutomaticControl(member)
-                    && (train.manualTick || train.runtime.getSchedule() != null && !train.runtime.paused);
-            boolean driverAvailable = motion.hasTestCab(member) || train.manualTick || (train.navigation.destinationBehindTrain
-                    ? train.hasBackwardConductor() : train.hasForwardConductor());
+            boolean automatic = motion.isAutomaticControlSelected(member);
             train.displayRoute = CreateDmiRouteSource.read(motion, train);
-            train.automaticTarget = automatic && driverAvailable ? CreateAutomaticRouteData.read(train, deceleration) : null;
+            train.automaticTarget = automatic ? CreateAutomaticRouteData.read(train, deceleration) : null;
+            if (train.navigation.destination != null) train.waypointTransitionTicks = 0;
+            else if (train.waypointTransitionTicks > 0) {
+                train.waypointTransitionTicks--;
+                // Coast while the native timetable advances past a waypoint; it is not a lost stop target.
+                if (automatic && !train.runtime.completed)
+                    train.automaticTarget = new willow.train.hexie.vehicle.control.AutomaticTrainControl.Target(
+                            motion.runtime().speed(member) < 0 ? -1 : 1, 0,
+                            Math.abs(motion.runtime().speed(member)), false, false);
+            }
             if (train.automaticTarget != null) {
                 var target = train.automaticTarget;
-                double continuousLimit = train.displayRoute.ctcs().speedAt(0, deceleration,
+                double continuousLimit = train.displayRoute.ctcs().speedAt(0,
+                        willow.train.hexie.vehicle.control.AutomaticTrainControl.planningDeceleration(deceleration),
                         willow.train.hexie.vehicle.control.TrainControl.LINE_SPEED_LIMIT_KMH) / 3.6;
                 train.automaticTarget = new willow.train.hexie.vehicle.control.AutomaticTrainControl.Target(
-                        target.direction(), target.distanceM(), Math.min(target.speedLimitMps(), continuousLimit), target.station());
+                        target.direction(), target.distanceM(), Math.min(target.speedLimitMps(), continuousLimit), target.station(), target.stop());
             }
             if (automatic)
                 motion.controlAutomatic(member, train.automaticTarget, deceleration);
             else if (train.automaticControlActive && !motion.isManuallyControlled(member))
-                motion.controlAutomatic(member, null, deceleration);
+                motion.runtime().controlsForConsist(member,
+                        willow.train.hexie.vehicle.runtime.VehicleRuntime.Control.NEUTRAL);
             train.automaticControlActive = automatic;
         }
     }
@@ -587,10 +595,20 @@ public final class CreateTrainBridge {
         boolean[] intercepted = { false };
         var listener = train.frontSignalListener();
         boolean manualTestCab = motion.hasTestCab(train.carriageIds.getFirst())
-                && motion.isManuallyControlled(train.carriageIds.getFirst());
-        double allowed = motion.route().traversePoints(leading.distance, target, (travelled, event) ->
-                intercepted[0] = !(manualTestCab && event.getFirst() instanceof GlobalStation)
-                        && listener.test(travelled, event),
+                && motion.isManuallyControlled(train.carriageIds.getFirst())
+                && !motion.isApproachingStation(train.carriageIds.getFirst());
+        double allowed = motion.route().traversePoints(leading.distance, target, (travelled, event) -> {
+            if (manualTestCab && event.getFirst() instanceof GlobalStation) return false;
+            boolean waypoint = CreateWaypointSupport.active(train) && event.getFirst() == train.navigation.destination;
+            boolean handled = listener.test(travelled, event);
+            if (waypoint && handled) {
+                // Steam 'n' Rails returns true for passage without stopping. Keep its schedule
+                // event, but do not snap the independent body's position or velocity.
+                train.waypointTransitionTicks = 40;
+                return false;
+            }
+            return intercepted[0] = handled;
+        },
                 (preview, selected) -> train.navigation.control(preview).apply(train.graph,
                         net.createmod.catnip.data.Pair.of(requested > 0, selected)));
         if (!intercepted[0] && trackEnd == null) {

@@ -31,6 +31,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 /** Create's public train identity and control state, never a second movement or storage owner. */
 @EventBusSubscriber(modid = "hexie")
 public final class CompatibilityTrain extends Train {
+    int waypointTransitionTicks;
     private static final java.util.Map<MinecraftServer, java.util.LinkedHashSet<CompatibilityTrain>> PENDING_TICKS
             = new java.util.WeakHashMap<>();
     private static final java.util.Map<MinecraftServer, java.util.LinkedHashSet<CompatibilityTrain>> PENDING_REMOVALS
@@ -293,10 +294,10 @@ public final class CompatibilityTrain extends Train {
     }
 
     @Override public boolean hasForwardConductor() {
-        return bridge != null && bridge.motion().hasTestCab(carriageIds.getFirst()) || super.hasForwardConductor();
+        return bridge != null ? bridge.motion().isAutomaticControlSelected(carriageIds.getFirst()) : super.hasForwardConductor();
     }
     @Override public boolean hasBackwardConductor() {
-        return bridge != null && bridge.motion().hasTestCab(carriageIds.getFirst()) || super.hasBackwardConductor();
+        return bridge != null ? bridge.motion().isAutomaticControlSelected(carriageIds.getFirst()) : super.hasBackwardConductor();
     }
 
     @Override public void detachFromTracks() {

@@ -16,7 +16,8 @@ public final class TestCabClient {
         var context = DrivingConsoleClient.context();
         if (context != null && context.seatAccess().blockState(context.console()).getBlock() instanceof TestDrivingConsoleBlock
                 && ++ticks % 10 == 0)
-            HexieNetworkHandler.sendToServer(new TestCabActionPacket(context.seatAccess().vehicle().getId(), -1));
+            HexieNetworkHandler.sendToServer(new TestCabActionPacket(context.seatAccess().vehicle().getId(),
+                    DrivingConsoleClient.approachHeld() ? 7 : -1));
     }
     @SubscribeEvent public static void click(DrivingConsoleClickEvent event) {
         var state = event.context.seatAccess().blockState(event.context.console());

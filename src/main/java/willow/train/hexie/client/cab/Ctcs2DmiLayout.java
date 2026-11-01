@@ -67,7 +67,7 @@ public final class Ctcs2DmiLayout {
         d.center("CTCS 2",32,377,1.2f,WHITE);
         // Explicit lamp keys distinguish emergency from parking/full service; never infer it from brake force.
         if(lit(state,"dmi.brake.emergency")) d.icon("brake_emergency",5,401,54,27);
-        else if(data.brake()>0) d.icon("brake_service",5,401,54,27);
+        else if(data.brake()>0) d.icon(serviceBrakeIcon(data.brake()),5,401,54,27);
         // D: no invented titles, advice text, percentages or point markers.
         signal(d,data.ctcs().code());
         d.rect(416,64,304,182,PLOT);
@@ -123,6 +123,10 @@ public final class Ctcs2DmiLayout {
         for(int i=0;i<8;i++){outline(d,720,i*75,80,75,BORDER);d.center(keys[i],760,i*75+27,2.3f,WHITE);}
     }
     private static boolean lit(CabDisplayState s,String key){var l=s.lamps().get(key);return l!=null&&l.lit();}
+    /** Three service levels; emergency is an explicit state, never inferred from force. */
+    private static String serviceBrakeIcon(double brake) {
+        return brake <= .3 ? "brake_weak" : brake <= .6 ? "brake_medium" : "brake_service";
+    }
     /** Manual table 2-11: green numbered discs, green/yellow LU, yellow U, yellow/red HU. */
     private static void signal(Canvas d,willow.train.hexie.vehicle.control.CtcsControl.Code code) {
         if(code==willow.train.hexie.vehicle.control.CtcsControl.Code.UNKNOWN) return;

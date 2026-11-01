@@ -556,15 +556,17 @@ public final class AssembledVehicleMotion {
                                  double serviceDeceleration) {
         if (hasTestCab(member)) return; // Its CabController applies handles/interlocks after route data is collected.
         // Manual drivers receive no automatic intervention unless they explicitly hold approach.
-        if (!acceptsAutomaticControl(member)) return;
+        if (!isAutomaticControlSelected(member)) return;
         runtime.controlsForConsist(member, willow.train.hexie.vehicle.control.AutomaticTrainControl.update(
                 controlSource(member), runtime.speed(member), target, serviceDeceleration));
     }
 
-    boolean acceptsAutomaticControl(UUID member) {
-        return controllers.entrySet().stream().noneMatch(entry -> runtime.connected(member, entry.getKey())
-                && (entry.getValue().testCab != null ? !entry.getValue().testCab.automatic
-                        : !entry.getValue().approachingStation || entry.getValue().timedOut));
+    boolean isAutomaticControlSelected(UUID member) {
+        // Absence of a player/controller is not a request to engage automatic driving.
+        return controllers.entrySet().stream().anyMatch(entry -> runtime.connected(member, entry.getKey())
+                && !entry.getValue().timedOut
+                && (entry.getValue().approachingStation
+                        || entry.getValue().testCab != null && entry.getValue().testCab.automatic));
     }
 
     /** Manual station approach keeps the manual actuator limits; blaze schedules use automatic limits. */
@@ -575,6 +577,11 @@ public final class AssembledVehicleMotion {
 
     boolean hasTestCab(UUID member) {
         return controllers.entrySet().stream().anyMatch(e -> e.getValue().testCab != null && runtime.connected(member, e.getKey()));
+    }
+
+    boolean isApproachingStation(UUID member) {
+        return controllers.entrySet().stream().anyMatch(e -> runtime.connected(member, e.getKey())
+                && e.getValue().approachingStation);
     }
 
     public void testCabAction(SnapshotCarriageEntity car, willow.train.hexie.blocks.locos.DrivingConsoleContext cab,
@@ -592,7 +599,12 @@ public final class AssembledVehicleMotion {
         });
         driver.lastInput = level.getGameTime();
         driver.testCab.action(action);
-        if (!driver.testCab.automatic && compatibility != null) {
+        if (action == 7 && !driver.testCab.automatic) {
+            driver.approachHeld = true;
+            driver.lastApproachInput = level.getGameTime();
+        }
+        if (action == 8 || action == 5) releaseCabApproach(car.getUUID(), driver);
+        if (!driver.testCab.automatic && !driver.approachHeld && compatibility != null) {
             var train = compatibility.train(car.getUUID());
             if (train != null) train.navigation.waitingForSignal = null;
         }
@@ -601,6 +613,15 @@ public final class AssembledVehicleMotion {
             if (train != null && train.runtime.getSchedule() != null) train.runtime.paused = false;
         }
         applyTestCabs(); // Preserve every emergency-handle edge, including two clicks between physics ticks.
+    }
+
+    private void releaseCabApproach(UUID member, Controller driver) {
+        if (driver.approachingStation && compatibility != null) {
+            var train = compatibility.train(member);
+            if (train != null) train.navigation.cancelNavigation();
+        }
+        driver.approachHeld = false;
+        driver.approachingStation = false;
     }
 
     CompoundTag testCabFrame(UUID member) {
@@ -623,8 +644,15 @@ public final class AssembledVehicleMotion {
             int direction = cab.seatAccess().blockState(cab.console()).getValue(
                     willow.train.hexie.blocks.locos.CRH2DrivingConsoleBlock.FACING) == forward(e.getKey()) ? 1 : -1;
             var train = compatibility == null ? null : compatibility.train(e.getKey());
+            if (driver.approachHeld && level.getGameTime() - driver.lastApproachInput > 20)
+                releaseCabApproach(e.getKey(), driver);
+            if (driver.approachHeld && !input.automatic && train != null)
+                controlStationApproach(train, driver, player, true, input.reverser * direction,
+                        runtime.speed(e.getKey()), direction > 0);
             var target = train == null ? null : train.automaticTarget;
-            var command = input.controller.update(input.mode(), input.input(direction), runtime.speed(e.getKey()), target,
+            var mode = driver.approachingStation || driver.approachHeld && train != null && train.getCurrentStation() != null
+                    ? willow.train.hexie.vehicle.control.CabController.Mode.AUTOMATIC : input.mode();
+            var command = input.controller.update(mode, input.input(direction), runtime.speed(e.getKey()), target,
                     TrainControl.serviceDeceleration(runtime, e.getKey(), controlSource(e.getKey())),
                     input.power == 0 && input.reverser == 0);
             runtime.controlsForConsist(e.getKey(), command);
@@ -881,6 +909,7 @@ public final class AssembledVehicleMotion {
                 expired |= cab == null || !cab.seatAccess().vehicle().getUUID().equals(entry.getKey())
                         || !cab.console().equals(driver.pos);
                 if (expired) {
+                    releaseCabApproach(entry.getKey(), driver);
                     runtime.controlsForConsist(entry.getKey(), driver.testCab.controller.emergencyLatched() || driver.testCab.parking
                             ? TrainControl.fullBrake() : VehicleRuntime.Control.NEUTRAL);
                     var train = compatibility == null ? null : compatibility.train(entry.getKey());
@@ -919,6 +948,8 @@ public final class AssembledVehicleMotion {
         long nextHud;
         boolean timedOut;
         boolean approachingStation;
+        boolean approachHeld;
+        long lastApproachInput;
         boolean stationMessage;
         willow.train.hexie.vehicle.control.TestCabControls testCab;
         Controller(UUID player, BlockPos pos, long lastInput) {

@@ -60,8 +60,9 @@ public final class CtcsControl {
             if (!unknown && seen.add(section.id())) clear++;
             if (!section.linked()) chainStart = -1;
         }
-        // A short/incomplete scan does not assert a restrictive code or invent the end of authority.
-        Code code = clear >= 7 ? Code.L5 : stopped && !unknown ? switch (clear) {
+        // A short scan of explicitly clear blocks is also permissive. No observations
+        // or unknown occupancy must not be mistaken for an observed clear route.
+        Code code = clear >= 7 ? Code.L5 : !stopped && !unknown && clear > 0 ? Code.L : stopped && !unknown ? switch (clear) {
             case 0 -> Code.HU; case 1 -> Code.U; case 2 -> Code.LU; case 3 -> Code.L;
             case 4 -> Code.L2; case 5 -> Code.L3; case 6 -> Code.L4; default -> Code.UNKNOWN;
         } : Code.UNKNOWN;

@@ -3,6 +3,7 @@ package willow.train.hexie.mixins.mixin;
 import com.simibubi.create.AllItems;
 import com.simibubi.create.content.contraptions.AbstractContraptionEntity;
 import com.simibubi.create.content.contraptions.Contraption;
+import com.simibubi.create.content.contraptions.actors.seat.SeatBlock;
 import com.simibubi.create.content.contraptions.actors.seat.SeatEntity;
 import com.simibubi.create.content.contraptions.sync.ContraptionSeatMappingPacket;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
@@ -23,7 +24,6 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.gen.Invoker;
 import willow.train.hexie.blocks.seats.HardSeatPositionRequest;
 import willow.train.hexie.blocks.seats.SeatYZBlock;
 import willow.train.hexie.network.c2s.SeatYZContraptionInteractionPacket;
@@ -45,12 +45,6 @@ public abstract class MixinAbstractContraptionEntity extends Entity {
     protected MixinAbstractContraptionEntity(EntityType<?> entityType, Level level) {
         super(entityType, level);
     }
-
-    @Invoker(value = "toGlobalVector", remap = false)
-    protected abstract Vec3 hexie$toGlobalVector(Vec3 localVec, float partialTicks);
-
-    @Invoker(value = "toLocalVector", remap = false)
-    protected abstract Vec3 hexie$toLocalVector(Vec3 globalVec, float partialTicks);
 
     @WrapMethod(
             method = "addSittingPassenger(Lnet/minecraft/world/entity/Entity;I)V",
@@ -118,9 +112,14 @@ public abstract class MixinAbstractContraptionEntity extends Entity {
         // A hard seat has four positions; do not fall back to Create's single-seat path.
         if (position < 0) return;
 
+        hexie$mountHardSeatPassenger(passenger, seatIndex, position);
+    }
+
+    @Unique
+    private void hexie$mountHardSeatPassenger(Entity passenger, int seatIndex, int position) {
+        if (!passenger.startRiding(this, true)) return;
         removeHardSeatTags(passenger);
-        passenger.addTag(tagPrefix + position);
-        passenger.startRiding(this, true);
+        passenger.addTag("seats" + seatIndex + "," + position);
         if (passenger instanceof TamableAnimal animal)
             animal.setInSittingPose(true);
 
@@ -174,30 +173,27 @@ public abstract class MixinAbstractContraptionEntity extends Entity {
         if (requestedPosition < 0 || requestedPosition >= 4)
             return true;
 
-        boolean[] occupied = getHardSeatOccupancy(targetSeatIndex, player);
+        Entity passenger = SeatBlock.getLeashed(level(), player).or(player);
+        boolean[] occupied = getHardSeatOccupancy(targetSeatIndex, passenger);
         int seatPosition = SeatYZBlock.getNearestAvailablePosition(
                 targetSeatState, requestedPosition, occupied);
         if (seatPosition < 0)
             return true;
 
-        Integer currentSeatIndex = contraption.getSeatMapping().get(player.getUUID());
+        Integer currentSeatIndex = contraption.getSeatMapping().get(passenger.getUUID());
         if (currentSeatIndex != null
                 && currentSeatIndex == targetSeatIndex
                 && getHardSeatPosition(
-                        player.getTags(), contraption.getSeats().get(currentSeatIndex), contraption)
+                        passenger.getTags(), contraption.getSeats().get(currentSeatIndex), contraption)
                         == seatPosition)
             return true;
 
-        if (player.getVehicle() == this)
-            player.stopRiding();
-
-        String requestedPositionTag = hardSeatTargetTag(targetSeatIndex, seatPosition);
-        player.addTag(requestedPositionTag);
-        try {
-            return original.call(player, localPos, side, hand);
-        } finally {
-            player.removeTag(requestedPositionTag);
-        }
+        if (passenger.getVehicle() == this)
+            passenger.stopRiding();
+        // Native interaction rejects any second player on the same block before
+        // addSittingPassenger runs. Mount the validated free quadrant directly.
+        hexie$mountHardSeatPassenger(passenger, targetSeatIndex, seatPosition);
+        return true;
     }
 
     @Unique
@@ -213,8 +209,9 @@ public abstract class MixinAbstractContraptionEntity extends Entity {
         }
         Vec3 origin = player.getEyePosition();
         Vec3 target = origin.add(player.getViewVector(1.0F).scale(player.blockInteractionRange()));
-        Vec3 localOrigin = hexie$toLocalVector(origin, 1.0F);
-        Vec3 localTarget = hexie$toLocalVector(target, 1.0F);
+        var entity = (AbstractContraptionEntity) (Object) this;
+        Vec3 localOrigin = entity.toLocalVector(origin, 1.0F);
+        Vec3 localTarget = entity.toLocalVector(target, 1.0F);
         VoxelShape shape = state.getShape(contraption.getContraptionWorld(), BlockPos.ZERO.below());
         BlockHitResult hit = shape.clip(localOrigin, localTarget, localPos);
         if (hit == null)
@@ -239,7 +236,9 @@ public abstract class MixinAbstractContraptionEntity extends Entity {
         if (state.getBlock() instanceof willow.train.hexie.blocks.locos.CRH2DriverSeatBlock) {
             Vec3 eye = Vec3.atLowerCornerOf(seatPos).add(
                     willow.train.hexie.blocks.locos.CRH2DriverSeatBlock.driverEyePosition(state));
-            return hexie$toGlobalVector(eye, partialTicks).subtract(0, passenger.getEyeHeight(), 0);
+            // Native positionRider adds the custom seat offset minus 1/8 block.
+            return ((AbstractContraptionEntity) (Object) this).toGlobalVector(eye, partialTicks)
+                    .add(0, .125 - SeatEntity.getCustomEntitySeatOffset(passenger) - passenger.getEyeHeight(), 0);
         }
         if (!(state.getBlock() instanceof SeatYZBlock))
             return original.call(passenger, partialTicks);
@@ -260,7 +259,7 @@ public abstract class MixinAbstractContraptionEntity extends Entity {
                         -passenger.getVehicleAttachmentPoint(this).y
                                 + passengerHeight + .125 - customSeatOffset,
                         seatOffset.z);
-        return hexie$toGlobalVector(localPosition, partialTicks)
+        return ((AbstractContraptionEntity) (Object) this).toGlobalVector(localPosition, partialTicks)
                 .add(.5, .5, .5)
                 .subtract(.5, passengerHeight, .5);
     }
@@ -268,6 +267,7 @@ public abstract class MixinAbstractContraptionEntity extends Entity {
     @WrapMethod(method = "removePassenger(Lnet/minecraft/world/entity/Entity;)V")
     private void hexie$clearHardSeatPosition(Entity passenger, Operation<Void> original) {
         int seatIndex = -1;
+        BlockPos dismountSeat = contraption == null ? null : contraption.getSeatOf(passenger.getUUID());
         if (contraption != null) {
             Integer mappedIndex = contraption.getSeatMapping().get(passenger.getUUID());
             if (mappedIndex != null
@@ -280,6 +280,13 @@ public abstract class MixinAbstractContraptionEntity extends Entity {
             }
         }
         original.call(passenger);
+        if (!level().isClientSide && passenger instanceof Player && dismountSeat != null
+                && contraption instanceof com.simibubi.create.content.trains.entity.CarriageContraption) {
+            Vec3 feet = willow.train.hexie.compat.create.TrainSeatDismount.behind(
+                    (AbstractContraptionEntity) (Object) this, dismountSeat);
+            if (feet != null) passenger.getPersistentData().put("ContraptionDismountLocation",
+                    net.createmod.catnip.math.VecHelper.writeNBT(feet));
+        }
         if (seatIndex >= 0) {
             if (level().isClientSide) {
                 ContraptionSeatPositionCache.update(getUUID(), passenger.getUUID(), seatIndex, -1);
@@ -325,11 +332,6 @@ public abstract class MixinAbstractContraptionEntity extends Entity {
             if (!occupied[i])
                 return i;
         return -1;
-    }
-
-    @Unique
-    private static String hardSeatTargetTag(int seatIndex, int position) {
-        return HardSeatPositionRequest.tag(seatIndex, position);
     }
 
     @Unique

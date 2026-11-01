@@ -18,6 +18,8 @@ public final class DrivingConsoleClient {
     private static DrivingConsoleContext context;
     private static boolean pointer;
     private static boolean exitKeyHeld;
+    private static boolean approachHeld;
+    public static boolean approachHeld() { return approachHeld && capturesInput(); }
     private static double zoom = 1, renderedFov = 70;
 
     public static DrivingConsoleContext context() { return context; }
@@ -33,7 +35,7 @@ public final class DrivingConsoleClient {
         var next = DrivingConsoleContext.find(mc.player);
         if (!java.util.Objects.equals(context, next)) {
             boolean wasActive = context != null;
-            context = next; pointer = false; zoom = 1;
+            context = next; pointer = false; zoom = 1; approachHeld = false;
             if (wasActive || next != null) {
                 KeyMapping.releaseAll();
                 if (mc.screen == null && mc.isWindowActive() && mc.player != null) mc.mouseHandler.grabMouse();
@@ -44,6 +46,10 @@ public final class DrivingConsoleClient {
             mc.player.input.shiftKeyDown = false;
             if (pointer && mc.mouseHandler.isMouseGrabbed()) mc.mouseHandler.releaseMouse();
             if (!pointer && !mc.mouseHandler.isMouseGrabbed()) mc.mouseHandler.grabMouse();
+        }
+        if (!capturesInput() && approachHeld) {
+            approachHeld = false;
+            sendApproach(false);
         }
     }
 
@@ -59,6 +65,11 @@ public final class DrivingConsoleClient {
             return true;
         }
         if (!captureKey(key, scanCode)) return false;
+        if (Minecraft.getInstance().options.keyJump.matches(key, scanCode)) {
+            approachHeld = action != GLFW.GLFW_RELEASE;
+            if (action != GLFW.GLFW_REPEAT) sendApproach(approachHeld);
+            return true;
+        }
         if (key == GLFW.GLFW_KEY_E && action == GLFW.GLFW_PRESS) {
             var player = Minecraft.getInstance().player;
             if (player != null && player.getVehicle() != null) {
@@ -68,6 +79,12 @@ public final class DrivingConsoleClient {
             }
         }
         return true;
+    }
+
+    private static void sendApproach(boolean held) {
+        if (context == null) return;
+        willow.train.hexie.network.HexieNetworkHandler.sendToServer(
+                new willow.train.hexie.network.c2s.TestCabActionPacket(context.seatAccess().vehicle().getId(), held ? 7 : 8));
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)

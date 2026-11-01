@@ -20,6 +20,11 @@ public final class TrainDisplayReadings {
 
     public static CabDisplayState read(VehicleRuntime runtime, UUID member, TrainControl.Source source,
                                         DmiState.Mode mode, Route route) {
+        return read(runtime, member, source, mode, route, "");
+    }
+
+    public static CabDisplayState read(VehicleRuntime runtime, UUID member, TrainControl.Source source,
+                                        DmiState.Mode mode, Route route, String trainNumber) {
         var state = runtime.state(member);
         double mass = 0, force = 0, traction = 0, brake = 0;
         for (var id : state.consist()) {
@@ -34,6 +39,6 @@ public final class TrainDisplayReadings {
         }
         double deceleration = mass > 0 ? force / mass * runtime.brakingMultiplier() * source.serviceBrakeLimit() : 0;
         return new CabDisplayState(state.speed() * 3.6, Map.of(), new DmiState(mode, route.target(), TrainControl.LINE_SPEED_LIMIT_KMH,
-                deceleration, traction, brake, route.status(), route.station(), "", "", "", route.ctcs()));
+                deceleration, traction, brake, route.status(), route.station(), trainNumber, "", "", route.ctcs()));
     }
 }

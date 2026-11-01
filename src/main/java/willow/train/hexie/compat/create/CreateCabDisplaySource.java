@@ -17,16 +17,17 @@ final class CreateCabDisplaySource {
                 : motion.hasTestCab(member) || train != null && train.automaticControlActive
                 ? DmiState.Mode.AUTOMATIC : DmiState.Mode.UNKNOWN;
         var route = train == null ? TrainDisplayReadings.Route.unavailable() : train.displayRoute;
-        if (train != null && train.automaticTarget != null
+        if (train != null && train.automaticTarget != null && train.automaticTarget.stop()
                 && (route.target() == null || train.automaticTarget.distanceM() <= route.target().distanceM())) {
             var target = train.automaticTarget;
-            String station = train.navigation.destination == null ? "" : train.navigation.destination.name;
+            String station = train.navigation.destination == null ? route.station() : train.navigation.destination.name;
             route = new TrainDisplayReadings.Route(new DmiState.Target(target.station()
                     ? DmiState.TargetKind.STATION : DmiState.TargetKind.SIGNAL,
                     target.station() ? station : "前方停车点", Math.max(0, target.distanceM()), 0), station,
                     Double.isFinite(target.speedLimitMps()) ? target.speedLimitMps() * 3.6 : -1,
                     target.station() ? "Create" : "Create / 前方停车", route.ctcs());
         }
-        return TrainDisplayReadings.read(motion.runtime(), member, motion.controlSource(member), mode, route);
+        return TrainDisplayReadings.read(motion.runtime(), member, motion.controlSource(member), mode, route,
+                train == null || train.runtime.currentTitle == null ? "" : train.runtime.currentTitle);
     }
 }

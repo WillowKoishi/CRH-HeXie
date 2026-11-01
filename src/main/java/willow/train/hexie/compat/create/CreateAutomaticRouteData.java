@@ -19,18 +19,21 @@ final class CreateAutomaticRouteData {
         double destinationDistance = nav.distanceToDestination;
         if (!Double.isFinite(destinationDistance)) return null;
         int direction = nav.destinationBehindTrain ? -1 : 1;
+        boolean waypoint = CreateWaypointSupport.active(train);
         nav.destination.reserveFor(train);
         var leading = direction > 0 ? train.carriages.getFirst().getLeadingPoint()
                 : train.carriages.getLast().getTrailingPoint();
         if (leading.edge == null) return null;
         var scout = new TravellingPoint(leading.node1, leading.node2, leading.edge, leading.position, false);
         double speed = Math.abs(train.speed) * 20;
-        double brakingDistance = serviceDeceleration > 0 ? speed * speed / (2 * serviceDeceleration * .85) : 0;
-        double scanDistance = Math.min(Math.max(0, destinationDistance), Math.max(32, brakingDistance + speed * .5 + 8));
+        double plannedDeceleration = AutomaticTrainControl.planningDeceleration(serviceDeceleration);
+        double brakingDistance = plannedDeceleration > 0 ? speed * speed / (2 * plannedDeceleration) : 0;
+        double lookAhead = Math.max(32, brakingDistance + speed * .75 + 8);
+        double scanDistance = waypoint ? lookAhead : Math.min(Math.max(0, destinationDistance), lookAhead);
         var scan = new Scan();
         // Selectors consume a copy of the route. Only actual movement consumes the live switch itinerary.
-        scout.travel(train.graph, (Math.max(0, destinationDistance) + 50) * direction, nav.controlSignalScout(), (distance, event) -> {
-            if (event.getFirst() == nav.destination) {
+        double scanned = scout.travel(train.graph, (Math.max(scanDistance, Math.max(0, destinationDistance)) + 50) * direction, nav.controlSignalScout(), (distance, event) -> {
+            if (event.getFirst() == nav.destination && !waypoint) {
                 reserve(train, scan);
                 return true;
             }
@@ -67,8 +70,8 @@ final class CreateAutomaticRouteData {
         nav.distanceToSignal = scan.blocked == null ? Double.MAX_VALUE : scan.distance;
         if (scan.blocked != null)
             return new AutomaticTrainControl.Target(direction, scan.distance, Double.POSITIVE_INFINITY, false);
-        if (scout.blocked) return null;
-        return new AutomaticTrainControl.Target(direction, destinationDistance, Double.POSITIVE_INFINITY, true);
+        if (scout.blocked && Math.abs(scanned) < scanDistance) return null;
+        return new AutomaticTrainControl.Target(direction, destinationDistance, Double.POSITIVE_INFINITY, !waypoint, !waypoint);
     }
 
     private static void reserve(CompatibilityTrain train, Scan scan) {
