@@ -51,6 +51,14 @@ public class BlockInit {
             Main.MOD_ID);
     public static final DeferredRegister<Item> ITEMS = AllItemsInit.ITEMS;
 
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.locos.head.CRH2HeadBlock> CRH2A_HEAD = register("crh2a_head",
+            () -> new willow.train.hexie.blocks.locos.head.CRH2HeadBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL).strength(2).sound(SoundType.METAL).noOcclusion()),
+            object -> () -> new willow.train.hexie.item.CRH2HeadItem(object.get(), new Item.Properties()));
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.locos.head.HeadFloorBlock> CRH2A_HEAD_FLOOR =
+            BLOCKS.register("crh2a_head_floor", () -> new willow.train.hexie.blocks.locos.head.HeadFloorBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL).strength(2).sound(SoundType.METAL).noOcclusion().noLootTable()));
+
     public static final DeferredHolder<Block, willow.train.hexie.blocks.locos.CRH2DriverSeatBlock> CRH2A_DRIVER_SEAT = register("crh2a_driver_seat",
             () -> new willow.train.hexie.blocks.locos.CRH2DriverSeatBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_GRAY).strength(1.5f).sound(SoundType.WOOL).noOcclusion()),

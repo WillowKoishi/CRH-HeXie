@@ -191,6 +191,13 @@ public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos o
         if (tag.contains("Properties")) {
             require(tag, "Properties", Tag.TAG_COMPOUND);
             var properties = tag.getCompound("Properties");
+            // This additive flag did not exist before integral heads. Its absence means
+            // an ordinary bogey; all pre-existing style and geometry fields stay strict.
+            if (state.getBlock() instanceof willow.train.hexie.blocks.bogeys.HexieBogeyBlock<?>
+                    && !properties.contains("head_mounted")) {
+                properties = properties.copy();
+                properties.putString("head_mounted", "false");
+            }
             if (properties.size() != state.getProperties().size())
                 throw new IllegalArgumentException("Incomplete block state properties: " + name);
             for (String key : properties.getAllKeys()) {

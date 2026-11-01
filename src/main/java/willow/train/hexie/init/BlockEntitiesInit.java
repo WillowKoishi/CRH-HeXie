@@ -18,6 +18,10 @@ public class BlockEntitiesInit {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, Main.MOD_ID);
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CRH2HeadEntity>> CRH2A_HEAD =
+            BLOCK_ENTITIES.register("crh2a_head", () -> BlockEntityType.Builder.of(
+                    CRH2HeadEntity::new, BlockInit.CRH2A_HEAD.get()).build(null));
+
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DrivingConsoleEntity>> DRIVING_CONSOLE =
             BLOCK_ENTITIES.register("driving_console", () -> BlockEntityType.Builder.of(
                     DrivingConsoleEntity::new, BlockInit.CRH2A_DRIVING_CONSOLE.get(), BlockInit.TEST_DRIVING_CONSOLE.get()).build(null));

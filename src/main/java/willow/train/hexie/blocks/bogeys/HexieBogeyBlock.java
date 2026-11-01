@@ -10,14 +10,29 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import willow.train.hexie.init.track.TrackMaterialInit;
 
 public abstract class HexieBogeyBlock<T extends AbstractBogeyBlockEntity> extends AbstractBogeyBlock<T> {
+    public static final net.minecraft.world.level.block.state.properties.BooleanProperty HEAD_MOUNTED =
+            net.minecraft.world.level.block.state.properties.BooleanProperty.create("head_mounted");
+    @Override protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition.Builder<Block, BlockState> builder) {
+        super.createBlockStateDefinition(builder);
+        builder.add(HEAD_MOUNTED);
+    }
     /** The floor owns the block/collision; neither top nor the swivelling frame moves this footprint. */
     @Override public net.minecraft.world.phys.shapes.VoxelShape getShape(BlockState state,
             net.minecraft.world.level.BlockGetter world, BlockPos pos, net.minecraft.world.phys.shapes.CollisionContext context) {
+        if (state.getValue(HEAD_MOUNTED)) {
+            var shift = world.getBlockEntity(pos) instanceof HexieBogeyBlockEntity be
+                    ? BogeyFloorData.displacement(state, BogeyFloorData.longitudinal(be.getBogeyData()))
+                    : Vec3.ZERO;
+            if (world.getBlockEntity(pos) instanceof HexieBogeyBlockEntity be && !be.isCarriageView())
+                shift = shift.add(0, BogeyFloorData.offset(BogeyFloorData.get(be)), 0);
+            return net.minecraft.world.phys.shapes.Shapes.box(0, 5/16d, 0, 1, 1, 1).move(shift.x, shift.y, shift.z);
+        }
         double height = world instanceof willow.train.hexie.vehicle.assembly.CarriageFloorView ? 0
                 : world.getBlockEntity(pos) instanceof HexieBogeyBlockEntity be && !be.isCarriageView()
                 ? BogeyFloorData.offset(BogeyFloorData.get(be)) : 0;
@@ -25,10 +40,18 @@ public abstract class HexieBogeyBlock<T extends AbstractBogeyBlockEntity> extend
     }
     @Override public net.minecraft.world.phys.shapes.VoxelShape getCollisionShape(BlockState state,
             net.minecraft.world.level.BlockGetter world, BlockPos pos, net.minecraft.world.phys.shapes.CollisionContext context) {
+        if (state.getValue(HEAD_MOUNTED)) return net.minecraft.world.phys.shapes.Shapes.empty();
         return getShape(state, world, pos, context);
     }
     protected HexieBogeyBlock(Properties properties, BogeySizes.BogeySize size) {
         super(properties.dynamicShape(), size);
+        registerDefaultState(defaultBlockState().setValue(HEAD_MOUNTED, false));
+    }
+
+    @Override public java.util.List<net.minecraft.world.level.block.state.properties.Property<?>> propertiesToCopy() {
+        var properties = new java.util.ArrayList<>(super.propertiesToCopy());
+        properties.add(HEAD_MOUNTED);
+        return properties;
     }
 
     @Override

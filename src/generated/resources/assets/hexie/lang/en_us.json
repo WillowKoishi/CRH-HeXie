@@ -640,5 +640,7 @@
   "gui.hexie.ground_station_sign.previous": "Previous station",
   "gui.hexie.ground_station_sign.next": "Next station",
   "gui.hexie.ground_station_sign.switch_font": "Switch font",
-  "gui.hexie.vehicle.assembled": "Assembled"
+  "gui.hexie.vehicle.assembled": "Assembled",
+  "block.hexie.crh2a_head": "CRH2A Cab Car Head",
+  "block.hexie.crh2a_head_floor": "CRH2A Cab Car Head / floor"
 }

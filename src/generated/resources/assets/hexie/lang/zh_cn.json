@@ -644,5 +644,7 @@
   "gui.hexie.ground_station_sign.previous": "上一站",
   "gui.hexie.ground_station_sign.next": "下一站",
   "gui.hexie.ground_station_sign.switch_font": "切换字体",
-  "gui.hexie.vehicle.assembled": "已组装"
+  "gui.hexie.vehicle.assembled": "已组装",
+  "block.hexie.crh2a_head": "CRH2A 头车",
+  "block.hexie.crh2a_head_floor": "CRH2A 头车 / floor"
 }

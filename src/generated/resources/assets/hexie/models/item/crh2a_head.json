@@ -1,0 +1,90 @@
+{
+  "parent": "hexie:block/crh2a/head/head",
+  "display": {
+    "gui": {
+      "rotation": [
+        15,
+        135,
+        0
+      ],
+      "translation": [
+        6.4,
+        -0.7,
+        -6.8
+      ],
+      "scale": [
+        0.12,
+        0.12,
+        0.12
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        15,
+        135,
+        0
+      ],
+      "translation": [
+        6.4,
+        -0.7,
+        -6.8
+      ],
+      "scale": [
+        0.12,
+        0.12,
+        0.12
+      ]
+    },
+    "thirdperson_righthand": {
+      "rotation": [
+        15,
+        135,
+        0
+      ],
+      "translation": [
+        6.4,
+        -0.7,
+        -6.8
+      ],
+      "scale": [
+        0.12,
+        0.12,
+        0.12
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        15,
+        135,
+        0
+      ],
+      "translation": [
+        6.4,
+        -0.7,
+        -6.8
+      ],
+      "scale": [
+        0.12,
+        0.12,
+        0.12
+      ]
+    },
+    "ground": {
+      "rotation": [
+        15,
+        135,
+        0
+      ],
+      "translation": [
+        6.4,
+        -0.7,
+        -6.8
+      ],
+      "scale": [
+        0.12,
+        0.12,
+        0.12
+      ]
+    }
+  }
+}

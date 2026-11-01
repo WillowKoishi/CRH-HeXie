@@ -84,7 +84,11 @@ public class StandardTrackBlock extends TrackBlock {
             case XO -> Direction.Axis.X;
             default -> Direction.Axis.Z;
         };
-        BlockState bogey = TrackBlockInit.HX_STANDARD_BOGEY.getDefaultState();
+        // Let Create's placement hooks choose the block before the station writes its
+        // selected style. Returning CW2 unconditionally pairs it with another style's NBT.
+        BlockState bogey = super.getBogeyAnchor(world, pos, state);
+        if (bogey.is(com.simibubi.create.AllBlocks.SMALL_BOGEY.get()))
+            bogey = TrackBlockInit.HX_STANDARD_BOGEY.getDefaultState();
         return bogey.setValue(BlockStateProperties.HORIZONTAL_AXIS, axis);
     }
 }

@@ -75,7 +75,11 @@ public final class BogeyModelCatalog {
                     var saved = nbt.getCompound("BogeyData");
                     if (saved.contains("BogeyStyle") && (!saved.contains("BogeyStyle", Tag.TAG_STRING)
                             || !saved.getString("BogeyStyle").equals(bogey.getDefaultStyle().id.toString())))
-                        throw new IllegalArgumentException("Saved bogey style does not match its registered block/model");
+                        throw new IllegalArgumentException("转向架样式不匹配："
+                                + BuiltInRegistries.BLOCK.getKey(block) + "，位置 "
+                                + nbt.getInt("x") + ", " + nbt.getInt("y") + ", " + nbt.getInt("z")
+                                + "；保存值 " + saved.get("BogeyStyle")
+                                + "；应为 " + bogey.getDefaultStyle().id);
                 }
                 return model;
             });

@@ -27,6 +27,7 @@ public class HexieClientSetupEvent {
     @SubscribeEvent
     public static void onRegisterAdditionalModels(ModelEvent.RegisterAdditional event) {
         event.register(willow.train.hexie.client.render.blockentity.TestDrivingConsoleRenderer.SHELL);
+        event.register(willow.train.hexie.client.render.blockentity.CRH2HeadRenderer.MODEL);
         for(ResourceLocation location : ModelInit.UNBAKED) {
             event.register(net.minecraft.client.resources.model.ModelResourceLocation.standalone(location));
         }

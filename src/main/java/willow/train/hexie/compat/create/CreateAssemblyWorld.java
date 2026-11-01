@@ -42,6 +42,7 @@ import net.minecraft.world.level.block.state.properties.PistonType;
 import net.minecraft.world.level.material.PushReaction;
 import willow.train.hexie.vehicle.assembly.AssemblyRegion;
 import willow.train.hexie.vehicle.assembly.AssemblyTraversal;
+import willow.train.hexie.blocks.bogeys.HexieBogeyBlock;
 
 /**
  * Compatibility data for HeXie's scanner. Attachment rules adapted from Create
@@ -74,7 +75,12 @@ final class CreateAssemblyWorld implements AssemblyTraversal.Source<BlockPos> {
     @Override
     public AssemblyTraversal.Cell cell(BlockPos pos) {
         BlockState state = stateAt(pos);
-        if (!BlockMovementChecks.isMovementNecessary(state, world, pos)) return AssemblyTraversal.Cell.EMPTY;
+        // A head-mounted bogey is a real assembly support even though the head owns
+        // its floor collision. Create's generic empty-collider rule must not drop it.
+        boolean mountedBogey = state.getBlock() instanceof HexieBogeyBlock<?>
+                && state.getValue(HexieBogeyBlock.HEAD_MOUNTED);
+        if (!mountedBogey && !BlockMovementChecks.isMovementNecessary(state, world, pos))
+            return AssemblyTraversal.Cell.EMPTY;
         return BlockMovementChecks.isMovementAllowed(state, world, pos)
                 ? AssemblyTraversal.Cell.MOVABLE : AssemblyTraversal.Cell.BLOCKED;
     }
@@ -111,6 +117,17 @@ final class CreateAssemblyWorld implements AssemblyTraversal.Source<BlockPos> {
         if (world.getBlockEntity(pos) instanceof WindmillBearingBlockEntity bearing && bearing.isRunning())
             throw new IllegalStateException("Stop the windmill before assembly: " + pos);
         Queue<BlockPos> frontier = new ArrayDeque<>();
+        var head = willow.train.hexie.blocks.locos.head.HeadGeometry.owner(world, pos);
+        if (head != null) {
+            var facing = world.getBlockState(head).getValue(willow.train.hexie.blocks.locos.head.CRH2HeadBlock.FACING);
+            for (int i = 0; i < willow.train.hexie.blocks.locos.head.HeadGeometry.PARTS; i++) {
+                var part = head.offset(willow.train.hexie.blocks.locos.head.HeadGeometry.offset(i, facing));
+                if (!contains(part) || !world.isLoaded(part)
+                        || !head.equals(willow.train.hexie.blocks.locos.head.HeadGeometry.owner(world, part)))
+                    throw new IllegalStateException("车头必须完整包含在组装范围内: " + head);
+                frontier.add(part);
+            }
+        }
         Set<BlockPos> visited = Set.of();
         if (state.getBlock() instanceof AbstractChassisBlock
                 && !moveChassis(world, pos, null, frontier, visited))

@@ -19,6 +19,35 @@ import willow.train.hexie.compat.create.SnapshotCarriageEntity;
 /** Keep Create's shape collision, replace only platform movement for our supported players. */
 @Mixin(ContraptionCollider.class)
 public abstract class MixinCarriagePlayerCollision {
+    @WrapOperation(method = "collideEntities", at = @At(value = "INVOKE",
+            target = "Lcom/simibubi/create/content/contraptions/Contraption;getSimplifiedEntityColliders()Lcom/simibubi/create/foundation/collision/CollisionList;"), remap = false)
+    private static com.simibubi.create.foundation.collision.CollisionList hexie$headDetailedCollision(
+            com.simibubi.create.content.contraptions.Contraption contraption,
+            Operation<com.simibubi.create.foundation.collision.CollisionList> original,
+            @Local(name = "entity") Entity entity) {
+        if (entity instanceof Player && contraption.getBlocks().values().stream().anyMatch(info ->
+                info.state().getBlock() instanceof willow.train.hexie.blocks.locos.head.CRH2HeadBlock)) return null;
+        return original.call(contraption);
+    }
+
+    @WrapOperation(method = "collideEntities", at = @At(value = "INVOKE",
+            target = "Lcom/simibubi/create/content/contraptions/ContraptionCollider;getPotentiallyCollidedShapes(Lnet/minecraft/world/level/Level;Lcom/simibubi/create/content/contraptions/Contraption;Lnet/minecraft/world/phys/AABB;Lnet/minecraft/world/phys/shapes/Shapes$DoubleLineConsumer;)V"), remap = false)
+    private static void hexie$headShell(net.minecraft.world.level.Level world,
+            com.simibubi.create.content.contraptions.Contraption contraption, net.minecraft.world.phys.AABB query,
+            net.minecraft.world.phys.shapes.Shapes.DoubleLineConsumer out, Operation<Void> original,
+            @Local(name = "entity") Entity entity) {
+        original.call(world, contraption, query, out);
+        if (!(entity instanceof Player)) return;
+        for (var info : contraption.getBlocks().values()) {
+            if (!(info.state().getBlock() instanceof willow.train.hexie.blocks.locos.head.CRH2HeadBlock)) continue;
+            var facing = info.state().getValue(willow.train.hexie.blocks.locos.head.CRH2HeadBlock.FACING);
+            for (var box : willow.train.hexie.blocks.locos.head.HeadGeometry.boxes(facing)) {
+                var b = box.move(info.pos());
+                if (b.intersects(query)) out.consume(b.minX, b.minY, b.minZ, b.maxX, b.maxY, b.maxZ);
+            }
+        }
+    }
+
     @Inject(method = "collideEntities", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/world/entity/Entity;setPos(DDD)V", ordinal = 0,
             shift = At.Shift.AFTER), remap = false)

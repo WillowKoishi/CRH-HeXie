@@ -73,6 +73,7 @@ public class HeXieClientInit {
     }
 
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerBlockEntityRenderer(BlockEntitiesInit.CRH2A_HEAD.get(), CRH2HeadRenderer::new);
         event.registerBlockEntityRenderer(BlockEntitiesInit.DRIVING_CONSOLE.get(),
                 willow.train.hexie.client.render.blockentity.TestDrivingConsoleRenderer::new);
         // Entity builders run before Registrate is attached to our bus. Bind directly so the
