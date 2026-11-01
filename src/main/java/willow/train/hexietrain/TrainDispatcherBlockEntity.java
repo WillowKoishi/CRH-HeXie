@@ -114,6 +114,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     /** 到站后等待时刻表发号施令：记下停站时的条目号。 */
     private int stoppedEntry = -1;
     private boolean waitingForSchedule = false;
+    private int targetLogTicks = 0;
 
     /** 自动模式下传动要输出的方向：+1 正传、-1 反传、0 断开。 */
     private float autoDirection = 0f;
@@ -898,6 +899,11 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
             if (lp == null || lp.edge == null) return;
 
             GlobalStation target = stationForCurrentEntry(train);
+            if (++targetLogTicks >= 20) {
+                targetLogTicks = 0;
+                HexieTrain.LOGGER.info("[HexieTrain][drive] currentEntry={} 目标={}",
+                        train.runtime.currentEntry, target == null ? "无" : target.name);
+            }
             if (target == null) { setAutoDirection(0f); return; }
 
             // 每 tick 直接算真实剩余距离（图很小，不用缓存）
@@ -1072,8 +1078,11 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
                 try { tr.navigation.cancelNavigation(); } catch (Throwable ignored) { }
             }
 
-            HexieTrain.LOGGER.info("[HexieTrain][schedule] 下一站 → 第 {} 条 {}（条目顺序未变）",
-                    chosen, stopNames.get(chosen));
+            int after = (tr == null || tr.runtime == null) ? -1 : tr.runtime.currentEntry;
+            HexieTrain.LOGGER.info("[HexieTrain][schedule] 选中第 {} 条 {}；游标现在={}；条目数={}",
+                    chosen, stopNames.get(chosen), after,
+                    (tr == null || tr.runtime == null || tr.runtime.schedule == null) ? -1
+                            : tr.runtime.schedule.entries.size());
         } catch (Throwable t) {
             HexieTrain.LOGGER.warn("[HexieTrain][schedule] 确认站点失败: {}", t.toString());
         }
