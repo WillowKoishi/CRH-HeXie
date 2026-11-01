@@ -171,8 +171,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     /** 上一次的目的地对象，用来判断"目的地是否刚变"。 */
     private Object lastDestination;
 
-    /** true = 零启动（目的地一变立刻松闸）；false = 非零启动（半坡起步）。 */
-    private boolean zeroStart = true;
 
     /** true = 对刹车通道做平方根补偿（抵消转向架的 Mth.square）。 */
     private boolean linearizeBrake = true;
@@ -942,15 +940,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         sendData();
     }
 
-    public boolean zeroStart() {
-        return zeroStart;
-    }
-
-    public void setZeroStart(boolean value) {
-        zeroStart = value;
-        setChanged();
-        sendData();
-    }
 
     public boolean linearizeBrake() {
         return linearizeBrake;
@@ -967,7 +956,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     protected void write(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
         super.write(tag, registries, clientPacket);
         if (boundTrain != null) tag.putUUID("BoundTrain", boundTrain);
-        tag.putBoolean("ZeroStart", zeroStart);
         tag.putBoolean("ManualMode", manualMode);
         if (owner != null) tag.putUUID("Owner", owner);
         // 方块特性：玩家在 UI 里调的制动灵敏度
@@ -993,7 +981,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
             TrainBinder.OUR_TRAINS.add(boundTrain);
             HexieTrain.LOGGER.info("[HexieTrain] 从存档恢复列车绑定 {}", boundTrain);
         }
-        zeroStart = !tag.contains("ZeroStart") || tag.getBoolean("ZeroStart");
         manualMode = tag.getBoolean("ManualMode");
         owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
         // 方块特性：制动灵敏度（缺省 3.0 格/秒²）
@@ -1224,25 +1211,9 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
      */
     private void tickOutputRamp() {
         float targetRatio = (!manualMode && boundTrain != null && autoDirection != 0f) ? 1f : 0f;
-        // 零启动：先松刹车 → 再给传动
-        // 非零启动：刹车压着 → 传动建立后再松（防止松刹瞬间溜车）
-        if (targetRatio > 0f) {
-            if (zeroStart) {
-                if (output(SignalChannel.BRAKE) != 0) {
-                    setOutput(SignalChannel.BRAKE, 0);
-                }
-            } else {
-                if (outputRatio < 0.99f) {
-                    // 传动还没建立：保持满刹，防止后溜
-                    if (output(SignalChannel.BRAKE) != 15) {
-                        setOutput(SignalChannel.BRAKE, 15);
-                    }
-                } else if (output(SignalChannel.BRAKE) != 0) {
-                    // 传动已满：这才松刹车
-                    setOutput(SignalChannel.BRAKE, 0);
-                    HexieTrain.LOGGER.info("[HexieTrain][auto] 非零启动：传动已建立，松开刹车");
-                }
-            }
+        // 起步顺序固定：先松刹车 → 再给传动
+        if (targetRatio > 0f && output(SignalChannel.BRAKE) != 0) {
+            setOutput(SignalChannel.BRAKE, 0);
         }
         float step = 1.0f;    // 不再做转速渐变：一步到位
 
