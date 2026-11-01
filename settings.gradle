@@ -1,0 +1,6 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+    }
+}
+rootProject.name = "hexietrain-1.21.1"

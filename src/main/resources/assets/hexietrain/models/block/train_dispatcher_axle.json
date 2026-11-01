@@ -1,0 +1,30 @@
+{
+  "textures": {
+    "axis": "create:block/axis",
+    "particle": "create:block/axis"
+  },
+  "elements": [
+    {
+      "from": [0, 4, 4],
+      "to": [2, 12, 12],
+      "faces": {
+        "west":  { "uv": [4, 4, 12, 12], "texture": "#axis" },
+        "up":    { "uv": [4, 0, 12, 2],  "texture": "#axis" },
+        "down":  { "uv": [4, 0, 12, 2],  "texture": "#axis" },
+        "north": { "uv": [0, 4, 2, 12],  "texture": "#axis" },
+        "south": { "uv": [0, 4, 2, 12],  "texture": "#axis" }
+      }
+    },
+    {
+      "from": [14, 4, 4],
+      "to": [16, 12, 12],
+      "faces": {
+        "east":  { "uv": [4, 4, 12, 12], "texture": "#axis" },
+        "up":    { "uv": [4, 0, 12, 2],  "texture": "#axis" },
+        "down":  { "uv": [4, 0, 12, 2],  "texture": "#axis" },
+        "north": { "uv": [0, 4, 2, 12],  "texture": "#axis" },
+        "south": { "uv": [0, 4, 2, 12],  "texture": "#axis" }
+      }
+    }
+  ]
+}

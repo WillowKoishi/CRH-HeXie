@@ -1,0 +1,51 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="MIT"
+
+[[mods]]
+modId="hexietrain"
+version="0.1.0"
+displayName="Hexie Physics Train"
+description='''
+物理化列车 × Create 铁路运营层
+'''
+authors="you"
+
+[[dependencies.hexietrain]]
+    modId="neoforge"
+    type="required"
+    versionRange="[21.1.219,)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.hexietrain]]
+    modId="minecraft"
+    type="required"
+    versionRange="[1.21.1,1.22)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.hexietrain]]
+    modId="create"
+    type="required"
+    versionRange="[6.0.10,)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.hexietrain]]
+    modId="sable"
+    type="optional"
+    versionRange="[2.0.0,3.0.0)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.hexietrain]]
+    modId="simurail"
+    type="optional"
+    versionRange="[0.1.0,)"
+    ordering="AFTER"
+    side="BOTH"
+
+# 混入配置必须写在所有顶层键和表之后
+[[mixins]]
+config="hexietrain.mixins.json"
