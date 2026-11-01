@@ -129,40 +129,23 @@ public class TrainDispatcherBlock extends DirectionalAxisKineticBlock
         super.neighborChanged(state, level, pos, neighborBlock, neighborPos, movedByPiston);
         if (level.isClientSide) return;
 
+        // 只更新外观状态，绝不动动力学网络 ——
+        // handleRemoved/handleAdded 这套会把方块本身搞坏（实测给红石时方块消失）。
         BlockState newState = getPoweredState(level, state, pos);
-        if (newState.getValue(LEFT_POWERED) == state.getValue(LEFT_POWERED)
-                && newState.getValue(RIGHT_POWERED) == state.getValue(RIGHT_POWERED)) {
-            return;
-        }
-        level.setBlock(pos, newState, Block.UPDATE_CLIENTS);
-        detachKinetics(level, pos, true);
-    }
-
-    /** 从动力学网络摘下，并排一个高优先级 tick 重新接入。 */
-    public void detachKinetics(Level level, BlockPos pos, boolean scheduleTick) {
-        if (!(level.getBlockEntity(pos) instanceof KineticBlockEntity kbe)) return;
-        RotationPropagator.handleRemoved(level, pos, kbe);
-        if (scheduleTick) {
-            level.scheduleTick(pos, this, 1, TickPriority.EXTREMELY_HIGH);
+        if (newState.getValue(LEFT_POWERED) != state.getValue(LEFT_POWERED)
+                || newState.getValue(RIGHT_POWERED) != state.getValue(RIGHT_POWERED)) {
+            level.setBlock(pos, newState, Block.UPDATE_CLIENTS);
         }
     }
 
-    @Override
-    public void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        if (!(level.getBlockEntity(pos) instanceof KineticBlockEntity kbe)) return;
-        RotationPropagator.handleAdded(level, pos, kbe);
-    }
+
 
     // ══════════════════ 扳手 ══════════════════
 
     @Override
     public InteractionResult onWrenched(BlockState state, UseOnContext context) {
-        // 旋转交给父类，之后同样要重建动力学网络（照抄参考实现）
-        InteractionResult result = super.onWrenched(state, context);
-        if (result.consumesAction() && !context.getLevel().isClientSide) {
-            detachKinetics(context.getLevel(), context.getClickedPos(), true);
-        }
-        return result;
+        // 旋转交给父类；不再动动力学网络（那套会把方块搞坏）
+        return super.onWrenched(state, context);
     }
 
     @Override

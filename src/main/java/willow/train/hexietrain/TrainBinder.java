@@ -337,31 +337,10 @@ public static Result bind(ServerLevel level, BlockPos dispatcherPos, ItemStack s
                 var list = new java.util.ArrayList<GlobalStation>(stations0);
                 var found = train.navigation.findPathTo(list, Double.MAX_VALUE);
 
-                // Create 的寻路失败时，用我们自己的 BFS 兜底
-                if (found == null && !list.isEmpty()) {
-                    DiscoveredPath own = RailPathfinder.find(train, list.get(0));
-                    if (own != null) {
-                        double navDist = train.navigation.startNavigation(own);
-                        found = own;
-                        HexieTrain.LOGGER.info("[HexieTrain][path] 自建寻路成功：{} 条边，距离 {}，已交给 Create 导航",
-                                own.path.size(), String.format("%.2f", navDist));
-                    } else {
-                        HexieTrain.LOGGER.warn("[HexieTrain][path] 自建寻路也失败");
-                    }
-                }
                 HexieTrain.LOGGER.info("[HexieTrain][path] findPathTo 结果={}",
                         found == null ? "null（找不到路）" : "找到，终点=" + found.destination.name);
 
                 // 用 Create 原生的列车状态机制播报给车主（橙色）
-                if (found == null) {
-                    String target = "";
-                    for (GlobalStation st2 : stations0) { target = st2.name; break; }
-                    // 不再调用 Create 的状态播报（会刷屏误导）
-                    TrainMessages.notifyOwner(level, ownerId, "列车找不到可用的路径");
-                } else {
-                    // 不再调用 Create 的状态播报（会刷屏误导）
-                    TrainMessages.notifyOwner(level, ownerId, "导航成功");
-                }
             } catch (Throwable t) {
                 HexieTrain.LOGGER.warn("[HexieTrain][path] 自检异常: {}", t.toString());
             }

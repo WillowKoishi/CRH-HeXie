@@ -306,32 +306,20 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         }
     }
 
-    /** 手动：红石决定转速（未绑定时刻表时不允许输出动力）。 */
+    /**
+     * 玩家操控中：本方块就是一个定向齿轮换向器，仅此而已。
+     *
+     * <p>不做任何额外的事 —— 不推物理体、不设速度、不输出通道。
+     * 传动比由 getRotationSpeedModifier 按左右红石直接决定，
+     * 转速则由上游传动轴提供。
+     */
     private void tickManual() {
-        int left = leftSignal();
-        int right = rightSignal();
-        suspended = false;   // 没绑定时不存在"悬浮"状态
-        // 没有时刻表时，红石激活也要体现"玩家操控中"
-        boolean manual = left > 0 || right > 0;
+        boolean manual = leftSignal() > 0 || rightSignal() > 0;
         if (manual != manualMode) {
             manualMode = manual;
             setChanged();
             sendData();
         }
-        if (boundTrain == null) {
-            // 没有时刻表：红石只控制"转速输出"，转向架自己把转速变成轮轨牵引力。
-            // 这里不推物理体、不设速度 —— 那是转向架的工作。
-            setOutput(SignalChannel.BRAKE, 0);
-            setOutput(SignalChannel.LEFT, 0);
-            setOutput(SignalChannel.RIGHT, 0);
-            return;
-        }
-        if (left == lastLeft && right == lastRight) return;
-        lastLeft = left;
-        lastRight = right;
-
-        // 手动模式下刹车通道跟随左右红石之外的东西没有意义，全部清零
-        setOutput(SignalChannel.BRAKE, 0);
     }
 
     /** 自动：读列车状态 → 制动曲线 → 三通道输出 + 反向传动。 */
@@ -539,20 +527,17 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
                         "[HexieTrain][stall] 目标=\"{}\" 找不到（已卡 {} tick）。图上有 {}；{}；{}",
                         wanted, stallTicks, stationInfo, startInfo, reachInfo);
 
-                // 导航被 Create 取消后重新挂上
+                // 导航被 Create 取消后，用 Create 原生寻路重试一次
                 try {
                     if (train.navigation.destination == null) {
                         var stationsR = new java.util.ArrayList<GlobalStation>(train.graph.getPoints(
                                 com.simibubi.create.content.trains.graph.EdgePointType.STATION));
                         if (!stationsR.isEmpty()) {
-                            DiscoveredPath again = RailPathfinder.find(train, stationsR.get(0));
+                            var again = train.navigation.findPathTo(stationsR, Double.MAX_VALUE);
                             if (again != null) {
                                 double d = train.navigation.startNavigation(again);
-                                HexieTrain.LOGGER.info(
-                                        "[HexieTrain][rearm] 重新挂上导航，距离={} 边数={}",
-                                        String.format("%.2f", d), again.path.size());
-                            } else {
-                                HexieTrain.LOGGER.warn("[HexieTrain][rearm] 自建寻路仍然失败");
+                                HexieTrain.LOGGER.info("[HexieTrain][rearm] 重新挂上导航，距离={}",
+                                        String.format("%.2f", d));
                             }
                         }
                     }
@@ -679,8 +664,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
                         train.navigation.cancelNavigation();   // 只取消寻路目标，不冻结列车
                         train.runtime.paused = false;           // 关键：不能暂停，否则列车的点不再推进
                         // 播报：玩家接管
-                        TrainMessages.notifyOwner((ServerLevel) level, owner,
-                                "列车已被玩家接管，自动驾驶已暂停");
+                        HexieTrain.LOGGER.info("[HexieTrain][mode] 玩家接管，自动寻路已暂停");
                     } else {
                         train.runtime.paused = false;          // 恢复自动巡航
                         // 切回自动驾驶：立刻试一次寻路，并把结果播报给车主
@@ -689,11 +673,11 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
                         var path9 = train.navigation.findPathTo(stations9, Double.MAX_VALUE);
                         if (path9 != null) {
                             try { train.status.successfulNavigation(); } catch (Throwable ignored) { }
-                            TrainMessages.notifyOwner((net.minecraft.server.level.ServerLevel) level, owner, "导航成功");
+                            HexieTrain.LOGGER.info("[HexieTrain][path] 导航成功");
                         } else {
                             String target9 = stations9.isEmpty() ? "" : stations9.get(0).name;
                             try { train.status.failedNavigationNoTarget(target9); } catch (Throwable ignored) { }
-                            TrainMessages.notifyOwner((net.minecraft.server.level.ServerLevel) level, owner, "列车找不到可用的路径");
+                            HexieTrain.LOGGER.info("[HexieTrain][path] 找不到可用路径（目标 {}）", target9);
                         }
                         train.manualTick = false;
                         train.targetSpeed = 0;
@@ -1094,11 +1078,11 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
             if (target == null) { setAutoDirection(0f); return; }
 
             // 每 tick 直接算真实剩余距离（图很小，不用缓存）
-            double d = RailPathfinder.distanceTo(train, target);
+            double d = distanceToStation(train, target);
             if (d < 0) { setAutoDirection(0f); return; }
 
             double v = Math.abs(bodySpeedAlongTrackBps()) / 20.0;   // 格/tick
-            boolean forward = RailPathfinder.reachable(train, lp.node2, target);
+            boolean forward = isStationAhead(train, target, lp);
             double sign = forward ? 1.0 : -1.0;
 
             double stopZone = 10.0;
@@ -1151,7 +1135,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         HexieTrain.LOGGER.info("[HexieTrain][auto] 传动方向 = {}", dir);
         if (level != null && !level.isClientSide
                 && getBlockState().getBlock() instanceof TrainDispatcherBlock block) {
-            block.detachKinetics(level, worldPosition, true);
+            level.blockUpdated(worldPosition, block);   // 安全刷新，不再摘网络
         }
     }
 
@@ -1159,7 +1143,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     private void refreshKinetics() {
         if (level == null || level.isClientSide) return;
         if (getBlockState().getBlock() instanceof TrainDispatcherBlock block) {
-            block.detachKinetics(level, worldPosition, true);
+            level.blockUpdated(worldPosition, block);   // 安全刷新，不再摘网络
         }
     }
 
@@ -1406,6 +1390,32 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         setScheduleSlot(ItemStack.EMPTY);
         for (int i = 0; i < FREQ_SLOTS; i++) {
             setFrequency(i, ItemStack.EMPTY);
+        }
+    }
+
+    /** 车头到车站方块中心的直线距离（替代原来的图搜索距离）。 */
+    private double distanceToStation(Train train, GlobalStation target) {
+        try {
+            var head = train.carriages.get(0).getLeadingPoint().getPosition(train.graph);
+            var sp = net.minecraft.world.phys.Vec3.atCenterOf(target.getBlockEntityPos());
+            if (head == null) return -1;
+            return head.distanceTo(sp);
+        } catch (Throwable t) {
+            return -1;
+        }
+    }
+
+    /** 车站是否在车头前进方向上（用轨道切线与指向车站的向量点积判断）。 */
+    private boolean isStationAhead(Train train, GlobalStation target,
+                                   com.simibubi.create.content.trains.entity.TravellingPoint lp) {
+        try {
+            var head = lp.getPosition(train.graph);
+            var sp = net.minecraft.world.phys.Vec3.atCenterOf(target.getBlockEntityPos());
+            if (head == null || lp.edge == null) return true;
+            var tangent = lp.edge.getDirection(true);
+            return tangent.dot(sp.subtract(head)) >= 0;
+        } catch (Throwable t) {
+            return true;
         }
     }
 }
