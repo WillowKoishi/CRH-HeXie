@@ -131,6 +131,8 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     private int brakeLogTicks = 0;
     private int derailLogTicks = 0;
     private int kineticTicks = 0;
+    private int modifierLogs = 0;
+    private int neighborProbe = 0;
 
     /** 所有已加载的调度台（由全局 ticker 驱动，不依赖方块实体自身 tick）。 */
     private static final Set<TrainDispatcherBlockEntity> ACTIVE = ConcurrentHashMap.newKeySet();
@@ -227,19 +229,35 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         return facing.getAxis().isHorizontal() ? facing : null;
     }
 
-    /** 照抄参考实现：源侧放行，另一侧按左/右红石门控。 */
     @Override
     public float getRotationSpeedModifier(Direction face) {
+        float result = 0.0f;
+        String why = "noSource";
         if (hasSource()) {
-            if (face == getSourceFacing()) return 1.0f;
-
-            boolean left = getBlockState().getValue(TrainDispatcherBlock.LEFT_POWERED);
-            boolean right = getBlockState().getValue(TrainDispatcherBlock.RIGHT_POWERED);
-            if (left && right) return 0.0f;
-            if (left) return 1.0f;
-            if (right) return -1.0f;
+            if (face == getSourceFacing()) {
+                result = 1.0f;
+                why = "sourceSide";
+            } else {
+                boolean left = getBlockState().getValue(TrainDispatcherBlock.LEFT_POWERED);
+                boolean right = getBlockState().getValue(TrainDispatcherBlock.RIGHT_POWERED);
+                if (left && right) { result = 0.0f; why = "both"; }
+                else if (left)     { result = 1.0f; why = "left"; }
+                else if (right)    { result = -1.0f; why = "right"; }
+                else               { result = 0.0f; why = "none"; }
+            }
         }
-        return 0.0f;
+        if (modifierLogs < 40) {
+            modifierLogs++;
+            try {
+                HexieTrain.LOGGER.info("[HexieTrain][mod] face={} srcFace={} L/R={}/{} -> {} ({})",
+                        face, hasSource() ? getSourceFacing() : null,
+                        getBlockState().getValue(TrainDispatcherBlock.LEFT_POWERED),
+                        getBlockState().getValue(TrainDispatcherBlock.RIGHT_POWERED),
+                        result, why);
+            } catch (Throwable ignored) {
+            }
+        }
+        return result;
     }
 
     // ══════════════════════ tick ══════════════════════
@@ -252,6 +270,28 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
 
     /** 由全局 ticker 每 tick 调用。 */
     public void serverTick() {
+        // 诊断：读两侧邻居的转速，看下游到底拿到什么
+        if (++neighborProbe >= 20) {
+            neighborProbe = 0;
+            try {
+                if (level != null && !level.isClientSide && level.getBlockEntity(worldPosition) != null) {
+                    Direction f9 = getBlockState().getValue(TrainDispatcherBlock.FACING);
+                    Direction l9 = getBlockState().getValue(TrainDispatcherBlock.AXIS_ALONG_FIRST_COORDINATE)
+                            ? f9.getClockWise() : f9.getCounterClockWise();
+                    float self9 = getSpeed();
+                    String n1 = neighborSpeed(l9);
+                    String n2 = neighborSpeed(l9.getOpposite());
+                    HexieTrain.LOGGER.info("[HexieTrain][net] self={} L/R={}/{} 侧A({})={} 侧B({})={}",
+                            String.format("%.1f", self9),
+                            getBlockState().getValue(TrainDispatcherBlock.LEFT_POWERED),
+                            getBlockState().getValue(TrainDispatcherBlock.RIGHT_POWERED),
+                            l9, n1, l9.getOpposite(), n2);
+                }
+            } catch (Throwable t8) {
+                HexieTrain.LOGGER.warn("[HexieTrain][net] 测量失败: {}", t8.toString());
+            }
+        }
+
         if (level == null || level.isClientSide || isRemoved()) return;
         // ── 动力学自检 ──
         if (++kineticTicks >= 600) {
@@ -1398,6 +1438,19 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
             return tangent.dot(sp.subtract(head)) >= 0;
         } catch (Throwable t) {
             return true;
+        }
+    }
+
+    /** 读某个方向上邻居动力学方块的转速，没有则返回 "-"。 */
+    private String neighborSpeed(Direction dir) {
+        try {
+            var be = level.getBlockEntity(worldPosition.relative(dir));
+            if (be instanceof com.simibubi.create.content.kinetics.base.KineticBlockEntity k) {
+                return String.format("%.1f", k.getSpeed());
+            }
+            return "-";
+        } catch (Throwable t) {
+            return "?";
         }
     }
 }

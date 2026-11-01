@@ -34,6 +34,7 @@ public class TrainDispatcherBlock extends DirectionalAxisKineticBlock
 
     public static final BooleanProperty LEFT_POWERED = BooleanProperty.create("left_powered");
     public static final BooleanProperty RIGHT_POWERED = BooleanProperty.create("right_powered");
+    private static int destroyLogs = 0;
 
     public TrainDispatcherBlock(Properties properties) {
         super(properties);
@@ -127,14 +128,6 @@ public class TrainDispatcherBlock extends DirectionalAxisKineticBlock
         }
     }
 
-    /** 照抄参考实现。 */
-    public void detachKinetics(Level level, BlockPos pos, boolean scheduleTick) {
-        if (!(level.getBlockEntity(pos) instanceof KineticBlockEntity kbe)) return;
-        RotationPropagator.handleRemoved(level, pos, kbe);
-        if (scheduleTick) {
-            level.scheduleTick(pos, this, 1, TickPriority.EXTREMELY_HIGH);
-        }
-    }
 
     /** 照抄参考实现。 */
     @Override
@@ -181,6 +174,19 @@ public class TrainDispatcherBlock extends DirectionalAxisKineticBlock
 
     @Override
     public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+        // 诊断：方块被破坏时打印调用栈（限 12 次）
+        if (destroyLogs < 12) {
+            destroyLogs++;
+            StackTraceElement[] st9 = new Throwable().getStackTrace();
+            StringBuilder sb9 = new StringBuilder();
+            for (int i9 = 1; i9 < Math.min(8, st9.length); i9++) {
+                String cls9 = st9[i9].getClassName();
+                int dot9 = cls9.lastIndexOf(46);
+                if (dot9 >= 0) cls9 = cls9.substring(dot9 + 1);
+                sb9.append(cls9).append(".").append(st9[i9].getMethodName()).append(" <- ");
+            }
+            HexieTrain.LOGGER.warn("[HexieTrain][destroy] 调用栈: {}", sb9);
+        }
         try {
             if (!level.isClientSide && level.getBlockEntity(pos) instanceof TrainDispatcherBlockEntity be) {
                 be.dissolve();
@@ -207,5 +213,22 @@ public class TrainDispatcherBlock extends DirectionalAxisKineticBlock
     @Override
     public BlockEntityType<? extends TrainDispatcherBlockEntity> getBlockEntityType() {
         return HexieRegistries.TRAIN_DISPATCHER_BE.get();
+    }
+
+    /**
+     * 强制 Create 重新求值本方块所在的动力网络。
+     *
+     * <p>用 KineticBlockEntity 自己的 detachKinetics/attachKinetics（Create 内部同款做法），
+     * 同步完成，不依赖 scheduleTick —— 定时 tick 万一没跑，方块会永远停在"已摘除"状态，
+     * 下游就会保持旧转速（表现就是"恒定输出"）。
+     */
+    public void detachKinetics(Level level, BlockPos pos, boolean immediate) {
+        if (!(level.getBlockEntity(pos) instanceof KineticBlockEntity kbe)) return;
+        try {
+            kbe.detachKinetics();
+            kbe.attachKinetics();
+        } catch (Throwable t) {
+            HexieTrain.LOGGER.warn("[HexieTrain][kinetics] 重算失败: {}", t.toString());
+        }
     }
 }

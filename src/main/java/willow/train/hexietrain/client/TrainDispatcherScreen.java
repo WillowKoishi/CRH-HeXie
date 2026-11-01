@@ -40,16 +40,6 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
     private static final int CELL_W = 4;
     private static final int CELL_GAP = 1;
     private static final int CELL_COUNT = 15;
-
-    private static final int TOGGLE_X = 8;
-    private static final int TOGGLE_Y = 106;
-    private static final int TOGGLE_W = 100;
-    private static final int TOGGLE_H = 16;
-    private static final int SENS_MINUS_X = 112;
-    private static final int SENS_PLUS_X = 156;
-    private static final int SENS_BTN_W = 12;
-
-
     public TrainDispatcherScreen(TrainDispatcherMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         this.imageWidth = PANEL_W;
@@ -82,6 +72,11 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
         }
 
 
+        // 站名栏（时刻表右侧）
+        g.fill(x + 37, y + 20, x + 169, y + 40, C_SLOT_BG);
+        g.fill(x + 38, y + 21, x + 168, y + 39, C_SLOT_INNER);
+        g.fill(x + 39, y + 22, x + 167, y + 38, 0xFFB4B4B4);
+
         // 分隔线
         g.fill(x + 8, y + 46, x + PANEL_W - 8, y + 47, C_PANEL_DARK);
         g.fill(x + 8, y + 47, x + PANEL_W - 8, y + 48, C_PANEL_LIGHT);
@@ -107,25 +102,8 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
         // 背包与上方面板的分隔
         g.fill(x + 8, y + 134, x + PANEL_W - 8, y + 135, C_PANEL_DARK);
         g.fill(x + 8, y + 135, x + PANEL_W - 8, y + 136, C_PANEL_LIGHT);
-
-        // 起步模式按钮 + 灵敏度按钮
-        boolean hover = isIn(mouseX, mouseY, TOGGLE_X, TOGGLE_Y, TOGGLE_W, TOGGLE_H);
-        g.fill(x + TOGGLE_X, y + TOGGLE_Y, x + TOGGLE_X + TOGGLE_W, y + TOGGLE_Y + TOGGLE_H,
-                hover ? C_BUTTON_HOT : C_BUTTON);
-        g.renderOutline(x + TOGGLE_X, y + TOGGLE_Y, TOGGLE_W, TOGGLE_H, C_BORDER);
-
-        drawSmallButton(g, x + SENS_MINUS_X, y + TOGGLE_Y, mouseX, mouseY);
-        drawSmallButton(g, x + SENS_PLUS_X, y + TOGGLE_Y, mouseX, mouseY);
-        g.fill(x + SENS_MINUS_X + SENS_BTN_W, y + TOGGLE_Y,
-                x + SENS_PLUS_X, y + TOGGLE_Y + TOGGLE_H, C_SLOT_INNER);
     }
 
-    private void drawSmallButton(GuiGraphics g, int x, int y, int mouseX, int mouseY) {
-        int relX = x - leftPos;
-        boolean hover = isIn(mouseX, mouseY, relX, TOGGLE_Y, SENS_BTN_W, TOGGLE_H);
-        g.fill(x, y, x + SENS_BTN_W, y + TOGGLE_H, hover ? C_BUTTON_HOT : C_BUTTON);
-        g.renderOutline(x, y, SENS_BTN_W, TOGGLE_H, C_BORDER);
-    }
 
     private void slotWell(GuiGraphics g, int x, int y) {
         g.fill(x, y, x + 18, y + 18, C_SLOT_BG);
@@ -157,6 +135,25 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
         g.drawString(font, badge, PANEL_W - 8 - font.width(badge), 4,
                 badgeHover ? 0xFF1F5FBF : badgeColor, false);
 
+
+        // 站名（时刻表右侧长条）
+        var be9 = menu.blockEntity();
+        String station9 = "（无目标）";
+        if (be9 != null && !be9.stopNames().isEmpty()) {
+            int sel9 = Math.max(0, Math.min(be9.stopNames().size() - 1, menu.selectedStop()));
+            station9 = be9.stopNames().get(sel9);
+        } else if (be9 != null && be9.nextTargetName() != null && !be9.nextTargetName().isEmpty()) {
+            station9 = be9.nextTargetName();
+        }
+        int maxW9 = 168 - 42;
+        String shown9 = station9;
+        if (font.width(shown9) > maxW9) {
+            while (shown9.length() > 1 && font.width(shown9 + "...") > maxW9) {
+                shown9 = shown9.substring(0, shown9.length() - 1);
+            }
+            shown9 = shown9 + "...";
+        }
+        g.drawString(font, shown9, 42, 27, C_TEXT, false);
 
         // 调度器工作状态（与右上角操控模态无关）
         // 只有装了时刻表才显示调度状态；拔掉时刻表就完全不显示
@@ -214,14 +211,6 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
         int x = (int) (mouseX - leftPos);
         int y = (int) (mouseY - topPos);
         if (button == 0 && minecraft != null && minecraft.gameMode != null) {
-            if (isIn(x, y, SENS_MINUS_X, TOGGLE_Y, SENS_BTN_W, TOGGLE_H)) {
-                minecraft.gameMode.handleInventoryButtonClick(menu.containerId, 1);
-                return true;
-            }
-            if (isIn(x, y, SENS_PLUS_X, TOGGLE_Y, SENS_BTN_W, TOGGLE_H)) {
-                minecraft.gameMode.handleInventoryButtonClick(menu.containerId, 2);
-                return true;
-            }
             // 右上角徽标 = 驾驶模式切换
             if (menu.bound() && isIn(x, y, PANEL_W - 74, 1, 70, 15)) {
                 minecraft.gameMode.handleInventoryButtonClick(menu.containerId, 3);
