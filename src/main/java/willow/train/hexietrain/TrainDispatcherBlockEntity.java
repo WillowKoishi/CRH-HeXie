@@ -227,39 +227,21 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         return facing.getAxis().isHorizontal() ? facing : null;
     }
 
-    /**
-     * 传动比 —— 严格照抄 simulated 的定向齿轮换向器。
-     *
-     * <pre>
-     *   if (hasSource()) {
-     *       if (face == getSourceFacing()) return 1;      // 源侧永远放行
-     *       if (left && right) return 0;                   // 两侧都通电 → 断开
-     *       if (left)  return 1;                           // 左侧通电 → 正传
-     *       if (right) return -1;                          // 右侧通电 → 反传
-     *   }
-     *   return 0;                                          // 没有源 → 断开
-     * </pre>
-     */
+    /** 照抄参考实现：源侧放行，另一侧按左/右红石门控。 */
     @Override
     public float getRotationSpeedModifier(Direction face) {
         if (hasSource()) {
             if (face == getSourceFacing()) return 1.0f;
 
-            // 自动模式：传动按时刻表方向常通，不需要红石
-            if (!manualMode && boundTrain != null) {
-                return autoDirection;
-            }
-
-            // 手动模式：按左右红石门控
-            BlockState st = getBlockState();
-            boolean left = st.getValue(TrainDispatcherBlock.LEFT_POWERED);
-            boolean right = st.getValue(TrainDispatcherBlock.RIGHT_POWERED);
+            boolean left = getBlockState().getValue(TrainDispatcherBlock.LEFT_POWERED);
+            boolean right = getBlockState().getValue(TrainDispatcherBlock.RIGHT_POWERED);
             if (left && right) return 0.0f;
             if (left) return 1.0f;
             if (right) return -1.0f;
         }
         return 0.0f;
     }
+
     // ══════════════════════ tick ══════════════════════
 
     @Override

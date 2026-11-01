@@ -49,12 +49,6 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
     private static final int SENS_PLUS_X = 156;
     private static final int SENS_BTN_W = 12;
 
-    private static final int BAR_X = 38;
-    private static final int BAR_Y = 21;
-    private static final int BAR_W = 130;
-    private static final int BAR_H = 18;
-
-    private int marqueeTicks;
 
     public TrainDispatcherScreen(TrainDispatcherMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -87,10 +81,6 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
             slotWell(g, x + 59, y + ROW_Y[row] - 1);
         }
 
-        // 下一站长栏
-        g.fill(x + BAR_X - 1, y + BAR_Y - 1, x + BAR_X + BAR_W + 1, y + BAR_Y + BAR_H + 1, C_SLOT_BG);
-        g.fill(x + BAR_X, y + BAR_Y, x + BAR_X + BAR_W, y + BAR_Y + BAR_H, C_SLOT_INNER);
-        g.fill(x + BAR_X + 1, y + BAR_Y + 1, x + BAR_X + BAR_W - 1, y + BAR_Y + BAR_H - 1, 0xFFB4B4B4);
 
         // 分隔线
         g.fill(x + 8, y + 46, x + PANEL_W - 8, y + 47, C_PANEL_DARK);
@@ -167,59 +157,6 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
         g.drawString(font, badge, PANEL_W - 8 - font.width(badge), 4,
                 badgeHover ? 0xFF1F5FBF : badgeColor, false);
 
-        // 下一站（滚轮可选；太长跑马灯）
-        var be = menu.blockEntity();
-        String target;
-        int curEntry = menu.currentEntry();
-        int sel = 0;
-        if (be != null && !be.stopNames().isEmpty()) {
-            sel = Math.max(0, Math.min(be.stopNames().size() - 1, menu.selectedStop()));
-            target = be.stopNames().get(sel);
-        } else {
-            target = be == null ? "" : be.nextTargetName();
-            if (target == null || target.isEmpty()) target = "（无目标）";
-        }
-
-        // 正在执行的那一条 → 白字 + 逐字扫描成黄；未确认的滚动选择 → 绿字
-        boolean isCurrent = sel == curEntry && !"（无目标）".equals(target);
-        boolean noTarget = "（无目标）".equals(target);
-        int baseColor = (isCurrent || noTarget) ? 0xFFFFFFFF : 0xFF3FBF3F;
-        int scanColor = 0xFFFFD700;
-
-        marqueeTicks++;
-        int confirmW = 18;
-        int innerW = BAR_W - 8 - confirmW;
-        int textW = font.width(target);
-        int scroll = 0;
-        if (textW > innerW) {
-            int cycle = textW + 24;
-        }
-
-        // 扫描高亮位置：每 tick 前进一个字，走到末尾停 8 tick 再回到开头
-        int scanLen = target.length();
-        int scan = (scanLen == 0 || "（无目标）".equals(target)) ? -1 : ((marqueeTicks / 10) % (scanLen + 8));
-
-        g.enableScissor(leftPos + BAR_X + 1, topPos + BAR_Y + 1,
-                leftPos + BAR_X + BAR_W - 1 - confirmW, topPos + BAR_Y + BAR_H - 1);
-        int textX = BAR_X + 4 - scroll;
-        for (int i = 0; i < target.length(); i++) {
-            String ch = String.valueOf(target.charAt(i));
-            int color = (isCurrent && i == scan) ? scanColor : baseColor;
-            g.drawString(font, ch, textX, BAR_Y + 5, color, false);
-            textX += font.width(ch);
-        }
-        g.disableScissor();
-
-        // 确认按钮 →]
-        int bx = BAR_X + BAR_W - confirmW;
-        boolean hoverConfirm = isIn(mouseX, mouseY, bx, BAR_Y, confirmW, BAR_H);
-        g.fill(bx, BAR_Y + 1, bx + confirmW - 1, BAR_Y + BAR_H - 1,
-                hoverConfirm ? C_BUTTON_HOT : C_BUTTON);
-        g.fill(bx, BAR_Y + 1, bx + confirmW - 1, BAR_Y + 2, C_PANEL_LIGHT);
-        g.fill(bx, BAR_Y + BAR_H - 2, bx + confirmW - 1, BAR_Y + BAR_H - 1, C_PANEL_DARK);
-        g.fill(bx, BAR_Y + 1, bx + 1, BAR_Y + BAR_H - 1, C_PANEL_LIGHT);
-        g.fill(bx + confirmW - 2, BAR_Y + 1, bx + confirmW - 1, BAR_Y + BAR_H - 1, C_PANEL_DARK);
-        g.drawString(font, "\u2192]", bx + 3, BAR_Y + 5, C_TEXT, false);
 
         // 调度器工作状态（与右上角操控模态无关）
         // 只有装了时刻表才显示调度状态；拔掉时刻表就完全不显示
@@ -267,20 +204,8 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
     }
 
     // ══════════════════ 交互 ══════════════════
-
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        int x = (int) (mouseX - leftPos);
-        int y = (int) (mouseY - topPos);
-        int count = menu.stopCount();
-        if (count > 0 && isIn(x, y, BAR_X, BAR_Y, BAR_W, BAR_H)
-                && minecraft != null && minecraft.gameMode != null) {
-            int next = menu.selectedStop() + (scrollY < 0 ? 1 : -1);
-            if (next < 0) next = count - 1;
-            if (next >= count) next = 0;
-            minecraft.gameMode.handleInventoryButtonClick(menu.containerId, 100 + next);
-            return true;
-        }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
@@ -300,11 +225,6 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
             // 右上角徽标 = 驾驶模式切换
             if (menu.bound() && isIn(x, y, PANEL_W - 74, 1, 70, 15)) {
                 minecraft.gameMode.handleInventoryButtonClick(menu.containerId, 3);
-                return true;
-            }
-            // 站名栏右端的 →] 确认按钮
-            if (isIn(x, y, BAR_X + BAR_W - 18, BAR_Y, 18, BAR_H)) {
-                minecraft.gameMode.handleInventoryButtonClick(menu.containerId, 200 + menu.selectedStop());
                 return true;
             }
         }
