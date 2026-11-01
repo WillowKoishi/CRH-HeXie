@@ -115,6 +115,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     private int stoppedEntry = -1;
     private boolean waitingForSchedule = false;
     private int targetLogTicks = 0;
+    private int lastEntrySeen = -1;
 
     /** 自动模式下传动要输出的方向：+1 正传、-1 反传、0 断开。 */
     private float autoDirection = 0f;
@@ -898,6 +899,11 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
             var lp = train.carriages.get(0).getLeadingPoint();
             if (lp == null || lp.edge == null) return;
 
+            if (lastEntrySeen != train.runtime.currentEntry) {
+                HexieTrain.LOGGER.info("[HexieTrain][entry] currentEntry {} → {}",
+                        lastEntrySeen, train.runtime.currentEntry);
+                lastEntrySeen = train.runtime.currentEntry;
+            }
             GlobalStation target = stationForCurrentEntry(train);
             if (++targetLogTicks >= 20) {
                 targetLogTicks = 0;
@@ -924,10 +930,14 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
                 train.speed = 0;
 
                 if (arrivedEntry != train.runtime.currentEntry) {
+                    int entryBefore = train.runtime.currentEntry;
                     arrivedEntry = train.runtime.currentEntry;
                     stoppedEntry = train.runtime.currentEntry;
                     waitingForSchedule = true;
                     train.arriveAt(target);
+                    HexieTrain.LOGGER.info("[HexieTrain][arrive] 到达 {}：currentEntry {} → {}（cyclic={}）",
+                            target.name, entryBefore, train.runtime.currentEntry,
+                            train.runtime.schedule != null && train.runtime.schedule.cyclic);
                     HexieTrain.LOGGER.info("[HexieTrain][auto] 到站 {}", target.name);
                 }
                 return;
