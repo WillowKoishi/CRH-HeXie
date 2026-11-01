@@ -27,7 +27,6 @@ public class TrainDispatcherMenu extends AbstractContainerMenu {
     public static final int DATA_SUSPENDED = 5;
     public static final int DATA_STAGE = 6;
     public static final int DATA_DISTANCE = 7;
-    public static final int DATA_SENSITIVITY = 8;
     public static final int DATA_STOP_COUNT = 9;
     public static final int DATA_SELECTED_STOP = 10;
     public static final int DATA_MANUAL_MODE = 11;
@@ -184,7 +183,6 @@ public class TrainDispatcherMenu extends AbstractContainerMenu {
     public boolean suspended() { return data.get(DATA_SUSPENDED) != 0; }
     public int stage()         { return data.get(DATA_STAGE); }
     public int distance()      { return data.get(DATA_DISTANCE); }
-    public double sensitivity() { return data.get(DATA_SENSITIVITY) / 10.0; }
     public int stopCount()      { return data.get(DATA_STOP_COUNT); }
     public int selectedStop()   { return data.get(DATA_SELECTED_STOP); }
     public boolean manualMode() { return data.get(DATA_MANUAL_MODE) != 0; }
