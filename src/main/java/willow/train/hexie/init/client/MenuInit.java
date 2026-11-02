@@ -16,6 +16,10 @@ public class MenuInit {
 
     public static final DeferredRegister<MenuType<?>> MENUS =
             DeferredRegister.create(Registries.MENU, Main.MOD_ID);
+    public static final DeferredHolder<MenuType<?>, MenuType<CarriageMarkingMenu>> CARRIAGE_MARKING_MENU =
+            registerMenuType(CarriageMarkingMenu::new, "carriage_marking");
+    public static final DeferredHolder<MenuType<?>, MenuType<HeadNumberMenu>> HEAD_NUMBER_MENU =
+            registerMenuType(HeadNumberMenu::new, "head_number");
     public static final DeferredHolder<MenuType<?>, MenuType<GroundStationSignMenu>> GROUND_STATION_SIGN_MENU =
             registerMenuType(GroundStationSignMenu::new, "ground_station_sign");
     public static final DeferredHolder<MenuType<?>, MenuType<CarriageTypeSignEditMenu>>

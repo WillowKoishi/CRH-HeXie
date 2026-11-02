@@ -602,5 +602,14 @@
   "block.hexie.crh2a_panel_wide_window": "CRH2A Wide Window Body Panel",
   "block.hexie.crh2a_skirt_forbogey": "CRH2A Bogie Skirt",
   "block.hexie.crh2a_skirt_normal": "CRH2A Equipment Skirt",
-  "block.hexie.crh2a_floor": "CRH2A Center Floor"
+  "block.hexie.crh2a_floor": "CRH2A Center Floor",
+  "gui.hexie.head_number.title": "Head number",
+  "gui.hexie.head_number.hint": "Both sides - leave blank to clear",
+  "gui.hexie.carriage_marking.title": "Carriage marking",
+  "gui.hexie.carriage_marking.number": "Number",
+  "gui.hexie.carriage_marking.chinese": "Chinese description",
+  "gui.hexie.carriage_marking.english": "English description",
+  "gui.hexie.carriage_marking.example_chinese": "Second class coach",
+  "gui.hexie.carriage_marking.switch": "Swap sides",
+  "gui.hexie.carriage_marking.hint": "Empty-hand right-click swaps description sides"
 }

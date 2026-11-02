@@ -72,6 +72,8 @@ public class HeXieClientInit {
     }
 
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerBlockEntityRenderer(BlockEntitiesInit.CRH2A_PART.get(), CarriageMarkingRenderer::new);
+        event.registerBlockEntityRenderer(BlockEntitiesInit.CRH2A_HEAD.get(), HeadNumberRenderer::new);
         event.registerBlockEntityRenderer(BlockEntitiesInit.DRIVING_CONSOLE.get(),
                 willow.train.hexie.client.render.blockentity.TestDrivingConsoleRenderer::new);
         // Entity builders run before Registrate is attached to our bus. Bind directly so the
@@ -120,6 +122,8 @@ public class HeXieClientInit {
     }
 
     public static void registerMenus(final RegisterMenuScreensEvent event) {
+        event.register(MenuInit.CARRIAGE_MARKING_MENU.get(), CarriageMarkingScreen::new);
+        event.register(MenuInit.HEAD_NUMBER_MENU.get(), HeadNumberScreen::new);
         event.register(MenuInit.GROUND_STATION_SIGN_MENU.get(), GroundStationSignScreen::new);
         event.register(
                 MenuInit.CARRIAGE_TYPE_SIGN_EDIT_MENU.get(), CarriageTypeSignEditScreen::new);

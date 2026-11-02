@@ -606,5 +606,14 @@
   "block.hexie.crh2a_panel_wide_window": "CRH2A 宽窗车厢板",
   "block.hexie.crh2a_skirt_forbogey": "CRH2A 转向架裙板",
   "block.hexie.crh2a_skirt_normal": "CRH2A 仪器舱裙板",
-  "block.hexie.crh2a_floor": "CRH2A 中间地板"
+  "block.hexie.crh2a_floor": "CRH2A 中间地板",
+  "gui.hexie.head_number.title": "车头车号",
+  "gui.hexie.head_number.hint": "两侧同步 · 留空清除",
+  "gui.hexie.carriage_marking.title": "车厢号",
+  "gui.hexie.carriage_marking.number": "编号",
+  "gui.hexie.carriage_marking.chinese": "中文说明",
+  "gui.hexie.carriage_marking.english": "英文说明",
+  "gui.hexie.carriage_marking.example_chinese": "二等座车",
+  "gui.hexie.carriage_marking.switch": "切换左右",
+  "gui.hexie.carriage_marking.hint": "空手右键切换说明文字位置"
 }

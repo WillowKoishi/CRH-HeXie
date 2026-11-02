@@ -1,6 +1,8 @@
 package willow.train.hexie.item.editable_panels;
 
 import net.minecraft.ChatFormatting;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.item.context.UseOnContext;
 import willow.train.hexie.compat.ItemData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
@@ -41,6 +43,23 @@ public class ColoredBrush extends Item {
                 Component.translatable("item.hexie.colored_brush.tooltip_4")
                         .withStyle(ChatFormatting.BLUE));
         super.appendHoverText(p_41421_, p_41422_, tooltips, p_41424_);
+    }
+
+    @Override
+    public net.minecraft.world.InteractionResultHolder<ItemStack> use(net.minecraft.world.level.Level level,
+            net.minecraft.world.entity.player.Player player, net.minecraft.world.InteractionHand hand) {
+        var result = willow.train.hexie.blocks.locos.head.HeadNumberInteraction.open(level, player,
+                willow.train.hexie.blocks.locos.head.HeadNumberInteraction.pick(level, player));
+        return new net.minecraft.world.InteractionResultHolder<>(result, player.getItemInHand(hand));
+    }
+
+    @Override
+    public InteractionResult useOn(UseOnContext pContext) {
+        if (pContext.getPlayer() == null) return InteractionResult.PASS;
+        var root = willow.train.hexie.blocks.locos.head.HeadNumberInteraction.pick(pContext.getLevel(), pContext.getPlayer());
+        if (root == null) root = willow.train.hexie.blocks.locos.head.HeadGeometry.owner(pContext.getLevel(), pContext.getClickedPos());
+        if (root != null) return willow.train.hexie.blocks.locos.head.HeadNumberInteraction.open(pContext.getLevel(), pContext.getPlayer(), root);
+        return InteractionResult.PASS;
     }
 
     @Override

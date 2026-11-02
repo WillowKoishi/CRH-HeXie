@@ -15,7 +15,7 @@ import java.util.Map;
 public final class SignTextRasterizer {
     private static final FontRenderContext CONTEXT = new FontRenderContext(null, true, true);
     private static final int PAD = 2;
-    public record Raster(BufferedImage image, int inkWidth, int inkHeight) {}
+    public record Raster(BufferedImage image, int inkWidth, int inkHeight, float firstDigitCenter, float lastDigitCenter) {}
 
     public static Raster rasterize(Font source, String text, float tracking, float widthScale) {
         if (text.isBlank()) return null;
@@ -38,7 +38,20 @@ public final class SignTextRasterizer {
             graphics.translate(-bounds.getX(), -bounds.getY());
             layout.draw(graphics, 0, 0);
         } finally { graphics.dispose(); }
-        return new Raster(image, width, height);
+        int first=-1,last=-1;
+        for(int i=0;i<text.length();) {
+            int cp=text.codePointAt(i);
+            if(Character.isDigit(cp)){if(first<0)first=i;last=i;}
+            i+=Character.charCount(cp);
+        }
+        if(first<0){first=0;last=text.offsetByCodePoints(text.length(),-1);}
+        return new Raster(image,width,height,
+                glyphCenter(layout,text,first,bounds,widthScale*scale),
+                glyphCenter(layout,text,last,bounds,widthScale*scale));
+    }
+    private static float glyphCenter(TextLayout layout,String text,int index,Rectangle2D bounds,double scale) {
+        var glyph=layout.getBlackBoxBounds(index,index+Character.charCount(text.codePointAt(index))).getBounds2D();
+        return (float)((glyph.getCenterX()-bounds.getX())*scale);
     }
     private SignTextRasterizer() {}
 }

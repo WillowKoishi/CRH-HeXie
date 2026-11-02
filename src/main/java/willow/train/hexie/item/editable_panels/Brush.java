@@ -34,6 +34,7 @@ public class Brush extends Item {
 
     @Override
     public InteractionResult useOn(UseOnContext pContext) {
+        if (pContext.getPlayer() == null) return InteractionResult.PASS;
         BlockState pBlockState = pContext.getPlayer().getBlockStateOn();
         if (pContext.getLevel().isClientSide) return InteractionResult.SUCCESS;
         if (pBlockState.getBlock().getClass().equals(OrdinaryTrainPanelBlock.class)) {

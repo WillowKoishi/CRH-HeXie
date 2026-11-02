@@ -33,13 +33,15 @@ public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos o
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(dimension, "dimension");
         origin = Objects.requireNonNull(origin, "origin").immutable();
-        // Initialize missing coupler storage through its registered block-entity factory.
+        // Initialize missing coupler/head storage through its registered block-entity factory.
         var upgradedBlocks = new ArrayList<Block>(blocks.size());
         for (Block block : blocks) {
-            if (block.state().getBlock() instanceof AbstractCouplerBlock && block.entityData == null) {
+            if ((block.state().getBlock() instanceof AbstractCouplerBlock
+                    || block.state().getBlock() instanceof willow.train.hexie.blocks.locos.head.CRH2HeadBlock
+                    || block.state().getBlock() instanceof willow.train.hexie.blocks.locos.crh2a.CRH2PanelBlock) && block.entityData == null) {
                 BlockPos world = absolute(origin, block.position());
                 var data = new CompoundTag();
-                var entity = ((AbstractCouplerBlock) block.state().getBlock()).newBlockEntity(world, block.state());
+                var entity = ((net.minecraft.world.level.block.EntityBlock) block.state().getBlock()).newBlockEntity(world, block.state());
                 data.putString("id", net.minecraft.core.registries.BuiltInRegistries.BLOCK_ENTITY_TYPE
                         .getKey(Objects.requireNonNull(entity).getType()).toString());
                 data.putInt("x", world.getX()); data.putInt("y", world.getY()); data.putInt("z", world.getZ());
@@ -84,7 +86,9 @@ public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos o
             Objects.requireNonNull(state, "state");
             // Air may retain a removed block's local position during saved-data migration.
             if (state.hasBlockEntity() != (entityData != null)
-                    && !(state.getBlock() instanceof AbstractCouplerBlock && entityData == null))
+                    && !((state.getBlock() instanceof AbstractCouplerBlock
+                        || state.getBlock() instanceof willow.train.hexie.blocks.locos.head.CRH2HeadBlock
+                        || state.getBlock() instanceof willow.train.hexie.blocks.locos.crh2a.CRH2PanelBlock) && entityData == null))
                 throw new IllegalArgumentException("Block entity data does not match block state");
             if (entityData != null) {
                 require(entityData, "id", Tag.TAG_STRING);

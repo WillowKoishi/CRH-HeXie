@@ -18,7 +18,7 @@ public class BlockEntitiesInit {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, Main.MOD_ID);
 
-    // Legacy save IDs only. CRH2 shells now use static models and create no block entities.
+    // Shell geometry remains static. These entities retain editable vehicle markings and legacy IDs.
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CRH2HeadEntity>> CRH2A_HEAD =
             BLOCK_ENTITIES.register("crh2a_head", () -> BlockEntityType.Builder.of(
                     CRH2HeadEntity::new, BlockInit.CRH2A_HEAD.get()).build(null));

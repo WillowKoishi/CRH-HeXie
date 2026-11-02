@@ -26,7 +26,10 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 @EventBusSubscriber(modid = willow.train.hexie.Main.MOD_ID)
-public final class CRH2HeadBlock extends Block {
+public final class CRH2HeadBlock extends Block implements EntityBlock {
+    @Override public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new willow.train.hexie.blockentity.CRH2HeadEntity(pos, state);
+    }
     public static final DirectionProperty FACING=BlockStateProperties.HORIZONTAL_FACING;
     private static final Map<ServerLevel, Map<BlockPos, Direction>> MOVED_HEADS = new WeakHashMap<>();
     public CRH2HeadBlock(Properties properties) {
