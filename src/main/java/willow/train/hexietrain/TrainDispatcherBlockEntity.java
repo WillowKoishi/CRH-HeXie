@@ -1,5 +1,4 @@
 package willow.train.hexietrain;
-import net.minecraft.core.component.DataComponentType;
 
 import com.simibubi.create.Create;
 import com.simibubi.create.content.kinetics.transmission.SplitShaftBlockEntity;
@@ -79,7 +78,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     private final java.util.List<String> stopNames = new java.util.ArrayList<>();
 
     /** 当前在长栏里选中的站点下标。 */
-    private int selectedStop = 0;
 
     /** 加减速灵敏度（格/秒²），直接作为制动曲线的最大减速度。 */
 
@@ -407,7 +405,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
                 && train.runtime.state == com.simibubi.create.content.trains.schedule.ScheduleRuntime.State.PRE_TRANSIT) {
             if (++stallTicks % 200 == 1) {
                 String wanted = stopNames.isEmpty() ? "（空）"
-                        : stopNames.get(Math.min(selectedStop, stopNames.size() - 1));
+                        : stopNames.get(Math.min(train.runtime.currentEntry, stopNames.size() - 1));
                 HexieTrain.LOGGER.warn("[HexieTrain] 时刻表卡住：目标 \"{}\" 找不到（已 {} tick）",
                         wanted, stallTicks);
             }
@@ -449,10 +447,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         return stopNames;
     }
 
-    public int selectedStop() {
-        return selectedStop;
-    }
-
     /** 重新从时刻表里抽取站点名。 */
     public void refreshStopNames() {
         stopNames.clear();
@@ -472,25 +466,9 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
             } catch (Throwable ignored) {
             }
         }
-        if (selectedStop >= stopNames.size()) selectedStop = 0;
         sendData();
     }
 
-    /**
-     * 选中第 index 个站点；如果已绑定列车，同时把时刻表指针跳过去。
-     *
-     * @param index 允许越界，会自动取模
-     */
-    /**
-     * 滚动选择站点 —— 只改预览，不动时刻表执行位置。
-     * 真正切换由 {@link #confirmSelectedStop()} 完成。
-     */
-    public void selectStop(int index) {
-        if (stopNames.isEmpty()) return;
-        selectedStop = Math.floorMod(index, stopNames.size());
-        setChanged();
-        sendData();
-    }
 
     // ══════════════════════ 驾驶模式 ══════════════════════
 
@@ -780,7 +758,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         if (owner != null) tag.putUUID("Owner", owner);
         // 方块特性：玩家在 UI 里调的制动灵敏度
         if (!scheduleSlot.isEmpty()) tag.put("Schedule", sanitizedSchedule().save(registries));
-        tag.putInt("SelectedStop", selectedStop);
         net.minecraft.nbt.ListTag names = new net.minecraft.nbt.ListTag();
         for (String s : stopNames) names.add(net.minecraft.nbt.StringTag.valueOf(s));
         tag.put("StopNames", names);
@@ -816,7 +793,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
                 ? ItemStack.parseOptional(registries, tag.getCompound("Schedule"))
                 : ItemStack.EMPTY;
 
-        selectedStop = tag.getInt("SelectedStop");
         stopNames.clear();
         net.minecraft.nbt.ListTag names = tag.getList("StopNames", net.minecraft.nbt.Tag.TAG_STRING);
         for (int i = 0; i < names.size(); i++) {
@@ -992,113 +968,9 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
             }
         } catch (Throwable ignored) {
         }
-        return selectedStop;
+        return 0;
     }
 
-    /**
-     * 确认前往选中的站。
-     *
-     * <p>**不改时刻表条目**（A→B→C 原样保留），只把"当前执行到第几条"挪到选中的那条，
-     * 并清掉到站/等待跟踪 —— 于是列车立刻改为前往 B，走完 B 之后照常继续 C。
-     */
-    /** 读取当前时刻表：优先列车运行时（全局数据），其次槽里的物品（存档载体）。 */
-    public Schedule readSchedule() {
-        try {
-            Train tr = Create.RAILWAYS.trains.get(boundTrain);
-            if (tr != null && tr.runtime != null && tr.runtime.schedule != null) {
-                return tr.runtime.schedule;
-            }
-        } catch (Throwable ignored) {
-        }
-        try {
-            if (level != null && !scheduleSlot.isEmpty() && scheduleSlot.getItem() instanceof ScheduleItem) {
-                return ScheduleItem.getSchedule(level.registryAccess(), scheduleSlot);
-            }
-        } catch (Throwable ignored) {
-        }
-        return null;
-    }
-
-    /**
-     * 把时刻表同时写回两个地方：
-     * <ul>
-     *   <li>槽里的物品 —— 这是时刻表在世界存档里的载体</li>
-     *   <li>列车运行时 —— 这是列车的全局数据，驱动实际运行</li>
-     * </ul>
-     */
-    public boolean applySchedule(Schedule schedule) {
-        if (schedule == null) return false;
-        boolean toItem = false;
-        boolean toTrain = false;
-
-        try {
-            if (level != null && !scheduleSlot.isEmpty()
-                    && scheduleSlot.getItem() instanceof ScheduleItem item) {
-                @SuppressWarnings("unchecked")
-                DataComponentType<CompoundTag> type =
-                        (DataComponentType<CompoundTag>) item.getComponentType();
-                scheduleSlot.set(type, schedule.write(level.registryAccess()));
-                toItem = true;
-            }
-        } catch (Throwable t) {
-            HexieTrain.LOGGER.warn("[HexieTrain][schedule] 写入物品失败: {}", t.toString());
-        }
-
-        try {
-            Train tr = Create.RAILWAYS.trains.get(boundTrain);
-            if (tr != null && tr.runtime != null) {
-                tr.runtime.setSchedule(schedule, false);
-                toTrain = true;
-            }
-        } catch (Throwable t) {
-            HexieTrain.LOGGER.warn("[HexieTrain][schedule] 应用到列车失败: {}", t.toString());
-        }
-
-        setChanged();
-        sendData();
-        HexieTrain.LOGGER.info("[HexieTrain][schedule] 写物品={} 写列车={} 条目数={}",
-                toItem, toTrain, schedule.entries.size());
-        return toItem || toTrain;
-    }
-
-    /**
-     * 确认前往选中的站 —— 修改「移动顺序」里的下一站。
-     *
-     * <p>条目顺序 A→B→C 永远不变，这里只把执行游标跳到选中的那一条：
-     * 正在开往 A 时选 B，就等于跳过 A 直奔 B，之后照常走 C。
-     */
-    public void confirmSelectedStop(int index) {
-        try {
-            if (stopNames.isEmpty()) return;
-            int chosen = Math.floorMod(index, stopNames.size());
-            selectedStop = chosen;
-
-            Train tr = Create.RAILWAYS.trains.get(boundTrain);
-            if (tr != null && tr.runtime != null && tr.runtime.schedule != null) {
-                int count = tr.runtime.schedule.entries.size();
-                if (count > 0) {
-                    tr.runtime.currentEntry = Math.max(0, Math.min(count - 1, chosen));
-                }
-                // 让 Create 重新执行这一条指令
-                tr.runtime.state = com.simibubi.create.content.trains.schedule.ScheduleRuntime.State.PRE_TRANSIT;
-                arrivedEntry = -1;
-                stoppedEntry = -1;
-                waitingForSchedule = false;
-                stallTicks = 0;
-                try { tr.navigation.cancelNavigation(); } catch (Throwable ignored) { }
-            }
-
-            int after = (tr == null || tr.runtime == null) ? -1 : tr.runtime.currentEntry;
-            HexieTrain.LOGGER.info("[HexieTrain][schedule] 选中第 {} 条 {}；游标现在={}；条目数={}",
-                    chosen, stopNames.get(chosen), after,
-                    (tr == null || tr.runtime == null || tr.runtime.schedule == null) ? -1
-                            : tr.runtime.schedule.entries.size());
-        } catch (Throwable t) {
-            HexieTrain.LOGGER.warn("[HexieTrain][schedule] 确认站点失败: {}", t.toString());
-        }
-        setChanged();
-        sendData();
-    }
 
     /**
      * 输出转速渐变：0→满值按加速度决定，a=1 时 1 秒（20 tick）走完 0~100%。

@@ -27,7 +27,6 @@ public class TrainDispatcherMenu extends AbstractContainerMenu {
     public static final int DATA_STAGE = 6;
     public static final int DATA_DISTANCE = 7;
     public static final int DATA_STOP_COUNT = 9;
-    public static final int DATA_SELECTED_STOP = 10;
     public static final int DATA_MANUAL_MODE = 11;
     public static final int DATA_CURRENT_ENTRY = 12;
     public static final int DATA_SPEED = 13;
@@ -81,7 +80,6 @@ public class TrainDispatcherMenu extends AbstractContainerMenu {
         // 打开界面时初始化一次：刷新站名并把选中项落到当前条目（之后不再重置）
         if (be != null) {
             be.refreshStopNames();
-            be.selectStop(be.currentEntry());
         }
 
         // 时刻表槽
@@ -132,7 +130,6 @@ public class TrainDispatcherMenu extends AbstractContainerMenu {
         cached[DATA_STOP_COUNT] = blockEntity.stopNames().size();
         HexieTrain.LOGGER.info("[HexieTrain][ui] 打开界面：站点数={} 当前条目={}",
                 blockEntity.stopNames().size(), blockEntity.currentEntry());
-        cached[DATA_SELECTED_STOP] = blockEntity.selectedStop();
         cached[DATA_MANUAL_MODE] = blockEntity.manualMode() ? 1 : 0;
         cached[DATA_CURRENT_ENTRY] = blockEntity.currentEntry();
         cached[DATA_SPEED] = blockEntity.speedMillis();
@@ -148,18 +145,6 @@ public class TrainDispatcherMenu extends AbstractContainerMenu {
     @Override
     public boolean clickMenuButton(Player player, int id) {
         if (blockEntity == null) return false;
-        // 确认按钮：id = 200 + 索引（必须先于 100 判断）
-        if (id >= 200) {
-            blockEntity.confirmSelectedStop(id - 200);
-            refresh();
-            return true;
-        }
-
-        if (id >= 100) {
-            blockEntity.selectStop(id - 100);
-            refresh();
-            return true;
-        }
         switch (id) {
             // 零启动/非零启动改由时刻表按站设置，不再走 UI
             case 3 -> blockEntity.setManualMode(!blockEntity.manualMode());
@@ -181,7 +166,6 @@ public class TrainDispatcherMenu extends AbstractContainerMenu {
     public int stage()         { return data.get(DATA_STAGE); }
     public int distance()      { return data.get(DATA_DISTANCE); }
     public int stopCount()      { return data.get(DATA_STOP_COUNT); }
-    public int selectedStop()   { return data.get(DATA_SELECTED_STOP); }
     public boolean manualMode() { return data.get(DATA_MANUAL_MODE) != 0; }
     public int currentEntry() { return data.get(DATA_CURRENT_ENTRY); }
     public int speedMillis() { return data.get(DATA_SPEED); }

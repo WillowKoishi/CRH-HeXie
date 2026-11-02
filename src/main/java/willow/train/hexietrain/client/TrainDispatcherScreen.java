@@ -39,8 +39,8 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
     private static final int CELLS_X = 86;
     private static final int CELL_W = 4;
     private static final int CELL_GAP = 1;
-    /** 确认按钮的短暂高亮计时。 */
-    private int confirmFlash = 0;
+    /** 站名栏浏览索引（纯客户端，-1 表示跟随当前目的地）。 */
+    private int browseIndex = -1;
     private static final int CELL_COUNT = 15;
     public TrainDispatcherScreen(TrainDispatcherMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -78,10 +78,6 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
         g.fill(x + 37, y + 20, x + 169, y + 40, C_SLOT_BG);
         g.fill(x + 38, y + 21, x + 168, y + 39, C_SLOT_INNER);
         g.fill(x + 39, y + 22, x + 167, y + 38, 0xFFB4B4B4);
-        // 右侧确认按钮
-        boolean hoverOk = isIn(mouseX, mouseY, 150, 21, 18, 18);
-        g.fill(x + 150, y + 21, x + 168, y + 39, hoverOk ? C_BUTTON_HOT : C_BUTTON);
-        g.renderOutline(x + 150, y + 21, 18, 18, C_BORDER);
 
         // 分隔线
         g.fill(x + 8, y + 46, x + PANEL_W - 8, y + 47, C_PANEL_DARK);
@@ -121,7 +117,6 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
 
     @Override
     protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
-        if (confirmFlash > 0) confirmFlash--;
         int text = C_TEXT;
         int dim = C_TEXT_DIM;
 
@@ -143,27 +138,35 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
                 badgeHover ? 0xFF1F5FBF : badgeColor, false);
 
 
-        // 站名（时刻表右侧长条）
+        // 站名栏 = 纯显示：滚轮浏览站点，颜色表示相对当前目的地的位置
         var be9 = menu.blockEntity();
-        String station9 = "（无目标）";
-        if (be9 != null && !be9.stopNames().isEmpty()) {
-            int sel9 = Math.max(0, Math.min(be9.stopNames().size() - 1, menu.selectedStop()));
-            station9 = be9.stopNames().get(sel9);
-        } else if (be9 != null && be9.nextTargetName() != null && !be9.nextTargetName().isEmpty()) {
-            station9 = be9.nextTargetName();
-        }
-        int maxW9 = 150 - 42 - 4;   // 右侧留给确认按钮
-        String shown9 = station9;
-        if (font.width(shown9) > maxW9) {
-            while (shown9.length() > 1 && font.width(shown9 + "...") > maxW9) {
-                shown9 = shown9.substring(0, shown9.length() - 1);
+        java.util.List<String> names9 = (be9 == null) ? java.util.List.of() : be9.stopNames();
+        int dest9 = menu.currentEntry();                    // 当前目的地（时刻表游标）
+        int cnt9 = names9.size();
+
+        if (cnt9 > 0) {
+            if (browseIndex < 0 || browseIndex >= cnt9) browseIndex = Math.max(0, Math.min(cnt9 - 1, dest9));
+            String name9 = names9.get(browseIndex);
+
+            int color9;
+            if (browseIndex == dest9)      color9 = 0xFFFFD700;   // 正在前往 —— 黄
+            else if (browseIndex > dest9)  color9 = 0xFF3FBF3F;   // 之后 —— 绿
+            else                           color9 = 0xFF8B8B8B;   // 已经过 —— 灰
+
+            int maxW9 = 168 - 42 - 4;
+            String shown9 = name9 == null ? "" : name9;
+            if (font.width(shown9) > maxW9) {
+                while (shown9.length() > 1 && font.width(shown9 + "...") > maxW9) {
+                    shown9 = shown9.substring(0, shown9.length() - 1);
+                }
+                shown9 = shown9 + "...";
             }
-            shown9 = shown9 + "...";
+            g.drawString(font, shown9, 42, 27, color9, false);
+        } else {
+            String none9 = be9 != null && be9.nextTargetName() != null && !be9.nextTargetName().isEmpty()
+                    ? be9.nextTargetName() : "（无目标）";
+            g.drawString(font, none9, 42, 27, C_TEXT_DIM, false);
         }
-        g.drawString(font, shown9, 42, 27, C_TEXT, false);
-        String okText = confirmFlash > 0 ? "✓" : ">>";
-        g.drawString(font, okText, 150 + 9 - font.width(okText) / 2, 27,
-                confirmFlash > 0 ? 0xFF2E7D32 : C_TEXT, false);
 
         // 调度器工作状态（与右上角操控模态无关）
         // 只有装了时刻表才显示调度状态；拔掉时刻表就完全不显示
@@ -220,14 +223,13 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         int x = (int) (mouseX - leftPos);
         int y = (int) (mouseY - topPos);
-        int cnt9 = menu.stopCount();
-        if (cnt9 > 0 && isIn(x, y, 38, 20, 130, 20)
-                && minecraft != null && minecraft.gameMode != null) {
-            int next9 = menu.selectedStop() + (scrollY < 0 ? 1 : -1);
-            if (next9 < 0) next9 = cnt9 - 1;
-            if (next9 >= cnt9) next9 = 0;
-            minecraft.gameMode.handleInventoryButtonClick(menu.containerId, 100 + next9);
-            return true;
+        var be9 = menu.blockEntity();
+        int cnt9 = be9 == null ? 0 : be9.stopNames().size();
+        if (cnt9 > 0 && isIn(x, y, 38, 20, 130, 20)) {
+            browseIndex += (scrollY < 0 ? 1 : -1);
+            if (browseIndex < 0) browseIndex = cnt9 - 1;
+            if (browseIndex >= cnt9) browseIndex = 0;
+            return true;                                  // 纯本地浏览，不发包
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
@@ -237,11 +239,7 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
         int x = (int) (mouseX - leftPos);
         int y = (int) (mouseY - topPos);
         if (button == 0 && minecraft != null && minecraft.gameMode != null) {
-            if (isIn(x, y, 150, 21, 18, 18)) {
-                minecraft.gameMode.handleInventoryButtonClick(menu.containerId, 200 + menu.selectedStop());
-                confirmFlash = 30;
-                return true;
-            }
+            // 右上角徽标 = 驾驶模式切换
             // 右上角徽标 = 驾驶模式切换
             if (menu.bound() && isIn(x, y, PANEL_W - 74, 1, 70, 15)) {
                 minecraft.gameMode.handleInventoryButtonClick(menu.containerId, 3);
