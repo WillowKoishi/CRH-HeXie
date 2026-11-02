@@ -854,20 +854,18 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     }
     private double bodySpeedAlongTrackBps() {
         try {
-            if (!(level instanceof net.minecraft.server.level.ServerLevel serverLevel)) return 0;
-            var sub = SubLevelSuspend.containing(serverLevel, worldPosition);
-            if (sub == null) return 0;
-            var handle = dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle.of(sub);
-            if (handle == null || !handle.isValid()) return 0;
-
-            org.joml.Vector3d v = handle.getLinearVelocity(new org.joml.Vector3d());
             Train tr = Create.RAILWAYS.trains.get(boundTrain);
             if (tr == null || tr.carriages.isEmpty()) return 0;
             var lp = tr.carriages.get(0).getLeadingPoint();
-            if (lp.edge == null) return 0;
+            if (lp == null || lp.edge == null) return 0;
+
             double len = Math.max(1.0E-6, lp.edge.getLength());
             net.minecraft.world.phys.Vec3 dir = lp.edge.getDirectionAt(Math.min(1.0, lp.position / len));
-            return v.x * dir.x + v.y * dir.y + v.z * dir.z;
+
+            // 用速度传感器读数（姿态差分），而不是刚体质心线速度：
+            // 后者不含旋转贡献，过弯时会偏小。
+            var v = measuredVelocity();
+            return v.x() * dir.x + v.y() * dir.y + v.z() * dir.z;
         } catch (Throwable t) {
             return 0;
         }
@@ -1049,9 +1047,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
 
 
     /** 当前实际速度（格/tick × 100），给 UI 显示用。 */
-    public int speedMillis() {
-        return (int) Math.round(Math.abs(bodySpeedAlongTrackBps()) / 20.0 * 100.0);
-    }
 
     /** 当前调度器工作状态。 */
     public DispatcherState dispatcherState() {

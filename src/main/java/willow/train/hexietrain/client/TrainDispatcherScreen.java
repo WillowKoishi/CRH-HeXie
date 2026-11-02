@@ -176,10 +176,6 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
             int stIdx = Math.max(0, Math.min(stateNames.length - 1, menu.dispatcherState()));
             g.drawString(font, "调度：" + stateNames[stIdx], 8, 112, stateColors[stIdx], false);
         }
-        // 当前速度：照抄 simulated 的速度传感器 —— 单位 m/s，死区 0.05
-        double mps = menu.speedMillis() / 5.0;   // speedMillis 是"百分之一格/tick"
-        if (Math.abs(menu.speedMillis()) / 100.0 <= 0.05) mps = 0.0;
-        String spd = String.format("%.1f m/s", mps);
         for (int row = 0; row < 3; row++) {
             int value = switch (row) {
                 case 0 -> menu.brakeOutput();
