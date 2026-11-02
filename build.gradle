@@ -48,23 +48,6 @@ sourceSets {
         resources.setSrcDirs([])
         runtimeClasspath += sourceSets.main.runtimeClasspath
     }
-    renderingClient {
-        java.setSrcDirs([])
-        resources.setSrcDirs([])
-        runtimeClasspath += sourceSets.main.runtimeClasspath
-    }
-    renderingAeronauticsClient {
-        java.setSrcDirs([])
-        resources.setSrcDirs([])
-        runtimeClasspath += sourceSets.aeronautics.runtimeClasspath
-    }
-}
-
-// Optional rendering stack for development clients only (not published or loaded by servers).
-configurations {
-    clientRenderingMods
-    renderingClientRuntimeOnly.extendsFrom(clientRenderingMods)
-    renderingAeronauticsClientRuntimeOnly.extendsFrom(clientRenderingMods)
 }
 
 neoForge {
@@ -85,13 +68,13 @@ neoForge {
         }
         client {
             client()
-            sourceSet = sourceSets.renderingClient
+            sourceSet = sourceSets.main
             ideName = 'Client - Create'
             gameDirectory = layout.projectDirectory.dir('run-1.21.1/client-create').asFile
         }
         clientAeronautics {
             client()
-            sourceSet = sourceSets.renderingAeronauticsClient
+            sourceSet = sourceSets.aeronautics
             ideName = 'Client - Create + Aeronautics'
             gameDirectory = layout.projectDirectory.dir('run-1.21.1/client').asFile
         }
@@ -116,8 +99,6 @@ neoForge {
 
 dependencies {
 
-    clientRenderingMods "maven.modrinth:iris:${iris_version}"
-
     implementation("com.simibubi.create:create-${minecraft_version}:${create_version}") {
         transitive = false
     }
@@ -131,7 +112,7 @@ dependencies {
         transitive = false
     }
 
-    // Aviation mods are selected per run, independently of the client rendering stack.
+    // Aviation mods are selected per run.
     aeronauticsRuntimeOnly "com.crystaelix:simurail:${simurail_version}"
     aeronauticsRuntimeOnly "maven.modrinth:create-aeronautics:${aeronautics_version}"
     aeronauticsRuntimeOnly "maven.modrinth:sable:${sable_version}"
@@ -143,19 +124,6 @@ tasks.named('processResources', ProcessResources).configure {
     inputs.properties properties
     filesMatching('META-INF/neoforge.mods.toml') { expand properties }
 }
-
-// The isolated smoke-test launcher copies these mods instead of putting them on its boot classpath.
-tasks.register('writeClientRenderingMods') {
-    inputs.files(configurations.clientRenderingMods)
-    def destination = layout.buildDirectory.file('moddev/clientRenderingMods.txt')
-    outputs.file(destination)
-    doLast {
-        destination.get().asFile.text = configurations.clientRenderingMods.files
-                .collect { it.absolutePath }.sort().join(System.lineSeparator()) + System.lineSeparator()
-    }
-}
-tasks.named('prepareClientRun').configure { dependsOn('writeClientRenderingMods') }
-tasks.named('prepareClientAeronauticsRun').configure { dependsOn('writeClientRenderingMods') }
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
