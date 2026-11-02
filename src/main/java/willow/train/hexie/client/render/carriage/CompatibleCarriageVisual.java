@@ -1,89 +1,131 @@
 package willow.train.hexie.client.render.carriage;
 
-import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
-import java.util.function.Supplier;
 import com.simibubi.create.content.contraptions.render.ClientContraption;
-import dev.engine_room.flywheel.api.instance.*;
+import com.simibubi.create.content.trains.entity.CarriageContraptionEntity;
+import com.simibubi.create.content.trains.entity.CarriageContraptionVisual;
+import com.simibubi.create.foundation.utility.worldWrappers.WrappedBlockAndTintGetter;
+import dev.engine_room.flywheel.api.material.CardinalLightingMode;
+import dev.engine_room.flywheel.api.material.Material;
 import dev.engine_room.flywheel.api.material.Transparency;
 import dev.engine_room.flywheel.api.model.Model;
-import dev.engine_room.flywheel.api.visualization.*;
+import dev.engine_room.flywheel.api.visual.DynamicVisual;
+import dev.engine_room.flywheel.api.visualization.VisualizationContext;
+import dev.engine_room.flywheel.lib.instance.InstanceTypes;
 import dev.engine_room.flywheel.lib.material.SimpleMaterial;
-import net.minecraft.core.Vec3i;
-import net.minecraft.core.registries.BuiltInRegistries;
+import dev.engine_room.flywheel.lib.model.ModelUtil;
+import dev.engine_room.flywheel.lib.model.SimpleModel;
+import dev.engine_room.flywheel.lib.model.baked.BlockModelBuilder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.util.RandomSource;
-import net.neoforged.fml.ModList;
-import org.joml.Matrix3fc;
-import org.joml.Matrix4fc;
-import org.joml.Vector4fc;
+import net.minecraft.world.level.BlockAndTintGetter;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.state.BlockState;
 import willow.train.hexie.Main;
 
-/** Reuse Create's baked meshes; only map OIT materials in affected carriage embeddings. */
-public final class CompatibleCarriageVisual {
-    private CompatibleCarriageVisual() {}
-    public static VisualizationContext context(VisualizationContext original, Supplier<ClientContraption> client) {
-        if (!ModList.get().isLoaded("sable") || !ModList.get().isLoaded("veil")) return original;
-        return new Context(original, new Selection(client));
+import java.util.ArrayList;
+import java.util.List;
+
+/** Uses ordinary alpha blending for HeXie's glass while retaining the existing Flywheel visual. */
+public final class CompatibleCarriageVisual extends CarriageContraptionVisual {
+    private int compatibleStructureVersion;
+
+    CompatibleCarriageVisual(VisualizationContext context, CarriageContraptionEntity entity, float partialTick) {
+        super(context, entity, partialTick);
+        rebuildCompatibleStructure();
     }
-    private static final class Selection {
-        final Supplier<ClientContraption> source;
-        ClientContraption previous;
-        int version = Integer.MIN_VALUE;
-        boolean enabled;
-        Selection(Supplier<ClientContraption> source) { this.source = source; }
-        synchronized boolean enabled() {
-            var client = source.get();
-            if (client == null) return false;
-            if (client == previous && version == client.structureVersion()) return enabled;
-            previous = client; version = client.structureVersion(); enabled = false;
-            var blocks = client.getRenderedBlocks();
-            var world = client.getRenderLevel();
-            var random = RandomSource.create(42);
-            for (var pos : blocks.positions()) {
-                var state = blocks.lookup().apply(pos);
-                if (!Main.MOD_ID.equals(BuiltInRegistries.BLOCK.getKey(state.getBlock()).getNamespace())) continue;
-                var model = Minecraft.getInstance().getBlockRenderer().getBlockModel(state);
-                var data = model.getModelData(world,pos,state,world.getModelData(pos));
-                random.setSeed(state.getSeed(pos));
-                if (model.getRenderTypes(state,random,data).contains(RenderType.translucent())) { enabled = true; break; }
+
+    static boolean needsCompatibility(CarriageContraptionEntity entity) {
+        var contraption = entity.getContraption();
+        if (contraption == null) return false;
+        var client = contraption.getOrCreateClientContraptionLazy();
+        var blocks = client.getRenderedBlocks();
+        BlockAndTintGetter modelWorld = modelWorld(client, blocks);
+        RandomSource random = RandomSource.create();
+        for (BlockPos pos : blocks.positions()) {
+            if (isHeXieTranslucent(blocks.lookup().apply(pos), pos, modelWorld, random)) return true;
+        }
+        return false;
+    }
+
+    @Override
+    public void beginFrame(DynamicVisual.Context context) {
+        super.beginFrame(context);
+        // Create updates its own structure first. Change its material mapping only on rebuild,
+        // including door changes and portal visibility changes, rather than baking every frame.
+        if (compatibleStructureVersion != lastStructureVersion) rebuildCompatibleStructure();
+    }
+
+    private void rebuildCompatibleStructure() {
+        Model model = createCompatibleStructure(entity.getContraption().getOrCreateClientContraptionLazy());
+        if (model != null) {
+            embedding.instancerProvider().instancer(InstanceTypes.TRANSFORMED, model).stealInstance(structure);
+            structure.setChanged();
+        }
+        compatibleStructureVersion = lastStructureVersion;
+    }
+
+    /** Shared by native and independently animated HeXie carriages, only on structure rebuild. */
+    public static Model createCompatibleStructure(ClientContraption client) {
+        var blocks = client.getRenderedBlocks();
+        BlockAndTintGetter modelWorld = modelWorld(client, blocks);
+        List<BlockPos> ordinary = new ArrayList<>();
+        List<BlockPos> heXieGlass = new ArrayList<>();
+        RandomSource random = RandomSource.create();
+        for (BlockPos pos : blocks.positions()) {
+            (isHeXieTranslucent(blocks.lookup().apply(pos), pos, modelWorld, random)
+                    ? heXieGlass : ordinary).add(pos.immutable());
+        }
+
+        if (heXieGlass.isEmpty()) return null;
+        List<Model.ConfiguredMesh> meshes = new ArrayList<>();
+        if (!ordinary.isEmpty()) {
+            meshes.addAll(new BlockModelBuilder(modelWorld, ordinary)
+                    .materialFunc(CompatibleCarriageVisual::originalMaterial).build().meshes());
+        }
+        if (!heXieGlass.isEmpty()) {
+            meshes.addAll(new BlockModelBuilder(modelWorld, heXieGlass)
+                    .materialFunc(CompatibleCarriageVisual::compatibleMaterial).build().meshes());
+        }
+        return new SimpleModel(meshes);
+    }
+
+    private static BlockAndTintGetter modelWorld(ClientContraption client, ClientContraption.RenderedBlocks blocks) {
+        return new WrappedBlockAndTintGetter(client.getRenderLevel()) {
+            @Override
+            public BlockState getBlockState(BlockPos pos) {
+                return blocks.lookup().apply(pos);
             }
-            return enabled;
-        }
+        };
     }
-    private record MappedModel(List<Model.ConfiguredMesh> meshes, Vector4fc boundingSphere) implements Model {}
-    private static class Context implements VisualizationContext {
-        final VisualizationContext delegate;
-        final Selection selection;
-        // Values retain meshes, not their source Model; old structure versions can be collected.
-        final Map<Model,Model> mapped = new WeakHashMap<>();
-        final InstancerProvider provider;
-        Context(VisualizationContext delegate, Selection selection) {
-            this.delegate = delegate; this.selection = selection;
-            provider = new InstancerProvider() {
-                @Override public <I extends Instance> Instancer<I> instancer(InstanceType<I> type, Model model, int bias) {
-                    return delegate.instancerProvider().instancer(type, selection.enabled() ? map(model) : model, bias);
-                }
-            };
-        }
-        private synchronized Model map(Model source) {
-            return mapped.computeIfAbsent(source, model -> new MappedModel(model.meshes().stream().map(mesh -> {
-                var material = mesh.material();
-                if (material.transparency() == Transparency.ORDER_INDEPENDENT)
-                    material = SimpleMaterial.builderOf(material).transparency(Transparency.TRANSLUCENT).build();
-                return new Model.ConfiguredMesh(material, mesh.mesh());
-            }).toList(), model.boundingSphere()));
-        }
-        @Override public InstancerProvider instancerProvider() { return provider; }
-        @Override public Vec3i renderOrigin() { return delegate.renderOrigin(); }
-        @Override public VisualEmbedding createEmbedding(Vec3i origin) { return new Embedding(delegate.createEmbedding(origin), selection); }
+
+    private static boolean isHeXieTranslucent(BlockState state, BlockPos pos,
+            BlockAndTintGetter modelWorld, RandomSource random) {
+        if (state.getRenderShape() != RenderShape.MODEL
+                || !Main.MOD_ID.equals(BuiltInRegistries.BLOCK.getKey(state.getBlock()).getNamespace())) return false;
+        var model = Minecraft.getInstance().getBlockRenderer().getBlockModel(state);
+        var data = model.getModelData(modelWorld, pos, state, modelWorld.getModelData(pos));
+        random.setSeed(state.getSeed(pos));
+        return model.getRenderTypes(state, random, data).contains(RenderType.translucent());
     }
-    private static final class Embedding extends Context implements VisualEmbedding {
-        private final VisualEmbedding embedding;
-        Embedding(VisualEmbedding embedding, Selection selection) { super(embedding, selection); this.embedding = embedding; }
-        @Override public void transforms(Matrix4fc pose, Matrix3fc normal) { embedding.transforms(pose,normal); }
-        @Override public void delete() { synchronized (this) { mapped.clear(); } embedding.delete(); }
+
+    private static Material originalMaterial(RenderType renderType, boolean shaded, boolean ambientOcclusion) {
+        Material material = ModelUtil.getMaterial(renderType, shaded, ambientOcclusion);
+        if (material != null && material.cardinalLightingMode() == CardinalLightingMode.ENTITY) {
+            return SimpleMaterial.builderOf(material).cardinalLightingMode(CardinalLightingMode.CHUNK).build();
+        }
+        return material;
+    }
+
+    private static Material compatibleMaterial(RenderType renderType, boolean shaded, boolean ambientOcclusion) {
+        Material material = originalMaterial(renderType, shaded, ambientOcclusion);
+        if (material != null && renderType == RenderType.translucent()) {
+            // Keep original alpha, lighting and cutout settings. Bypass only the OIT framebuffer
+            // combination that loses these glass meshes with Sable and Veil on affected renderers.
+            return SimpleMaterial.builderOf(material).transparency(Transparency.TRANSLUCENT).build();
+        }
+        return material;
     }
 }

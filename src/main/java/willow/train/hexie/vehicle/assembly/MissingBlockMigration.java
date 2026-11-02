@@ -51,6 +51,22 @@ public final class MissingBlockMigration {
         return id != null && !level.registryAccess().registryOrThrow(Registries.BLOCK).containsKey(id);
     }
 
+    private static boolean restoreLegacyPanelHinge(CompoundTag entry, ServerLevel level) {
+        if (!entry.contains("State", Tag.TAG_COMPOUND)) return false;
+        var state = entry.getCompound("State");
+        var name = ResourceLocation.tryParse(state.getString("Name"));
+        var registry = level.registryAccess().registryOrThrow(Registries.BLOCK);
+        if (name == null || !registry.containsKey(name)
+                || !(registry.get(name) instanceof willow.train.hexie.blocks.locos.crh2a.CRH2PanelBlock)
+                || !state.contains("Properties", Tag.TAG_COMPOUND)) return false;
+        var properties = state.getCompound("Properties");
+        if (properties.contains("hinge")) return false;
+        // Before hinge was introduced the wide window extended along local +X.
+        // Its original geometry is now the RIGHT variant; preserve existing proxy positions.
+        properties.putString("hinge", name.getPath().equals("crh2a_panel_wide_window") ? "right" : "left");
+        return true;
+    }
+
     private static boolean removeRetiredRenderEntity(CompoundTag entry, ServerLevel level) {
         if (!entry.contains("State", Tag.TAG_COMPOUND)
                 || !entry.contains("BlockEntity", Tag.TAG_COMPOUND)) return false;
@@ -76,6 +92,7 @@ public final class MissingBlockMigration {
             if (compound.contains("Supports", Tag.TAG_LIST) && compound.contains("Blocks", Tag.TAG_LIST)) {
                 for (var value : compound.getList("Blocks", Tag.TAG_COMPOUND)) {
                     var block = (CompoundTag) value;
+                    changed |= restoreLegacyPanelHinge(block, level);
                     changed |= removeRetiredRenderEntity(block, level);
                     if (!missing(block, level)) continue;
                     var air = new CompoundTag();
@@ -89,6 +106,7 @@ public final class MissingBlockMigration {
             var changes = compound.getList("ChangedBlocks", Tag.TAG_COMPOUND);
             for (int i = changes.size() - 1; i >= 0; i--) {
                 var block = changes.getCompound(i);
+                changed |= restoreLegacyPanelHinge(block, level);
                 changed |= removeRetiredRenderEntity(block, level);
                 if (!missing(block, level)) continue;
                 if (block.contains("Pos")) removed.add(block.get("Pos").copy());

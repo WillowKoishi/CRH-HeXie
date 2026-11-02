@@ -15,7 +15,7 @@ import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.status.ChunkStatus;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.neoforged.neoforge.client.event.AddSectionGeometryEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.ModelEvent;
@@ -28,15 +28,15 @@ import willow.train.hexie.blocks.locos.crh2a.CRH2PartBlock;
 
 /** Static chunk meshes, including Sodium's implementation of AddSectionGeometryEvent. */
 public final class CRH2StaticSections {
-    private record Models(Map<BlockState, CRH2StaticMesh> meshes, int reach) {}
+    private record Models(Map<BlockState, CRH2StaticMesh> meshes) {}
     private record Draw(BlockPos cell, BakedQuad quad, int[] light) {}
-    private static volatile Models models = new Models(Map.of(), 0);
+    private static volatile Models models = new Models(Map.of());
     // All world-dependent state is owned by the main client thread.
     private static ClientLevel observedLevel;
     private static Models observedModels;
     private static final Map<BlockPos, Map<BlockPos, BlockState>> observed = new HashMap<>();
     private static final Set<BlockPos> dirty = new HashSet<>();
-    private static final Set<BlockPos> scanned = new HashSet<>();
+    // Geometry membership changes only when owners/chunks/models change, never for lighting.
     private static final Map<BlockPos, Map<BlockPos, List<CRH2StaticMesh.Face>>> destinations = new HashMap<>();
     private static final Map<BlockPos, Set<BlockPos>> ownerDestinations = new HashMap<>();
 
@@ -58,7 +58,6 @@ public final class CRH2StaticSections {
 
     private static void bake(ModelEvent.ModifyBakingResult event) {
         var meshes = new HashMap<BlockState, CRH2StaticMesh>();
-        int reach = 0;
         for (var block : BuiltInRegistries.BLOCK) {
             if (!(block instanceof CRH2HeadBlock) && !(block instanceof CRH2PartBlock)) continue;
             for (var state : block.getStateDefinition().getPossibleStates()) {
@@ -68,17 +67,29 @@ public final class CRH2StaticSections {
                 if (original == null) continue;
                 var mesh = new CRH2StaticMesh(original, state);
                 meshes.put(state, mesh);
-                reach = Math.max(reach, mesh.reach);
                 event.getModels().put(key, new CRH2StaticModel(original));
             }
         }
-        models = new Models(Map.copyOf(meshes), reach);
+        models = new Models(Map.copyOf(meshes));
     }
 
     private static void select(ClientLevel level) {
-        if (observedLevel == level && observedModels == models) return;
-        observed.clear(); dirty.clear(); scanned.clear(); destinations.clear(); ownerDestinations.clear();
-        observedLevel = level; observedModels = models;
+        if (observedLevel != level) {
+            clear();
+            observedLevel = level;
+            observedModels = models;
+        } else if (observedModels != models) {
+            // Resource reload changes mesh membership, including owners outside the view.
+            dirty.addAll(destinations.keySet());
+            destinations.clear(); ownerDestinations.clear();
+            observedModels = models;
+            for (var roots : observed.values()) roots.forEach(CRH2StaticSections::index);
+        }
+    }
+
+    private static void clear() {
+        observed.clear(); dirty.clear(); destinations.clear(); ownerDestinations.clear();
+        observedLevel = null; observedModels = null;
     }
 
     private static BlockPos section(BlockPos p) {
@@ -87,73 +98,72 @@ public final class CRH2StaticSections {
 
     private static void index(BlockPos root, BlockState state) {
         var previous = ownerDestinations.remove(root);
-        if (previous != null) for (var section : previous) {
-            var entries = destinations.get(section);
-            if (entries != null) { entries.remove(root); if (entries.isEmpty()) destinations.remove(section); }
-            dirty.add(section);
+        if (previous != null) for (var target : previous) {
+            var entries = destinations.get(target);
+            if (entries != null) {
+                entries.remove(root);
+                if (entries.isEmpty()) destinations.remove(target);
+            }
+            dirty.add(target);
         }
         var mesh = models.meshes.get(state);
         if (mesh == null) return;
         var groups = new HashMap<BlockPos, List<CRH2StaticMesh.Face>>();
         for (var face : mesh.faces)
             groups.computeIfAbsent(section(root.offset(face.cell())), ignored -> new ArrayList<>()).add(face);
-        groups.forEach((section, faces) -> {
-            destinations.computeIfAbsent(section, ignored -> new HashMap<>()).put(root, List.copyOf(faces));
-            dirty.add(section);
+        groups.forEach((target, faces) -> {
+            destinations.computeIfAbsent(target, ignored -> new HashMap<>()).put(root, List.copyOf(faces));
+            dirty.add(target);
         });
         ownerDestinations.put(root, Set.copyOf(groups.keySet()));
     }
 
-    private static Map<BlockPos, BlockState> roots(ClientLevel level, int sx, int sy, int sz) {
-        var key = new BlockPos(sx, sy, sz);
-        if (scanned.contains(key)) return observed.getOrDefault(key, Map.of());
-        var found = new HashMap<BlockPos, BlockState>();
-        var chunk = level.getChunk(sx, sz, ChunkStatus.FULL, false);
-        int index = level.getSectionIndexFromSectionY(sy);
-        if (chunk == null) return Map.of();
-        scanned.add(key);
-        if (index >= 0 && index < chunk.getSections().length) {
-            var source = chunk.getSection(index);
-            // Skip whole palettes without train owners; no air-volume scan each frame.
-            if (source.maybeHas(CRH2StaticSections::owner)) {
-                for (int y = 0; y < 16; y++) for (int z = 0; z < 16; z++) for (int x = 0; x < 16; x++) {
-                    var state = source.getBlockState(x, y, z);
-                    if (owner(state)) found.put(new BlockPos(sx*16+x, sy*16+y, sz*16+z), state);
-                }
+    private static void indexChunk(ClientLevel level, ChunkAccess chunk) {
+        int sx = chunk.getPos().x, sz = chunk.getPos().z;
+        // Inspect only the delivered chunk, once per load/replacement. No neighbour queries.
+        for (int i = 0; i < chunk.getSections().length; i++) {
+            int sy = level.getSectionYFromSectionIndex(i);
+            var key = new BlockPos(sx, sy, sz);
+            var source = chunk.getSection(i);
+            var previous = observed.getOrDefault(key, Map.of());
+            if (!source.maybeHas(CRH2StaticSections::owner)) {
+                for (var root : previous.keySet()) index(root, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+                observed.remove(key);
+                continue;
             }
-        }
-        var previous = observed.getOrDefault(key, Map.of());
-        if (!previous.equals(found)) {
-            for (var old : previous.keySet()) if (!found.containsKey(old)) index(old, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
-            found.forEach(CRH2StaticSections::index);
+            var found = new HashMap<BlockPos, BlockState>();
+            for (int y = 0; y < 16; y++) for (int z = 0; z < 16; z++) for (int x = 0; x < 16; x++) {
+                var state = source.getBlockState(x, y, z);
+                if (owner(state)) found.put(new BlockPos(sx * 16 + x, sy * 16 + y, sz * 16 + z), state);
+            }
+            for (var root : previous.keySet())
+                if (!found.containsKey(root)) index(root, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+            found.forEach((root, state) -> {
+                if (previous.get(root) != state) index(root, state);
+            });
             if (found.isEmpty()) observed.remove(key);
             else observed.put(key, Map.copyOf(found));
         }
-        return found;
     }
 
     private static void addGeometry(AddSectionGeometryEvent event) {
         if (!(event.getLevel() instanceof ClientLevel level)) return;
         select(level);
-        var current = models;
-        if (current.meshes.isEmpty()) return;
         var origin = event.getSectionOrigin();
         var destination = section(origin);
-        int reach = current.reach;
+        var entries = destinations.get(destination);
+        dirty.remove(destination);
+        // Ordinary terrain sections do no train lookups or lighting work.
+        if (entries == null) return;
         var draws = new ArrayList<Draw>();
         var lights = new HashMap<BlockPos, Integer>();
-        for (int sx = (origin.getX()-reach) >> 4; sx <= (origin.getX()+15+reach) >> 4; sx++)
-            for (int sz = (origin.getZ()-reach) >> 4; sz <= (origin.getZ()+15+reach) >> 4; sz++)
-                for (int sy = (origin.getY()-reach) >> 4; sy <= (origin.getY()+15+reach) >> 4; sy++) {
-                    roots(level, sx, sy, sz);
-                }
-        for (var entry : destinations.getOrDefault(destination, Map.of()).entrySet()) {
+        for (var entry : entries.entrySet()) {
             for (var face : entry.getValue()) {
                 var cell = entry.getKey().offset(face.cell());
                 int[] light = new int[4];
                 int[] vertices = face.quad().getVertices();
                 for (int i = 0; i < 4; i++) {
-                    int p = i*8;
+                    int p = i * 8;
                     light[i] = lightAt(level, lights,
                             cell.getX()+Float.intBitsToFloat(vertices[p]),
                             cell.getY()+Float.intBitsToFloat(vertices[p+1]),
@@ -162,8 +172,6 @@ public final class CRH2StaticSections {
                 draws.add(new Draw(cell.subtract(origin), face.quad(), light));
             }
         }
-        // This rebuild already contains its latest data. Other affected sections are queued below.
-        dirty.remove(destination);
         if (draws.isEmpty()) return;
         var snapshot = List.copyOf(draws);
         event.addRenderer(context -> {
@@ -198,7 +206,7 @@ public final class CRH2StaticSections {
 
     private static void tick(ClientTickEvent.Post event) {
         var mc = Minecraft.getInstance();
-        if (mc.level == null) { observed.clear(); dirty.clear(); scanned.clear(); destinations.clear(); ownerDestinations.clear(); observedLevel = null; return; }
+        if (mc.level == null) { clear(); return; }
         select(mc.level);
         // Removal replaces an owner with air, whose block callback cannot notify us.
         // Inspect only known owners, never rescan all loaded blocks on a tick.
@@ -214,7 +222,6 @@ public final class CRH2StaticSections {
                 replacement.remove(root.getKey());
                 if (owner(actual)) {
                     replacement.put(root.getKey(), actual);
-
                 }
             }
             if (replacement != null) {
@@ -234,48 +241,41 @@ public final class CRH2StaticSections {
         // after it has entered the client cache; do not query the level during loading.
         var chunk = event.getChunk();
         select(level);
-        scanned.removeIf(key -> key.getX() == chunk.getPos().x && key.getZ() == chunk.getPos().z);
-        int radius = (models.reach+15)/16;
-        for (int i = 0; i < chunk.getSections().length; i++) {
-            if (!chunk.getSection(i).maybeHas(CRH2StaticSections::owner)) continue;
-            int sy = level.getSectionYFromSectionIndex(i);
-            for (int x = -radius; x <= radius; x++) for (int z = -radius; z <= radius; z++)
-                for (int y = -radius; y <= radius; y++)
-                    dirty.add(new BlockPos(chunk.getPos().x+x, sy+y, chunk.getPos().z+z));
-        }
+        indexChunk(level, chunk);
     }
 
     public static void changed(net.minecraft.world.level.LevelReader world, BlockPos pos,
                                BlockState oldState, BlockState newState) {
         if (!(world instanceof ClientLevel level)) return;
         select(level);
-        index(pos, newState);
+        if (!owner(oldState) && !owner(newState)) return;
+        pos = pos.immutable();
         var source = section(pos);
-        {
-            var roots = new HashMap<>(observed.getOrDefault(source, Map.of()));
-            roots.remove(pos);
-            if (owner(newState)) roots.put(pos.immutable(), newState);
-            if (roots.isEmpty()) observed.remove(source); else observed.put(source, Map.copyOf(roots));
-        }
+        var previous = observed.getOrDefault(source, Map.of());
+        if (previous.get(pos) == newState || !previous.containsKey(pos) && !owner(newState)) return;
+        index(pos, newState);
+        var roots = new HashMap<>(previous);
+        if (owner(newState)) roots.put(pos, newState);
+        else roots.remove(pos);
+        if (roots.isEmpty()) observed.remove(source);
+        else observed.put(source, Map.copyOf(roots));
     }
 
     private static void chunkUnloaded(ChunkEvent.Unload event) {
         if (event.getLevel() != observedLevel) return;
         var pos = event.getChunk().getPos();
-        scanned.removeIf(key -> key.getX() == pos.x && key.getZ() == pos.z);
-        var iterator = observed.entrySet().iterator();
-        while (iterator.hasNext()) {
-            var entry = iterator.next();
-            if (entry.getKey().getX() == pos.x && entry.getKey().getZ() == pos.z) {
-                for (var root : entry.getValue().keySet()) index(root, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
-                iterator.remove();
-            }
+        // Remove this chunk's owners directly; never sweep the world's index.
+        for (int i = 0; i < event.getChunk().getSections().length; i++) {
+            var key = new BlockPos(pos.x, observedLevel.getSectionYFromSectionIndex(i), pos.z);
+            var roots = observed.remove(key);
+            if (roots != null) for (var root : roots.keySet())
+                index(root, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
         }
     }
 
     private static void levelUnloaded(LevelEvent.Unload event) {
         if (event.getLevel() == observedLevel) {
-            observed.clear(); dirty.clear(); scanned.clear(); destinations.clear(); ownerDestinations.clear(); observedLevel = null;
+            clear();
         }
     }
 }
