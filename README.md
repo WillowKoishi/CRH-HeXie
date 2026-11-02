@@ -1,5 +1,9 @@
 # CRH-HeXie · 物理火车调度器
 
+> ⚠️ **开发前必读：[RULES.md](RULES.md)**
+> 能读的不猜、不能读的问；参考任何模组必须先反编译取证（证据放 `docs/evidence/`）。
+
+
 Minecraft **NeoForge** 附属模组：让 **Sable 物理子结构**当作真正的列车，
 复用 **Create** 原生的时刻表、寻路、信号与车站系统。
 

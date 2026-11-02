@@ -1,0 +1,391 @@
+# 来源: create-1.21.1-6.0.10.jar
+# 类: com.simibubi.create.content.kinetics.base.DirectionalAxisKineticBlock
+# 命令: javap -p -c -cp "<create>;<mc>" <类名>
+# 用途: 确认「旋转轴垂直于 FACING」的映射规则
+#       axis=X -> alongFirst ? Y : Z
+#       axis=Y -> alongFirst ? X : Z
+#       axis=Z -> alongFirst ? X : Y
+Compiled from "DirectionalAxisKineticBlock.java"
+public abstract class com.simibubi.create.content.kinetics.base.DirectionalAxisKineticBlock extends com.simibubi.create.content.kinetics.base.DirectionalKineticBlock implements com.simibubi.create.api.contraption.transformable.TransformableBlock {
+  public static final net.minecraft.world.level.block.state.properties.BooleanProperty AXIS_ALONG_FIRST_COORDINATE;
+
+  public com.simibubi.create.content.kinetics.base.DirectionalAxisKineticBlock(net.minecraft.world.level.block.state.BlockBehaviour$Properties);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokespecial #1                  // Method com/simibubi/create/content/kinetics/base/DirectionalKineticBlock."<init>":(Lnet/minecraft/world/level/block/state/BlockBehaviour$Properties;)V
+       5: return
+
+  protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition$Builder<net.minecraft.world.level.block.Block, net.minecraft.world.level.block.state.BlockState>);
+    Code:
+       0: aload_1
+       1: iconst_1
+       2: anewarray     #7                  // class net/minecraft/world/level/block/state/properties/Property
+       5: dup
+       6: iconst_0
+       7: getstatic     #9                  // Field AXIS_ALONG_FIRST_COORDINATE:Lnet/minecraft/world/level/block/state/properties/BooleanProperty;
+      10: aastore
+      11: invokevirtual #15                 // Method net/minecraft/world/level/block/state/StateDefinition$Builder.add:([Lnet/minecraft/world/level/block/state/properties/Property;)Lnet/minecraft/world/level/block/state/StateDefinition$Builder;
+      14: pop
+      15: aload_0
+      16: aload_1
+      17: invokespecial #21                 // Method com/simibubi/create/content/kinetics/base/DirectionalKineticBlock.createBlockStateDefinition:(Lnet/minecraft/world/level/block/state/StateDefinition$Builder;)V
+      20: return
+
+  protected net.minecraft.core.Direction getFacingForPlacement(net.minecraft.world.item.context.BlockPlaceContext);
+    Code:
+       0: aload_1
+       1: invokevirtual #25                 // Method net/minecraft/world/item/context/BlockPlaceContext.getNearestLookingDirection:()Lnet/minecraft/core/Direction;
+       4: invokevirtual #31                 // Method net/minecraft/core/Direction.getOpposite:()Lnet/minecraft/core/Direction;
+       7: astore_2
+       8: aload_1
+       9: invokevirtual #36                 // Method net/minecraft/world/item/context/BlockPlaceContext.getPlayer:()Lnet/minecraft/world/entity/player/Player;
+      12: ifnull        30
+      15: aload_1
+      16: invokevirtual #36                 // Method net/minecraft/world/item/context/BlockPlaceContext.getPlayer:()Lnet/minecraft/world/entity/player/Player;
+      19: invokevirtual #40                 // Method net/minecraft/world/entity/player/Player.isShiftKeyDown:()Z
+      22: ifeq          30
+      25: aload_2
+      26: invokevirtual #31                 // Method net/minecraft/core/Direction.getOpposite:()Lnet/minecraft/core/Direction;
+      29: astore_2
+      30: aload_2
+      31: areturn
+
+  protected boolean getAxisAlignmentForPlacement(net.minecraft.world.item.context.BlockPlaceContext);
+    Code:
+       0: aload_1
+       1: invokevirtual #46                 // Method net/minecraft/world/item/context/BlockPlaceContext.getHorizontalDirection:()Lnet/minecraft/core/Direction;
+       4: invokevirtual #49                 // Method net/minecraft/core/Direction.getAxis:()Lnet/minecraft/core/Direction$Axis;
+       7: getstatic     #53                 // Field net/minecraft/core/Direction$Axis.X:Lnet/minecraft/core/Direction$Axis;
+      10: if_acmpne     17
+      13: iconst_1
+      14: goto          18
+      17: iconst_0
+      18: ireturn
+
+  public net.minecraft.world.level.block.state.BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokevirtual #59                 // Method getFacingForPlacement:(Lnet/minecraft/world/item/context/BlockPlaceContext;)Lnet/minecraft/core/Direction;
+       5: astore_2
+       6: aload_1
+       7: invokevirtual #63                 // Method net/minecraft/world/item/context/BlockPlaceContext.getClickedPos:()Lnet/minecraft/core/BlockPos;
+      10: astore_3
+      11: aload_1
+      12: invokevirtual #67                 // Method net/minecraft/world/item/context/BlockPlaceContext.getLevel:()Lnet/minecraft/world/level/Level;
+      15: astore        4
+      17: iconst_0
+      18: istore        5
+      20: aload_2
+      21: invokevirtual #49                 // Method net/minecraft/core/Direction.getAxis:()Lnet/minecraft/core/Direction$Axis;
+      24: astore        6
+      26: aload         6
+      28: invokevirtual #71                 // Method net/minecraft/core/Direction$Axis.isHorizontal:()Z
+      31: ifeq          156
+      34: aload         6
+      36: getstatic     #74                 // Field net/minecraft/core/Direction$Axis.Z:Lnet/minecraft/core/Direction$Axis;
+      39: if_acmpne     46
+      42: iconst_1
+      43: goto          47
+      46: iconst_0
+      47: istore        5
+      49: aload         6
+      51: getstatic     #53                 // Field net/minecraft/core/Direction$Axis.X:Lnet/minecraft/core/Direction$Axis;
+      54: if_acmpne     63
+      57: getstatic     #77                 // Field net/minecraft/core/Direction.SOUTH:Lnet/minecraft/core/Direction;
+      60: goto          66
+      63: getstatic     #81                 // Field net/minecraft/core/Direction.EAST:Lnet/minecraft/core/Direction;
+      66: astore        7
+      68: aload_0
+      69: aload         4
+      71: aload_3
+      72: getstatic     #84                 // Field net/minecraft/core/Direction.UP:Lnet/minecraft/core/Direction;
+      75: iconst_1
+      76: invokevirtual #87                 // Method prefersConnectionTo:(Lnet/minecraft/world/level/LevelReader;Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/Direction;Z)Z
+      79: istore        8
+      81: aload_0
+      82: aload         4
+      84: aload_3
+      85: getstatic     #91                 // Field net/minecraft/core/Direction.DOWN:Lnet/minecraft/core/Direction;
+      88: iconst_1
+      89: invokevirtual #87                 // Method prefersConnectionTo:(Lnet/minecraft/world/level/LevelReader;Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/Direction;Z)Z
+      92: istore        9
+      94: aload_0
+      95: aload         4
+      97: aload_3
+      98: aload         7
+     100: iconst_0
+     101: invokevirtual #87                 // Method prefersConnectionTo:(Lnet/minecraft/world/level/LevelReader;Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/Direction;Z)Z
+     104: istore        10
+     106: aload_0
+     107: aload         4
+     109: aload_3
+     110: aload         7
+     112: invokevirtual #31                 // Method net/minecraft/core/Direction.getOpposite:()Lnet/minecraft/core/Direction;
+     115: iconst_0
+     116: invokevirtual #87                 // Method prefersConnectionTo:(Lnet/minecraft/world/level/LevelReader;Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/Direction;Z)Z
+     119: istore        11
+     121: iload         8
+     123: ifne          141
+     126: iload         9
+     128: ifne          141
+     131: iload         10
+     133: ifne          141
+     136: iload         11
+     138: ifeq          156
+     141: aload         6
+     143: getstatic     #53                 // Field net/minecraft/core/Direction$Axis.X:Lnet/minecraft/core/Direction$Axis;
+     146: if_acmpne     153
+     149: iconst_1
+     150: goto          154
+     153: iconst_0
+     154: istore        5
+     156: aload         6
+     158: invokevirtual #94                 // Method net/minecraft/core/Direction$Axis.isVertical:()Z
+     161: ifeq          290
+     164: aload_0
+     165: aload_1
+     166: invokevirtual #97                 // Method getAxisAlignmentForPlacement:(Lnet/minecraft/world/item/context/BlockPlaceContext;)Z
+     169: istore        5
+     171: aconst_null
+     172: astore        7
+     174: getstatic     #101                // Field net/createmod/catnip/data/Iterate.horizontalDirections:[Lnet/minecraft/core/Direction;
+     177: astore        8
+     179: aload         8
+     181: arraylength
+     182: istore        9
+     184: iconst_0
+     185: istore        10
+     187: iload         10
+     189: iload         9
+     191: if_icmpge     267
+     194: aload         8
+     196: iload         10
+     198: aaload
+     199: astore        11
+     201: aload_0
+     202: aload         4
+     204: aload_3
+     205: aload         11
+     207: iconst_1
+     208: invokevirtual #87                 // Method prefersConnectionTo:(Lnet/minecraft/world/level/LevelReader;Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/Direction;Z)Z
+     211: ifne          233
+     214: aload_0
+     215: aload         4
+     217: aload_3
+     218: aload         11
+     220: invokevirtual #107                // Method net/minecraft/core/Direction.getClockWise:()Lnet/minecraft/core/Direction;
+     223: iconst_0
+     224: invokevirtual #87                 // Method prefersConnectionTo:(Lnet/minecraft/world/level/LevelReader;Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/Direction;Z)Z
+     227: ifne          233
+     230: goto          261
+     233: aload         7
+     235: ifnull        257
+     238: aload         7
+     240: invokevirtual #49                 // Method net/minecraft/core/Direction.getAxis:()Lnet/minecraft/core/Direction$Axis;
+     243: aload         11
+     245: invokevirtual #49                 // Method net/minecraft/core/Direction.getAxis:()Lnet/minecraft/core/Direction$Axis;
+     248: if_acmpeq     257
+     251: aconst_null
+     252: astore        7
+     254: goto          267
+     257: aload         11
+     259: astore        7
+     261: iinc          10, 1
+     264: goto          187
+     267: aload         7
+     269: ifnull        290
+     272: aload         7
+     274: invokevirtual #49                 // Method net/minecraft/core/Direction.getAxis:()Lnet/minecraft/core/Direction$Axis;
+     277: getstatic     #53                 // Field net/minecraft/core/Direction$Axis.X:Lnet/minecraft/core/Direction$Axis;
+     280: if_acmpne     287
+     283: iconst_1
+     284: goto          288
+     287: iconst_0
+     288: istore        5
+     290: aload_0
+     291: invokevirtual #110                // Method defaultBlockState:()Lnet/minecraft/world/level/block/state/BlockState;
+     294: getstatic     #114                // Field FACING:Lnet/minecraft/world/level/block/state/properties/DirectionProperty;
+     297: aload_2
+     298: invokevirtual #118                // Method net/minecraft/world/level/block/state/BlockState.setValue:(Lnet/minecraft/world/level/block/state/properties/Property;Ljava/lang/Comparable;)Ljava/lang/Object;
+     301: checkcast     #119                // class net/minecraft/world/level/block/state/BlockState
+     304: getstatic     #9                  // Field AXIS_ALONG_FIRST_COORDINATE:Lnet/minecraft/world/level/block/state/properties/BooleanProperty;
+     307: iload         5
+     309: invokestatic  #124                // Method java/lang/Boolean.valueOf:(Z)Ljava/lang/Boolean;
+     312: invokevirtual #118                // Method net/minecraft/world/level/block/state/BlockState.setValue:(Lnet/minecraft/world/level/block/state/properties/Property;Ljava/lang/Comparable;)Ljava/lang/Object;
+     315: checkcast     #119                // class net/minecraft/world/level/block/state/BlockState
+     318: areturn
+
+  protected boolean prefersConnectionTo(net.minecraft.world.level.LevelReader, net.minecraft.core.BlockPos, net.minecraft.core.Direction, boolean);
+    Code:
+       0: iload         4
+       2: ifne          7
+       5: iconst_0
+       6: ireturn
+       7: aload_2
+       8: aload_3
+       9: invokevirtual #130                // Method net/minecraft/core/BlockPos.relative:(Lnet/minecraft/core/Direction;)Lnet/minecraft/core/BlockPos;
+      12: astore        5
+      14: aload_1
+      15: aload         5
+      17: invokeinterface #136,  2          // InterfaceMethod net/minecraft/world/level/LevelReader.getBlockState:(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/block/state/BlockState;
+      22: astore        6
+      24: aload         6
+      26: invokevirtual #142                // Method net/minecraft/world/level/block/state/BlockState.getBlock:()Lnet/minecraft/world/level/block/Block;
+      29: astore        7
+      31: aload         7
+      33: instanceof    #146                // class com/simibubi/create/content/kinetics/base/IRotate
+      36: ifeq          65
+      39: aload         7
+      41: checkcast     #146                // class com/simibubi/create/content/kinetics/base/IRotate
+      44: aload_1
+      45: aload         5
+      47: aload         6
+      49: aload_3
+      50: invokevirtual #31                 // Method net/minecraft/core/Direction.getOpposite:()Lnet/minecraft/core/Direction;
+      53: invokeinterface #148,  5          // InterfaceMethod com/simibubi/create/content/kinetics/base/IRotate.hasShaftTowards:(Lnet/minecraft/world/level/LevelReader;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/Direction;)Z
+      58: ifeq          65
+      61: iconst_1
+      62: goto          66
+      65: iconst_0
+      66: ireturn
+
+  public net.minecraft.core.Direction$Axis getRotationAxis(net.minecraft.world.level.block.state.BlockState);
+    Code:
+       0: aload_1
+       1: getstatic     #114                // Field FACING:Lnet/minecraft/world/level/block/state/properties/DirectionProperty;
+       4: invokevirtual #152                // Method net/minecraft/world/level/block/state/BlockState.getValue:(Lnet/minecraft/world/level/block/state/properties/Property;)Ljava/lang/Comparable;
+       7: checkcast     #32                 // class net/minecraft/core/Direction
+      10: invokevirtual #49                 // Method net/minecraft/core/Direction.getAxis:()Lnet/minecraft/core/Direction$Axis;
+      13: astore_2
+      14: aload_1
+      15: getstatic     #9                  // Field AXIS_ALONG_FIRST_COORDINATE:Lnet/minecraft/world/level/block/state/properties/BooleanProperty;
+      18: invokevirtual #152                // Method net/minecraft/world/level/block/state/BlockState.getValue:(Lnet/minecraft/world/level/block/state/properties/Property;)Ljava/lang/Comparable;
+      21: checkcast     #125                // class java/lang/Boolean
+      24: invokevirtual #156                // Method java/lang/Boolean.booleanValue:()Z
+      27: istore_3
+      28: aload_2
+      29: getstatic     #53                 // Field net/minecraft/core/Direction$Axis.X:Lnet/minecraft/core/Direction$Axis;
+      32: if_acmpne     49
+      35: iload_3
+      36: ifeq          45
+      39: getstatic     #159                // Field net/minecraft/core/Direction$Axis.Y:Lnet/minecraft/core/Direction$Axis;
+      42: goto          48
+      45: getstatic     #74                 // Field net/minecraft/core/Direction$Axis.Z:Lnet/minecraft/core/Direction$Axis;
+      48: areturn
+      49: aload_2
+      50: getstatic     #159                // Field net/minecraft/core/Direction$Axis.Y:Lnet/minecraft/core/Direction$Axis;
+      53: if_acmpne     70
+      56: iload_3
+      57: ifeq          66
+      60: getstatic     #53                 // Field net/minecraft/core/Direction$Axis.X:Lnet/minecraft/core/Direction$Axis;
+      63: goto          69
+      66: getstatic     #74                 // Field net/minecraft/core/Direction$Axis.Z:Lnet/minecraft/core/Direction$Axis;
+      69: areturn
+      70: aload_2
+      71: getstatic     #74                 // Field net/minecraft/core/Direction$Axis.Z:Lnet/minecraft/core/Direction$Axis;
+      74: if_acmpne     91
+      77: iload_3
+      78: ifeq          87
+      81: getstatic     #53                 // Field net/minecraft/core/Direction$Axis.X:Lnet/minecraft/core/Direction$Axis;
+      84: goto          90
+      87: getstatic     #159                // Field net/minecraft/core/Direction$Axis.Y:Lnet/minecraft/core/Direction$Axis;
+      90: areturn
+      91: new           #162                // class java/lang/IllegalStateException
+      94: dup
+      95: ldc           #164                // String Unknown axis??
+      97: invokespecial #166                // Method java/lang/IllegalStateException."<init>":(Ljava/lang/String;)V
+     100: athrow
+
+  public net.minecraft.world.level.block.state.BlockState rotate(net.minecraft.world.level.block.state.BlockState, net.minecraft.world.level.block.Rotation);
+    Code:
+       0: aload_2
+       1: invokevirtual #169                // Method net/minecraft/world/level/block/Rotation.ordinal:()I
+       4: iconst_2
+       5: irem
+       6: iconst_1
+       7: if_icmpne     21
+      10: aload_1
+      11: getstatic     #9                  // Field AXIS_ALONG_FIRST_COORDINATE:Lnet/minecraft/world/level/block/state/properties/BooleanProperty;
+      14: invokevirtual #175                // Method net/minecraft/world/level/block/state/BlockState.cycle:(Lnet/minecraft/world/level/block/state/properties/Property;)Ljava/lang/Object;
+      17: checkcast     #119                // class net/minecraft/world/level/block/state/BlockState
+      20: astore_1
+      21: aload_0
+      22: aload_1
+      23: aload_2
+      24: invokespecial #179                // Method com/simibubi/create/content/kinetics/base/DirectionalKineticBlock.rotate:(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/block/Rotation;)Lnet/minecraft/world/level/block/state/BlockState;
+      27: areturn
+
+  public net.minecraft.world.level.block.state.BlockState transform(net.minecraft.world.level.block.state.BlockState, com.simibubi.create.content.contraptions.StructureTransform);
+    Code:
+       0: aload_2
+       1: getfield      #183                // Field com/simibubi/create/content/contraptions/StructureTransform.mirror:Lnet/minecraft/world/level/block/Mirror;
+       4: ifnull        17
+       7: aload_0
+       8: aload_1
+       9: aload_2
+      10: getfield      #183                // Field com/simibubi/create/content/contraptions/StructureTransform.mirror:Lnet/minecraft/world/level/block/Mirror;
+      13: invokevirtual #189                // Method mirror:(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/block/Mirror;)Lnet/minecraft/world/level/block/state/BlockState;
+      16: astore_1
+      17: aload_2
+      18: getfield      #192                // Field com/simibubi/create/content/contraptions/StructureTransform.rotationAxis:Lnet/minecraft/core/Direction$Axis;
+      21: getstatic     #159                // Field net/minecraft/core/Direction$Axis.Y:Lnet/minecraft/core/Direction$Axis;
+      24: if_acmpne     37
+      27: aload_0
+      28: aload_1
+      29: aload_2
+      30: getfield      #195                // Field com/simibubi/create/content/contraptions/StructureTransform.rotation:Lnet/minecraft/world/level/block/Rotation;
+      33: invokevirtual #199                // Method rotate:(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/block/Rotation;)Lnet/minecraft/world/level/block/state/BlockState;
+      36: areturn
+      37: aload_2
+      38: aload_1
+      39: getstatic     #114                // Field FACING:Lnet/minecraft/world/level/block/state/properties/DirectionProperty;
+      42: invokevirtual #152                // Method net/minecraft/world/level/block/state/BlockState.getValue:(Lnet/minecraft/world/level/block/state/properties/Property;)Ljava/lang/Comparable;
+      45: checkcast     #32                 // class net/minecraft/core/Direction
+      48: invokevirtual #200                // Method com/simibubi/create/content/contraptions/StructureTransform.rotateFacing:(Lnet/minecraft/core/Direction;)Lnet/minecraft/core/Direction;
+      51: astore_3
+      52: aload_2
+      53: getfield      #192                // Field com/simibubi/create/content/contraptions/StructureTransform.rotationAxis:Lnet/minecraft/core/Direction$Axis;
+      56: aload_3
+      57: invokevirtual #49                 // Method net/minecraft/core/Direction.getAxis:()Lnet/minecraft/core/Direction$Axis;
+      60: if_acmpne     87
+      63: aload_2
+      64: getfield      #195                // Field com/simibubi/create/content/contraptions/StructureTransform.rotation:Lnet/minecraft/world/level/block/Rotation;
+      67: invokevirtual #169                // Method net/minecraft/world/level/block/Rotation.ordinal:()I
+      70: iconst_2
+      71: irem
+      72: iconst_1
+      73: if_icmpne     87
+      76: aload_1
+      77: getstatic     #9                  // Field AXIS_ALONG_FIRST_COORDINATE:Lnet/minecraft/world/level/block/state/properties/BooleanProperty;
+      80: invokevirtual #175                // Method net/minecraft/world/level/block/state/BlockState.cycle:(Lnet/minecraft/world/level/block/state/properties/Property;)Ljava/lang/Object;
+      83: checkcast     #119                // class net/minecraft/world/level/block/state/BlockState
+      86: astore_1
+      87: aload_1
+      88: getstatic     #114                // Field FACING:Lnet/minecraft/world/level/block/state/properties/DirectionProperty;
+      91: aload_3
+      92: invokevirtual #118                // Method net/minecraft/world/level/block/state/BlockState.setValue:(Lnet/minecraft/world/level/block/state/properties/Property;Ljava/lang/Comparable;)Ljava/lang/Object;
+      95: checkcast     #119                // class net/minecraft/world/level/block/state/BlockState
+      98: areturn
+
+  public boolean hasShaftTowards(net.minecraft.world.level.LevelReader, net.minecraft.core.BlockPos, net.minecraft.world.level.block.state.BlockState, net.minecraft.core.Direction);
+    Code:
+       0: aload         4
+       2: invokevirtual #49                 // Method net/minecraft/core/Direction.getAxis:()Lnet/minecraft/core/Direction$Axis;
+       5: aload_0
+       6: aload_3
+       7: invokevirtual #204                // Method getRotationAxis:(Lnet/minecraft/world/level/block/state/BlockState;)Lnet/minecraft/core/Direction$Axis;
+      10: if_acmpne     17
+      13: iconst_1
+      14: goto          18
+      17: iconst_0
+      18: ireturn
+
+  static {};
+    Code:
+       0: ldc           #208                // String axis_along_first
+       2: invokestatic  #210                // Method net/minecraft/world/level/block/state/properties/BooleanProperty.create:(Ljava/lang/String;)Lnet/minecraft/world/level/block/state/properties/BooleanProperty;
+       5: putstatic     #9                  // Field AXIS_ALONG_FIRST_COORDINATE:Lnet/minecraft/world/level/block/state/properties/BooleanProperty;
+       8: return
+}
