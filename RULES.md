@@ -18,6 +18,45 @@
 
 ---
 
+## 〇之二、设计总原则：物理体权威（架构铁律，优先级最高）
+
+> **位置与运动的权威 = Sable 物理体自身。**
+> **Create 的 Train / TravellingPoint = 被喂食的消费者。**
+> **方向永远是：物理体 → Create。**
+
+先有物理体的真实运动，再把结果写进 Create；
+绝不先让 Create 算出"该走多远"，再把物理体摆到那个位置。
+
+### 必须
+
+| 项 | 做法 |
+|---|---|
+| 速度来源 | 由速度传感器读数（姿态差分）反推：`train.speed = measuredVelocity().dot(trackTangent) / 20.0` |
+| 推进距离 | 实际推进量 = 物理体本 tick 的真实位移 |
+| 到站判定 | 交给 Create 原生的 `frontSignalListener` 自然触发 → `arriveAt` → `destinationReached` |
+| 唯一速度来源 | 全项目只允许存在一个速度测量入口（`measuredVelocity()`） |
+
+### 禁止
+
+| 项 | 原因 |
+|---|---|
+| 让 `Navigation.tick()` 的速度指令生效（`targetSpeed` / `approachTargetSpeed`） | 会和物理体互相拉扯，两个权威打架 |
+| 手写 `arriveAt` 补丁（如 `距离 <= 0.4 → train.arriveAt()`） | 绕过边点监听，不清 `navigation.destination`，状态机永久卡死 |
+| 直接赋值 `train.speed = 目标速度` 当作驱动手段 | 那是"Create 权威"的做法，与本原则相反 |
+| 用刚体质心线速度代替点位速度 | 不含旋转贡献，过弯、转向时测量偏小 |
+
+### 判断标准
+
+遇到任何"让列车动起来"的需求，先问一句：
+
+> **这个改动里，是谁在决定列车走多远？**
+
+- 答"物理体" → 符合本原则
+- 答"Create / 代码直接设定" → 违反本原则，必须重新设计
+
+详细推导见 `docs/DESIGN-physics-authority.md`。
+
+---
 ## 一、三条铁律
 
 ### 铁律 1：本机已存在的事实 —— 先读，绝不猜
@@ -200,4 +239,5 @@ evidence: docs/evidence/simulated-DirectionalGearshiftBlockEntity-getRotationSpe
 ## 八、一句话总结
 
 > **能读的不猜，不能读的问；猜了要标注，被纠正要停。**
+> **物理体决定列车怎么动，Create 只负责记账。**
 > **参考任何模组，先把它的字节码读出来，再动手写自己的。**
