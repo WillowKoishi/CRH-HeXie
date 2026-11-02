@@ -69,10 +69,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     private final int[] outputs = new int[SignalChannel.VALUES.length];
 
 
-    /** 出加载区代理：物理体不在场时用推力模型推进虚空列车。 */
 
-    /** 当前是否已挂起（物理体已撤下）。 */
-    private boolean suspended = false;
 
     /** 时刻表里的站点名列表（顺序 = 条目顺序）。 */
     private final java.util.List<String> stopNames = new java.util.ArrayList<>();
@@ -254,10 +251,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     public void serverTick() {
         updateMeasuredSpeed();
 
-        // [EXP-UNLOAD] 实验：观察卸载/恢复是否可行。验证完删这几行 + UnloadExperiment.java
-        if (boundTrain != null && level instanceof ServerLevel expLevel) {
-            UnloadExperiment.tick(expLevel, worldPosition, this);
-        }
 
 
         // 把红石状态写进 blockstate —— 只有 blockstate 变化，
@@ -337,7 +330,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         }
 
         // ③b 手动接管：左右红石直接给影子车速度（位置由 TravellingPoint 推进，
-        //     物理体靠 followTrainPose 跟随）
         if (redstonePresent) {
             double dir = left > 0 ? 1.0 : -1.0;
             double mag = Math.max(left, right) / 15.0;
@@ -447,10 +439,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
 
     // ══════════════════════ UI 数据 ══════════════════════
 
-    /** 制动阶段序号（给 UI 显示）。 */
-    public int stageOrdinal() {
-        return 0;   // 旧的五段制动曲线已删除
-    }
 
     // ══════════════════════ 站点选择 ══════════════════════
 
@@ -560,10 +548,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         return best;
     }
 
-    /** 当前是否已挂起（物理体已撤下）。 */
-    public boolean suspended() {
-        return suspended;
-    }
 
     private void setOutput(SignalChannel channel, int value) {
         int v = Math.max(0, Math.min(15, value));
@@ -715,7 +699,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
             }
         }
         if (level != null) {
-            SubLevelSuspend.clearAnchorCache(worldPosition);
         }
         boundTrain = null;
         lastDestination = null;
@@ -795,7 +778,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         // 方块特性：制动灵敏度（缺省 3.0 格/秒²）
 
         // 瞬态状态：读档后一律复位，等本 tick 重新判定
-        suspended = false;
         stallTicks = 0;
         lastLeadPos = null;
         lastDestination = null;

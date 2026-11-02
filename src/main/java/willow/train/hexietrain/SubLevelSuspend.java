@@ -80,58 +80,8 @@ public final class SubLevelSuspend {
         }
     }
 
-    /** 兼容旧调用：现在没有锚点缓存了。 */
-    public static void clearAnchorCache(BlockPos pos) {
-    }
-
-    /** 上一 tick 影子车位置（按调度台坐标）。 */
-    private static final java.util.Map<BlockPos, net.minecraft.world.phys.Vec3> LAST_ANCHOR =
-            new java.util.concurrent.ConcurrentHashMap<>();
-
     /**
-     * 让物理体跟随影子车。
-     *
-     * <p>速度伺服而不是瞬移：目标速度 = 影子车这一 tick 的位移 × 20（格/秒），
-     * 用 addLinearAndAngularVelocity 把刚体速度拉过去。这样物理引擎仍然参与碰撞与姿态。
-     */
-    public static void followTrain(ServerLevel level, BlockPos dispatcherPos,
-                                   com.simibubi.create.content.trains.entity.Train train) {
-        if (train == null || train.carriages.isEmpty()) return;
-        ServerSubLevel sub = containing(level, dispatcherPos);
-        if (sub == null) return;
-
-        net.minecraft.world.phys.Vec3 cur;
-        try {
-            cur = train.carriages.get(0).getLeadingPoint().getPosition(train.graph);
-        } catch (Throwable t) {
-            return;
-        }
-        if (cur == null) return;
-
-        net.minecraft.world.phys.Vec3 last = LAST_ANCHOR.put(dispatcherPos.immutable(), cur);
-        if (last == null) return;
-
-        org.joml.Vector3d target = new org.joml.Vector3d(
-                (cur.x - last.x) * 20.0, (cur.y - last.y) * 20.0, (cur.z - last.z) * 20.0);
-
-        try {
-            var handle = dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle.of(sub);
-            if (handle == null || !handle.isValid()) return;
-            org.joml.Vector3d current = handle.getLinearVelocity(new org.joml.Vector3d());
-            handle.addLinearAndAngularVelocity(
-                    target.sub(current), new org.joml.Vector3d());
-        } catch (Throwable ignored) {
-        }
-    }
-    /**
-     * 取「某个局部点在子结构里的世界速度」，单位 m/s。
-     *
-     * <p>实现照抄 simulated 的速度传感器（VelocitySensorBlockEntity#getGlobalVelocity）：
-     * 把同一个局部点分别用"当前姿态"和"上一 tick 姿态"变换到世界坐标，相减再乘 20。
-     *
-     * <p>与 {@code latestLinearVelocity} / {@code RigidBodyHandle.getLinearVelocity()} 的区别：
-     * 后者是**质心线速度**，不含旋转贡献；本方法测的是该点**实际怎么动**，
-     * 转向、过弯、车体自转都被包含在内。
+     * 取某个局部点的世界速度（m/s），照抄 simulated 的速度传感器。
      *
      * @param localPos 子结构坐标系里的方块位置（就是方块自己的 worldPosition）
      */

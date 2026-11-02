@@ -23,8 +23,6 @@ public class TrainDispatcherMenu extends AbstractContainerMenu {
     public static final int DATA_LEFT = 1;
     public static final int DATA_RIGHT = 2;
     public static final int DATA_BOUND = 4;
-    public static final int DATA_SUSPENDED = 5;
-    public static final int DATA_STAGE = 6;
     public static final int DATA_DISTANCE = 7;
     public static final int DATA_STOP_COUNT = 9;
     public static final int DATA_MANUAL_MODE = 11;
@@ -123,8 +121,6 @@ public class TrainDispatcherMenu extends AbstractContainerMenu {
         cached[DATA_LEFT] = blockEntity.output(SignalChannel.LEFT);
         cached[DATA_RIGHT] = blockEntity.output(SignalChannel.RIGHT);
         cached[DATA_BOUND] = blockEntity.boundTrain() != null ? 1 : 0;
-        cached[DATA_SUSPENDED] = blockEntity.suspended() ? 1 : 0;
-        cached[DATA_STAGE] = blockEntity.stageOrdinal();
         cached[DATA_DISTANCE] = (int) Math.min(Integer.MAX_VALUE, blockEntity.distanceToTarget());
         blockEntity.refreshStopNames();
         cached[DATA_STOP_COUNT] = blockEntity.stopNames().size();
@@ -162,8 +158,6 @@ public class TrainDispatcherMenu extends AbstractContainerMenu {
     public int leftOutput()  { return data.get(DATA_LEFT); }
     public int rightOutput() { return data.get(DATA_RIGHT); }
     public boolean bound()     { return data.get(DATA_BOUND) != 0; }
-    public boolean suspended() { return data.get(DATA_SUSPENDED) != 0; }
-    public int stage()         { return data.get(DATA_STAGE); }
     public int distance()      { return data.get(DATA_DISTANCE); }
     public int stopCount()      { return data.get(DATA_STOP_COUNT); }
     public boolean manualMode() { return data.get(DATA_MANUAL_MODE) != 0; }
