@@ -14,10 +14,8 @@ public class BlockEntitySynchronizeBehaviour implements MovementBehaviour {
         BlockPos pos = context.localPos;
         BlockEntity be = context.contraption.getBlockEntityClientSide(pos);
         BlockState state = context.state;
-        if(be instanceof IContraptionMovementBlockEntity icmbe) {
+        if(be instanceof IContraptionMovementBlockEntity icmbe)
             icmbe.doMovement(context.contraption, pos, state, be);
-            icmbe.tickClientAnimation(context.world.getGameTime());
-        }
     }
 
     @Override

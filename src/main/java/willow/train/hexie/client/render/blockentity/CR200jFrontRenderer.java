@@ -17,6 +17,8 @@ import willow.train.hexie.init.client.PartialModelInit;
 import willow.train.hexie.blockentity.CR200jFrontBlockEntity;
 
 public class CR200jFrontRenderer implements BlockEntityRenderer<CR200jFrontBlockEntity> {
+    public static float STEP = 0.025f;
+    public static float STEP2 = 0.0125f;
 
     public final PartialModel FAIRING_LEFT, FAIRING_RIGHT, WIND_SHIELD_ROOT, WIND_SHIELD;
 
@@ -50,12 +52,22 @@ public class CR200jFrontRenderer implements BlockEntityRenderer<CR200jFrontBlock
         pose.translate(0.5f, -0.03f, 0.5f);
         pose.mulPose(Axis.YP.rotationDegrees(f));
         pose.translate(0, 0, 4.625f);
-        float fairingProgress = net.minecraft.util.Mth.lerp(pPartialTick, entity.previousFairing, entity.counterFairing);
+        if(fairing) {
+            if (entity.counterFairing < 1)
+                entity.counterFairing += STEP;
+            else
+                entity.counterFairing = 1;
+        } else {
+            if (entity.counterFairing > 0)
+                entity.counterFairing -= STEP;
+            else
+                entity.counterFairing = 0;
+        }
         double offset = 0, rotation = 50;
-        fairing_left.translate(0, 0, - fairingProgress * offset);
-        fairing_right.translate(0, 0, - fairingProgress * offset);
-        fairing_left.rotateYDegrees((float) (rotation * fairingProgress));
-        fairing_right.rotateYDegrees((float) (- rotation * fairingProgress));
+        fairing_left.translate(0, 0, - entity.counterFairing * offset);
+        fairing_right.translate(0, 0, - entity.counterFairing * offset);
+        fairing_left.rotateYDegrees((float) (rotation * entity.counterFairing));
+        fairing_right.rotateYDegrees((float) (- rotation * entity.counterFairing));
         fairing_left.renderInto(pose, consumer);
         fairing_right.renderInto(pose, consumer);
         pose.popPose();
@@ -69,8 +81,17 @@ public class CR200jFrontRenderer implements BlockEntityRenderer<CR200jFrontBlock
         pose.translate(0, 2.3f, 3.71f);
         pose.mulPose(Axis.XP.rotationDegrees(37.5f));
         pose.mulPose(Axis.YP.rotationDegrees(180f));
-        double px = net.minecraft.util.Mth.clamp(net.minecraft.util.Mth.lerp(pPartialTick,
-                entity.previousWindShield, entity.counterWindShield), 0, 1);
+        if(windShield || (!windShield && entity.counterWindShield >= 0 && entity.counterWindShield <= 1)) {
+            if(entity.counterWindShield > .5 + level || entity.counterWindShield < .5 - level) {
+                if (entity.counterWindShield > .5 + level)
+                    entity.counterWindShield = (float) (.5 + level);
+                else if (entity.counterWindShield < .5 - level)
+                    entity.counterWindShield = (float) (.5 - level);
+                entity.negative_direction = !entity.negative_direction;
+            }
+            entity.counterWindShield += entity.negative_direction ? - STEP2 : STEP2;
+        }
+        double px = Math.min(1, (Math.max(entity.counterWindShield, 0)));
         double angle = 2 * rotate_angle * (px - .5f);
         wind_shield_root.rotateYDegrees((float) (angle));
         wind_shield.translate(Math.sin(Math.toRadians(angle)) * radius, -.05,Math.cos(Math.toRadians(angle)) * radius);

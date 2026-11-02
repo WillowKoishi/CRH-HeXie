@@ -84,12 +84,17 @@ public final class CarriageSnapshotStore extends SavedData {
     static CarriageSnapshotStore open(ServerLevel level, DimensionDataStorage storage, Path directory) {
         requireServerThread(level);
         var factory = factory(level);
-        var existing = storage.get(factory, DATA_NAME);
+        var loadFailure = new java.util.concurrent.atomic.AtomicReference<RuntimeException>();
+        var reportingFactory = new Factory<CarriageSnapshotStore>(factory.constructor(), (tag, provider) -> {
+            try { return factory.deserializer().apply(tag, provider); }
+            catch (RuntimeException failure) { loadFailure.set(failure); throw failure; }
+        });
+        var existing = storage.get(reportingFactory, DATA_NAME);
         if (existing != null) return existing;
         Path file = directory.resolve(DATA_NAME + ".dat");
         // DimensionDataStorage catches deserialization exceptions and returns null. Do not let a
         // failed read silently become an empty store that can overwrite the original file.
-        if (!Files.notExists(file)) throw new IllegalStateException("Could not load carriage snapshots: " + file);
+        if (!Files.notExists(file)) throw new IllegalStateException("Could not load carriage snapshots: " + file, loadFailure.get());
         var created = factory.constructor().get();
         storage.set(DATA_NAME, created);
         return created;

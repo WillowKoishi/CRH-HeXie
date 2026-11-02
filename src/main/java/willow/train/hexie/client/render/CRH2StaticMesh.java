@@ -15,7 +15,6 @@ import net.minecraft.client.renderer.RenderType;
 final class CRH2StaticMesh {
     record Face(BlockPos cell, BakedQuad quad) {}
     final List<Face> faces;
-    final int reach;
 
     CRH2StaticMesh(BakedModel model, BlockState state) {
         var result = new ArrayList<Face>();
@@ -31,8 +30,6 @@ final class CRH2StaticMesh {
             }
         }
         faces = List.copyOf(result);
-        reach = faces.stream().mapToInt(f -> Math.max(Math.abs(f.cell.getX()),
-                Math.max(Math.abs(f.cell.getY()), Math.abs(f.cell.getZ())))).max().orElse(0) + 1;
     }
 
     private static void split(List<Vertex> triangle, BakedQuad source, List<Face> output) {

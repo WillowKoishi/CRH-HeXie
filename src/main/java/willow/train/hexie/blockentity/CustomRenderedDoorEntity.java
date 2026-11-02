@@ -22,7 +22,7 @@ import java.util.List;
 public class CustomRenderedDoorEntity extends SmartBlockEntity implements IContraptionMovementBlockEntity {
 
     boolean isSlideDoor = false, open = false;
-    public float animation_controller, previousAnimation;
+    public float animation_controller;
 
     public CustomRenderedDoorEntity(BlockPos pPos, BlockState pBlockState) {
         super(BlockEntitiesInit.CUSTOM_RENDERED_DOOR_ENTITY.get(), pPos, pBlockState);
@@ -47,16 +47,6 @@ public class CustomRenderedDoorEntity extends SmartBlockEntity implements IContr
     public void tick() {
         if(level == null) return;
         this.open = getBlockState().getValue(DoorBlock.OPEN);
-        tickClientAnimation(level.getGameTime());
-    }
-
-    private long animationTick = Long.MIN_VALUE;
-    @Override public void tickClientAnimation(long gameTime) {
-        if (animationTick == gameTime) return;
-        animationTick = gameTime;
-        previousAnimation = animation_controller;
-        float step = isSlideDoor ? .075f : .15f;
-        animation_controller = net.minecraft.util.Mth.clamp(animation_controller + (open ? step : -step), 0, 1);
     }
 
     public boolean isOpen(){
