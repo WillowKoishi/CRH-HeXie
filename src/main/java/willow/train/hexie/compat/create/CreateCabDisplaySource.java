@@ -13,9 +13,11 @@ final class CreateCabDisplaySource {
         if (motion == null) return CabDisplayState.speedOnly(0);
         var train = motion.compatibility() == null ? null : motion.compatibility().train(member);
         // Transitional source selection: use the console's authoritative mode when its controls are bound.
-        var mode = motion.isManuallyControlled(member) ? DmiState.Mode.MANUAL
-                : motion.hasTestCab(member) || train != null && train.automaticControlActive
-                ? DmiState.Mode.AUTOMATIC : DmiState.Mode.UNKNOWN;
+        var cabMode = motion.cabMode(member);
+        var mode = cabMode != null ? (cabMode == willow.train.hexie.vehicle.control.CabController.Mode.MANUAL
+                ? DmiState.Mode.MANUAL : DmiState.Mode.AUTOMATIC)
+                : motion.isManuallyControlled(member) ? DmiState.Mode.MANUAL
+                : train != null && train.automaticControlActive ? DmiState.Mode.AUTOMATIC : DmiState.Mode.UNKNOWN;
         var route = train == null ? TrainDisplayReadings.Route.unavailable() : train.displayRoute;
         if (train != null && train.automaticTarget != null && train.automaticTarget.stop()
                 && (route.target() == null || train.automaticTarget.distanceM() <= route.target().distanceM())) {

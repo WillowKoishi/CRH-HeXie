@@ -43,8 +43,8 @@ public record DrivingConsoleContext(SeatAccess seatAccess, BlockPos console) {
             for (Direction facing : Direction.Plane.HORIZONTAL) {
                 BlockPos console = access.seat().relative(facing);
                 var state = access.blockState(console);
-                if (state != null && state.getBlock() instanceof CRH2DrivingConsoleBlock
-                        && state.getValue(CRH2DrivingConsoleBlock.FACING) == facing)
+                if (state != null && state.getBlock() instanceof willow.train.hexie.api.cab.CabControlHost host
+                        && host.cabFacing(state) == facing)
                     return new DrivingConsoleContext(access, console);
             }
         }

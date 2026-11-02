@@ -30,7 +30,7 @@ public class SideMirrorBlockBase extends Block implements IWrenchable {
         super(pProperties);
     }
 
-    private DoorHingeSide getHinge(BlockPlaceContext pContext) {
+    public static DoorHingeSide getHinge(BlockPlaceContext pContext) {
         BlockGetter blockgetter = pContext.getLevel();
         BlockPos blockpos = pContext.getClickedPos();
         Direction direction = pContext.getHorizontalDirection();
@@ -75,7 +75,7 @@ public class SideMirrorBlockBase extends Block implements IWrenchable {
     public BlockState getStateForPlacement(BlockPlaceContext pContext) {
         return this.defaultBlockState()
                 .setValue(FACING, pContext.getHorizontalDirection())
-                .setValue(HINGE, this.getHinge(pContext));
+                .setValue(HINGE, getHinge(pContext));
     }
 
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> pBuilder) {

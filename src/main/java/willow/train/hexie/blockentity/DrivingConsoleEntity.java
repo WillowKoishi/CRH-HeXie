@@ -21,29 +21,28 @@ public final class DrivingConsoleEntity extends BlockEntity implements CabDispla
         setChanged();
     }
     private CabDisplaySource source = () -> CabDisplayState.speedOnly(0);
-    private willow.train.hexie.vehicle.control.TestCabControls benchControls = new willow.train.hexie.vehicle.control.TestCabControls();
-    private java.util.function.Supplier<willow.train.hexie.vehicle.control.TestCabControls> testSource = () -> benchControls;
+    private willow.train.hexie.vehicle.control.CabModule benchControls = new willow.train.hexie.vehicle.control.CabModule();
+    private java.util.function.Supplier<willow.train.hexie.vehicle.control.CabModule> controlsSource = () -> benchControls;
     private boolean vehicleSource;
     public boolean hasVehicleSource() { return vehicleSource; }
-    public void testSource(java.util.function.Supplier<willow.train.hexie.vehicle.control.TestCabControls> source) { testSource = source; vehicleSource = true; }
-    public willow.train.hexie.vehicle.control.TestCabControls testControls() { return testSource.get(); }
+    public void controlsSource(java.util.function.Supplier<willow.train.hexie.vehicle.control.CabModule> source) { controlsSource = source; vehicleSource = true; }
+    public willow.train.hexie.vehicle.control.CabModule controls() { return controlsSource.get(); }
+    public willow.train.hexie.vehicle.control.TestCabControls testControls() { return willow.train.hexie.vehicle.control.TestCabControls.read(controls().write()); }
     public void benchAction(int action) {
-        benchControls.action(action);
-        benchControls.controller.update(benchControls.mode(), benchControls.input(1), 0, null, 1,
-                benchControls.power == 0 && benchControls.reverser == 0);
+        willow.train.hexie.vehicle.control.TestCabControls.apply(benchControls, action, 0);
+        benchControls.controller.update(benchControls.mode(), benchControls.input(1), 0, null, 1);
         setChanged();
         if (level != null) level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
     }
     @Override protected void saveAdditional(net.minecraft.nbt.CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         if (!pendingTimetable.isEmpty()) tag.put(PENDING_TIMETABLE, pendingTimetable.copy());
-        if (getBlockState().getBlock() instanceof willow.train.hexie.blocks.locos.TestDrivingConsoleBlock)
-            tag.put("TestControls", benchControls.write());
+        tag.put("CabControls", benchControls.write());
     }
     @Override protected void loadAdditional(net.minecraft.nbt.CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         pendingTimetable = tag.getCompound(PENDING_TIMETABLE).copy();
-        benchControls = willow.train.hexie.vehicle.control.TestCabControls.read(tag.getCompound("TestControls"));
+        benchControls = willow.train.hexie.vehicle.control.CabModule.read(tag.getCompound(tag.contains("CabControls") ? "CabControls" : "TestControls"));
     }
     @Override public net.minecraft.nbt.CompoundTag getUpdateTag(net.minecraft.core.HolderLookup.Provider registries) { return saveWithoutMetadata(registries); }
     @Override public net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket getUpdatePacket() {

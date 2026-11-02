@@ -191,7 +191,7 @@ public final class AssembledVehicleMotion {
             }
             // A wrench hand-off changes the real owner; a failed projection does not.
             if (bridgeForTick != null && compatibility == null) return;
-            applyTestCabs();
+            applyCabModules();
             try {
                 runtime.tick(1.0 / 20, Set.of(), compatibility == null ? Set.of() : compatibility.motionPausedCarriages());
                 if (compatibility != null) compatibility.afterTick();
@@ -244,6 +244,15 @@ public final class AssembledVehicleMotion {
             var entry = new CompoundTag(); entry.putUUID("Carriage", id); derailed.add(entry);
         });
         tag.put("DerailedCarriages", derailed);
+        var cabModules = new ListTag();
+        controllers.forEach((id, driver) -> {
+            if (driver.cabControls == null) return;
+            var saved = new CompoundTag();
+            saved.putUUID("Carriage", id); saved.putLong("Position", driver.pos.asLong());
+            saved.putString("Facing", driver.cabFacing.getName()); saved.put("Controls", driver.cabControls.write());
+            cabModules.add(saved);
+        });
+        tag.put("CabModules", cabModules);
         return tag;
     }
 
@@ -285,6 +294,18 @@ public final class AssembledVehicleMotion {
             UUID id = ((CompoundTag) element).getUUID("Carriage");
             if (!carriages.contains(id) || !motion.derailedCarriages.add(id))
                 throw new IllegalArgumentException("Invalid derailed carriage in motion save");
+        }
+        for (var element : tag.getList(tag.contains("CabModules") ? "CabModules" : "AutomaticCabs", Tag.TAG_COMPOUND)) {
+            var saved = (CompoundTag) element;
+            UUID id = saved.getUUID("Carriage");
+            var direction = Direction.byName(saved.getString("Facing"));
+            var input = willow.train.hexie.vehicle.control.CabModule.read(saved.getCompound("Controls"));
+            if (!carriages.contains(id) || motion.controllers.containsKey(id) || direction == null
+                    || !direction.getAxis().isHorizontal())
+                throw new IllegalArgumentException("Invalid cab module in motion save");
+            var driver = new Controller(new UUID(0, 0), BlockPos.of(saved.getLong("Position")), level.getGameTime());
+            driver.attended = false; driver.cabFacing = direction; driver.cabControls = input;
+            motion.controllers.put(id, driver);
         }
         return motion;
     }
@@ -541,8 +562,8 @@ public final class AssembledVehicleMotion {
     }
 
     boolean isManuallyControlled(UUID carriage) {
-        return controllers.entrySet().stream().anyMatch(entry -> !entry.getValue().timedOut
-                && (entry.getValue().testCab == null || !entry.getValue().testCab.automatic)
+        return controllers.entrySet().stream().anyMatch(entry -> entry.getValue().attended && !entry.getValue().timedOut
+                && (entry.getValue().cabControls == null || !entry.getValue().cabControls.automatic)
                 && runtime.connected(carriage, entry.getKey()));
     }
 
@@ -554,7 +575,7 @@ public final class AssembledVehicleMotion {
     /** Both automatic operation and explicit space-to-approach use our route-based driving policy. */
     public void controlAutomatic(UUID member, willow.train.hexie.vehicle.control.AutomaticTrainControl.Target target,
                                  double serviceDeceleration) {
-        if (hasTestCab(member)) return; // Its CabController applies handles/interlocks after route data is collected.
+        if (hasCabModule(member)) return; // Its CabController applies handles/interlocks after route data is collected.
         // Manual drivers receive no automatic intervention unless they explicitly hold approach.
         if (!isAutomaticControlSelected(member)) return;
         runtime.controlsForConsist(member, willow.train.hexie.vehicle.control.AutomaticTrainControl.update(
@@ -566,17 +587,21 @@ public final class AssembledVehicleMotion {
         return controllers.entrySet().stream().anyMatch(entry -> runtime.connected(member, entry.getKey())
                 && !entry.getValue().timedOut
                 && (entry.getValue().approachingStation
-                        || entry.getValue().testCab != null && entry.getValue().testCab.automatic));
+                        || entry.getValue().cabControls != null && entry.getValue().cabControls.automatic));
     }
 
     /** Manual station approach keeps the manual actuator limits; blaze schedules use automatic limits. */
     public TrainControl.Source controlSource(UUID member) {
-        if (hasTestCab(member)) return isManuallyControlled(member) ? TrainControl.Source.CAB_MANUAL : TrainControl.Source.CAB_AUTOMATIC;
+        if (hasCabModule(member)) return cabMode(member) == willow.train.hexie.vehicle.control.CabController.Mode.MANUAL ? TrainControl.Source.CAB_MANUAL : TrainControl.Source.CAB_AUTOMATIC;
         return isManuallyControlled(member) ? TrainControl.Source.CREATE_MANUAL : TrainControl.Source.CREATE_AUTOMATIC;
     }
 
-    boolean hasTestCab(UUID member) {
-        return controllers.entrySet().stream().anyMatch(e -> e.getValue().testCab != null && runtime.connected(member, e.getKey()));
+    willow.train.hexie.vehicle.control.CabController.Mode cabMode(UUID member) {
+        return controllers.entrySet().stream().filter(e -> e.getValue().cabControls != null && runtime.connected(member,e.getKey()))
+                .map(e -> e.getValue().cabControls.mode()).findFirst().orElse(null);
+    }
+    boolean hasCabModule(UUID member) {
+        return controllers.entrySet().stream().anyMatch(e -> e.getValue().cabControls != null && runtime.connected(member, e.getKey()));
     }
 
     boolean isApproachingStation(UUID member) {
@@ -584,35 +609,51 @@ public final class AssembledVehicleMotion {
                 && e.getValue().approachingStation);
     }
 
+    /** Test fixture maps buttons to normalized common controls; it owns no runtime policy. */
     public void testCabAction(SnapshotCarriageEntity car, willow.train.hexie.blocks.locos.DrivingConsoleContext cab,
                               Player player, int action) {
+        if (!(cab.seatAccess().blockState(cab.console()).getBlock() instanceof willow.train.hexie.blocks.locos.TestDrivingConsoleBlock)) return;
+        if (!updateCabControls(car, cab, player, module -> willow.train.hexie.vehicle.control.TestCabControls.apply(module, action, runtime.speed(car.getUUID())))) return;
+        var driver = controllers.get(car.getUUID());
+        if (action == 7 && !driver.cabControls.automatic) {
+            driver.approachHeld = true; driver.lastApproachInput = level.getGameTime();
+        }
+        if (action == 8) releaseCabApproach(car.getUUID(), driver);
+        applyCabModules();
+    }
+
+    /** Shared server input entry point for any CabControlHost, including production cabs. */
+    public boolean updateCabControls(SnapshotCarriageEntity car, willow.train.hexie.blocks.locos.DrivingConsoleContext cab,
+                                    Player player, java.util.function.Consumer<willow.train.hexie.vehicle.control.CabModule> input) {
+        var state = cab.seatAccess().blockState(cab.console());
         if (!owns(car.getUUID()) || player.getVehicle() != car || cab.seatAccess().vehicle() != car
-                || !(cab.seatAccess().blockState(cab.console()).getBlock() instanceof willow.train.hexie.blocks.locos.TestDrivingConsoleBlock)
-                || isDerailed(car.getUUID())) return;
+                || !(state.getBlock() instanceof willow.train.hexie.api.cab.CabControlHost host)
+                || isDerailed(car.getUUID())) return false;
         for (var e : controllers.entrySet()) if (runtime.connected(car.getUUID(), e.getKey())
-                && (!e.getValue().player.equals(player.getUUID()) || !e.getKey().equals(car.getUUID())
-                || !e.getValue().pos.equals(cab.console()) || e.getValue().testCab == null)) return;
+                && (e.getValue().attended && !e.getValue().player.equals(player.getUUID()) || !e.getKey().equals(car.getUUID())
+                || !e.getValue().pos.equals(cab.console()) || e.getValue().cabControls == null)) return false;
         var driver = controllers.computeIfAbsent(car.getUUID(), id -> {
             var next = new Controller(player.getUUID(), cab.console(), level.getGameTime());
-            next.testCab = new willow.train.hexie.vehicle.control.TestCabControls();
+            var info = car.getContraption().getBlocks().get(cab.console());
+            var data = info == null ? null : info.nbt();
+            next.cabControls = data != null && (data.contains("CabControls") || data.contains("TestControls"))
+                    ? willow.train.hexie.vehicle.control.CabModule.read(data.getCompound(data.contains("CabControls") ? "CabControls" : "TestControls"))
+                    : host.createCabModule();
             return next;
         });
-        driver.lastInput = level.getGameTime();
-        driver.testCab.action(action);
-        if (action == 7 && !driver.testCab.automatic) {
-            driver.approachHeld = true;
-            driver.lastApproachInput = level.getGameTime();
+        driver.player = player.getUUID(); driver.attended = true;
+        driver.cabFacing = host.cabFacing(state); driver.lastInput = level.getGameTime();
+        boolean wasAutomatic = driver.cabControls.automatic;
+        input.accept(driver.cabControls);
+        driver.cabControls.input(1);
+        if (wasAutomatic != driver.cabControls.automatic) releaseCabApproach(car.getUUID(), driver);
+        var train = compatibility == null ? null : compatibility.train(car.getUUID());
+        if (train != null) {
+            if (!driver.cabControls.automatic && !driver.approachHeld) train.navigation.waitingForSignal = null;
+            if (!wasAutomatic && driver.cabControls.automatic && train.runtime.getSchedule() != null) train.runtime.paused = false;
         }
-        if (action == 8 || action == 5) releaseCabApproach(car.getUUID(), driver);
-        if (!driver.testCab.automatic && !driver.approachHeld && compatibility != null) {
-            var train = compatibility.train(car.getUUID());
-            if (train != null) train.navigation.waitingForSignal = null;
-        }
-        if (action == 5 && driver.testCab.automatic && compatibility != null) {
-            var train = compatibility.train(car.getUUID());
-            if (train != null && train.runtime.getSchedule() != null) train.runtime.paused = false;
-        }
-        applyTestCabs(); // Preserve every emergency-handle edge, including two clicks between physics ticks.
+        applyCabModules();
+        return true;
     }
 
     private void releaseCabApproach(UUID member, Controller driver) {
@@ -624,25 +665,29 @@ public final class AssembledVehicleMotion {
         driver.approachingStation = false;
     }
 
-    CompoundTag testCabFrame(UUID member) {
+    public CompoundTag cabFrame(UUID member) {
         var driver = controllers.get(member);
         var tag = new CompoundTag();
-        if (driver != null && driver.testCab != null) {
-            tag.putLong("Position", driver.pos.asLong()); tag.put("Controls", driver.testCab.write());
+        if (driver != null && driver.cabControls != null) {
+            tag.putLong("Position", driver.pos.asLong()); tag.put("Controls", driver.cabControls.write());
         }
         return tag;
     }
 
-    private void applyTestCabs() {
+    private void applyCabModules() {
         for (var e : controllers.entrySet()) {
             var driver = e.getValue();
-            if (driver.testCab == null) continue;
+            if (driver.cabControls == null) continue;
             var player = level.getPlayerByUUID(driver.player);
             var cab = willow.train.hexie.blocks.locos.DrivingConsoleContext.find(player);
-            if (cab == null || !cab.console().equals(driver.pos)) continue;
-            var input = driver.testCab;
-            int direction = cab.seatAccess().blockState(cab.console()).getValue(
-                    willow.train.hexie.blocks.locos.CRH2DrivingConsoleBlock.FACING) == forward(e.getKey()) ? 1 : -1;
+            var input = driver.cabControls;
+            if (!input.automatic && (!driver.attended || cab == null || !cab.console().equals(driver.pos)
+                    || !cab.seatAccess().vehicle().getUUID().equals(e.getKey()))) {
+                runtime.controlsForConsist(e.getKey(), input.controller.emergencyLatched() || input.parking
+                        ? TrainControl.fullBrake() : VehicleRuntime.Control.NEUTRAL);
+                continue;
+            }
+            int direction = driver.cabFacing == forward(e.getKey()) ? 1 : -1;
             var train = compatibility == null ? null : compatibility.train(e.getKey());
             if (driver.approachHeld && level.getGameTime() - driver.lastApproachInput > 20)
                 releaseCabApproach(e.getKey(), driver);
@@ -653,8 +698,7 @@ public final class AssembledVehicleMotion {
             var mode = driver.approachingStation || driver.approachHeld && train != null && train.getCurrentStation() != null
                     ? willow.train.hexie.vehicle.control.CabController.Mode.AUTOMATIC : input.mode();
             var command = input.controller.update(mode, input.input(direction), runtime.speed(e.getKey()), target,
-                    TrainControl.serviceDeceleration(runtime, e.getKey(), controlSource(e.getKey())),
-                    input.power == 0 && input.reverser == 0);
+                    TrainControl.serviceDeceleration(runtime, e.getKey(), controlSource(e.getKey())));
             runtime.controlsForConsist(e.getKey(), command);
         }
     }
@@ -882,6 +926,16 @@ public final class AssembledVehicleMotion {
     public void stopControl(SnapshotCarriageEntity entity, BlockPos pos) {
         Controller driver = controllers.get(entity.getUUID());
         if (driver == null || !driver.pos.equals(pos)) return;
+        if (driver.cabControls != null) {
+            driver.attended = false;
+            releaseCabApproach(entity.getUUID(), driver);
+            if (!driver.cabControls.automatic) {
+                runtime.controlsForConsist(entity.getUUID(), driver.cabControls.controller.emergencyLatched() || driver.cabControls.parking
+                        ? TrainControl.fullBrake() : VehicleRuntime.Control.NEUTRAL);
+                releaseCompatibilityControl(entity.getUUID());
+            }
+            return;
+        }
         controllers.remove(entity.getUUID());
         runtime.controlsForConsist(entity.getUUID(), VehicleRuntime.Control.NEUTRAL);
         releaseCompatibilityControl(entity.getUUID());
@@ -904,18 +958,23 @@ public final class AssembledVehicleMotion {
             Controller driver = entry.getValue();
             var player = level.getPlayerByUUID(driver.player);
             boolean expired = player == null || player.isSpectator();
-            if (driver.testCab != null) {
+            if (driver.cabControls != null) {
                 var cab = willow.train.hexie.blocks.locos.DrivingConsoleContext.find(player);
                 expired |= cab == null || !cab.seatAccess().vehicle().getUUID().equals(entry.getKey())
                         || !cab.console().equals(driver.pos);
+                driver.attended = !expired;
+                if (driver.cabControls.automatic) {
+                    if (expired) releaseCabApproach(entry.getKey(), driver);
+                    return false; // Automatic control belongs to the module, not its operator.
+                }
                 if (expired) {
                     releaseCabApproach(entry.getKey(), driver);
-                    runtime.controlsForConsist(entry.getKey(), driver.testCab.controller.emergencyLatched() || driver.testCab.parking
+                    runtime.controlsForConsist(entry.getKey(), driver.cabControls.controller.emergencyLatched() || driver.cabControls.parking
                             ? TrainControl.fullBrake() : VehicleRuntime.Control.NEUTRAL);
                     var train = compatibility == null ? null : compatibility.train(entry.getKey());
                     if (train != null) train.automaticControlActive = false;
                 }
-                return expired;
+                return false; // Keep all handle positions even when manual input ownership expires.
             }
             if (expired) {
                 runtime.controlsForConsist(entry.getKey(), VehicleRuntime.Control.NEUTRAL);
@@ -942,7 +1001,9 @@ public final class AssembledVehicleMotion {
     }
 
     private static final class Controller {
-        final UUID player;
+        UUID player;
+        boolean attended = true;
+        Direction cabFacing = Direction.NORTH;
         final BlockPos pos;
         long lastInput;
         long nextHud;
@@ -951,7 +1012,7 @@ public final class AssembledVehicleMotion {
         boolean approachHeld;
         long lastApproachInput;
         boolean stationMessage;
-        willow.train.hexie.vehicle.control.TestCabControls testCab;
+        willow.train.hexie.vehicle.control.CabModule cabControls;
         Controller(UUID player, BlockPos pos, long lastInput) {
             this.player = player; this.pos = pos; this.lastInput = lastInput;
         }

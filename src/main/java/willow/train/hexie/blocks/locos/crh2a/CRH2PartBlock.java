@@ -22,24 +22,37 @@ public class CRH2PartBlock extends HorizontalBlockBase {
     @Override protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition.Builder<net.minecraft.world.level.block.Block,BlockState> b) {
         super.createBlockStateDefinition(b);b.add(PART);
     }
+    public boolean hasRemoteShape() { return geometry.remote; }
+    private static boolean right(BlockState s) {
+        return s.hasProperty(CRH2PanelBlock.HINGE)&&s.getValue(CRH2PanelBlock.HINGE)==net.minecraft.world.level.block.state.properties.DoorHingeSide.RIGHT;
+    }
+    public BlockPos offset(int i,BlockState state) {
+        var p=geometry.cells.get(i);
+        if(right(state))p=new BlockPos(-p.getX(),p.getY(),p.getZ());
+        return CRH2PartShapes.rotate(p,state.getValue(FACING));
+    }
     public int partCount() { return geometry.cells.size(); }
     public BlockPos offset(int i,Direction facing) { return CRH2PartShapes.rotate(geometry.cells.get(i),facing); }
     public BlockPos root(BlockPos pos,BlockState state) {
-        int i=state.getValue(PART);return i<partCount()?pos.subtract(offset(i,state.getValue(FACING))):pos;
+        int i=state.getValue(PART);return i<partCount()?pos.subtract(offset(i,state)):pos;
     }
     @Override public net.minecraft.world.level.block.RenderShape getRenderShape(BlockState s) {
         return s.getValue(PART)==0?net.minecraft.world.level.block.RenderShape.MODEL:net.minecraft.world.level.block.RenderShape.INVISIBLE;
     }
-    public AABB placementBounds(BlockState state) { return geometry.bounds(state.getValue(FACING)); }
+    @Override public void onBlockStateChange(net.minecraft.world.level.LevelReader world, BlockPos pos, BlockState oldState, BlockState newState) {
+        if (world instanceof Level level && level.isClientSide)
+            willow.train.hexie.client.render.CRH2StaticSections.changed(world, pos, oldState, newState);
+    }
+    public AABB placementBounds(BlockState state) { return geometry.bounds(state.getValue(FACING),right(state)); }
     @Override public VoxelShape getShape(BlockState s, BlockGetter w, BlockPos p, CollisionContext c) {
-        return geometry.piece(s.getValue(PART),s.getValue(FACING));
+        return geometry.piece(s.getValue(PART),s.getValue(FACING),right(s));
     }
     @Override public VoxelShape getCollisionShape(BlockState s, BlockGetter w, BlockPos p, CollisionContext c) { return getShape(s,w,p,c); }
 
-    /** Only the two-block window and bogie skirt add a side-plane obstruction check. */
+    /** Only the two-block window adds a side-plane obstruction check. */
     public boolean canFitSide(Level level, BlockPos pos, BlockState state) {
         if (!geometry.checkSide) return true;
-        var side = geometry.get(state.getValue(FACING)).move(pos.getX(),pos.getY(),pos.getZ());
+        var side = geometry.get(state.getValue(FACING),right(state)).move(pos.getX(),pos.getY(),pos.getZ());
         var bounds = side.bounds();
         for (var at : BlockPos.betweenClosed((int)Math.floor(bounds.minX+1e-7),(int)Math.floor(bounds.minY+1e-7),(int)Math.floor(bounds.minZ+1e-7),
                 (int)Math.ceil(bounds.maxX-1e-7)-1,(int)Math.ceil(bounds.maxY-1e-7)-1,(int)Math.ceil(bounds.maxZ-1e-7)-1)) {
@@ -53,7 +66,7 @@ public class CRH2PartBlock extends HorizontalBlockBase {
 
     public void fillSide(Level level,BlockPos root,BlockState state) {
         for(int i=1;i<partCount();i++) {
-            var at=root.offset(offset(i,state.getValue(FACING)));
+            var at=root.offset(offset(i,state));
             if(level.getBlockState(at).canBeReplaced()) level.setBlock(at,state.setValue(PART,i),3);
         }
     }
@@ -63,8 +76,8 @@ public class CRH2PartBlock extends HorizontalBlockBase {
             try {
                 var root=root(pos,s);var facing=s.getValue(FACING);
                 for(int i=0;i<partCount();i++) {
-                    var at=root.offset(offset(i,facing));var other=level.getBlockState(at);
-                    if(!at.equals(pos)&&other.is(this)&&other.getValue(PART)==i&&other.getValue(FACING)==facing)level.removeBlock(at,false);
+                    var at=root.offset(offset(i,s));var other=level.getBlockState(at);
+                    if(!at.equals(pos)&&other.is(this)&&other.equals(s.setValue(PART,i)))level.removeBlock(at,false);
                 }
             } finally { CLEANING.set(false); }
         }
@@ -86,8 +99,8 @@ public class CRH2PartBlock extends HorizontalBlockBase {
         if(level.isClientSide)return net.minecraft.world.InteractionResult.SUCCESS;
         var saved=new java.util.LinkedHashMap<BlockPos,BlockState>();
         for(int i=1;i<partCount();i++) {
-            var at=root.offset(offset(i,owner.getValue(FACING)));var other=level.getBlockState(at);
-            if(other.is(this)&&other.getValue(PART)==i&&other.getValue(FACING)==owner.getValue(FACING))saved.put(at,other);
+            var at=root.offset(offset(i,owner));var other=level.getBlockState(at);
+            if(other.is(this)&&other.equals(owner.setValue(PART,i)))saved.put(at,other);
         }
         saved.keySet().forEach(at->level.setBlock(at,net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),2|64));
         if(!canFitSide(level,root,rotated)) {
@@ -102,5 +115,14 @@ public class CRH2PartBlock extends HorizontalBlockBase {
         if(!owner.is(this))return net.minecraft.world.InteractionResult.PASS;
         return super.onSneakWrenched(owner,new net.minecraft.world.item.context.UseOnContext(c.getLevel(),c.getPlayer(),c.getHand(),c.getItemInHand(),
             new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(root),c.getClickedFace(),root,false)));
+    }
+
+    @Override protected void onPlace(BlockState state,Level level,BlockPos pos,BlockState previous,boolean moving) {
+        super.onPlace(state,level,pos,previous,moving);
+        if(!level.isClientSide&&(state.getValue(PART)==0||hasRemoteShape())&&!moving)level.scheduleTick(pos,this,1);
+    }
+    @Override protected void tick(BlockState state,net.minecraft.server.level.ServerLevel level,BlockPos pos,net.minecraft.util.RandomSource random) {
+        if(hasRemoteShape()&&state.getValue(PART)!=0) {level.removeBlock(pos,false);return;}
+        if(state.getValue(PART)==0)fillSide(level,pos,state);
     }
 }

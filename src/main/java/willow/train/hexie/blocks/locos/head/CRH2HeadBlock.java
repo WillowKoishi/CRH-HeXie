@@ -13,14 +13,12 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.*;
 import net.minecraft.world.level.block.*;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.*;
 import net.minecraft.world.level.block.state.properties.*;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.phys.shapes.*;
 import com.simibubi.create.content.trains.track.ITrackBlock;
 import willow.train.hexie.blocks.bogeys.*;
-import willow.train.hexie.blockentity.CRH2HeadEntity;
 import willow.train.hexie.init.block.BlockInit;
 import willow.train.hexie.init.track.TrackBlockInit;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -28,7 +26,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 @EventBusSubscriber(modid = willow.train.hexie.Main.MOD_ID)
-public final class CRH2HeadBlock extends Block implements EntityBlock {
+public final class CRH2HeadBlock extends Block {
     public static final DirectionProperty FACING=BlockStateProperties.HORIZONTAL_FACING;
     private static final Map<ServerLevel, Map<BlockPos, Direction>> MOVED_HEADS = new WeakHashMap<>();
     public CRH2HeadBlock(Properties properties) {
@@ -43,10 +41,13 @@ public final class CRH2HeadBlock extends Block implements EntityBlock {
     }
     @Override public BlockState rotate(BlockState s,Rotation r) { return s.setValue(FACING,r.rotate(s.getValue(FACING))); }
     @Override public BlockState mirror(BlockState s,Mirror m) { return rotate(s,m.getRotation(s.getValue(FACING))); }
-    @Override public RenderShape getRenderShape(BlockState s) { return RenderShape.ENTITYBLOCK_ANIMATED; }
+    @Override public RenderShape getRenderShape(BlockState s) { return RenderShape.MODEL; }
+    @Override public void onBlockStateChange(LevelReader world, BlockPos pos, BlockState oldState, BlockState newState) {
+        if (world instanceof Level level && level.isClientSide)
+            willow.train.hexie.client.render.CRH2StaticSections.changed(world, pos, oldState, newState);
+    }
     @Override public VoxelShape getShape(BlockState s,BlockGetter w,BlockPos p,CollisionContext c) { return HeadGeometry.floor(HeadGeometry.ROOT_PART,s.getValue(FACING)); }
     @Override public VoxelShape getCollisionShape(BlockState s,BlockGetter w,BlockPos p,CollisionContext c) { return getShape(s,w,p,c); }
-    @Override public BlockEntity newBlockEntity(BlockPos p,BlockState s) { return new CRH2HeadEntity(p,s); }
     @Override public List<ItemStack> getDrops(BlockState s,LootParams.Builder b) { return List.of(asItem().getDefaultInstance()); }
     @Override public void setPlacedBy(Level w,BlockPos p,BlockState s,LivingEntity who,ItemStack stack) {
         super.setPlacedBy(w,p,s,who,stack);

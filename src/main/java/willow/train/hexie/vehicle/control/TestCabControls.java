@@ -6,8 +6,22 @@ import net.minecraft.nbt.CompoundTag;
 public final class TestCabControls {
     public int power, brake, reverser;
     public boolean automatic, parking;
-    public final CabController controller = new CabController(CabController.EmergencyRelease.HANDLE_RETURN);
+    public final CabController controller = new CabController();
 
+    /** Only the test surface uses ten notches and these numeric button IDs. */
+    public static void apply(CabModule module, int action, double speed) {
+        boolean wasEmergency = module.emergencyHandle;
+        var view = read(module.write());
+        view.action(action);
+        module.power = view.power / 10d; module.serviceBrake = Math.min(10, view.brake) / 10d;
+        module.emergencyHandle = view.brake == 11; module.reverser = view.reverser;
+        module.automatic = view.automatic; module.parking = view.parking;
+        // This fixture releases only on a fresh return from emergency, at standstill,
+        // with power and reverser reset. Other cab adapters define their own policy.
+        if (wasEmergency && !module.emergencyHandle && Math.abs(speed) < 1e-4
+                && module.power == 0 && module.reverser == 0)
+            module.controller.releaseEmergency();
+    }
     public void action(int action) {
         switch (action) {
             case 0 -> power = Math.min(10, power + 1);
@@ -34,6 +48,14 @@ public final class TestCabControls {
     }
     public static TestCabControls read(CompoundTag tag) {
         var state = new TestCabControls();
+        if (tag.contains("CabVersion")) {
+            var module = CabModule.read(tag);
+            state.power = (int)Math.round(module.power * 10);
+            state.brake = module.emergencyHandle ? 11 : (int)Math.round(module.serviceBrake * 10);
+            state.reverser = module.reverser; state.automatic = module.automatic; state.parking = module.parking;
+            if (module.controller.emergencyLatched()) state.controller.latchEmergency();
+            return state;
+        }
         state.power = Math.clamp(tag.getInt("Power"), 0, 10);
         state.brake = Math.clamp(tag.getInt("Brake"), 0, 11);
         state.reverser = Math.clamp(tag.getInt("Reverser"), -1, 1);

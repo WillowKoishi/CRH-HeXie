@@ -12,7 +12,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.storage.LevelResource;
 
-/** Removes unregistered blocks only after preserving the complete original payload. */
+/** Repairs known obsolete structure data only after backing up the complete original payload. */
 public final class MissingBlockMigration {
     private MissingBlockMigration() {}
 
@@ -51,6 +51,23 @@ public final class MissingBlockMigration {
         return id != null && !level.registryAccess().registryOrThrow(Registries.BLOCK).containsKey(id);
     }
 
+    private static boolean removeRetiredRenderEntity(CompoundTag entry, ServerLevel level) {
+        if (!entry.contains("State", Tag.TAG_COMPOUND)
+                || !entry.contains("BlockEntity", Tag.TAG_COMPOUND)) return false;
+        var name = ResourceLocation.tryParse(entry.getCompound("State").getString("Name"));
+        var registry = level.registryAccess().registryOrThrow(Registries.BLOCK);
+        if (name == null || !registry.containsKey(name)) return false;
+        var block = registry.get(name);
+        String entityId = entry.getCompound("BlockEntity").getString("id");
+        boolean retired = block instanceof willow.train.hexie.blocks.locos.crh2a.CRH2PartBlock
+                && entityId.equals("hexie:crh2a_part")
+                || block instanceof willow.train.hexie.blocks.locos.head.CRH2HeadBlock
+                && entityId.equals("hexie:crh2a_head");
+        if (!retired || block.defaultBlockState().hasBlockEntity()) return false;
+        entry.remove("BlockEntity");
+        return true;
+    }
+
     private static boolean remove(Tag tag, ServerLevel level) {
         boolean changed = false;
         if (tag instanceof CompoundTag compound) {
@@ -59,6 +76,7 @@ public final class MissingBlockMigration {
             if (compound.contains("Supports", Tag.TAG_LIST) && compound.contains("Blocks", Tag.TAG_LIST)) {
                 for (var value : compound.getList("Blocks", Tag.TAG_COMPOUND)) {
                     var block = (CompoundTag) value;
+                    changed |= removeRetiredRenderEntity(block, level);
                     if (!missing(block, level)) continue;
                     var air = new CompoundTag();
                     air.putString("Name", "minecraft:air");
@@ -71,6 +89,7 @@ public final class MissingBlockMigration {
             var changes = compound.getList("ChangedBlocks", Tag.TAG_COMPOUND);
             for (int i = changes.size() - 1; i >= 0; i--) {
                 var block = changes.getCompound(i);
+                changed |= removeRetiredRenderEntity(block, level);
                 if (!missing(block, level)) continue;
                 if (block.contains("Pos")) removed.add(block.get("Pos").copy());
                 changes.remove(i);

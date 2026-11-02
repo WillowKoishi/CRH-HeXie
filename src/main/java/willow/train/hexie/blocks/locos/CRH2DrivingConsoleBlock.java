@@ -21,7 +21,8 @@ import net.minecraft.world.level.storage.loot.LootParams;
 import java.util.List;
 
 /** Static cab furniture. Controls will be added separately. */
-public class CRH2DrivingConsoleBlock extends Block implements net.minecraft.world.level.block.EntityBlock {
+public class CRH2DrivingConsoleBlock extends Block implements net.minecraft.world.level.block.EntityBlock, willow.train.hexie.api.cab.CabControlHost {
+    @Override public Direction cabFacing(BlockState state) { return state.getValue(FACING); }
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     private static final Map<Direction, VoxelShape> SHAPES = createShapes();
     public CRH2DrivingConsoleBlock(Properties properties) {

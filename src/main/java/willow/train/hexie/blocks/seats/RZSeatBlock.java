@@ -24,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 
 public class RZSeatBlock extends SeatBlock implements IWrenchable {
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    private final java.util.Map<Direction, VoxelShape> collisions = new java.util.EnumMap<>(Direction.class);
     private final VoxelShape northShape;
     private final VoxelShape southShape;
     private final VoxelShape westShape;
@@ -32,10 +33,14 @@ public class RZSeatBlock extends SeatBlock implements IWrenchable {
     public RZSeatBlock(@NotNull Properties settings) {
         super(settings.noOcclusion(), DyeColor.BLUE);
         // Preventing lag
-        this.northShape = makeNorthShape();
-        this.southShape = makeSouthShape();
-        this.westShape = makeWestShape();
-        this.eastShape = makeEastShape();
+        this.northShape = makeNorthShape(false);
+        collisions.put(Direction.NORTH, makeNorthShape(true));
+        this.southShape = makeSouthShape(false);
+        collisions.put(Direction.SOUTH, makeSouthShape(true));
+        this.westShape = makeWestShape(false);
+        collisions.put(Direction.WEST, makeWestShape(true));
+        this.eastShape = makeEastShape(false);
+        collisions.put(Direction.EAST, makeEastShape(true));
         registerDefaultState(
                 this.stateDefinition
                         .any()
@@ -85,11 +90,11 @@ public class RZSeatBlock extends SeatBlock implements IWrenchable {
             @NotNull BlockGetter world,
             @NotNull BlockPos pos,
             @NotNull CollisionContext ctx) {
-        return getShape(state, world, pos, ctx);
+        return collisions.get(state.getValue(FACING));
     }
 
     // Generated using Blockbench
-    private static VoxelShape makeNorthShape() {
+    private static VoxelShape makeNorthShape(boolean collisionOnly) {
         VoxelShape shape = Shapes.empty();
         shape = Shapes.or(shape, Shapes.box(0.8125, 0.0625, 0.375, 0.875, 0.25, 0.625));
         shape = Shapes.or(shape, Shapes.box(0.8125, 0, 0.1875, 0.875, 0.0625, 0.8125));
@@ -97,6 +102,7 @@ public class RZSeatBlock extends SeatBlock implements IWrenchable {
         shape = Shapes.or(shape, Shapes.box(0.125, 0, 0.1875, 0.1875, 0.0625, 0.8125));
         shape = Shapes.or(shape, Shapes.box(0.1875, 0, 0.4375, 0.8125, 0.0625, 0.5625));
         shape = Shapes.or(shape, Shapes.box(0.125, 0.25, 0, 0.875, 0.5, 0.75));
+        if (collisionOnly) return shape; // Cushion and legs; omit backrest and armrests.
         shape = Shapes.or(shape, Shapes.box(0.125, 0.375, 0.578125, 0.875, 1.375, 0.828125));
         shape = Shapes.or(shape, Shapes.box(0, 0.25, 0.1875, 0.125, 0.6875, 0.8125));
         shape = Shapes.or(shape, Shapes.box(0, 0.25, 0.03125, 0.125, 0.4375, 0.1875));
@@ -111,7 +117,7 @@ public class RZSeatBlock extends SeatBlock implements IWrenchable {
     }
 
     // Generated using Blockbench
-    private static VoxelShape makeSouthShape() {
+    private static VoxelShape makeSouthShape(boolean collisionOnly) {
         VoxelShape shape = Shapes.empty();
         shape = Shapes.or(shape, Shapes.box(0.125, 0.0625, 0.375, 0.1875, 0.25, 0.625));
         shape = Shapes.or(shape, Shapes.box(0.125, 0, 0.1875, 0.1875, 0.0625, 0.8125));
@@ -119,6 +125,7 @@ public class RZSeatBlock extends SeatBlock implements IWrenchable {
         shape = Shapes.or(shape, Shapes.box(0.8125, 0, 0.1875, 0.875, 0.0625, 0.8125));
         shape = Shapes.or(shape, Shapes.box(0.1875, 0, 0.4375, 0.8125, 0.0625, 0.5625));
         shape = Shapes.or(shape, Shapes.box(0.125, 0.25, 0.25, 0.875, 0.5, 1));
+        if (collisionOnly) return shape; // Cushion and legs; omit backrest and armrests.
         shape = Shapes.or(shape, Shapes.box(0.125, 0.375, 0.171875, 0.875, 1.375, 0.421875));
         shape = Shapes.or(shape, Shapes.box(0.875, 0.25, 0.1875, 1, 0.6875, 0.8125));
         shape = Shapes.or(shape, Shapes.box(0.875, 0.25, 0.8125, 1, 0.4375, 0.96875));
@@ -133,7 +140,7 @@ public class RZSeatBlock extends SeatBlock implements IWrenchable {
     }
 
     // Generate using Blockbench
-    private static VoxelShape makeEastShape() {
+    private static VoxelShape makeEastShape(boolean collisionOnly) {
         VoxelShape shape = Shapes.empty();
         shape = Shapes.or(shape, Shapes.box(0.375, 0.0625, 0.8125, 0.625, 0.25, 0.875));
         shape = Shapes.or(shape, Shapes.box(0.1875, 0, 0.8125, 0.8125, 0.0625, 0.875));
@@ -141,6 +148,7 @@ public class RZSeatBlock extends SeatBlock implements IWrenchable {
         shape = Shapes.or(shape, Shapes.box(0.1875, 0, 0.125, 0.8125, 0.0625, 0.1875));
         shape = Shapes.or(shape, Shapes.box(0.4375, 0, 0.1875, 0.5625, 0.0625, 0.8125));
         shape = Shapes.or(shape, Shapes.box(0.25, 0.25, 0.125, 1, 0.5, 0.875));
+        if (collisionOnly) return shape; // Cushion and legs; omit backrest and armrests.
         shape = Shapes.or(shape, Shapes.box(0.171875, 0.375, 0.125, 0.421875, 1.375, 0.875));
         shape = Shapes.or(shape, Shapes.box(0.1875, 0.25, 0, 0.8125, 0.6875, 0.125));
         shape = Shapes.or(shape, Shapes.box(0.8125, 0.25, 0, 0.96875, 0.4375, 0.125));
@@ -155,7 +163,7 @@ public class RZSeatBlock extends SeatBlock implements IWrenchable {
     }
 
     // Generate using Blockbench
-    private static VoxelShape makeWestShape() {
+    private static VoxelShape makeWestShape(boolean collisionOnly) {
         VoxelShape shape = Shapes.empty();
         shape = Shapes.or(shape, Shapes.box(0.375, 0.0625, 0.125, 0.625, 0.25, 0.1875));
         shape = Shapes.or(shape, Shapes.box(0.1875, 0, 0.125, 0.8125, 0.0625, 0.1875));
@@ -163,6 +171,7 @@ public class RZSeatBlock extends SeatBlock implements IWrenchable {
         shape = Shapes.or(shape, Shapes.box(0.1875, 0, 0.8125, 0.8125, 0.0625, 0.875));
         shape = Shapes.or(shape, Shapes.box(0.4375, 0, 0.1875, 0.5625, 0.0625, 0.8125));
         shape = Shapes.or(shape, Shapes.box(0, 0.25, 0.125, 0.75, 0.5, 0.875));
+        if (collisionOnly) return shape; // Cushion and legs; omit backrest and armrests.
         shape = Shapes.or(shape, Shapes.box(0.578125, 0.375, 0.125, 0.828125, 1.375, 0.875));
         shape = Shapes.or(shape, Shapes.box(0.1875, 0.25, 0.875, 0.8125, 0.6875, 1));
         shape = Shapes.or(shape, Shapes.box(0.03125, 0.25, 0.875, 0.1875, 0.4375, 1));

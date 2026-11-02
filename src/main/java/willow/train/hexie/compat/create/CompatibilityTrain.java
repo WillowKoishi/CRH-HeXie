@@ -293,12 +293,12 @@ public final class CompatibilityTrain extends Train {
         if (bridge != null) bridge.crashed(this);
     }
 
-    @Override public boolean hasForwardConductor() {
-        return bridge != null ? bridge.motion().isAutomaticControlSelected(carriageIds.getFirst()) : super.hasForwardConductor();
-    }
-    @Override public boolean hasBackwardConductor() {
-        return bridge != null ? bridge.motion().isAutomaticControlSelected(carriageIds.getFirst()) : super.hasBackwardConductor();
-    }
+    // This adapter exposes the vehicle's cab/control module to Create navigation.
+    // The module itself supplies the timetable driver in either direction; it is not
+    // a console block, a seat passenger, or the current manual/automatic mode.
+    // Keep this independent of bridge attachment so reloads cannot lose the driver.
+    @Override public boolean hasForwardConductor() { return true; }
+    @Override public boolean hasBackwardConductor() { return true; }
 
     @Override public void detachFromTracks() {
         unresolvedGraphId = null;

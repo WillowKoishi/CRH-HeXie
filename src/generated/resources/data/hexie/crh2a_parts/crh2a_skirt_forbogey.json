@@ -5,7 +5,8 @@
     1
   ],
   "side": true,
-  "check_side": true,
+  "remote": true,
+  "check_side": false,
   "bounds": [
     -2.0,
     -0.08750000000000002,

@@ -594,11 +594,10 @@ public final class CreateTrainBridge {
         if (target == leading.distance) return false;
         boolean[] intercepted = { false };
         var listener = train.frontSignalListener();
-        boolean manualTestCab = motion.hasTestCab(train.carriageIds.getFirst())
-                && motion.isManuallyControlled(train.carriageIds.getFirst())
+        boolean manualCab = motion.cabMode(train.carriageIds.getFirst()) == willow.train.hexie.vehicle.control.CabController.Mode.MANUAL
                 && !motion.isApproachingStation(train.carriageIds.getFirst());
         double allowed = motion.route().traversePoints(leading.distance, target, (travelled, event) -> {
-            if (manualTestCab && event.getFirst() instanceof GlobalStation) return false;
+            if (manualCab && event.getFirst() instanceof GlobalStation) return false;
             boolean waypoint = CreateWaypointSupport.active(train) && event.getFirst() == train.navigation.destination;
             boolean handled = listener.test(travelled, event);
             if (waypoint && handled) {

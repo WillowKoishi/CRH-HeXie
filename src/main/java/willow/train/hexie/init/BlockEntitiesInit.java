@@ -18,9 +18,15 @@ public class BlockEntitiesInit {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, Main.MOD_ID);
 
+    // Legacy save IDs only. CRH2 shells now use static models and create no block entities.
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CRH2HeadEntity>> CRH2A_HEAD =
             BLOCK_ENTITIES.register("crh2a_head", () -> BlockEntityType.Builder.of(
                     CRH2HeadEntity::new, BlockInit.CRH2A_HEAD.get()).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CRH2PartEntity>> CRH2A_PART =
+            BLOCK_ENTITIES.register("crh2a_part", () -> BlockEntityType.Builder.of(CRH2PartEntity::new,
+                    BuiltInRegistries.BLOCK.stream().filter(block -> block instanceof willow.train.hexie.blocks.locos.crh2a.CRH2PartBlock)
+                            .toArray(Block[]::new)).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DrivingConsoleEntity>> DRIVING_CONSOLE =
             BLOCK_ENTITIES.register("driving_console", () -> BlockEntityType.Builder.of(

@@ -1,10 +1,14 @@
 {
   "parent": "minecraft:block/block",
   "loader": "neoforge:obj",
+  "ambientocclusion": false,
+  "shade_quads": false,
+  "emissive_ambient": false,
   "flip_v": true,
   "automatic_culling": false,
   "model": "hexie:models/block/crh2a/head/head.obj",
   "textures": {
     "particle": "hexie:block/crh2a/head/crh2a_head_side"
-  }
+  },
+  "render_type": "minecraft:cutout"
 }

@@ -120,11 +120,11 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
     private CabDisplayState cabDisplayState = CabDisplayState.speedOnly(0);
     public double displaySpeedKmh() { return cabDisplayState.speedKmh(); }
     public CabDisplayState cabDisplayState() { return cabDisplayState; }
-    private CompoundTag testCabFrame = new CompoundTag();
-    public willow.train.hexie.vehicle.control.TestCabControls testCabControls(BlockPos position) {
-        return testCabFrame.contains("Position") && testCabFrame.getLong("Position") == position.asLong()
-                ? willow.train.hexie.vehicle.control.TestCabControls.read(testCabFrame.getCompound("Controls"))
-                : new willow.train.hexie.vehicle.control.TestCabControls();
+    private CompoundTag cabControlFrame = new CompoundTag();
+    public willow.train.hexie.vehicle.control.CabModule cabControls(BlockPos position) {
+        return cabControlFrame.contains("Position") && cabControlFrame.getLong("Position") == position.asLong()
+                ? willow.train.hexie.vehicle.control.CabModule.read(cabControlFrame.getCompound("Controls"))
+                : new willow.train.hexie.vehicle.control.CabModule();
     }
     private final CarriagePoseInterpolation poseInterpolation = new CarriagePoseInterpolation();
     private float targetYaw, targetPitch, targetRoll;
@@ -235,7 +235,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             if (owner != null) owner.applyCurrent(this);
             var frame = new CompoundTag();
             frame.put("CabDisplay", CabDisplayStateNbt.write(CreateCabDisplaySource.read(owner, getUUID())));
-            if (owner != null) frame.put("TestCab", owner.testCabFrame(getUUID()));
+            if (owner != null) frame.put("CabControls", owner.cabFrame(getUUID()));
             frame.putDouble("X", getX()); frame.putDouble("Y", getY()); frame.putDouble("Z", getZ());
             frame.putFloat("Yaw", yaw); frame.putFloat("Pitch", pitch); frame.putFloat("Roll", roll);
             frame.putString("Forward", originalForward.getName());
@@ -355,7 +355,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             cabDisplayState = frame.contains("CabDisplay", net.minecraft.nbt.Tag.TAG_COMPOUND)
                     ? CabDisplayStateNbt.read(frame.getCompound("CabDisplay"))
                     : CabDisplayState.speedOnly(frame.getDouble("DisplaySpeedKmh"));
-            testCabFrame = frame.getCompound("TestCab");
+            cabControlFrame = frame.getCompound(frame.contains("CabControls") ? "CabControls" : "TestCab");
             setCoordinateBasis(Direction.byName(frame.getString("Forward")));
             boolean initial = !poseInterpolation.initialized();
             int steps = initial ? 0 : getType().updateInterval();
@@ -1377,7 +1377,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
                     if (be instanceof willow.train.hexie.api.cab.CabDisplayHost console)
                         console.displaySource(() -> ((SnapshotCarriageEntity) SnapshotView.this.entity).cabDisplayState());
                     if (be instanceof willow.train.hexie.blockentity.DrivingConsoleEntity console)
-                        console.testSource(() -> ((SnapshotCarriageEntity) SnapshotView.this.entity).testCabControls(info.pos()));
+                        console.controlsSource(() -> ((SnapshotCarriageEntity) SnapshotView.this.entity).cabControls(info.pos()));
                     return be;
                 }
 

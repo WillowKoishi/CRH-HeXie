@@ -26,7 +26,8 @@ import net.minecraft.world.phys.Vec3;
 public class CRH2DriverSeatBlock extends SeatBlock implements IWrenchable {
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final double DRIVER_EYE_HEIGHT = 28.0 / 16;
-    private static final Map<Direction, VoxelShape> SHAPES = createShapes();
+    private static final Map<Direction, VoxelShape> SHAPES = createShapes(false);
+    private static final Map<Direction, VoxelShape> COLLISIONS = createShapes(true);
 
     public CRH2DriverSeatBlock(Properties properties) {
         super(properties, DyeColor.BLUE);
@@ -64,7 +65,7 @@ public class CRH2DriverSeatBlock extends SeatBlock implements IWrenchable {
         return super.useItemOn(ItemStack.EMPTY, state, level, pos, player, hand, hit);
     }
 
-    private static Map<Direction, VoxelShape> createShapes() {
+    private static Map<Direction, VoxelShape> createShapes(boolean collisionOnly) {
         var shapes = new EnumMap<Direction, VoxelShape>(Direction.class);
         // Bounds of the authored chair parts, rotated once at class initialization.
         double[][] boxes = {
@@ -85,7 +86,9 @@ public class CRH2DriverSeatBlock extends SeatBlock implements IWrenchable {
         };
         for (Direction facing : Direction.Plane.HORIZONTAL) {
             VoxelShape shape = Shapes.empty();
-            for (double[] b : boxes) {
+            // First four authored parts are the pedestal, supports and cushion.
+            for (int i = 0; i < (collisionOnly ? 4 : boxes.length); i++) {
+                double[] b = boxes[i];
                 double minX = Double.POSITIVE_INFINITY, minZ = minX;
                 double maxX = Double.NEGATIVE_INFINITY, maxZ = maxX;
                 for (double x : new double[] {b[0], b[3]})
@@ -117,6 +120,6 @@ public class CRH2DriverSeatBlock extends SeatBlock implements IWrenchable {
     }
 
     @Override public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return SHAPES.get(state.getValue(FACING));
+        return COLLISIONS.get(state.getValue(FACING));
     }
 }

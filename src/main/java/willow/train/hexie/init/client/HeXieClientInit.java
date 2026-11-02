@@ -31,6 +31,7 @@ import java.util.function.Supplier;
 public class HeXieClientInit {
 
     public static void init() {
+        willow.train.hexie.client.render.CRH2StaticSections.register();
         Main.bus.addListener(willow.train.hexie.client.render.bogey.BogeyTopModel::register);
         willow.train.hexie.client.render.track.BallastCurveBuffers.register();
         willow.train.hexie.compat.HeXieSimulatedClientCompat.register(Main.bus);
@@ -71,7 +72,6 @@ public class HeXieClientInit {
     }
 
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        event.registerBlockEntityRenderer(BlockEntitiesInit.CRH2A_HEAD.get(), CRH2HeadRenderer::new);
         event.registerBlockEntityRenderer(BlockEntitiesInit.DRIVING_CONSOLE.get(),
                 willow.train.hexie.client.render.blockentity.TestDrivingConsoleRenderer::new);
         // Entity builders run before Registrate is attached to our bus. Bind directly so the

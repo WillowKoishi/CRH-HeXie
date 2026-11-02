@@ -14,7 +14,10 @@ public final class CRH2PartItem extends BlockItem {
     public CRH2PartItem(Block block, Properties properties) { super(block,properties); }
     /** Preserve the existing extension helper's chosen position and facing. */
     public InteractionResult placeAtRoot(BlockPlaceContext c, BlockPos root, Direction facing) {
-        return super.place(new RootContext(c,root,facing));
+        return placeAtRoot(c,root,getBlock().defaultBlockState().setValue(CRH2PartBlock.FACING,facing));
+    }
+    public InteractionResult placeAtRoot(BlockPlaceContext c,BlockPos root,BlockState state) {
+        return super.place(new RootContext(c,root,state));
     }
     public boolean canFit(BlockPlaceContext c, BlockPos root, BlockState state) {
         return ((CRH2PartBlock)getBlock()).canFitSide(c.getLevel(),root,state);
@@ -24,7 +27,7 @@ public final class CRH2PartItem extends BlockItem {
     }
     @Override protected BlockState getPlacementState(BlockPlaceContext c) {
         if (c instanceof RootContext root) {
-            var state=getBlock().defaultBlockState().setValue(CRH2PartBlock.FACING,root.facing);
+            var state=root.state;
             return canPlace(c,state) ? state : null;
         }
         return super.getPlacementState(c);
@@ -36,13 +39,13 @@ public final class CRH2PartItem extends BlockItem {
     }
     private static final class RootContext extends BlockPlaceContext {
         private final BlockPos root;
-        private final Direction facing;
-        RootContext(BlockPlaceContext c, BlockPos root, Direction facing) {
+        private final BlockState state;
+        RootContext(BlockPlaceContext c, BlockPos root, BlockState state) {
             super(c.getLevel(),c.getPlayer(),c.getHand(),c.getItemInHand(),new BlockHitResult(Vec3.atCenterOf(root),c.getClickedFace(),root,false));
-            this.root=root; this.facing=facing;
+            this.root=root; this.state=state;
         }
         @Override public BlockPos getClickedPos() { return root; }
-        @Override public Direction getHorizontalDirection() { return facing; }
+        @Override public Direction getHorizontalDirection() { return state.getValue(CRH2PartBlock.FACING); }
         @Override public boolean canPlace() { return getLevel().getBlockState(root).canBeReplaced(this); }
     }
 }

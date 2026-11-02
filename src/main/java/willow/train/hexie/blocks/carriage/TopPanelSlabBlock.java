@@ -112,6 +112,8 @@ public class TopPanelSlabBlock extends HorizontalBlockBase {
             net.minecraft.world.level.block.state.BlockState state, net.minecraft.world.level.Level level,
             net.minecraft.core.BlockPos pos, net.minecraft.world.entity.player.Player player,
             net.minecraft.world.InteractionHand hand, net.minecraft.world.phys.BlockHitResult hit) {
+        var placement = TrainPanelPlacement.place(stack, state, level, pos, player, hand, hit);
+        if (placement != null) return placement;
         if (stack.isEmpty()) return net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         net.minecraft.world.InteractionResult result = use(state, level, pos, player, hand, hit);
         return willow.train.hexie.compat.InteractionResults.toItemResult(result);
