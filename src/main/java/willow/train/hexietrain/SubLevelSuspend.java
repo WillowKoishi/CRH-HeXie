@@ -8,6 +8,8 @@ import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.phys.Vec3;
+import dev.ryanhcode.sable.companion.math.JOMLConversion;
+import org.joml.Vector3d;
 
 /**
  * 物理体生命周期：只做两件事 —— 找到子结构、给它挂/撤"永不被视距卸载"的票据。
@@ -119,6 +121,30 @@ public final class SubLevelSuspend {
             handle.addLinearAndAngularVelocity(
                     target.sub(current), new org.joml.Vector3d());
         } catch (Throwable ignored) {
+        }
+    }
+    /**
+     * 取「某个局部点在子结构里的世界速度」，单位 m/s。
+     *
+     * <p>实现照抄 simulated 的速度传感器（VelocitySensorBlockEntity#getGlobalVelocity）：
+     * 把同一个局部点分别用"当前姿态"和"上一 tick 姿态"变换到世界坐标，相减再乘 20。
+     *
+     * <p>与 {@code latestLinearVelocity} / {@code RigidBodyHandle.getLinearVelocity()} 的区别：
+     * 后者是**质心线速度**，不含旋转贡献；本方法测的是该点**实际怎么动**，
+     * 转向、过弯、车体自转都被包含在内。
+     *
+     * @param localPos 子结构坐标系里的方块位置（就是方块自己的 worldPosition）
+     */
+    public static Vector3d velocityAt(ServerLevel level, BlockPos localPos) {
+        ServerSubLevel sub = containing(level, localPos);
+        if (sub == null) return new Vector3d();
+        try {
+            Vector3d local = JOMLConversion.toJOML(localPos.getCenter());
+            return sub.logicalPose().transformPosition(local, new Vector3d())
+                    .sub(sub.lastPose().transformPosition(local, new Vector3d()))
+                    .mul(20.0);
+        } catch (Throwable t) {
+            return new Vector3d();
         }
     }
 }

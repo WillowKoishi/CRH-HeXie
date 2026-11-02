@@ -203,6 +203,10 @@ public class TrainDispatcherScreen extends AbstractContainerScreen<TrainDispatch
         }
 
         g.drawString(font, "物品栏", 8, 136, C_TEXT_DIM, false);
+
+        // 右下角：速度传感器读数
+        String sensor = String.format("%.1f m/s", menu.sensorSpeedCenti() / 100.0);
+        g.drawString(font, sensor, PANEL_W - 8 - font.width(sensor), 136, 0xFF1F5FBF, false);
     }
 
     /**

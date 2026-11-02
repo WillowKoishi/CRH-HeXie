@@ -115,6 +115,12 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     private int targetLogTicks = 0;
     private int lastEntrySeen = -1;
 
+    /** 速度传感器：上一 tick 测得的世界速度矢量（m/s，含旋转贡献）。 */
+    private final org.joml.Vector3d measuredVelocity = new org.joml.Vector3d();
+
+    /** 速度传感器：速度大小（m/s），低于 0.05 归零（与航空学一致）。 */
+    private double measuredSpeedMps = 0;
+
     /** 自动模式下传动要输出的方向：+1 正传、-1 反传、0 断开。 */
     private float autoDirection = 0f;
 
@@ -246,6 +252,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
 
     /** 由全局 ticker 每 tick 调用。 */
     public void serverTick() {
+        updateMeasuredSpeed();
 
 
         // 把红石状态写进 blockstate —— 只有 blockstate 变化，
@@ -814,6 +821,37 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
      * <p>手动模式下物理体是被转速驱动的，影子车要跟着它走，
      * 否则两边的位置会越差越远。
      */
+    /**
+     * 更新速度传感器读数。
+     *
+     * <p>数据来源照抄 simulated 的速度传感器：同一局部点在 current/last 姿态下的世界位移 × 20，
+     * 因此包含旋转贡献，等价于"结构上这一点实际怎么动"。
+     *
+     * <p>每 tick 调用一次，结果常驻在 {@link #measuredVelocity()} / {@link #measuredSpeedMps()}，
+     * 供 UI 显示与后续控制运算使用。
+     */
+    private void updateMeasuredSpeed() {
+        if (!(level instanceof net.minecraft.server.level.ServerLevel serverLevel)) return;
+        org.joml.Vector3d v = SubLevelSuspend.velocityAt(serverLevel, worldPosition);
+        measuredVelocity.set(v);
+        double mag = v.length();
+        measuredSpeedMps = mag > 0.05 ? mag : 0.0;      // 与航空学一致的死区
+    }
+
+    /** 速度传感器读数：速度大小（m/s）。 */
+    public double measuredSpeedMps() {
+        return measuredSpeedMps;
+    }
+
+    /** 速度传感器读数：世界速度矢量（m/s），调用方不要修改。 */
+    public org.joml.Vector3dc measuredVelocity() {
+        return measuredVelocity;
+    }
+
+    /** 速度传感器读数，放大 100 倍的整数（用于 ContainerData 同步）。 */
+    public int measuredSpeedCenti() {
+        return (int) Math.round(measuredSpeedMps * 100.0);
+    }
     private double bodySpeedAlongTrackBps() {
         try {
             if (!(level instanceof net.minecraft.server.level.ServerLevel serverLevel)) return 0;
