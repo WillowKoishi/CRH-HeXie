@@ -119,3 +119,63 @@
 6. **C 选道**（可能需要自己维护 `currentPath`）
 7. **D 货物桥接**
 8. **M4/M5 信号与道岔**
+---
+
+# 第四部分：第二轮排查结果（空壳与死代码）
+
+## 一、UI 上的"死显示"
+
+| # | 位置 | 现状 | 后果 |
+|---|---|---|---|
+| S1 | `stageOrdinal()`（BE:451） | `return 0;  // 旧的五段制动曲线已删除` | UI 阶段永远 0 |
+| S2 | `setDispatcherState(...)`（BE:431 唯一调用） | 只写死 `IDLE` | UI 状态永远"待命" |
+| S3 | `distanceToTarget()` → `TrainStateReader.read()` | 只有 `nav.destination != null` 才有距离；无导航 → 0 | UI 距离永远 0 |
+| S4 | `suspended` 字段 | 只在 `read()` 里写 false | UI 的 SUSPENDED 状态是死的 |
+
+## 二、通道类的空壳
+
+| # | 东西 | 状态 |
+|---|---|---|
+| S5 | `SignalChannel.encodeSteer(double)` | **从未被调用** |
+| S6 | `setOutput(SignalChannel.LEFT/RIGHT, 0)` | 唯一写入点是常量 0 |
+| S7 | `train.manualSteer` | **从未赋值**（Create 里无导航时靠它选道） |
+| S8 | `SignalChannel.reverseStage(...)` | 需确认是否被调用（制动多段逻辑） |
+
+**→ 岔道选道这条链：通道完整、编码器完整、无线发送完整，但"值"永远是 0。**
+
+## 三、遗漏的功能闭环（结构性）
+
+| # | 缺口 | 依据 |
+|---|---|---|
+| G1 | `train.speed` 在自动模式下无回写 | 全项目只有手动模式写 |
+| G2 | `station.reserveFor(train)` 未调用 | `getPresentTrain()` 需要它 |
+| G3 | `runtime.state = IN_TRANSIT` 未管理 | `destinationReached()` 的前置 |
+| G4 | `carriage.storage.attachExternal(...)` 未接 | 货舱是空的 |
+| G5 | `presentConductors` 未设 true（按指示已撤销） | `DestinationInstruction.start` 第一句 |
+| G6 | `reservedSignalBlocks` 我们不维护 | 绕过导航 → 不占信号 |
+| G7 | `currentPath` 我们不维护 | 岔路口 `navigateOptions` 会 `options.get(0)` 乱选 |
+
+## 四、生命周期与资源
+
+| # | 项 | 说明 |
+|---|---|---|
+| L1 | `ACTIVE` 静态集合 | `initialize()` 加入、`remove()` 移除；**若子结构卸载时 `remove()` 不被调用 → 静态引用泄漏 + 继续 tick** |
+| L2 | `UnloadExperiment.OBS` 静态 Map | 无清理，随调度器数量增长 |
+| L3 | `[EXP-UNLOAD]` 日志 | 每 20 tick 一条，长期运行会刷屏 |
+| L4 | `SubLevelSuspend.LAST_ANCHOR` | `followTrain` 的遗留缓存，死代码但静态 Map 仍在 |
+
+## 五、待清理清单（零风险）
+
+1. `SubLevelSuspend.followTrain()` + `LAST_ANCHOR` + `clearAnchorCache()`
+2. 孤立注释「出加载区代理…虚空列车」（BE:72）
+3. `suspended` 字段 + `DATA_SUSPENDED` + UI 引用
+4. `stageOrdinal()` + `DATA_STAGE`
+5. `UnloadExperiment`（结论已出：不卸载）
+6. `encodeSteer`（若确定不用手动转向则删；若要用则接上 `manualSteer`）
+
+## 六、排查中确认的两个"看着像 bug 其实不是"
+
+| 项 | 结论 |
+|---|---|
+| `SignalChannel.brakeStrength` 的平方根补偿 | 正确：Simurail 内部会对刹车强度平方 |
+| `Carriage.travel` 里 `distance < 0` 自动从车尾开始迭代 | 正确：倒车无需特殊处理 |
