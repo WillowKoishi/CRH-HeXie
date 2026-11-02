@@ -125,3 +125,89 @@
 
 - 离开加载范围列车直接停住
 - 与"时刻表自动运行"目标冲突
+---
+
+## 五、卸载态的形态，以及能否 TP（补充取证）
+
+### 1. 出了加载范围之后，物理体去了哪里
+
+    PhysicsChunkTicketManager.update(level, container, physicsSystem, pipeline, dt):
+        if (!isChunkLoadedEnough(level, cx, cz) || !tracked.contains(pos)) {
+            object.onUnloaded(holdingMap, new ChunkPos(cx, cz));   // 移出物理步进
+            ...
+        }
+
+    ArbitraryPhysicsObject.onUnloaded(SubLevelHoldingChunkMap, ChunkPos)
+        → SubLevelHoldingChunkMap.moveToUnloaded(ServerSubLevel, ChunkPos)
+            → 生成 HoldingSubLevel
+            → allHoldingSubLevels.put(uuid, holdingSubLevel)
+            → SubLevelPhysicsSystem.arbitraryObjects 里移除
+
+`HoldingSubLevel` 的内容：
+
+    public final class HoldingSubLevel {
+        private final SubLevelData data;
+        private GlobalSavedSubLevelPointer pointer;
+        public SubLevelData data();
+    }
+
+    public final class SubLevelData {
+        private final UUID uuid;
+        private final BoundingBox3d bounds;
+        private final Pose3d pose;
+        private final List<UUID> relations;
+        private final CompoundTag fullTag;
+        private ChunkPos originLoadedChunk;
+        public Pose3d pose();
+        public CompoundTag fullTag();          // ← 可写！
+        public void setOriginLoadedChunk(ChunkPos);
+    }
+
+**结论：物理体变成了「存档数据」，没有刚体、没有 handle、不在物理系统里。**
+
+### 2. 能不能对它 TP
+
+**直接 TP：不行。** `RigidBodyHandle.of(subLevel)` 需要活的 `ServerSubLevel`，
+`teleport(Vector3dc, Quaterniondc)` 无从调用。
+
+**间接 TP：可以。** 恢复路径是公开的：
+
+    SubLevelHoldingChunkMap
+        public HoldingSubLevel getHoldingSubLevel(UUID);
+        public void loadHoldingSubLevel(HoldingSubLevel);
+
+    loadHoldingSubLevel(holding) →
+        SubLevelSerializer.fullyLoad(level, holding.data())
+            → SableNBTUtils.readPose3d(tag)      // 从 NBT 的 "pose" 键读姿态
+            → container.allocateSubLevel(uuid, x, z, pose)
+            → loaded.logicalPose().set(pose)
+        → allHoldingSubLevels.remove(uuid)
+
+也就是说：**姿态是从 `SubLevelData.fullTag()` 里的 `"pose"` 标签读出来的，
+而 `fullTag()` 返回的是可写的 `CompoundTag`**，并且有现成的写入口：
+
+    SableNBTUtils.writePose3d(Pose3d) → CompoundTag
+
+于是"卸载态传送"等价于：
+
+    HoldingSubLevel h = map.getHoldingSubLevel(uuid);
+    SubLevelData d = h.data();
+    d.fullTag().put("pose", SableNBTUtils.writePose3d(目标姿态));
+    d.pose().set(目标姿态);                              // 同步字段
+    d.setOriginLoadedChunk(new ChunkPos(目标x >> 4, 目标z >> 4));
+    map.loadHoldingSubLevel(h);
+
+### 3. 三个风险
+
+| 风险 | 说明 |
+|---|---|
+| 目标区块必须已加载 | 否则刚复活就被 `isChunkLoadedEnough` 再踢回 HoldingSubLevel |
+| 速度不会被保留 | `SubLevelData` 里**没有任何速度字段**，复活后是静止的，速度必须由外部注入 |
+| 失败会静默 | 恢复失败时只打一行 `Failed to load holding sub-level ... This is a problem.` |
+
+### 4. 对方案的结论
+
+- "进场把物理体传送过来"**技术上成立**，但路径是 **改 NBT pose → loadHoldingSubLevel**，
+  不是 `RigidBodyHandle.teleport`
+- 因为卸载态根本没有速度，**速度连续性的责任完全落在我们自己的「点」上**
+- 这与「点是本体、物理体是化身」的设计完全吻合
