@@ -254,11 +254,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     public void serverTick() {
         updateMeasuredSpeed();
 
-        // [EXP-UNLOAD] 实验：观察卸载/恢复是否可行。验证完删这几行 + UnloadExperiment.java
-        if (boundTrain != null && level instanceof ServerLevel expLevel) {
-            UnloadExperiment.tick(expLevel, worldPosition, this);
-        }
-
 
         // 把红石状态写进 blockstate —— 只有 blockstate 变化，
         // Create 的动力学网络才会重新计算传动比。
@@ -289,38 +284,9 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         }
     }
 
-    /**
-     * 给影子列车补"列车员"标志。
-     *
-     * <p>Create 的 DestinationInstruction.start() 第一道门就是：
-     * <pre>if (!train.hasForwardConductor() && !train.hasBackwardConductor()) return null;</pre>
-     * 没有列车员，连 findPathTo 都不会调用，时刻表永远卡在 PRE_TRANSIT。
-     *
-     * <p>我们的列车没有 CarriageContraptionEntity，presentConductors 永远是 false。
-     * 这里直接把它置为 true —— 该字段是 public，且会写进存档。
-     *
-     * <p>注意：Carriage.updateConductors() 在"没有实体"时会提前 return，
-     * 不会覆盖我们写入的值，所以只需设一次。
-     */
-    private void ensureConductors(Train train) {
-        try {
-            if (train == null || train.carriages.isEmpty()) return;
-            for (var carriage : train.carriages) {
-                var pc = carriage.presentConductors;
-                if (pc == null || !Boolean.TRUE.equals(pc.getFirst()) || !Boolean.TRUE.equals(pc.getSecond())) {
-                    carriage.presentConductors = net.createmod.catnip.data.Couple.create(true, true);
-                    HexieTrain.LOGGER.info("[HexieTrain][conductor] 已为列车补上列车员标志（否则寻路不会启动）");
-                }
-            }
-        } catch (Throwable t) {
-            HexieTrain.LOGGER.warn("[HexieTrain][conductor] 补标志失败: {}", t.toString());
-        }
-    }
-
     /** 自动：读列车状态 → 制动曲线 → 三通道输出 + 反向传动。 */
     private void tickAutomated() {
         Train train = Create.RAILWAYS.trains.get(boundTrain);
-        ensureConductors(train);
         if (train == null) {
             HexieTrain.LOGGER.warn("[HexieTrain][run] RAILWAYS 里找不到列车 {}，解除绑定", boundTrain);
             boundTrain = null;
