@@ -22,14 +22,12 @@ public final class SnapshotCarriageVisual extends ContraptionVisual<SnapshotCarr
     private record Entry(BlockPos position, AbstractBogeyBlockEntity blockEntity, BogeyStyle style, BogeyVisual visual) {}
     private final List<Entry> bogeys = new ArrayList<>();
     private final PoseStack pose = new PoseStack();
-    private final boolean compatibleTransparency = ModList.get().isLoaded("sable") && ModList.get().isLoaded("veil");
-    private int compatibleStructureVersion = Integer.MIN_VALUE;
 
     public SnapshotCarriageVisual(VisualizationContext context, SnapshotCarriageEntity entity, float partialTick) {
-        super(context, entity, partialTick);
+        super(CompatibleCarriageVisual.context(context, () -> entity.getContraption() == null
+                ? null : entity.getContraption().getOrCreateClientContraptionLazy()), entity, partialTick);
         lightPaddingBlocks = DEFAULT_LIGHT_PADDING + 2;
         animate(partialTick);
-        updateCompatibleTransparency();
     }
 
     @Override
@@ -43,18 +41,7 @@ public final class SnapshotCarriageVisual extends ContraptionVisual<SnapshotCarr
     @Override
     protected void beginFrame(DynamicVisual.Context context) {
         super.beginFrame(context);
-        updateCompatibleTransparency();
         animate(context.partialTick());
-    }
-
-    private void updateCompatibleTransparency() {
-        if (!compatibleTransparency || compatibleStructureVersion == lastStructureVersion) return;
-        var model = CompatibleCarriageVisual.createCompatibleStructure(entity.getContraption().getOrCreateClientContraptionLazy());
-        if (model != null) {
-            embedding.instancerProvider().instancer(InstanceTypes.TRANSFORMED, model).stealInstance(structure);
-            structure.setChanged();
-        }
-        compatibleStructureVersion = lastStructureVersion;
     }
 
     private void animate(float partialTick) {

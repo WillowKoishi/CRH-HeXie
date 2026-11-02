@@ -18,7 +18,7 @@ import java.util.List;
 public class OBJRenderableEndFaceEntity extends SmartBlockEntity implements IContraptionMovementBlockEntity {
 
     public Couple<PartialModel> doorModels;
-    public float counter = 0f;
+    public float counter = 0f, previousCounter = 0f;
     public boolean isDoorOpen;
     public boolean isRotateDoor;
     public boolean inContraption = false;
@@ -38,6 +38,15 @@ public class OBJRenderableEndFaceEntity extends SmartBlockEntity implements ICon
     public void tick() {
         if(level == null) return;
         this.isDoorOpen = getBlockState().getValue(DoorBlock.OPEN);
+        tickClientAnimation(level.getGameTime());
+    }
+
+    private long animationTick = Long.MIN_VALUE;
+    @Override public void tickClientAnimation(long gameTime) {
+        if (animationTick == gameTime) return;
+        animationTick = gameTime;
+        previousCounter = counter;
+        counter = net.minecraft.util.Mth.clamp(counter + (isDoorOpen ? .075f : -.075f), 0, 1);
     }
 
     @Override

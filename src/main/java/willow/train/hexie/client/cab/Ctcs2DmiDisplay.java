@@ -31,9 +31,9 @@ public final class Ctcs2DmiDisplay implements CabDisplay {
     @Override public int height() { return 600; }
 
     /** Metres (= blocks), relative to the shell front centre; keep the shell mount a rigid transform.
-     * The LCD sits 0.1 mm ahead of its backing. No arbitrary display-size parameter is exposed here. */
+     * The LCD sits 1 mm ahead of its backing. No arbitrary display-size parameter is exposed here. */
     public Matrix4f mainSurface() {
-        return new Matrix4f().translation(-.106f, .072f, -.0024f)
+        return new Matrix4f().translation(-.106f, .072f, -.0015f)
                 .scale(.211328f / width(), -.158496f / height(), .211328f / width());
     }
 
@@ -50,9 +50,13 @@ public final class Ctcs2DmiDisplay implements CabDisplay {
     private static final class Draw implements Ctcs2DmiLayout.Canvas {
         private final PoseStack pose;
         private final MultiBufferSource buffers;
+        // Pixel-space Z is also scaled by mainSurface. The former 0.0001 step
+        // became 0.0000000264 blocks and was lost in depth precision.
+        private static final float DEPTH_STEP = .025f;
+        private float depth;
         Draw(PoseStack pose, MultiBufferSource buffers) { this.pose = pose; this.buffers = buffers; }
         public void icon(String name, float x, float y, float w, float h) {
-            depth += .0001f;
+            depth += DEPTH_STEP;
             var texture = ResourceLocation.fromNamespaceAndPath("hexie", "textures/component/dmi/display/" + name + ".png");
             var out = buffers.getBuffer(RenderType.entityCutoutNoCull(texture));
             imageVertex(out,x,y,0,0); imageVertex(out,x+w,y,1,0);
@@ -71,10 +75,8 @@ public final class Ctcs2DmiDisplay implements CabDisplay {
             float dx = (float) (-(ey - y) / length * width / 2), dy = (float) ((ex - x) / length * width / 2);
             quad(x + dx, y + dy, ex + dx, ey + dy, ex - dx, ey - dy, x - dx, y - dy, color);
         }
-        private float depth = 0;
         public void quad(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4, int color) {
-            // Depth increment prevents coplanar panels/marks; all geometry remains behind front panel.
-            depth += .0001f;
+            depth += DEPTH_STEP;
             var out = buffers.getBuffer(RenderType.entityCutoutNoCull(WHITE));
             vertex(out, x1, y1, color); vertex(out, x2, y2, color);
             vertex(out, x3, y3, color); vertex(out, x4, y4, color);
@@ -90,7 +92,7 @@ public final class Ctcs2DmiDisplay implements CabDisplay {
             text(text, x, y, Math.min(scale, width / Math.max(1, Minecraft.getInstance().font.width(text))), color);
         }
         public void text(String text, float x, float y, float scale, int color) {
-            pose.pushPose(); pose.translate(x, y, depth += .0001f); pose.scale(scale, scale, 1);
+            pose.pushPose(); pose.translate(x, y, depth += DEPTH_STEP); pose.scale(scale, scale, 1);
             Minecraft.getInstance().font.drawInBatch(text, 0, 0, color, false, pose.last().pose(), buffers,
                     Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             pose.popPose();

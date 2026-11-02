@@ -21,9 +21,6 @@ public final class CabController {
     /** Restoring an emergency never synthesizes a release edge. */
     public void latchEmergency() { emergencyLatched = true; }
 
-    /** The input adapter has already validated its own release gesture and interlocks. */
-    public void releaseEmergency() { emergencyLatched = false; }
-
     /** An absent automatic target holds the service brake; manual mode ignores route targets. */
     public VehicleRuntime.Control update(Mode mode, Input input, double speed,
                                          AutomaticTrainControl.Target target, double serviceDeceleration) {
@@ -38,6 +35,9 @@ public final class CabController {
         if (!Double.isFinite(speed))
             throw new IllegalArgumentException("Non-finite cab speed");
         if (input.emergencyHandle) emergencyLatched = true;
+        else if (input.releaseButton && Math.abs(speed) < 1e-4
+                && input.power == 0 && input.reverser == 0)
+            emergencyLatched = false;
         if (emergencyLatched || input.parkingBrake) return TrainControl.fullBrake();
         if (mode == Mode.MANUAL)
             return TrainControl.service(TrainControl.Source.CAB_MANUAL, input.power * input.reverser, input.serviceBrake);

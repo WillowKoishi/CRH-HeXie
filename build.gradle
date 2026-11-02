@@ -30,12 +30,6 @@ sourceSets.main.resources {
 }
 
 repositories {
-    // Resolve the pinned Sodium distribution without pulling mutable transitive API artifacts.
-    maven {
-        name = 'CaffeineMC'
-        url = 'https://maven.caffeinemc.net/releases'
-        content { includeGroup 'net.caffeinemc' }
-    }
     maven {
         name = 'Modrinth'
         url = 'https://api.modrinth.com/maven'
@@ -43,6 +37,8 @@ repositories {
     }
     maven { url = 'https://maven.createmod.net' }
     maven { url = 'https://maven.ithundxr.dev/snapshots' }
+    maven { url = 'https://maven.crystaelix.com/releases' }
+
     mavenCentral()
 }
 
@@ -66,26 +62,9 @@ sourceSets {
 
 // Optional rendering stack for development clients only (not published or loaded by servers).
 configurations {
-    sodiumDistribution {
-        canBeConsumed = false
-        transitive = false
-    }
     clientRenderingMods
     renderingClientRuntimeOnly.extendsFrom(clientRenderingMods)
     renderingAeronauticsClientRuntimeOnly.extendsFrom(clientRenderingMods)
-}
-
-// Sodium's outer jar contains early graphics services and compatibility classes;
-// its nested jar contains the renderer. Keep both together, outside the dev
-// classpath, so NeoForge's mods-directory service discovery loads them normally.
-// Copy (not Sync) preserves every other mod installed in these directories.
-def installClientSodium = tasks.register('installClientSodium', Copy) {
-    from(configurations.sodiumDistribution) { rename { 'hexie-dev-sodium.jar' } }
-    into layout.projectDirectory.dir('run-1.21.1/client-create/mods')
-}
-def installAeronauticsClientSodium = tasks.register('installAeronauticsClientSodium', Copy) {
-    from(configurations.sodiumDistribution) { rename { 'hexie-dev-sodium.jar' } }
-    into layout.projectDirectory.dir('run-1.21.1/client/mods')
 }
 
 neoForge {
@@ -137,7 +116,6 @@ neoForge {
 
 dependencies {
 
-    sodiumDistribution "net.caffeinemc:sodium-neoforge:${sodium_version}"
     clientRenderingMods "maven.modrinth:iris:${iris_version}"
 
     implementation("com.simibubi.create:create-${minecraft_version}:${create_version}") {
@@ -149,12 +127,12 @@ dependencies {
     runtimeOnly "dev.engine-room.flywheel:flywheel-neoforge-${minecraft_version}:${flywheel_version}"
 
     // Optional integration API; Simurail is not bundled into the published jar.
-    compileOnly("maven.modrinth:create-simurail:${simurail_version}") {
+    compileOnly("com.crystaelix:simurail:${simurail_version}") {
         transitive = false
     }
 
     // Aviation mods are selected per run, independently of the client rendering stack.
-    aeronauticsRuntimeOnly "maven.modrinth:create-simurail:${simurail_version}"
+    aeronauticsRuntimeOnly "com.crystaelix:simurail:${simurail_version}"
     aeronauticsRuntimeOnly "maven.modrinth:create-aeronautics:${aeronautics_version}"
     aeronauticsRuntimeOnly "maven.modrinth:sable:${sable_version}"
 }
@@ -168,16 +146,16 @@ tasks.named('processResources', ProcessResources).configure {
 
 // The isolated smoke-test launcher copies these mods instead of putting them on its boot classpath.
 tasks.register('writeClientRenderingMods') {
-    inputs.files(configurations.clientRenderingMods, configurations.sodiumDistribution)
+    inputs.files(configurations.clientRenderingMods)
     def destination = layout.buildDirectory.file('moddev/clientRenderingMods.txt')
     outputs.file(destination)
     doLast {
-        destination.get().asFile.text = (configurations.clientRenderingMods.files + configurations.sodiumDistribution.files)
+        destination.get().asFile.text = configurations.clientRenderingMods.files
                 .collect { it.absolutePath }.sort().join(System.lineSeparator()) + System.lineSeparator()
     }
 }
-tasks.named('prepareClientRun').configure { dependsOn('writeClientRenderingMods', installClientSodium) }
-tasks.named('prepareClientAeronauticsRun').configure { dependsOn('writeClientRenderingMods', installAeronauticsClientSodium) }
+tasks.named('prepareClientRun').configure { dependsOn('writeClientRenderingMods') }
+tasks.named('prepareClientAeronauticsRun').configure { dependsOn('writeClientRenderingMods') }
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'

@@ -29,8 +29,8 @@ public final class DrivingConsoleEntity extends BlockEntity implements CabDispla
     public willow.train.hexie.vehicle.control.CabModule controls() { return controlsSource.get(); }
     public willow.train.hexie.vehicle.control.TestCabControls testControls() { return willow.train.hexie.vehicle.control.TestCabControls.read(controls().write()); }
     public void benchAction(int action) {
-        willow.train.hexie.vehicle.control.TestCabControls.apply(benchControls, action, 0);
-        benchControls.controller.update(benchControls.mode(), benchControls.input(1), 0, null, 1);
+        willow.train.hexie.vehicle.control.TestCabControls.apply(benchControls, action);
+        benchControls.update(benchControls.mode(), 1, 0, null, 1);
         setChanged();
         if (level != null) level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
     }

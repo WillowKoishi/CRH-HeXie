@@ -9,18 +9,18 @@ public final class TestCabControls {
     public final CabController controller = new CabController();
 
     /** Only the test surface uses ten notches and these numeric button IDs. */
-    public static void apply(CabModule module, int action, double speed) {
+    public static void apply(CabModule module, int action) {
+        if (action == 7) { module.approachHeld = true; return; }
+        if (action == 8 || action == -1) { module.approachHeld = false; return; }
+        if (action < 0 || action > 6) return;
         boolean wasEmergency = module.emergencyHandle;
         var view = read(module.write());
         view.action(action);
         module.power = view.power / 10d; module.serviceBrake = Math.min(10, view.brake) / 10d;
         module.emergencyHandle = view.brake == 11; module.reverser = view.reverser;
         module.automatic = view.automatic; module.parking = view.parking;
-        // This fixture releases only on a fresh return from emergency, at standstill,
-        // with power and reverser reset. Other cab adapters define their own policy.
-        if (wasEmergency && !module.emergencyHandle && Math.abs(speed) < 1e-4
-                && module.power == 0 && module.reverser == 0)
-            module.controller.releaseEmergency();
+        // The fixture defines the gesture; the common controller owns release interlocks.
+        module.releaseButton |= wasEmergency && !module.emergencyHandle;
     }
     public void action(int action) {
         switch (action) {

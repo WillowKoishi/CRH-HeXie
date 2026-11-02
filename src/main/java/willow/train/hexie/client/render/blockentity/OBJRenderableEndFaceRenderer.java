@@ -15,7 +15,6 @@ import willow.train.hexie.blocks.carriage.OBJRenderableEndFaceBlock;
 import willow.train.hexie.blockentity.OBJRenderableEndFaceEntity;
 
 public class OBJRenderableEndFaceRenderer implements BlockEntityRenderer<OBJRenderableEndFaceEntity> {
-    public static float STEP = 0.025f;
 
     public OBJRenderableEndFaceRenderer(BlockEntityRendererProvider.Context pContext) {}
 
@@ -44,26 +43,22 @@ public class OBJRenderableEndFaceRenderer implements BlockEntityRenderer<OBJRend
         leftBuffer.translate(-.6f, 0, .375f);
         rightBuffer.translate(-.6f, 0, -.375f);
         float level1 = .4f;
-        if(isOpened && pBlockEntity.counter < 1) {
-            pBlockEntity.counter += STEP;
-        } else if (!isOpened && pBlockEntity.counter > 0) {
-            pBlockEntity.counter -= STEP;
-        }
+        float counter = net.minecraft.util.Mth.lerp(pPartialTick, pBlockEntity.previousCounter, pBlockEntity.counter);
         if(!is_rotate) {
             double distance_1 = .2;
-            if (pBlockEntity.counter < level1) {
-                double ctk = (pBlockEntity.counter)/level1;
+            if (counter < level1) {
+                double ctk = (counter)/level1;
                 leftBuffer.translate(ctk * distance_1, 0, 0);
                 rightBuffer.translate(ctk * distance_1, 0, 0);
             } else {
-                double ctk = (pBlockEntity.counter - level1) / (1 - level1);
+                double ctk = (counter - level1) / (1 - level1);
                 double level2 = .4;
                 leftBuffer.translate(distance_1, 0, ctk * level2);
                 rightBuffer.translate(distance_1, 0, -ctk * level2);
             }
         } else {
-            leftBuffer.rotateYDegrees(pBlockEntity.counter * 90);
-            rightBuffer.rotateYDegrees(- pBlockEntity.counter * 90);
+            leftBuffer.rotateYDegrees(counter * 90);
+            rightBuffer.rotateYDegrees(- counter * 90);
         }
         leftBuffer.renderInto(pose, pBufferSource.getBuffer(RenderType.cutout()));
         rightBuffer.renderInto(pose, pBufferSource.getBuffer(RenderType.cutout()));
