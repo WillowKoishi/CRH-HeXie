@@ -254,6 +254,11 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     public void serverTick() {
         updateMeasuredSpeed();
 
+        // [EXP-UNLOAD] 实验：观察卸载/恢复是否可行。验证完删这几行 + UnloadExperiment.java
+        if (boundTrain != null && level instanceof ServerLevel expLevel) {
+            UnloadExperiment.tick(expLevel, worldPosition, this);
+        }
+
 
         // 把红石状态写进 blockstate —— 只有 blockstate 变化，
         // Create 的动力学网络才会重新计算传动比。
