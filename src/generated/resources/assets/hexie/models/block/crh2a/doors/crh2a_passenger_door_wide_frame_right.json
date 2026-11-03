@@ -1,0 +1,15 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "ambientocclusion": false,
+  "shade_quads": false,
+  "emissive_ambient": false,
+  "model": "hexie:models/block/crh2a/doors/crh2a_passenger_door_wide_frame_right.obj",
+  "flip_v": true,
+  "automatic_culling": false,
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "particle": "hexie:block/crh2a/doors/crh2a_passenger_door_wide_frame",
+    "frame": "hexie:block/crh2a/doors/crh2a_passenger_door_wide_frame"
+  }
+}

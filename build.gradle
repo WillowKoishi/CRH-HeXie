@@ -100,7 +100,8 @@ neoForge {
             client()
             sourceSet = sourceSets.aeronauticsRailx
             ideName = 'Client - Create + Aeronautics + RailX'
-            gameDirectory = layout.projectDirectory.dir('run-1.21.1/client-aeronautics-railx').asFile
+            // Share the aviation environment, including every locally installed mod.
+            gameDirectory = layout.projectDirectory.dir('run-1.21.1/client').asFile
         }
         server {
             server()

@@ -112,9 +112,9 @@ public class CustomRenderedDoorRenderer implements BlockEntityRenderer<CustomRen
         }));
         pose.translate(-.5,0,-.5);
         if (door.isSlideDoor()) {
-            CachedBuffers.partial(PartialModelInit.CRH2_PASSENGER_DOOR_FRAME, state)
+            CachedBuffers.partial(PartialModelInit.crh2PassengerDoorFrame(door.doorType(), entity.hasPassengerFrame(), mirrored), state)
                     .disableDiffuse().light(light).overlay(overlay).renderInto(pose,consumer);
-            pose.translate((mirrored ? -1 : 1)*door.SLIDE_TRAVEL*value,0,0);
+            pose.translate((mirrored ? -1 : 1)*door.slideTravel()*value,0,0);
         } else {
             double x = door.cabHingeX(mirrored);
             double z = door.cabHingeZ();
@@ -122,10 +122,10 @@ public class CustomRenderedDoorRenderer implements BlockEntityRenderer<CustomRen
             pose.mulPose(Axis.YP.rotationDegrees(door.cabAngleDegrees(mirrored,entity.crh2Progress(partial))));
             pose.translate(-x,0,-z);
         }
-        CachedBuffers.partial(PartialModelInit.crh2DoorLayer(door.isSlideDoor(), mirrored, false), state).disableDiffuse()
+        CachedBuffers.partial(PartialModelInit.crh2DoorLayer(door.doorType(), mirrored, false), state).disableDiffuse()
                 .light(light).overlay(overlay).renderInto(pose,consumer);
         // The same authored leaf, UVs and animated pose; only window pixels occupy this layer.
-        CachedBuffers.partial(PartialModelInit.crh2DoorLayer(door.isSlideDoor(), mirrored, true), state).disableDiffuse()
+        CachedBuffers.partial(PartialModelInit.crh2DoorLayer(door.doorType(), mirrored, true), state).disableDiffuse()
                 .light(light).overlay(overlay).renderInto(pose,shellBuffers.getBuffer(RenderType.translucent()));
         pose.popPose();
     }

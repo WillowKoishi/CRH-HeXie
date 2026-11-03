@@ -6,6 +6,8 @@ import com.simibubi.create.foundation.blockEntity.SmartBlockEntity;
 import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour;
 import net.createmod.catnip.data.Couple;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -23,6 +25,13 @@ public class CustomRenderedDoorEntity extends SmartBlockEntity implements IContr
 
     boolean isSlideDoor = false, open = false;
     public float animation_controller;
+    private boolean passengerFrame;
+    public boolean hasPassengerFrame() { return passengerFrame; }
+    public void togglePassengerFrame() {
+        passengerFrame = !passengerFrame;
+        setChanged();
+        sendData();
+    }
     private final net.createmod.catnip.animation.LerpedFloat crh2Animation = net.createmod.catnip.animation.LerpedFloat.linear();
     public float crh2Progress() { return crh2Animation.getValue(); }
     public float crh2Progress(float partial) { return crh2Animation.getValue(partial); }
@@ -41,6 +50,17 @@ public class CustomRenderedDoorEntity extends SmartBlockEntity implements IContr
         if(pBlockState.getBlock() instanceof CustomRenderedDoorBlock block)
             this.isSlideDoor = block.isSlideDoor();
         crh2Animation.startWithValue(open ? 1 : 0);
+    }
+
+    @Override protected void write(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
+        super.write(tag, registries, clientPacket);
+        if (passengerFrame) tag.putBoolean("PassengerFrame", true);
+        else tag.remove("PassengerFrame");
+    }
+
+    @Override protected void read(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
+        super.read(tag, registries, clientPacket);
+        passengerFrame = tag.getBoolean("PassengerFrame");
     }
 
     public boolean isLeftSide(BlockState state) {

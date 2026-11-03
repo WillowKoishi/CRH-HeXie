@@ -1,0 +1,15 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "ambientocclusion": false,
+  "shade_quads": false,
+  "emissive_ambient": false,
+  "model": "hexie:models/block/crh2a/doors/crh2a_passenger_door_wide_left.obj",
+  "flip_v": true,
+  "automatic_culling": false,
+  "textures": {
+    "particle": "hexie:block/crh2a/doors/crh2a_passenger_door_wide",
+    "door": "hexie:block/crh2a/doors/crh2a_passenger_door_wide_glass"
+  },
+  "render_type": "minecraft:translucent"
+}

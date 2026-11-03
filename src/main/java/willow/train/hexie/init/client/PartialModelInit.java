@@ -3,6 +3,7 @@ package willow.train.hexie.init.client;
 import dev.engine_room.flywheel.lib.model.baked.PartialModel;
 
 import willow.train.hexie.Main;
+import willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock;
 
 
 
@@ -10,10 +11,18 @@ public class PartialModelInit {
 
     public static final PartialModel
             CRH2_PASSENGER_DOOR_FRAME = block("crh2a/doors/crh2a_passenger_door_frame"),
+            CRH2_PASSENGER_DOOR_FRAME_LEFT = block("crh2a/doors/crh2a_psg_door_frame_left"),
+            CRH2_PASSENGER_DOOR_FRAME_RIGHT = block("crh2a/doors/crh2a_psg_door_frame_right"),
             CRH2_PASSENGER_DOOR_LEFT_BODY = block("crh2a/doors/crh2a_passenger_door_left_body"),
             CRH2_PASSENGER_DOOR_RIGHT_BODY = block("crh2a/doors/crh2a_passenger_door_right_body"),
             CRH2_PASSENGER_DOOR_LEFT_GLASS = block("crh2a/doors/crh2a_passenger_door_left_glass"),
             CRH2_PASSENGER_DOOR_RIGHT_GLASS = block("crh2a/doors/crh2a_passenger_door_right_glass"),
+            CRH2_WIDE_PASSENGER_DOOR_LEFT_BODY = block("crh2a/doors/crh2a_passenger_door_wide_left_body"),
+            CRH2_WIDE_PASSENGER_DOOR_RIGHT_BODY = block("crh2a/doors/crh2a_passenger_door_wide_right_body"),
+            CRH2_WIDE_PASSENGER_DOOR_LEFT_GLASS = block("crh2a/doors/crh2a_passenger_door_wide_left_glass"),
+            CRH2_WIDE_PASSENGER_DOOR_RIGHT_GLASS = block("crh2a/doors/crh2a_passenger_door_wide_right_glass"),
+            CRH2_WIDE_PASSENGER_DOOR_FRAME_LEFT = block("crh2a/doors/crh2a_passenger_door_wide_frame_left"),
+            CRH2_WIDE_PASSENGER_DOOR_FRAME_RIGHT = block("crh2a/doors/crh2a_passenger_door_wide_frame_right"),
             CRH2_CAB_DOOR_LEFT_BODY = block("crh2a/doors/crh2a_cab_door_left_body"),
             CRH2_CAB_DOOR_RIGHT_BODY = block("crh2a/doors/crh2a_cab_door_right_body"),
             CRH2_CAB_DOOR_LEFT_GLASS = block("crh2a/doors/crh2a_cab_door_left_glass"),
@@ -85,8 +94,19 @@ public class PartialModelInit {
         return PartialModel.of(Main.asResource("block/" + path));
     }
 
-    public static PartialModel crh2DoorLayer(boolean passenger, boolean mirrored, boolean glass) {
-        if (passenger) {
+    public static PartialModel crh2PassengerDoorFrame(CRH2DoorBlock.Type type, boolean framed, boolean mirrored) {
+        if (type == CRH2DoorBlock.Type.WIDE_PASSENGER)
+            return mirrored ? CRH2_WIDE_PASSENGER_DOOR_FRAME_RIGHT : CRH2_WIDE_PASSENGER_DOOR_FRAME_LEFT;
+        if (!framed) return CRH2_PASSENGER_DOOR_FRAME;
+        return mirrored ? CRH2_PASSENGER_DOOR_FRAME_RIGHT : CRH2_PASSENGER_DOOR_FRAME_LEFT;
+    }
+
+    public static PartialModel crh2DoorLayer(CRH2DoorBlock.Type type, boolean mirrored, boolean glass) {
+        if (type == CRH2DoorBlock.Type.WIDE_PASSENGER) {
+            if (glass) return mirrored ? CRH2_WIDE_PASSENGER_DOOR_RIGHT_GLASS : CRH2_WIDE_PASSENGER_DOOR_LEFT_GLASS;
+            return mirrored ? CRH2_WIDE_PASSENGER_DOOR_RIGHT_BODY : CRH2_WIDE_PASSENGER_DOOR_LEFT_BODY;
+        }
+        if (type == CRH2DoorBlock.Type.PASSENGER) {
             if (glass) return mirrored ? CRH2_PASSENGER_DOOR_RIGHT_GLASS : CRH2_PASSENGER_DOOR_LEFT_GLASS;
             return mirrored ? CRH2_PASSENGER_DOOR_RIGHT_BODY : CRH2_PASSENGER_DOOR_LEFT_BODY;
         }
