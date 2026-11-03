@@ -27,6 +27,9 @@ public final class CRH2HeadEntity extends SmartBlockEntity implements MenuProvid
     @Override protected void write(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
         super.write(tag, registries, clientPacket); tag.putString("HeadNumber", number);
     }
+    @Override public void writeSafe(CompoundTag tag,HolderLookup.Provider registries) {
+        super.writeSafe(tag,registries);tag.putString("HeadNumber",number);
+    }
     @Override protected void read(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
         super.read(tag, registries, clientPacket); number = clean(tag.getString("HeadNumber"));
     }

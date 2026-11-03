@@ -23,6 +23,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import willow.train.hexie.network.s2c.CarriagePlayerStatePacket;
 import willow.train.hexie.network.s2c.ContraptionSeatPositionPacket;
 import willow.train.hexie.blocks.seats.HardSeatPositionRequest;
+import willow.train.hexie.blocks.seats.HardSeatPosition;
 import willow.train.hexie.vehicle.assembly.CarriageSnapshotStore;
 import willow.train.hexie.vehicle.player.CarriedPlayerConnection;
 
@@ -31,6 +32,11 @@ import willow.train.hexie.vehicle.player.CarriedPlayerConnection;
 public final class CarriagePlayerPersistence {
     private static final String KEY = "HexieFollowingCarriage";
     private static final Map<ServerPlayer, Boolean> PENDING = new WeakHashMap<>();
+    private static final java.util.Set<ServerPlayer> RESTORE_TELEPORTS =
+            java.util.Collections.newSetFromMap(new WeakHashMap<>());
+    private static final Map<ServerPlayer, RestoreTicket> TICKETS = new WeakHashMap<>();
+    private record RestoreTicket(net.minecraft.server.level.ServerLevel level, ChunkPos chunk) {}
+
     private static final Map<ServerPlayer, WeakReference<SnapshotCarriageEntity>> TRACKED_RESTORE_CAR = new WeakHashMap<>();
 
     @SubscribeEvent public static void startTracking(PlayerEvent.StartTracking event) {
@@ -63,12 +69,8 @@ public final class CarriagePlayerPersistence {
         if (seat != null) {
             tag.putLong("Seat", seat.asLong());
             int seatIndex = car.getContraption().getSeats().indexOf(seat);
-            for (int position = 0; position < 4; position++) {
-                if (player.getTags().contains("seats" + seatIndex + "," + position)) {
-                    tag.putInt("SeatPosition", position);
-                    break;
-                }
-            }
+            int position = HardSeatPosition.read(player.getTags(), seatIndex);
+            if (position >= 0) tag.putInt("SeatPosition", position);
         }
         tag.putUUID("Carriage", car.getUUID());
         tag.putString("Dimension", car.level().dimension().location().toString());
@@ -82,8 +84,7 @@ public final class CarriagePlayerPersistence {
         if (event.getEntity() instanceof ServerPlayer player) {
             // PlayerList fires this before saving the player and removing its entity.
             save(player);
-            PENDING.remove(player);
-            TRACKED_RESTORE_CAR.remove(player);
+            forgetSession(player);
         }
     }
 
@@ -92,11 +93,29 @@ public final class CarriagePlayerPersistence {
                 && player.getPersistentData().getCompound(KEY).hasUUID("Carriage")) PENDING.put(player, false);
     }
 
+    @SubscribeEvent public static void changedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player && PENDING.containsKey(player)
+                && !RESTORE_TELEPORTS.contains(player)) cancel(player);
+    }
+
+    @SubscribeEvent public static void died(net.neoforged.neoforge.event.entity.living.LivingDeathEvent event) {
+        if (!event.isCanceled() && event.getEntity() instanceof ServerPlayer player && PENDING.containsKey(player))
+            cancel(player);
+    }
+
+    @SubscribeEvent public static void cloned(PlayerEvent.Clone event) {
+        if (event.getOriginal() instanceof ServerPlayer old && PENDING.containsKey(old)) {
+            cancel(old);
+            event.getEntity().getPersistentData().remove(KEY);
+        }
+    }
+
     @SubscribeEvent public static void tick(PlayerTickEvent.Post event) {
         if (event.getEntity() instanceof ServerPlayer player && PENDING.containsKey(player)) restore(player);
     }
 
     static void restore(ServerPlayer player) {
+        if (player.isDeadOrDying() || player.isRemoved()) { cancel(player); return; }
         var tag = player.getPersistentData().getCompound(KEY);
         if (!tag.hasUUID("Carriage")) { finish(player); return; }
         var dimension = ResourceLocation.tryParse(tag.getString("Dimension"));
@@ -116,7 +135,7 @@ public final class CarriagePlayerPersistence {
                 var dimensional = nativeCar.getDimensionalIfPresent(level.dimension());
                 if (dimensional == null || dimensional.positionAnchor == null) return;
                 var chunk = new ChunkPos(BlockPos.containing(dimensional.positionAnchor));
-                level.getChunkSource().addRegionTicket(TicketType.POST_TELEPORT, chunk, 3, player.getId());
+                keepTicket(player, level, chunk);
                 nativeCar.manageEntities(level);
                 car = level.getEntity(id) instanceof SnapshotCarriageEntity loaded ? loaded : null;
                 if (car == null) return;
@@ -125,14 +144,14 @@ public final class CarriagePlayerPersistence {
             if (car == null) {
                 // Legacy non-native entities are restored from their existing entity chunk save.
                 var chunk = new ChunkPos(tag.getLong("Chunk"));
-                level.getChunkSource().addRegionTicket(TicketType.POST_TELEPORT, chunk, 3, player.getId());
+                keepTicket(player, level, chunk);
                 return;
             }
         }
-        level.getChunkSource().addRegionTicket(TicketType.POST_TELEPORT, new ChunkPos(car.blockPosition()), 3, player.getId());
+        keepTicket(player, level, new ChunkPos(car.blockPosition()));
         Vec3 world = CarriagePlayerSupport.frame(car, 1).world(local);
         if (!Boolean.TRUE.equals(PENDING.get(player))) {
-            player.teleportTo(level, world.x, world.y, world.z, player.getYRot(), player.getXRot());
+            teleport(player, level, world);
             PENDING.put(player, true);
             return;
         }
@@ -159,20 +178,14 @@ public final class CarriagePlayerPersistence {
                     // restored seat state even when the player was already mounted.
                     PacketDistributor.sendToPlayer(player,
                             new ContraptionSeatMappingPacket(car.getId(), car.getContraption().getSeatMapping()));
-                    for (int position = 0; position < 4; position++) {
-                        if (player.getTags().contains("seats" + seatIndex + "," + position)) {
-                            PacketDistributor.sendToPlayer(player, new ContraptionSeatPositionPacket(
-                                    car.getUUID(), player.getUUID(), seatIndex, position));
-                            break;
-                        }
-                    }
+                    int position = HardSeatPosition.read(player.getTags(), seatIndex);
+                    if (position >= 0) PacketDistributor.sendToPlayer(player, new ContraptionSeatPositionPacket(
+                            car.getUUID(), player.getUUID(), seatIndex, position));
                     // Vanilla sends the changed passenger list; if already mounted, it
                     // was included in pairing. Do not resend it: the client ejects its
                     // passengers before applying that list, clearing hard-seat metadata.
                     CarriagePlayerSupport.detach(player);
-                    PENDING.remove(player);
-                    TRACKED_RESTORE_CAR.remove(player);
-                    player.getPersistentData().remove(KEY);
+                    cancel(player);
                     return;
                 }
             }
@@ -182,9 +195,7 @@ public final class CarriagePlayerPersistence {
         if (player.connection instanceof CarriedPlayerConnection connection) connection.hexie$carry(delta);
         CarriagePlayerSupport.accept(player, car, local);
         PacketDistributor.sendToPlayer(player, new CarriagePlayerStatePacket(player.getId(), car.getId(), car.getUUID(), local, true));
-        PENDING.remove(player);
-        TRACKED_RESTORE_CAR.remove(player);
-        player.getPersistentData().remove(KEY);
+        cancel(player);
     }
 
     private static void finish(ServerPlayer player) {
@@ -195,10 +206,34 @@ public final class CarriagePlayerPersistence {
             Vec3 fallback = new Vec3(tag.getDouble("WorldX"), tag.getDouble("WorldY"), tag.getDouble("WorldZ"));
             if (level != null && Double.isFinite(fallback.lengthSqr())
                     && (player.serverLevel() != level || player.position().distanceToSqr(fallback) > 1e-8))
-                player.teleportTo(level, fallback.x, fallback.y, fallback.z, player.getYRot(), player.getXRot());
+                teleport(player, level, fallback);
         }
+        cancel(player);
+    }
+    private static void keepTicket(ServerPlayer player, net.minecraft.server.level.ServerLevel level, ChunkPos chunk) {
+        var previous = TICKETS.put(player, new RestoreTicket(level, chunk));
+        if (previous != null && (previous.level() != level || !previous.chunk().equals(chunk)))
+            previous.level().getChunkSource().removeRegionTicket(TicketType.POST_TELEPORT, previous.chunk(), 3, player.getId());
+        level.getChunkSource().addRegionTicket(TicketType.POST_TELEPORT, chunk, 3, player.getId());
+    }
+
+    private static void teleport(ServerPlayer player, net.minecraft.server.level.ServerLevel level, Vec3 position) {
+        RESTORE_TELEPORTS.add(player);
+        try { player.teleportTo(level, position.x, position.y, position.z, player.getYRot(), player.getXRot()); }
+        finally { RESTORE_TELEPORTS.remove(player); }
+    }
+
+    private static void forgetSession(ServerPlayer player) {
         PENDING.remove(player);
         TRACKED_RESTORE_CAR.remove(player);
+        var ticket = TICKETS.remove(player);
+        if (ticket != null) ticket.level().getChunkSource().removeRegionTicket(
+                TicketType.POST_TELEPORT, ticket.chunk(), 3, player.getId());
+    }
+
+    private static void cancel(ServerPlayer player) {
+        forgetSession(player);
         player.getPersistentData().remove(KEY);
     }
+
 }

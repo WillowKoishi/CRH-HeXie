@@ -1,0 +1,1001 @@
+{
+  "hexie:original_color_window_25": {
+    "creative_order": 0,
+    "palettes": {
+      "Carriage25BGZK": 0
+    }
+  },
+  "hexie:original_color_window_25_sealed": {
+    "creative_order": 1,
+    "palettes": {
+      "Carriage25BGZK": 1
+    }
+  },
+  "hexie:original_25b_door": {
+    "creative_order": 2,
+    "palettes": {
+      "Carriage25B": 5
+    }
+  },
+  "hexie:end_face_25b_original": {
+    "creative_order": 3,
+    "palettes": {
+      "Carriage25B": 13
+    }
+  },
+  "hexie:panel_25b_original_bottom": {
+    "creative_order": 4,
+    "palettes": {
+      "Carriage25B": 1
+    }
+  },
+  "hexie:panel_25b_original_mid": {
+    "creative_order": 5,
+    "palettes": {
+      "Carriage25B": 2
+    }
+  },
+  "hexie:panel_25b_original_window": {
+    "creative_order": 6,
+    "palettes": {
+      "Carriage25B": 7
+    }
+  },
+  "hexie:original_color_window_25b_wide": {
+    "creative_order": 7,
+    "palettes": {
+      "Carriage25B": 11
+    }
+  },
+  "hexie:original_color_window_25b_small": {
+    "creative_order": 8,
+    "palettes": {
+      "Carriage25B": 9
+    }
+  },
+  "hexie:original_color_window_25b_toilet": {
+    "creative_order": 9,
+    "palettes": {
+      "Carriage25B": 10
+    }
+  },
+  "hexie:original_color_window_25b_wide_sealed": {
+    "creative_order": 10,
+    "palettes": {
+      "Carriage25B": 12
+    }
+  },
+  "hexie:original_color_window_25b": {
+    "creative_order": 11,
+    "palettes": {
+      "Carriage25B": 8
+    }
+  },
+  "hexie:panel_25b_original_top": {
+    "creative_order": 12,
+    "palettes": {
+      "Carriage25B": 3
+    }
+  },
+  "hexie:panel_25b_original_top_b": {
+    "creative_order": 13,
+    "palettes": {
+      "Carriage25B": 4
+    }
+  },
+  "hexie:slab_25b_original_top": {
+    "creative_order": 14,
+    "palettes": {
+      "Carriage25B": 0
+    }
+  },
+  "hexie:ladder_25b_original": {
+    "creative_order": 15,
+    "palettes": {
+      "Carriage25B": 6
+    }
+  },
+  "hexie:end_face_25b_original_upper": {
+    "creative_order": 16,
+    "palettes": {
+      "Carriage25B": 14
+    }
+  },
+  "hexie:end_face_25b_original_upper_2": {
+    "creative_order": 17,
+    "palettes": {
+      "Carriage25B": 15
+    }
+  },
+  "hexie:end_face_25g_original": {
+    "creative_order": 18,
+    "palettes": {
+      "Carriage25G": 13
+    }
+  },
+  "hexie:direct_drainage_toilet_original_25b": {
+    "creative_order": 19,
+    "palettes": {
+      "Carriage25B": 16
+    }
+  },
+  "hexie:original_25g_door": {
+    "creative_order": 20,
+    "palettes": {
+      "Carriage25G": 4
+    }
+  },
+  "hexie:panel_25g_original_bottom": {
+    "creative_order": 21,
+    "palettes": {
+      "Carriage25G": 1
+    }
+  },
+  "hexie:panel_25g_original_mid": {
+    "creative_order": 22,
+    "palettes": {
+      "Carriage25G": 2
+    }
+  },
+  "hexie:panel_25g_original_window": {
+    "creative_order": 23,
+    "palettes": {
+      "Carriage25G": 6
+    }
+  },
+  "hexie:original_color_window_25g_small": {
+    "creative_order": 24,
+    "palettes": {
+      "Carriage25G": 7
+    }
+  },
+  "hexie:original_color_window_25g_small_2": {
+    "creative_order": 25,
+    "palettes": {
+      "Carriage25G": 8
+    }
+  },
+  "hexie:original_color_window_25g_sealed_small": {
+    "creative_order": 26,
+    "palettes": {
+      "Carriage25G": 9
+    }
+  },
+  "hexie:original_color_window_25g_toilet": {
+    "creative_order": 27,
+    "palettes": {
+      "Carriage25G": 10
+    }
+  },
+  "hexie:original_color_window_25g_wide": {
+    "creative_order": 28,
+    "palettes": {
+      "Carriage25G": 11
+    }
+  },
+  "hexie:original_color_window_25g_wide_sealed": {
+    "creative_order": 29,
+    "palettes": {
+      "Carriage25G": 12
+    }
+  },
+  "hexie:panel_25g_original_top": {
+    "creative_order": 30,
+    "palettes": {
+      "Carriage25G": 3
+    }
+  },
+  "hexie:slab_25g_original_top": {
+    "creative_order": 31,
+    "palettes": {
+      "Carriage25G": 0
+    }
+  },
+  "hexie:ladder_25g_original": {
+    "creative_order": 32,
+    "palettes": {
+      "Carriage25G": 5
+    }
+  },
+  "hexie:isolation_door_25bg": {
+    "creative_order": 33
+  },
+  "hexie:end_face_25g_original_upper": {
+    "creative_order": 34,
+    "palettes": {
+      "Carriage25G": 14
+    }
+  },
+  "hexie:end_face_25g_original_upper_2": {
+    "creative_order": 35,
+    "palettes": {
+      "Carriage25G": 15
+    }
+  },
+  "hexie:direct_drainage_toilet_original_25g": {
+    "creative_order": 36,
+    "palettes": {
+      "Carriage25G": 16
+    }
+  },
+  "hexie:slab_25z_original_top": {
+    "creative_order": 37,
+    "palettes": {
+      "Carriage25Z": 0
+    }
+  },
+  "hexie:original_25z_door": {
+    "creative_order": 38,
+    "palettes": {
+      "Carriage25Z": 21
+    }
+  },
+  "hexie:carport_25z_ac_side": {
+    "creative_order": 39,
+    "palettes": {
+      "Carriage25Z": 19
+    }
+  },
+  "hexie:carport_25z_ac": {
+    "creative_order": 40,
+    "palettes": {
+      "Carriage25Z": 20
+    }
+  },
+  "hexie:original_color_window_25z_small2": {
+    "creative_order": 41,
+    "palettes": {
+      "Carriage25Z": 8
+    }
+  },
+  "hexie:original_color_window_25z_toilet": {
+    "creative_order": 42,
+    "palettes": {
+      "Carriage25Z": 9
+    }
+  },
+  "hexie:direct_drainage_toilet_original_25z": {
+    "creative_order": 43,
+    "palettes": {
+      "Carriage25Z": 1
+    }
+  },
+  "hexie:ladder_25z_original": {
+    "creative_order": 44,
+    "palettes": {
+      "Carriage25Z": 13
+    }
+  },
+  "hexie:carport_25z": {
+    "creative_order": 45,
+    "palettes": {
+      "Carriage25Z": 18
+    }
+  },
+  "hexie:carport_centre_25z": {
+    "creative_order": 46,
+    "palettes": {
+      "Carriage25Z": 17
+    }
+  },
+  "hexie:end_face_25z_original": {
+    "creative_order": 47,
+    "palettes": {
+      "Carriage25Z": 14
+    }
+  },
+  "hexie:end_face_25z_original_upper": {
+    "creative_order": 48,
+    "palettes": {
+      "Carriage25Z": 15
+    }
+  },
+  "hexie:end_face_25z_original_upper_ac": {
+    "creative_order": 49,
+    "palettes": {
+      "Carriage25Z": 16
+    }
+  },
+  "hexie:panel_25z_original_bottom_side": {
+    "creative_order": 50,
+    "palettes": {
+      "Carriage25Z": 4
+    }
+  },
+  "hexie:panel_25z_original_bottom_line": {
+    "creative_order": 51,
+    "palettes": {
+      "Carriage25Z": 3
+    }
+  },
+  "hexie:panel_25z_original_bottom_symbol": {
+    "creative_order": 52,
+    "palettes": {
+      "Carriage25Z": 2
+    }
+  },
+  "hexie:panel_25z_original_mid": {
+    "creative_order": 53,
+    "palettes": {
+      "Carriage25Z": 5
+    }
+  },
+  "hexie:panel_25z_original_mid_side": {
+    "creative_order": 54,
+    "palettes": {
+      "Carriage25Z": 6
+    }
+  },
+  "hexie:panel_25z_original_top": {
+    "creative_order": 55,
+    "palettes": {
+      "Carriage25Z": 12
+    }
+  },
+  "hexie:original_color_window_25z_wide": {
+    "creative_order": 56,
+    "palettes": {
+      "Carriage25Z": 10
+    }
+  },
+  "hexie:original_color_window_25z": {
+    "creative_order": 57,
+    "palettes": {
+      "Carriage25Z": 7
+    }
+  },
+  "hexie:original_color_window_25z_level": {
+    "creative_order": 58,
+    "palettes": {
+      "Carriage25Z": 11
+    }
+  },
+  "hexie:original_25k_door": {
+    "creative_order": 59,
+    "palettes": {
+      "Carriage25K": 6
+    }
+  },
+  "hexie:panel_25k_original_bottom": {
+    "creative_order": 60,
+    "palettes": {
+      "Carriage25K": 2
+    }
+  },
+  "hexie:panel_25k_original_bottom_line": {
+    "creative_order": 61,
+    "palettes": {
+      "Carriage25K": 8
+    }
+  },
+  "hexie:panel_25k_original_mid": {
+    "creative_order": 62,
+    "palettes": {
+      "Carriage25K": 3
+    }
+  },
+  "hexie:panel_25k_original_window": {
+    "creative_order": 63,
+    "palettes": {
+      "Carriage25K": 9
+    }
+  },
+  "hexie:original_color_window_25k_wide": {
+    "creative_order": 64,
+    "palettes": {
+      "Carriage25K": 13
+    }
+  },
+  "hexie:original_color_window_25k_small": {
+    "creative_order": 65,
+    "palettes": {
+      "Carriage25K": 10
+    }
+  },
+  "hexie:original_color_window_25k_sealed_small": {
+    "creative_order": 66,
+    "palettes": {
+      "Carriage25K": 11
+    }
+  },
+  "hexie:original_color_window_25k_toilet": {
+    "creative_order": 67,
+    "palettes": {
+      "Carriage25K": 12
+    }
+  },
+  "hexie:original_color_window_25k_wide_sealed": {
+    "creative_order": 68,
+    "palettes": {
+      "Carriage25K": 14
+    }
+  },
+  "hexie:panel_25k_original_top": {
+    "creative_order": 69,
+    "palettes": {
+      "Carriage25K": 4
+    }
+  },
+  "hexie:panel_25k_original_symbol": {
+    "creative_order": 70,
+    "palettes": {
+      "Carriage25K": 1
+    }
+  },
+  "hexie:carport_25bgzk": {
+    "creative_order": 71,
+    "palettes": {
+      "Carriage25BGZK": 3
+    }
+  },
+  "hexie:ventiduct_25b": {
+    "creative_order": 72,
+    "palettes": {
+      "Carriage25BGZK": 2
+    }
+  },
+  "hexie:carport_25bgzkt_centre": {
+    "creative_order": 73,
+    "palettes": {
+      "Carriage25BGZK": 4
+    }
+  },
+  "hexie:carport_bsp25t_centre": {
+    "creative_order": 74,
+    "palettes": {
+      "Carriage25T": 14
+    }
+  },
+  "hexie:carport_25bgzkt_water_tank": {
+    "creative_order": 75,
+    "palettes": {
+      "Carriage25BGZK": 7
+    }
+  },
+  "hexie:carport_25bgzk_air_condition_all": {
+    "creative_order": 76,
+    "palettes": {
+      "Carriage25BGZK": 5
+    }
+  },
+  "hexie:ladder_25k_original_sliding": {
+    "creative_order": 77,
+    "palettes": {
+      "Carriage25K": 5
+    }
+  },
+  "hexie:direct_drainage_toilet_original_25k": {
+    "creative_order": 78,
+    "palettes": {
+      "Carriage25K": 21
+    }
+  },
+  "hexie:carport_25bgzk_air_condition_side": {
+    "creative_order": 79,
+    "palettes": {
+      "Carriage25BGZK": 6
+    }
+  },
+  "hexie:slab_25k_original_top": {
+    "creative_order": 80,
+    "palettes": {
+      "Carriage25K": 0
+    }
+  },
+  "hexie:end_face_25k_original": {
+    "creative_order": 81,
+    "palettes": {
+      "Carriage25K": 15
+    }
+  },
+  "hexie:end_face_25k_original_upper": {
+    "creative_order": 82,
+    "palettes": {
+      "Carriage25K": 16
+    }
+  },
+  "hexie:end_face_25k_original_upper_2": {
+    "creative_order": 83,
+    "palettes": {
+      "Carriage25K": 17
+    }
+  },
+  "hexie:end_face_25k_original_rubber": {
+    "creative_order": 84,
+    "palettes": {
+      "Carriage25K": 18
+    }
+  },
+  "hexie:end_face_25k_original_rubber_upper": {
+    "creative_order": 85,
+    "palettes": {
+      "Carriage25K": 19
+    }
+  },
+  "hexie:end_face_25k_original_rubber_upper_2": {
+    "creative_order": 86,
+    "palettes": {
+      "Carriage25K": 20
+    }
+  },
+  "hexie:original_25t_door": {
+    "creative_order": 87,
+    "palettes": {
+      "Carriage25T": 10
+    }
+  },
+  "hexie:panel_25t_original_bottom": {
+    "creative_order": 88,
+    "palettes": {
+      "Carriage25T": 1
+    }
+  },
+  "hexie:panel_25t_original_mid": {
+    "creative_order": 89,
+    "palettes": {
+      "Carriage25T": 5
+    }
+  },
+  "hexie:panel_25t_original_mid_b": {
+    "creative_order": 90,
+    "palettes": {
+      "Carriage25T": 6
+    }
+  },
+  "hexie:panel_25t_original_top_b": {
+    "creative_order": 91,
+    "palettes": {
+      "Carriage25T": 8
+    }
+  },
+  "hexie:panel_25t_original_bottom_b": {
+    "creative_order": 92,
+    "palettes": {
+      "Carriage25T": 2
+    }
+  },
+  "hexie:ladder_25t_original_sliding": {
+    "creative_order": 93,
+    "palettes": {
+      "Carriage25T": 15
+    }
+  },
+  "hexie:panel_25t_original_window": {
+    "creative_order": 94,
+    "palettes": {
+      "Carriage25T": 16
+    }
+  },
+  "hexie:original_color_window_25t_blue": {
+    "creative_order": 95,
+    "palettes": {
+      "Carriage25T": 17
+    }
+  },
+  "hexie:original_color_window_25t_sealed_blue": {
+    "creative_order": 96,
+    "palettes": {
+      "Carriage25T": 18
+    }
+  },
+  "hexie:original_color_window_25t_small": {
+    "creative_order": 97,
+    "palettes": {
+      "Carriage25T": 19
+    }
+  },
+  "hexie:original_color_window_25t_small_blue": {
+    "creative_order": 98,
+    "palettes": {
+      "Carriage25T": 20
+    }
+  },
+  "hexie:original_color_window_bsp25t_small_blue": {
+    "creative_order": 99,
+    "palettes": {
+      "Carriage25T": 30
+    }
+  },
+  "hexie:original_color_window_25t_sealed_small": {
+    "creative_order": 100,
+    "palettes": {
+      "Carriage25T": 21
+    }
+  },
+  "hexie:original_color_window_25t_sealed_small_blue": {
+    "creative_order": 101,
+    "palettes": {
+      "Carriage25T": 22
+    }
+  },
+  "hexie:original_color_window_bsp25t_sealed_small_blue": {
+    "creative_order": 102,
+    "palettes": {
+      "Carriage25T": 31
+    }
+  },
+  "hexie:original_color_window_25t_toilet": {
+    "creative_order": 103,
+    "palettes": {
+      "Carriage25T": 27
+    }
+  },
+  "hexie:original_color_window_25t_toilet_blue": {
+    "creative_order": 104,
+    "palettes": {
+      "Carriage25T": 28
+    }
+  },
+  "hexie:original_color_window_bsp25t_toilet_blue": {
+    "creative_order": 105,
+    "palettes": {
+      "Carriage25T": 32
+    }
+  },
+  "hexie:original_color_window_25t_wide": {
+    "creative_order": 106,
+    "palettes": {
+      "Carriage25T": 23
+    }
+  },
+  "hexie:original_color_window_25t_wide_blue": {
+    "creative_order": 107,
+    "palettes": {
+      "Carriage25T": 24
+    }
+  },
+  "hexie:original_color_window_bsp25t_wide_blue": {
+    "creative_order": 108,
+    "palettes": {
+      "Carriage25T": 33
+    }
+  },
+  "hexie:original_color_window_25t_wide_sealed": {
+    "creative_order": 109,
+    "palettes": {
+      "Carriage25T": 25
+    }
+  },
+  "hexie:original_color_window_25t_wide_sealed_blue": {
+    "creative_order": 110,
+    "palettes": {
+      "Carriage25T": 26
+    }
+  },
+  "hexie:original_color_window_bsp25t_wide_sealed_blue": {
+    "creative_order": 111,
+    "palettes": {
+      "Carriage25T": 34
+    }
+  },
+  "hexie:panel_25t_original_top": {
+    "creative_order": 112,
+    "palettes": {
+      "Carriage25T": 7
+    }
+  },
+  "hexie:panel_xl25t_original_top": {
+    "creative_order": 113,
+    "palettes": {
+      "Carriage25T": 9
+    }
+  },
+  "hexie:panel_25t_original_skirt": {
+    "creative_order": 114,
+    "palettes": {
+      "Carriage25T": 3
+    }
+  },
+  "hexie:panel_25t_original_skirt_side": {
+    "creative_order": 115,
+    "palettes": {
+      "Carriage25T": 4
+    }
+  },
+  "hexie:carport_25t": {
+    "creative_order": 116,
+    "palettes": {
+      "Carriage25T": 12
+    }
+  },
+  "hexie:carport_25t_toilet": {
+    "creative_order": 117,
+    "palettes": {
+      "Carriage25T": 13
+    }
+  },
+  "hexie:air_condition_bsp25t": {
+    "creative_order": 118,
+    "palettes": {
+      "Carriage25T": 41
+    }
+  },
+  "hexie:slab_25t_original_top": {
+    "creative_order": 119,
+    "palettes": {
+      "Carriage25T": 0
+    }
+  },
+  "hexie:widepanel_bsp25t_original_mid": {
+    "creative_order": 120,
+    "palettes": {
+      "Carriage25T": 29
+    }
+  },
+  "hexie:end_face_25t_original_upper": {
+    "creative_order": 121,
+    "palettes": {
+      "Carriage25T": 36
+    }
+  },
+  "hexie:end_face_25t_original_upper_2": {
+    "creative_order": 122,
+    "palettes": {
+      "Carriage25T": 37
+    }
+  },
+  "hexie:end_face_25t_original_rubber": {
+    "creative_order": 123,
+    "palettes": {
+      "Carriage25T": 38
+    }
+  },
+  "hexie:end_face_25t_original_rubber_upper": {
+    "creative_order": 124,
+    "palettes": {
+      "Carriage25T": 39
+    }
+  },
+  "hexie:end_face_25t_original_rubber_upper_2": {
+    "creative_order": 125,
+    "palettes": {
+      "Carriage25T": 40
+    }
+  },
+  "hexie:direct_drainage_toilet_original_25t": {
+    "creative_order": 126,
+    "palettes": {
+      "Carriage25T": 42
+    }
+  },
+  "hexie:marshalled_25_door": {
+    "creative_order": 127,
+    "palettes": {
+      "Marshalled25Series": 9
+    }
+  },
+  "hexie:panel_25_marshalled_bottom": {
+    "creative_order": 128,
+    "palettes": {
+      "Marshalled25Series": 5
+    }
+  },
+  "hexie:panel_25_marshalled_bottom_line": {
+    "creative_order": 129,
+    "palettes": {
+      "Marshalled25Series": 3
+    }
+  },
+  "hexie:panel_25_marshalled_mid": {
+    "creative_order": 130,
+    "palettes": {
+      "Marshalled25Series": 6
+    }
+  },
+  "hexie:panel_25_marshalled_top": {
+    "creative_order": 131,
+    "palettes": {
+      "Marshalled25Series": 7
+    }
+  },
+  "hexie:panel_25_marshalled_top_b": {
+    "creative_order": 132,
+    "palettes": {
+      "Marshalled25Series": 8
+    }
+  },
+  "hexie:panel_25b_marshalled_symbol": {
+    "creative_order": 133,
+    "palettes": {
+      "Marshalled25Series": 0
+    }
+  },
+  "hexie:panel_25g_marshalled_symbol": {
+    "creative_order": 134,
+    "palettes": {
+      "Marshalled25Series": 2
+    }
+  },
+  "hexie:panel_25k_marshalled_symbol": {
+    "creative_order": 135,
+    "palettes": {
+      "Marshalled25Series": 1
+    }
+  },
+  "hexie:slab_25_marshalled_top": {
+    "creative_order": 136,
+    "palettes": {
+      "Marshalled25Series": 10
+    }
+  },
+  "hexie:panel_25t_marshalled_skirt": {
+    "creative_order": 137,
+    "palettes": {
+      "Marshalled25Series": 4
+    }
+  },
+  "hexie:panel_25t_marshalled_skirt_side": {
+    "creative_order": 138,
+    "palettes": {
+      "Marshalled25Series": 11
+    }
+  },
+  "hexie:end_face_25t_original": {
+    "creative_order": 139,
+    "palettes": {
+      "Carriage25T": 35
+    }
+  },
+  "hexie:panel_cr200j_marshalled_top_2": {
+    "creative_order": 140,
+    "palettes": {
+      "CarriageCR200j": 1
+    }
+  },
+  "hexie:panel_cr200j_marshalled_top_3": {
+    "creative_order": 141,
+    "palettes": {
+      "CarriageCR200j": 2
+    }
+  },
+  "hexie:widepanel_marshalled_cr200j_logo_cr": {
+    "creative_order": 142,
+    "palettes": {
+      "CarriageCR200j": 4
+    }
+  },
+  "hexie:widepanel_marshalled_cr200j_fu_xing": {
+    "creative_order": 143,
+    "palettes": {
+      "CarriageCR200j": 6
+    }
+  },
+  "hexie:widepanel_marshalled_cr200j": {
+    "creative_order": 144,
+    "palettes": {
+      "CarriageCR200j": 5
+    }
+  },
+  "hexie:panel_cr200j_marshalled_middle_logo_cr": {
+    "creative_order": 145,
+    "palettes": {
+      "CarriageCR200j": 7
+    }
+  },
+  "hexie:panel_marshalled_cr200j_skirt": {
+    "creative_order": 146,
+    "palettes": {
+      "CarriageCR200j": 17
+    }
+  },
+  "hexie:panel_marshalled_cr200j_skirt_side": {
+    "creative_order": 147,
+    "palettes": {
+      "CarriageCR200j": 18
+    }
+  },
+  "hexie:marshalled_window_cr200j_wide_sealed": {
+    "creative_order": 148,
+    "palettes": {
+      "CarriageCR200j": 12
+    }
+  },
+  "hexie:marshalled_window_cr200j_sealed": {
+    "creative_order": 149,
+    "palettes": {
+      "CarriageCR200j": 15
+    }
+  },
+  "hexie:marshalled_window_cr200j_wide": {
+    "creative_order": 150,
+    "palettes": {
+      "CarriageCR200j": 13
+    }
+  },
+  "hexie:marshalled_window_cr200j_toilet": {
+    "creative_order": 151,
+    "palettes": {
+      "CarriageCR200j": 14
+    }
+  },
+  "hexie:direct_drainage_toilet_marshalled_cr200j": {
+    "creative_order": 152,
+    "palettes": {
+      "CarriageCR200j": 22
+    }
+  },
+  "hexie:panel_cr200j_marshalled_top": {
+    "creative_order": 153,
+    "palettes": {
+      "CarriageCR200j": 0
+    }
+  },
+  "hexie:panel_cr200j_marshalled_bottom": {
+    "creative_order": 154,
+    "palettes": {
+      "CarriageCR200j": 16
+    }
+  },
+  "hexie:panel_cr200j_marshalled_middle": {
+    "creative_order": 155,
+    "palettes": {
+      "CarriageCR200j": 3
+    }
+  },
+  "hexie:slab_cr200j_marshalled_top": {
+    "creative_order": 156,
+    "palettes": {
+      "CarriageCR200j": 10
+    }
+  },
+  "hexie:ladder_marshalled_cr200j": {
+    "creative_order": 157,
+    "palettes": {
+      "CarriageCR200j": 11
+    }
+  },
+  "hexie:carport_cr200j_marshalled": {
+    "creative_order": 158,
+    "palettes": {
+      "CarriageCR200j": 8
+    }
+  },
+  "hexie:carport_cr200j_marshalled_center": {
+    "creative_order": 159,
+    "palettes": {
+      "CarriageCR200j": 9
+    }
+  },
+  "hexie:marshalled_cr200j_door": {
+    "creative_order": 160,
+    "palettes": {
+      "CarriageCR200j": 19
+    }
+  },
+  "hexie:marshalled_cr200j_cabin_door": {
+    "creative_order": 161,
+    "palettes": {
+      "CarriageCR200j": 21
+    }
+  },
+  "hexie:marshalled_cr200j_door_2": {
+    "creative_order": 162,
+    "palettes": {
+      "CarriageCR200j": 20
+    }
+  },
+  "hexie:original_25k_sliding_door": {
+    "creative_order": 163,
+    "palettes": {
+      "Carriage25K": 7
+    }
+  },
+  "hexie:original_25t_sliding_door": {
+    "creative_order": 164,
+    "palettes": {
+      "Carriage25T": 11
+    }
+  },
+  "hexie:end_face_marshalled_cr200j": {
+    "creative_order": 165,
+    "palettes": {
+      "CarriageCR200j": 23
+    }
+  },
+  "hexie:end_face_marshalled_cr200j_2": {
+    "creative_order": 166,
+    "palettes": {
+      "CarriageCR200j": 24
+    }
+  }
+}

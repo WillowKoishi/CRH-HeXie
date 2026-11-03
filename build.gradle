@@ -17,6 +17,25 @@ tasks.withType(Jar).configureEach {
     from(project.files('LICENSE.txt', 'THIRD_PARTY_NOTICES.txt')) {
         into 'META-INF'
     }
+    from('art_assets') {
+        include 'LICENSE.txt', 'README.md'
+        into 'META-INF/licenses/hexie-art'
+    }
+}
+
+// Publish this archive alongside each release so editable artwork is available.
+def artSourcesZip = tasks.register('artSourcesZip', Zip) {
+    archiveBaseName = base.archivesName
+    archiveVersion = artifactArchiveVersion
+    archiveClassifier = 'art-sources'
+    destinationDirectory = layout.buildDirectory.dir('libs')
+    from('art_assets') { into 'art_assets' }
+    from(project.files('LICENSE.txt', 'THIRD_PARTY_NOTICES.txt'))
+    from('src/main/resources/META-INF/licenses') { into 'META-INF/licenses' }
+}
+
+tasks.named('assemble') {
+    dependsOn artSourcesZip
 }
 
 java {

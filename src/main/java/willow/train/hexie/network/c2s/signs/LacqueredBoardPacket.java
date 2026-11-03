@@ -3,8 +3,6 @@ package willow.train.hexie.network.c2s.signs;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import willow.train.hexie.network.c2s.HexiePacket;
@@ -34,12 +32,14 @@ public class LacqueredBoardPacket implements HexiePacket {
         this.pos = buf.readBlockPos();
         int sLength = buf.readInt();
         int cLength = buf.readInt();
+        if (sLength < 0 || sLength > 16 || cLength != 3)
+            throw new io.netty.handler.codec.DecoderException("Invalid sign field counts");
         this.x_offset = buf.readDouble();
         this.contents = new String[sLength];
         this.colors = new int[cLength];
 
         for (int i = 0; i < sLength; i++) {
-            this.contents[i] = buf.readUtf();
+            this.contents[i] = buf.readUtf(SignEditSubmission.MAX_TEXT_LENGTH);
         }
         for (int i = 0; i < cLength; i++) {
             this.colors[i] = buf.readInt();
@@ -48,21 +48,14 @@ public class LacqueredBoardPacket implements HexiePacket {
 
     @Override
     public boolean handle(IPayloadContext context) {
-        context.enqueueWork(
-                () -> {
-                    ServerLevel level = ((net.minecraft.server.level.ServerPlayer) context.player()).serverLevel();
-                    BlockEntity entity = level.getBlockEntity(pos);
-                    if (entity == null) {
-                        return;
-                    }
-                    if (entity instanceof LacqueredBoardEntity) {
-                        ((LacqueredBoardEntity) entity).setMessages(this.contents);
-                        ((LacqueredBoardEntity) entity).setColors(this.colors);
-                        ((LacqueredBoardEntity) entity).setXOffset(this.x_offset);
-                        entity.setChanged();
-                        ((LacqueredBoardEntity) entity).sendData();
-                    }
-                });
+        context.enqueueWork(() -> {
+            if (contents.length > 16 || colors.length != 3 || !Double.isFinite(x_offset)) return;
+            SignEditSubmission.commit(context.player(), pos, LacqueredBoardEntity.class, entity -> {
+                entity.setMessages(contents);
+                entity.setColors(colors);
+                entity.setXOffset(x_offset);
+            });
+        });
         return true;
     }
 

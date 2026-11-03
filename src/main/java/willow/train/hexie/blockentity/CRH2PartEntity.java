@@ -16,7 +16,7 @@ import willow.train.hexie.menu.CarriageMarkingMenu;
 import java.util.List;
 
 /** The panel root owns its lower-body markings; proxy cells resolve all editing to that root. */
-public final class CRH2PartEntity extends SmartBlockEntity implements MenuProvider {
+public final class CRH2PartEntity extends SmartBlockEntity implements MenuProvider, willow.train.hexie.blocks.parts.VehicleMarkings {
     private final String[] fields = {"", "", ""};
     private boolean descriptionLeft;
     private int markingSlot;
@@ -42,6 +42,12 @@ public final class CRH2PartEntity extends SmartBlockEntity implements MenuProvid
     public void toggleDescription() { descriptionLeft=!descriptionLeft; setChanged(); sendData(); }
     @Override protected void write(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
         super.write(tag, registries, clientPacket);
+        writeAppearance(tag);
+    }
+    @Override public void writeSafe(CompoundTag tag,HolderLookup.Provider registries) {
+        super.writeSafe(tag,registries);writeAppearance(tag);
+    }
+    private void writeAppearance(CompoundTag tag) {
         for (int i=0;i<fields.length;i++) tag.putString("CarriageMarking"+i, fields[i]);
         tag.putBoolean("DescriptionLeft", descriptionLeft);
         tag.putInt("CarriageMarkingSlot", markingSlot);

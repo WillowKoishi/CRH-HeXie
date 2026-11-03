@@ -45,6 +45,8 @@ public final class VehicleRuntime {
     private long consistRevision;
     private long indexedConsistRevision = -1;
     private final Map<UUID, UUID> couplingPartners = new HashMap<>();
+    private long capabilityRevision = -1;
+    private final Map<UUID, ConsistCapabilities> capabilities = new HashMap<>();
 
     public VehicleRuntime() { this(TrackPath.straight()); }
     public VehicleRuntime(TrackPath path) {
@@ -53,6 +55,18 @@ public final class VehicleRuntime {
     }
     public Solution placement() { return placement; }
     public CarriageDefinition definition(UUID id) { return car(id).definition; }
+    /** Upgrade legacy saved endpoints once; this changes only captured model metadata. */
+    public void captureCouplerVisual(UUID id, CouplingEndpoint.Visual visual) {
+        Objects.requireNonNull(visual);
+        var carriage = car(owner(id));
+        var old = carriage.definition;
+        var updated = old.couplings().stream().map(endpoint -> endpoint.id().equals(id) && endpoint.visual() == null
+                ? new CouplingEndpoint(endpoint.id(), endpoint.blockCenter(), endpoint.facing(), endpoint.axis(),
+                        endpoint.start(), endpoint.complete(), endpoint.kind(), endpoint.maxExtension(), endpoint.model(),
+                        endpoint.adapter(), visual) : endpoint).toList();
+        if (!updated.equals(old.couplings())) carriage.definition = new CarriageDefinition(old.id(), old.bogeys(), updated,
+                old.rearExtent(), old.frontExtent(), old.floorOffset());
+    }
     public double bogeySpeed(UUID id) { return Objects.requireNonNull(bogeySpeeds.get(id), "Unknown bogey"); }
     public double motionDistance(UUID bogey) { return Objects.requireNonNull(motionDistances.get(bogey), "Unknown bogey"); }
     public Optional<String> constraintFailure() { return Optional.ofNullable(constraintFailure); }
@@ -143,7 +157,12 @@ public final class VehicleRuntime {
 
     public record Checkpoint(List<SavedCarriage> carriages, List<Connection> connections,
                              List<Approach> approaches, Solution placement, Map<UUID, Double> bogeySpeeds,
-                             Map<UUID, Double> motionDistances) {
+                             Map<UUID, Double> motionDistances, boolean legacyCouplerAxes) {
+        public Checkpoint(List<SavedCarriage> carriages, List<Connection> connections,
+                          List<Approach> approaches, Solution placement, Map<UUID, Double> bogeySpeeds,
+                          Map<UUID, Double> motionDistances) {
+            this(carriages, connections, approaches, placement, bogeySpeeds, motionDistances, false);
+        }
         public Checkpoint(List<SavedCarriage> carriages, List<Connection> connections,
                           List<Approach> approaches, Solution placement, Map<UUID, Double> bogeySpeeds) {
             this(carriages, connections, approaches, placement, bogeySpeeds, distances(placement));
@@ -210,6 +229,50 @@ public final class VehicleRuntime {
 
     /** Entity/control adapters need velocity without rebuilding diagnostic force/consist reports. */
     public double speed(UUID carriage) { return car(carriage).speed; }
+    public record ConsistCapabilities(double massKg, double maximumTractionN, double maximumPowerW, double maximumBrakeForceN) {}
+    /** Definitions are immutable; only topology/definition changes invalidate the shared capability totals. */
+    public ConsistCapabilities capabilities(UUID carriage) {
+        if (capabilityRevision != consistRevision) {
+            capabilities.clear();
+            for (var group : groups()) {
+                double mass = 0, traction = 0, power = 0, brake = 0;
+                for (var member : group.cars) {
+                    mass += member.definition.massKg();
+                    for (var bogey : member.definition.bogeys()) {
+                        double available = bogey.parameters().availableTractionN(0);
+                        traction += available;
+                        if (available > 0) power = Math.min(Double.MAX_VALUE, power + bogey.parameters().tractionPowerW());
+                        brake += bogey.parameters().brakeForceN();
+                    }
+                }
+                var value = new ConsistCapabilities(mass, traction, power, brake);
+                for (var member : group.cars) capabilities.put(member.definition.id(), value);
+            }
+            capabilityRevision = consistRevision;
+        }
+        return Objects.requireNonNull(capabilities.get(carriage), "Unknown carriage");
+    }
+    /** One inexpensive control/display projection; does not rebuild per-bogey diagnostic forces. */
+    public record ConsistReadings(double speed, double massKg, double maximumBrakeForceN,
+                                  double traction, double brake, double brakingMultiplier) {
+        public double serviceDeceleration(double serviceLimit) {
+            return massKg > 0 ? maximumBrakeForceN / massKg * brakingMultiplier * serviceLimit : 0;
+        }
+    }
+    public ConsistReadings consistReadings(UUID carriage) {
+        var group = group(carriage);
+        var capacity = capabilities(carriage);
+        double traction = 0, brake = 0;
+        for (Car member : group.cars) {
+            for (BogeyDefinition bogey : member.definition.bogeys()) {
+                var control = member.controls.get(bogey.id());
+                if (control.brake > 0) brake = Math.max(brake, control.brake);
+                else if (bogey.parameters().availableTractionN(group.speed()) > 0)
+                    traction = Math.max(traction, Math.abs(control.throttle));
+            }
+        }
+        return new ConsistReadings(group.speed(), capacity.massKg(), capacity.maximumBrakeForceN(), traction, brake, brakingMultiplier);
+    }
     /** Requested displacement of this tick's rejected prediction, for backend-native route checks. */
     public double failedTravel(UUID carriage) { return failedTravel.getOrDefault(carriage, 0.0); }
 
@@ -534,7 +597,7 @@ public final class VehicleRuntime {
                             case EAST -> CouplingEndpoint.Facing.WEST;
                             case SOUTH -> CouplingEndpoint.Facing.NORTH;
                             case WEST -> CouplingEndpoint.Facing.EAST;
-                        }, e.pivot(), e.start(), e.complete(), e.kind(), e.maxExtension(), e.model(), e.adapter())).toList();
+                        }, e.axis(), e.start(), e.complete(), e.kind(), e.maxExtension(), e.model(), e.adapter(), e.visual())).toList();
                 definition = new CarriageDefinition(definition.id(), bogeys, endpoints,
                         definition.frontExtent(), definition.rearExtent(), definition.floorOffset());
             }
@@ -560,7 +623,7 @@ public final class VehicleRuntime {
         source.bogeySpeeds.forEach((id, speed) -> speeds.put(id, sign * speed));
         return new Checkpoint(carriages, source.connections, source.approaches,
                 new Solution(bodies, bogeys, source.placement.endpoints()), speeds,
-                mapDistances(source.motionDistances, distance -> sign * distance + offset));
+                mapDistances(source.motionDistances, distance -> sign * distance + offset), source.legacyCouplerAxes);
     }
 
     private static CouplingEndpoint.Point halfTurn(CouplingEndpoint.Point point) {
@@ -748,7 +811,7 @@ public final class VehicleRuntime {
                 endpoints.put(endpoint.id(), source.placement.endpoints().get(endpoint.id()));
         }
         return new Checkpoint(selectedCars, selectedConnections, selectedApproaches,
-                new Solution(bodies, bogeys, endpoints), speeds, cursors);
+                new Solution(bodies, bogeys, endpoints), speeds, cursors, source.legacyCouplerAxes);
     }
 
     public static VehicleRuntime restore(Checkpoint checkpoint) {
@@ -756,7 +819,7 @@ public final class VehicleRuntime {
     }
 
     public static VehicleRuntime restore(Checkpoint checkpoint, TrackPath path) {
-        return restore(checkpoint, path, false);
+        return restore(checkpoint, path, checkpoint.legacyCouplerAxes);
     }
 
     /** One-time upgrade of snapshots written before rigid end-support constraints were enforced. */
@@ -780,6 +843,8 @@ public final class VehicleRuntime {
         } catch (RuntimeException failure) { throw new RouteMismatchException(failure); }
         var validated = runtime.solver.solve(runtime.definitions(), runtime.connections, savedDistances,
                 runtime.pins(savedDistances), runtime.placement);
+        if (checkpoint.legacyCouplerAxes && !validated.brokenConnections().isEmpty())
+            throw new IllegalArgumentException("Legacy coupling cannot be restored on its vertical axes");
         if (upgradePlacement) runtime.commit(validated);
         else requireSamePlacement(runtime.placement, validated);
         return runtime;

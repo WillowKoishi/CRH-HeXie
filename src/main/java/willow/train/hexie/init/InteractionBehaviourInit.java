@@ -9,12 +9,19 @@ import willow.train.hexie.blocks.base.IContraptionMovementBlockEntity;
 public class InteractionBehaviourInit {
 
     public static void register() {
+        var doors=new com.simibubi.create.content.contraptions.behaviour.DoorMovingInteraction();
+        MovingInteractionBehaviour.REGISTRY.registerProvider(block ->
+                block instanceof willow.train.hexie.blocks.carriage.CustomRenderedDoorBlock ? doors : null);
         var timetable = new willow.train.hexie.compat.create.CreateConsoleTimetable();
         MovingInteractionBehaviour.REGISTRY.registerProvider(block ->
-                block instanceof willow.train.hexie.blocks.locos.CRH2DrivingConsoleBlock ? timetable : null);
+                willow.train.hexie.compat.create.CreateConsoleTimetable.supports(block) ? timetable : null);
+        var variants = new willow.train.hexie.compat.create.CreatePartVariantInteraction();
+        MovingInteractionBehaviour.REGISTRY.registerProvider(block ->
+                block instanceof willow.train.hexie.blocks.parts.VariantPartBlock ? variants : null);
         BlockEntitySynchronizeBehaviour besb = new BlockEntitySynchronizeBehaviour();
         com.simibubi.create.api.behaviour.movement.MovementBehaviour.REGISTRY.registerProvider(
                 block -> {
+                    if (block instanceof willow.train.hexie.blocks.coupler.CouplerBlock hook && hook.geometry() != null) return besb;
                     if(block instanceof IBE<?> ibe &&
                             IContraptionMovementBlockEntity.class.isAssignableFrom(ibe.getBlockEntityClass())) {
                         return besb;

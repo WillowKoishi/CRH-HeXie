@@ -11,7 +11,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import willow.train.hexie.init.item.SchematicItemInit;
+import com.simibubi.create.content.schematics.SchematicItem;
 
 @Mixin(SchematicEditScreen.class)
 public class MixinSchematicEditScreen {
@@ -25,7 +25,7 @@ public class MixinSchematicEditScreen {
         LocalPlayer player = minecraft.player;
 
         if (instance == AllItems.SCHEMATIC && player != null
-                && player.getItemInHand(InteractionHand.MAIN_HAND).is(SchematicItemInit.SCHEMATIC_25G.get())) {
+                && player.getItemInHand(InteractionHand.MAIN_HAND).getItem() instanceof SchematicItem) {
             return player.getItemInHand(InteractionHand.MAIN_HAND);
         }
         return original.call(instance);

@@ -65,6 +65,32 @@ public abstract class AbstractCouplerBlock extends HorizontalDirectionalBlock im
         return new CouplerBlockEntity(pos, state);
     }
 
+    @Override public <T extends BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(
+            net.minecraft.world.level.Level level, BlockState state,
+            net.minecraft.world.level.block.entity.BlockEntityType<T> type) {
+        return geometry() != null && state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN)
+                && type == willow.train.hexie.init.BlockEntitiesInit.COUPLER.get()
+                ? (world, pos, blockState, entity) -> ((CouplerBlockEntity) entity).tickCoverAnimation() : null;
+    }
+
+    @Override protected net.minecraft.world.ItemInteractionResult useItemOn(ItemStack stack, BlockState state,
+            net.minecraft.world.level.Level level, BlockPos pos, net.minecraft.world.entity.player.Player player,
+            net.minecraft.world.InteractionHand hand, net.minecraft.world.phys.BlockHitResult hit) {
+        if (geometry() == null || stack.is(net.neoforged.neoforge.common.Tags.Items.TOOLS_WRENCH))
+            return net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        var surface = CouplerInteraction.classifyWorld(level, pos, state, player, hit);
+        if (surface == null) return net.minecraft.world.ItemInteractionResult.FAIL;
+        if (surface.head()) return net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        if (player.isSpectator() || !player.mayBuild()) return net.minecraft.world.ItemInteractionResult.FAIL;
+        toggleCover(level, pos, state);
+        return net.minecraft.world.ItemInteractionResult.sidedSuccess(level.isClientSide);
+    }
+
+    public static boolean toggleCover(net.minecraft.world.level.Level level, BlockPos pos, BlockState state) {
+        var open = net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN;
+        return state.hasProperty(open) && (level.isClientSide || level.setBlock(pos, state.cycle(open), Block.UPDATE_ALL));
+    }
+
     @Override protected List<ItemStack> getDrops(BlockState state, LootParams.Builder params) {
         List<ItemStack> drops = new ArrayList<>(super.getDrops(state, params));
         // Loot is evaluated on destruction; assembly removes the block without dropping its contents.
@@ -81,6 +107,17 @@ public abstract class AbstractCouplerBlock extends HorizontalDirectionalBlock im
     @Override protected net.minecraft.world.InteractionResult useWithoutItem(BlockState state,
             net.minecraft.world.level.Level level, BlockPos pos, net.minecraft.world.entity.player.Player player,
             net.minecraft.world.phys.BlockHitResult hit) {
+        if (geometry() != null) {
+            if (player.getMainHandItem().is(net.neoforged.neoforge.common.Tags.Items.TOOLS_WRENCH))
+                return net.minecraft.world.InteractionResult.PASS;
+            var surface = CouplerInteraction.classifyWorld(level, pos, state, player, hit);
+            if (surface == null) return net.minecraft.world.InteractionResult.PASS;
+            if (!surface.head()) {
+                if (player.isSpectator() || !player.mayBuild()) return net.minecraft.world.InteractionResult.FAIL;
+                toggleCover(level, pos, state);
+                return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide);
+            }
+        }
         if (!player.isShiftKeyDown() || !player.getMainHandItem().isEmpty() || player.isSpectator() || !player.mayBuild()
                 || state.getValue(ASSEMBLED) || !(level.getBlockEntity(pos) instanceof CouplerBlockEntity entity))
             return net.minecraft.world.InteractionResult.PASS;

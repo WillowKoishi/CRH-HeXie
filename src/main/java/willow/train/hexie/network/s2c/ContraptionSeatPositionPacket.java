@@ -13,6 +13,10 @@ public record ContraptionSeatPositionPacket(
         UUID contraptionId, UUID passengerId, int seatIndex, int position)
         implements CustomPacketPayload {
 
+    public static ContraptionSeatPositionPacket reset(UUID contraption) {
+        return new ContraptionSeatPositionPacket(contraption, new UUID(0, 0), -1, -1);
+    }
+
     public static final Type<ContraptionSeatPositionPacket> TYPE =
             new Type<>(Main.asResource("contraption_seat_position"));
 

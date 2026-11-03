@@ -21,14 +21,13 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.fml.ModList;
 import willow.train.hexie.client.render.carriage.CompatibleCarriageVisual;
 
 import java.util.List;
 
 /** One world-shell visual for both heads and carriage parts; no extra block entities. */
 final class CRH2ShellVisual implements EffectVisual<CRH2ShellVisual.Shell>, ShaderLightVisual {
-    private static final boolean COMPATIBLE_TRANSPARENCY = ModList.get().isLoaded("sable") && ModList.get().isLoaded("veil");
+    private static final boolean COMPATIBLE_TRANSPARENCY = willow.train.hexie.client.render.carriage.CarriageTransparencyCompat.required();
     // Same virtual block builder/cache lifecycle as Flywheel Models.block(), with continuous
     // world lighting for models that extend well beyond their owner block.
     private static final RendererReloadCache<BlockState, Model> MODELS = new RendererReloadCache<>(state ->

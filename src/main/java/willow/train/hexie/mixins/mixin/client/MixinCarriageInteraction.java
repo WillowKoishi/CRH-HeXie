@@ -9,6 +9,8 @@ import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import willow.train.hexie.client.CarriageInteractionCoordinates;
+import willow.train.hexie.client.CouplerInteractionPicking;
+import willow.train.hexie.client.DoorInteractionPicking;
 import willow.train.hexie.compat.create.SnapshotCarriageEntity;
 
 @Mixin(ContraptionHandlerClient.class)
@@ -43,14 +45,15 @@ public abstract class MixinCarriageInteraction {
     private static net.minecraft.world.phys.BlockHitResult hexie$nativeCarriageRay(Vec3 origin, Vec3 target,
             AbstractContraptionEntity entity, Operation<net.minecraft.world.phys.BlockHitResult> original) {
         if (!(entity instanceof SnapshotCarriageEntity car))
-            return willow.train.hexie.client.DoorInteractionPicking.contraption(entity, origin, target,
-                    original.call(origin, target, entity));
+            return CouplerInteractionPicking.contraption(entity, origin, target,
+                    DoorInteractionPicking.contraption(entity, origin, target, original.call(origin, target, entity)));
         var compatibility = CarriageInteractionCoordinates.compatibilityEntity(car);
         // Convert the entire ray before native traversal/shape clipping. The result is
         // already a native local block/face and goes straight to Create's interaction packet.
         var nativeHit = original.call(CarriageInteractionCoordinates.toCompatibility(car, compatibility, origin),
                 CarriageInteractionCoordinates.toCompatibility(car, compatibility, target), compatibility);
-        return willow.train.hexie.client.DoorInteractionPicking.contraption(car, origin, target, nativeHit);
+        return CouplerInteractionPicking.contraption(car, origin, target,
+                DoorInteractionPicking.contraption(car, origin, target, nativeHit));
     }
 
     @WrapOperation(method = "rightClickingOnContraptionsGetsHandledLocally", at = @At(value = "INVOKE",

@@ -25,7 +25,7 @@ public class BlockEntitiesInit {
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CRH2PartEntity>> CRH2A_PART =
             BLOCK_ENTITIES.register("crh2a_part", () -> BlockEntityType.Builder.of(CRH2PartEntity::new,
-                    BuiltInRegistries.BLOCK.stream().filter(block -> block instanceof willow.train.hexie.blocks.locos.crh2a.CRH2PartBlock)
+                    BuiltInRegistries.BLOCK.stream().filter(block -> block instanceof willow.train.hexie.blocks.parts.VehicleMarkingSurface && block instanceof EntityBlock)
                             .toArray(Block[]::new)).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DrivingConsoleEntity>> DRIVING_CONSOLE =
@@ -133,9 +133,8 @@ public class BlockEntitiesInit {
             OBJ_RENDERABLE_END_FACE_BLOCK_ENTITY = BLOCK_ENTITIES.register(
             "obj_renderable_end_face_block_entity",
             () -> BlockEntityType.Builder.of(OBJRenderableEndFaceEntity::new,
-                    CustomRenderedDoorBlockInit.END_FACE_MARSHALLED_CR200J.get(),
-                    CustomRenderedDoorBlockInit.END_FACE_MARSHALLED_CR200J_2.get()
-            ).build(null));
+                    BuiltInRegistries.BLOCK.stream().filter(block -> block instanceof willow.train.hexie.blocks.carriage.OBJRenderableEndFaceBlock)
+                            .toArray(Block[]::new)).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CR200jFrontBlockEntity>>
             CR200J_FRONT_BLOCK_ENTITY = BLOCK_ENTITIES.register(
@@ -147,16 +146,7 @@ public class BlockEntitiesInit {
             CUSTOM_RENDERED_DOOR_ENTITY = BLOCK_ENTITIES.register(
             "custom_rendered_door_entity",
             () -> BlockEntityType.Builder.of(CustomRenderedDoorEntity::new,
-                            BlockInit.CRH2A_PASSENGER_DOOR.get(),
-                            BlockInit.CRH2A_PASSENGER_DOOR_WIDE.get(),
-                            BlockInit.CRH2A_CAB_DOOR.get(),
-                            CustomRenderedDoorBlockInit.MARSHALLED_CR200J_DOOR.get(),
-                            CustomRenderedDoorBlockInit.MARSHALLED_CR200J_DOOR_2.get(),
-                            CustomRenderedDoorBlockInit.MARSHALLED_CR200J_CABIN_DOOR.get(),
-                            CustomRenderedDoorBlockInit.PANEL_25K_ORIGINAL_SLIDING_DOOR.get(),
-                            CustomRenderedDoorBlockInit.PANEL_25T_ORIGINAL_SLIDING_DOOR.get(),
-                            CustomRenderedDoorBlockInit.PANEL_25Z_ORIGINAL_DOOR.get()
-                    )
-                    .build(null));
+                    BuiltInRegistries.BLOCK.stream().filter(block -> block instanceof willow.train.hexie.blocks.carriage.CustomRenderedDoorBlock)
+                            .toArray(Block[]::new)).build(null));
 
 }

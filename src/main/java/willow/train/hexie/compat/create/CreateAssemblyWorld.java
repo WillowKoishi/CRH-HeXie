@@ -117,16 +117,18 @@ final class CreateAssemblyWorld implements AssemblyTraversal.Source<BlockPos> {
         if (world.getBlockEntity(pos) instanceof WindmillBearingBlockEntity bearing && bearing.isRunning())
             throw new IllegalStateException("Stop the windmill before assembly: " + pos);
         Queue<BlockPos> frontier = new ArrayDeque<>();
-        var head = willow.train.hexie.blocks.locos.head.HeadGeometry.owner(world, pos);
-        if (head != null) {
-            var facing = world.getBlockState(head).getValue(willow.train.hexie.blocks.locos.head.CRH2HeadBlock.FACING);
-            for (int i = 0; i < willow.train.hexie.blocks.locos.head.HeadGeometry.PARTS; i++) {
-                var part = head.offset(willow.train.hexie.blocks.locos.head.HeadGeometry.offset(i, facing));
-                if (!contains(part) || !world.isLoaded(part)
-                        || !head.equals(willow.train.hexie.blocks.locos.head.HeadGeometry.owner(world, part)))
-                    throw new IllegalStateException("车头必须完整包含在组装范围内: " + head);
-                frontier.add(part);
+        var structure=willow.train.hexie.blocks.parts.PartStructures.resolve(world,pos);
+        if(structure!=null) {
+            for(var entry:structure.structure().partCells(world,structure.pos(),structure.state()).entrySet()) {
+                var member=entry.getKey();
+                if(!contains(member)||!world.isLoaded(member)||!structure.structure().ownsCell(world,structure.pos(),structure.state(),member,entry.getValue()))
+                    throw new IllegalStateException("车辆部件必须完整包含在组装范围内: "+structure.pos());
+                frontier.add(member);
             }
+        } else if(state.getBlock() instanceof willow.train.hexie.blocks.parts.PartMemberBlock
+                ||state.getBlock() instanceof willow.train.hexie.blocks.locos.head.HeadFloorBlock
+                ||state.getBlock() instanceof HexieBogeyBlock<?> && state.getValue(HexieBogeyBlock.HEAD_MOUNTED)) {
+            throw new IllegalStateException("车辆部件缺少所属根: "+pos);
         }
         Set<BlockPos> visited = Set.of();
         if (state.getBlock() instanceof AbstractChassisBlock

@@ -11,12 +11,16 @@ public final class ContraptionSeatPositionCache {
     private ContraptionSeatPositionCache() {}
 
     public static void update(UUID contraptionId, UUID passengerId, int seatIndex, int position) {
+        if (seatIndex == -1 && position == -1 && passengerId.equals(new UUID(0, 0))) {
+            clear(contraptionId);
+            return;
+        }
         Key key = new Key(contraptionId, passengerId);
         if (position < 0) {
             POSITIONS.remove(key);
             return;
         }
-        POSITIONS.put(key, new Position(seatIndex, position));
+        if (seatIndex >= 0 && position < 4) POSITIONS.put(key, new Position(seatIndex, position));
     }
 
     public static int get(UUID contraptionId, UUID passengerId, int seatIndex) {
@@ -28,6 +32,10 @@ public final class ContraptionSeatPositionCache {
 
     public static void clear() {
         POSITIONS.clear();
+    }
+
+    public static void clear(UUID contraption) {
+        POSITIONS.keySet().removeIf(key -> key.contraptionId().equals(contraption));
     }
 
     private record Key(UUID contraptionId, UUID passengerId) {}

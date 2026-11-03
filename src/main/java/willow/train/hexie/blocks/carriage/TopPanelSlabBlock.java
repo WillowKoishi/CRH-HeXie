@@ -49,32 +49,7 @@ public class TopPanelSlabBlock extends HorizontalBlockBase {
             Player pPlayer,
             InteractionHand pHand,
             BlockHitResult pHit) {
-        if (pPlayer.getItemInHand(pHand).is(EditablePanelItemInit.ColoredBrush.get())) {
-            if (pLevel.isClientSide) {
-                if (!PANEL_TYPE_UTIL.canTransformSlab(this)) return InteractionResult.PASS;
-                int x = pPos.getX();
-                int y = pPos.getY();
-                int z = pPos.getZ();
-                double speedFactor = 0.1;
-                int particle_account = random.nextInt(12, 16);
-                for (int i = 0; i < particle_account; i++) {
-                    pLevel.addParticle(
-                            ParticleTypes.HAPPY_VILLAGER,
-                            (double) x + random.nextDouble(0f, 1.0f),
-                            (double) y + random.nextDouble(0f, 1.0f),
-                            (double) z + random.nextDouble(0f, 1.0f),
-                            random.nextDouble(0f, speedFactor),
-                            random.nextDouble(0f, speedFactor),
-                            random.nextDouble(0f, speedFactor));
-                }
-                pLevel.playSound(
-                        pPlayer, pPos, SoundEvents.PLAYER_LEVELUP, SoundSource.BLOCKS, 8f, 1f);
-                return InteractionResult.SUCCESS;
-            }
-            onColoredBrush(pLevel, pPlayer, pHand, pHit, pState);
-            return InteractionResult.SUCCESS;
-        }
-        return InteractionResult.FAIL;
+        return PanelConversion.slab(pLevel,pPos,pState,pPlayer,pHand,pHit);
     }
 
     public void onColoredBrush(
@@ -83,21 +58,7 @@ public class TopPanelSlabBlock extends HorizontalBlockBase {
             InteractionHand pHand,
             BlockHitResult pHit,
             BlockState pBlockState) {
-        if (!PANEL_TYPE_UTIL.canTransformSlab(this)) return;
-        pLevel.setBlock(
-                pHit.getBlockPos(),
-                BlockInit.TRAIN_SPEED_BLOCK
-                        .get()
-                        .getStateForPlacement(
-                                new BlockPlaceContext(
-                                        pLevel, pPlayer, pHand, ItemStack.EMPTY, pHit),
-                                pBlockState.getValue(FACING),
-                                PANEL_TYPE_UTIL.matchSlabBlock2Panel(this)),
-                2);
-        if(!pPlayer.isCreative()) {
-            ItemStack stack = ColoredBrush.onEffectiveUse(pPlayer.getItemInHand(pHand));
-            pPlayer.getInventory().setItem(pPlayer.getInventory().selected, stack);
-        }
+        PanelConversion.slab(pLevel,pHit.getBlockPos(),pBlockState,pPlayer,pHand,pHit);
     }
 
     @Override

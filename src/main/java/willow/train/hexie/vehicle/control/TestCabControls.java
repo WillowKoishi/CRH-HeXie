@@ -1,28 +1,23 @@
 package willow.train.hexie.vehicle.control;
 
-import net.minecraft.nbt.CompoundTag;
-
-/** Temporary stepped controls. Brake notch 11 is emergency; returning to 10 is the release operation. */
+/** The test surface owns ten service notches, emergency notch 11 and its handle-return gesture. */
 public final class TestCabControls {
-    public int power, brake, reverser;
-    public boolean automatic, parking;
-    public final CabController controller = new CabController();
-
-    /** Only the test surface uses ten notches and these numeric button IDs. */
-    public static void apply(CabModule module, int action) {
-        if (action == 7) { module.approachHeld = true; return; }
-        if (action == 8 || action == -1) { module.approachHeld = false; return; }
-        if (action < 0 || action > 6) return;
-        boolean wasEmergency = module.emergencyHandle;
-        var view = read(module.write());
-        view.action(action);
-        module.power = view.power / 10d; module.serviceBrake = Math.min(10, view.brake) / 10d;
-        module.emergencyHandle = view.brake == 11; module.reverser = view.reverser;
-        module.automatic = view.automatic; module.parking = view.parking;
-        // The fixture defines the gesture; the common controller owns release interlocks.
-        module.releaseButton |= wasEmergency && !module.emergencyHandle;
+    private TestCabControls() {}
+    public record View(int power, int brake, int reverser, boolean automatic, boolean parking, boolean emergencyLatched) {}
+    public static View view(CabModule.State state) {
+        return new View((int) Math.round(state.input().power() * 10),
+                state.brakes().emergencyHandle() ? 11
+                        : (int) Math.round(state.brakes().serviceBrake() / TrainControl.Source.CAB_MANUAL.serviceBrakeLimit() * 10),
+                state.input().reverser(), state.automatic(), state.brakes().parking(), state.brakes().emergencyLatched());
     }
-    public void action(int action) {
+    /** Produces a validated replacement before the owner installs anything. */
+    public static CabModule.State apply(CabModule.State previous, int action, double speed) {
+        if (action == 7) return previous.withApproach(true);
+        if (action == 8 || action == -1) return previous.withApproach(false);
+        if (action < 0 || action > 6) throw new IllegalArgumentException("Unknown test cab action");
+        var view = view(previous);
+        int power = view.power(), brake = view.brake(), reverser = view.reverser();
+        boolean automatic = view.automatic(), parking = view.parking();
         switch (action) {
             case 0 -> power = Math.min(10, power + 1);
             case 1 -> power = Math.max(0, power - 1);
@@ -31,36 +26,13 @@ public final class TestCabControls {
             case 4 -> reverser = reverser == 1 ? -1 : reverser + 1;
             case 5 -> automatic = !automatic;
             case 6 -> parking = !parking;
-            default -> { }
         }
-    }
-    public CabController.Input input(int cabDirection) {
-        return new CabController.Input(power / 10d, Math.min(10, brake) / 10d, reverser * cabDirection,
-                brake == 11, parking, false);
-    }
-    public CabController.Mode mode() { return automatic ? CabController.Mode.AUTOMATIC : CabController.Mode.MANUAL; }
-    public CompoundTag write() {
-        var tag = new CompoundTag();
-        tag.putInt("Power", power); tag.putInt("Brake", brake); tag.putInt("Reverser", reverser);
-        tag.putBoolean("Automatic", automatic); tag.putBoolean("Parking", parking);
-        tag.putBoolean("Emergency", controller.emergencyLatched());
-        return tag;
-    }
-    public static TestCabControls read(CompoundTag tag) {
-        var state = new TestCabControls();
-        if (tag.contains("CabVersion")) {
-            var module = CabModule.read(tag);
-            state.power = (int)Math.round(module.power * 10);
-            state.brake = module.emergencyHandle ? 11 : (int)Math.round(module.serviceBrake * 10);
-            state.reverser = module.reverser; state.automatic = module.automatic; state.parking = module.parking;
-            if (module.controller.emergencyLatched()) state.controller.latchEmergency();
-            return state;
-        }
-        state.power = Math.clamp(tag.getInt("Power"), 0, 10);
-        state.brake = Math.clamp(tag.getInt("Brake"), 0, 11);
-        state.reverser = Math.clamp(tag.getInt("Reverser"), -1, 1);
-        state.automatic = tag.getBoolean("Automatic"); state.parking = tag.getBoolean("Parking");
-        if (tag.getBoolean("Emergency")) state.controller.latchEmergency();
-        return state;
+        double powerAmount = power / 10d;
+        double serviceAmount = Math.min(10, brake) / 10d * TrainControl.Source.CAB_MANUAL.serviceBrakeLimit();
+        var converted = CabBrakeConversion.operate(previous.brakes(), serviceAmount, brake == 11, parking,
+                view.brake() == 11 && brake != 11, powerAmount, reverser, speed);
+        return new CabModule.State(new CabController.Input(powerAmount, converted.brake(), reverser),
+                automatic ? CabController.Mode.AUTOMATIC : CabController.Mode.MANUAL,
+                converted.state(), previous.approachHeld());
     }
 }

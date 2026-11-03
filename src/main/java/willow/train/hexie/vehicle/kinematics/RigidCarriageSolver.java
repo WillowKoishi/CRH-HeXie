@@ -53,8 +53,8 @@ final class RigidCarriageSolver {
                 throw new ConstraintFailure("Articulated joints require their registered constraint adapter");
             if (!coupling.matches(parent.definition()))
                 throw new IllegalArgumentException("Coupler models do not match");
-            parentLength = length(vector(parent.definition().effectiveComplete()).subtract(vector(parent.definition().pivot())));
-            ownLength = length(vector(coupling.effectiveComplete()).subtract(vector(coupling.pivot())));
+            parentLength = length(vector(parent.definition().effectiveComplete()).subtract(vector(parent.definition().axisPoint())));
+            ownLength = length(vector(coupling.effectiveComplete()).subtract(vector(coupling.axisPoint())));
             Vector parentPivot = parent.body().transform(parent.definition().localPivot());
             Point ownPivot = coupling.localPivot();
             double linkLength = parentLength + ownLength;
@@ -66,6 +66,19 @@ final class RigidCarriageSolver {
         CoupledShape coupled = closure == null ? new CoupledShape(shape(first, last, distance), false)
                 : coupledShape(first, last, distance, closure);
         Shape shape = coupled.shape;
+        if (parent != null && !coupled.broken) {
+            EndpointPose a = endpoint(parent.definition(), parent.body()), b = endpoint(coupling, shape.pose);
+            Vector separation = b.pivot().subtract(a.pivot());
+            if (length(separation) > TOLERANCE) {
+                a = orientedEndpoint(a, separation, parent.body());
+                b = orientedEndpoint(b, separation.scale(-1), shape.pose);
+            }
+            // A change in grade can leave a real head gap after each arm swings in its own plane.
+            // Account for that gap before accepting the same extension limit used by saved placements.
+            if (length(a.complete().subtract(b.complete()))
+                    > parent.definition().maxExtension() + coupling.maxExtension() + POSITION_TOLERANCE)
+                coupled = new CoupledShape(shape, true);
+        }
         if (coupled.broken) {
             // The released carriage keeps the independent reference prescribed by motion.
             // Never use the searched minimum as a new anchor or snap it toward the old parent.
@@ -84,10 +97,8 @@ final class RigidCarriageSolver {
                 Vector direction = separation.normalized();
                 // Registered facing rotates the local points; it is not a joint-angle limit.
                 // The visible arms keep their normal lengths even when the connection extends.
-                endpoints.put(parent.definition().id(), orientedEndpoint(a,
-                        add(a.pivot(), direction.scale(parentLength)), direction));
-                endpoints.put(coupling.id(), orientedEndpoint(b,
-                        add(b.pivot(), direction.scale(-ownLength)), direction.scale(-1)));
+                endpoints.put(parent.definition().id(), orientedEndpoint(a, direction, parent.body()));
+                endpoints.put(coupling.id(), orientedEndpoint(b, direction.scale(-1), shape.pose));
             }
         }
         return new Solution(Map.of(car.id(), shape.pose), positions, endpoints,

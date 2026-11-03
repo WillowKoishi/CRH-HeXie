@@ -22,7 +22,7 @@ import net.minecraft.world.phys.Vec3;
 import javax.annotation.Nullable;
 import java.util.List;
 
-public class SideMirrorBlockBase extends Block implements IWrenchable {
+public class SideMirrorBlockBase extends HorizontalBlockBase {
     public static final EnumProperty<DoorHingeSide> HINGE = BlockStateProperties.DOOR_HINGE;
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
 
@@ -79,7 +79,8 @@ public class SideMirrorBlockBase extends Block implements IWrenchable {
     }
 
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> pBuilder) {
-        pBuilder.add(FACING, HINGE);
+        super.createBlockStateDefinition(pBuilder);
+        pBuilder.add(HINGE);
     }
 
     public BlockState mirror(BlockState pState, Mirror pMirror) {
@@ -88,20 +89,4 @@ public class SideMirrorBlockBase extends Block implements IWrenchable {
                 : pState.rotate(pMirror.getRotation(pState.getValue(FACING))).cycle(HINGE);
     }
 
-    public BlockState rotate(BlockState pState, Rotation pRotation) {
-        return pState.setValue(FACING, pRotation.rotate(pState.getValue(FACING)));
-    }
-
-    @Override
-    public List<ItemStack> getDrops(BlockState pState, LootParams.Builder pBuilder) {
-        return List.of(this.asItem().getDefaultInstance());
-    }
-    @Override
-    public net.minecraft.world.ItemInteractionResult useItemOn(net.minecraft.world.item.ItemStack stack,
-            net.minecraft.world.level.block.state.BlockState state, net.minecraft.world.level.Level level,
-            net.minecraft.core.BlockPos pos, net.minecraft.world.entity.player.Player player,
-            net.minecraft.world.InteractionHand hand, net.minecraft.world.phys.BlockHitResult hit) {
-        var placement = willow.train.hexie.blocks.carriage.TrainPanelPlacement.place(stack, state, level, pos, player, hand, hit);
-        return placement != null ? placement : super.useItemOn(stack, state, level, pos, player, hand, hit);
-    }
 }

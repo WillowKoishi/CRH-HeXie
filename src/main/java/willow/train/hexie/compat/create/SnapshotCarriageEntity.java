@@ -94,6 +94,8 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             SnapshotCarriageEntity.class, AllEntityDataSerializers.CARRIAGE_DATA);
     private static final EntityDataAccessor<Optional<UUID>> COMPATIBILITY_GRAPH = SynchedEntityData.defineId(
             SnapshotCarriageEntity.class, EntityDataSerializers.OPTIONAL_UUID);
+    private static final EntityDataAccessor<CompoundTag> COMPATIBILITY_GRAPHS = SynchedEntityData.defineId(
+            SnapshotCarriageEntity.class, EntityDataSerializers.COMPOUND_TAG);
     private static final EntityDataAccessor<Optional<UUID>> COMPATIBILITY_TRAIN = SynchedEntityData.defineId(
             SnapshotCarriageEntity.class, EntityDataSerializers.OPTIONAL_UUID);
     private static final EntityDataAccessor<Integer> COMPATIBILITY_INDEX = SynchedEntityData.defineId(
@@ -120,11 +122,9 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
     private CabDisplayState cabDisplayState = CabDisplayState.speedOnly(0);
     public double displaySpeedKmh() { return cabDisplayState.speedKmh(); }
     public CabDisplayState cabDisplayState() { return cabDisplayState; }
-    private CompoundTag cabControlFrame = new CompoundTag();
-    public willow.train.hexie.vehicle.control.CabModule cabControls(BlockPos position) {
-        return cabControlFrame.contains("Position") && cabControlFrame.getLong("Position") == position.asLong()
-                ? willow.train.hexie.vehicle.control.CabModule.read(cabControlFrame.getCompound("Controls"))
-                : new willow.train.hexie.vehicle.control.CabModule();
+    private Map<BlockPos, willow.train.hexie.vehicle.control.CabModule.State> cabControlStates = Map.of();
+    public willow.train.hexie.vehicle.control.CabModule.State cabControls(BlockPos position) {
+        return cabControlStates.getOrDefault(position, willow.train.hexie.vehicle.control.CabModule.State.NEUTRAL);
     }
     private final CarriagePoseInterpolation poseInterpolation = new CarriagePoseInterpolation();
     private float targetYaw, targetPitch, targetRoll;
@@ -149,6 +149,15 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         carriage.storage.write(data, level.registryAccess(), false);
         var cargo = new SnapshotCargoManager();
         cargo.read(data, level.registryAccess(), false, null);
+        if (!carriage.storage.getAllItemStorages().keySet().equals(cargo.getAllItemStorages().keySet())
+                || !carriage.storage.getFluids().storages.keySet().equals(cargo.getFluids().storages.keySet()))
+            throw new IllegalStateException("Mounted cargo conversion lost storage entries");
+        for (var entry : carriage.storage.getAllItemStorages().entrySet())
+            if (entry.getValue().type != cargo.getAllItemStorages().get(entry.getKey()).type)
+                throw new IllegalStateException("Mounted item storage changed type during conversion");
+        for (var entry : carriage.storage.getFluids().storages.entrySet())
+            if (entry.getValue().type != cargo.getFluids().storages.get(entry.getKey()).type)
+                throw new IllegalStateException("Mounted fluid storage changed type during conversion");
         carriage.storage = cargo;
     }
 
@@ -167,6 +176,12 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
     public Direction originalForward() { return originalForward; }
     public SnapshotBogeyAnimation bogeyAnimation() { return bogeyAnimation; }
     public SnapshotCouplerAnimation couplerAnimation() { return couplerAnimation; }
+    public boolean hasCoupler(BlockPos position) {
+        var endpoint = willow.train.hexie.vehicle.assembly.VehicleCouplingCatalog.endpointId(getUUID(), position);
+        var owner = motion();
+        return owner != null ? owner.runtime().placement().endpoints().containsKey(endpoint)
+                : couplerAnimation.parameters().stream().anyMatch(parameter -> parameter.endpoint().equals(endpoint));
+    }
 
     /** The compatibility record points at this same entity and inventory; it never owns another body. */
     public void bindCompatibility(Carriage carriage, int index) {
@@ -201,6 +216,9 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             }
             syncCarriage();
         }
+        // Native entity restoration also binds here before alignEntity, even while its
+        // track graph is unavailable. In that case roll comes from the saved BodyRoll.
+        CreateTrackCompatibility.synchronizePose(dimensional, Math.toRadians(roll));
     }
 
     @Override public Carriage getCarriage() { return compatibilityCarriage; }
@@ -258,6 +276,13 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         entityData.set(COMPATIBILITY_TRAIN, Optional.of(train.id));
         entityData.set(COMPATIBILITY_INDEX, carriageIndex);
         entityData.set(COMPATIBILITY_GRAPH, Optional.ofNullable(train.graph).map(graph -> graph.id));
+        var graphTag = new CompoundTag();
+        var graphIds = new ListTag();
+        for (var id : CreateTrackCompatibility.graphIds(train.graph)) {
+            var entry = new CompoundTag(); entry.putUUID("Id", id); graphIds.add(entry);
+        }
+        graphTag.put("Graphs", graphIds);
+        entityData.set(COMPATIBILITY_GRAPHS, graphTag);
         entityData.set(COMPATIBILITY_SPEED, (float) train.speed);
         entityData.set(COMPATIBILITY_DERAILED, train.derailed);
         var data = new CarriageSyncData();
@@ -269,7 +294,14 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         var carriage = compatibilityCarriage;
         var train = carriage.train;
         var graphId = entityData.get(COMPATIBILITY_GRAPH);
-        var graph = graphId.map(id -> Create.RAILWAYS.sided(level()).trackNetworks.get(id)).orElse(null);
+        var graphIds = new ArrayList<UUID>();
+        for (var item : entityData.get(COMPATIBILITY_GRAPHS).getList("Graphs", Tag.TAG_COMPOUND)) {
+            var entry = (CompoundTag) item;
+            if (!entry.hasUUID("Id")) return;
+            graphIds.add(entry.getUUID("Id"));
+        }
+        if (graphIds.isEmpty()) graphId.ifPresent(graphIds::add);
+        var graph = CreateTrackCompatibility.resolveGraphs(Create.RAILWAYS.sided(level()), graphIds);
         if (graphId.isPresent() && graph == null) return;
         var data = getCarriageData();
         if (data.fallbackLocations == null) {
@@ -290,12 +322,15 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         train.currentlyBackwards = train.speed < 0;
         var dimensional = carriage.getDimensional(level());
         dimensional.pointsInitialised = false;
+        CreateTrackCompatibility.prepareClientSync(data, graph);
         data.apply(this, carriage);
+        if (data.fallbackLocations == null) CreateTrackCompatibility.clientPointsApplied(carriage, graph);
         if (data.fallbackLocations != null) {
             dimensional.positionAnchor = data.fallbackLocations.getFirst();
             dimensional.rotationAnchors = Couple.create(data.fallbackLocations.getSecond().getFirst(),
                     data.fallbackLocations.getSecond().getSecond());
         }
+        CreateTrackCompatibility.synchronizePose(dimensional, Math.toRadians(roll));
         compatibilitySyncPending = false;
     }
 
@@ -344,7 +379,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             if (!poseInterpolation.initialized()) applyClientMotionFrame(frame);
             else pendingClientMotionFrame = frame.copy();
         }
-        if (key.equals(COMPATIBILITY_POINTS) || key.equals(COMPATIBILITY_GRAPH)
+        if (key.equals(COMPATIBILITY_POINTS) || key.equals(COMPATIBILITY_GRAPH) || key.equals(COMPATIBILITY_GRAPHS)
                 || key.equals(COMPATIBILITY_TRAIN) || key.equals(COMPATIBILITY_INDEX)
                 || key.equals(COMPATIBILITY_SPEED) || key.equals(COMPATIBILITY_DERAILED))
             compatibilitySyncPending = true;
@@ -355,7 +390,8 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             cabDisplayState = frame.contains("CabDisplay", net.minecraft.nbt.Tag.TAG_COMPOUND)
                     ? CabDisplayStateNbt.read(frame.getCompound("CabDisplay"))
                     : CabDisplayState.speedOnly(frame.getDouble("DisplaySpeedKmh"));
-            cabControlFrame = frame.getCompound(frame.contains("CabControls") ? "CabControls" : "TestCab");
+            cabControlStates = willow.train.hexie.vehicle.control.CabModule.readFrames(
+                    frame.getCompound(frame.contains("CabControls") ? "CabControls" : "TestCab"));
             setCoordinateBasis(Direction.byName(frame.getString("Forward")));
             boolean initial = !poseInterpolation.initialized();
             int steps = initial ? 0 : getType().updateInterval();
@@ -431,15 +467,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
                         level().registryAccess());
                 if (blockEntity == null) throw new IllegalStateException("Could not restore carriage block entity");
                 blockEntity.setLevel(level());
-                var updateTag = blockEntity.getUpdateTag(level().registryAccess());
-                // The deployer's update writer also emits its deferred inventory. Only held-item
-                // appearance is needed; no fake player or mounted inventory is created for a view.
-                if (blockEntity instanceof DeployerBlockEntity) {
-                    updateTag.remove("Inventory");
-                    updateTag.remove("Overflow");
-                    if (data.contains("HeldItem")) updateTag.put("HeldItem", data.get("HeldItem").copy());
-                }
-                view.update(block.position(), updateTag);
+                view.update(block.position(), SnapshotView.displayTag(level(), blockEntity, data));
                 view.localizeMultiblock(info, blockEntity);
             }
             view.addDisplayActor(level(), info);
@@ -447,6 +475,9 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             if (block.state().getBlock() instanceof willow.train.hexie.blocks.locos.head.CRH2HeadBlock)
                 box = box.minmax(willow.train.hexie.blocks.locos.head.HeadGeometry.bounds(
                         block.state().getValue(willow.train.hexie.blocks.locos.head.CRH2HeadBlock.FACING)).move(block.position()));
+            var hook = willow.train.hexie.blocks.coupler.CouplerBlock.of(block.state());
+            if (hook != null && hook.geometry() != null)
+                box = box.minmax(hook.geometry().bounds(hook.facing(block.state())).move(block.position()));
             bounds = bounds == null ? box : bounds.minmax(box);
         }
         view.bounds = bounds;
@@ -584,6 +615,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
                 if (info != null) view.getBlocks().put(info.pos(), new StructureBlockInfo(info.pos(), info.state(),
                         entry.getValue() == null ? null : entry.getValue().copy()));
             }
+            view.getBlocks().replaceAll((position, info) -> withCabControls(info));
             view.bindMultiblocks(originalMultiblocks);
             Set<UUID> existingGlue = new HashSet<>();
             matchingGlue().forEach(glue -> existingGlue.add(glue.getUUID()));
@@ -648,6 +680,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         var actorData = actorBlockData();
         for (var info : contraption.getBlocks().values()) {
             CompoundTag data = actorData.getOrDefault(info.pos(), info.nbt());
+            data = withCabControls(new StructureBlockInfo(info.pos(), info.state(), data)).nbt();
             data = data == null ? null : data.copy();
             if (data != null && snapshot != null) {
                 BlockPos world = snapshot.origin().offset(info.pos());
@@ -661,6 +694,16 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         return result;
     }
 
+    private StructureBlockInfo withCabControls(StructureBlockInfo info) {
+        var owner = motion();
+        if (owner == null || info.nbt() == null) return info;
+        var controls = owner.cabControlsForSave(getUUID(), info.pos());
+        if (controls == null) return info;
+        var data = info.nbt().copy();
+        data.put("CabControls", controls);
+        return new StructureBlockInfo(info.pos(), info.state(), data);
+    }
+
     private Map<BlockPos, CompoundTag> actorBlockData() {
         var result = new HashMap<BlockPos, CompoundTag>();
         for (var actor : contraption.getActors()) {
@@ -671,7 +714,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             // inventory without stopping it or copying that private inventory into the spawn tag.
             if (data != null && context.temporaryData instanceof DeployerFakePlayer player)
                 data.put("Inventory", player.getInventory().save(new ListTag()));
-            result.put(actor.left.pos(), data);
+            result.put(actor.left.pos(), withCabControls(new StructureBlockInfo(actor.left.pos(), actor.left.state(), data)).nbt());
         }
         return result;
     }
@@ -698,7 +741,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         tag.put("DisabledActors", NBTHelper.writeItemList(contraption.getDisabledActors(), registryAccess()));
         var changed = new ListTag();
         if (snapshot != null) for (var original : snapshot.blocks()) {
-            var current = contraption.getBlocks().get(original.position());
+            var current = withCabControls(contraption.getBlocks().get(original.position()));
             // Actor block data is saved above; static BE data need not be duplicated.
             if (current.state().equals(original.state()) && (actorData.containsKey(original.position())
                     || java.util.Objects.equals(current.nbt(), original.entityData()))) continue;
@@ -724,42 +767,117 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             tag = willow.train.hexie.vehicle.assembly.MissingBlockMigration.migrate(
                     server, tag, "working-state-" + getUUID(), missing);
         }
-        for (var element : tag.getList("ChangedBlocks", Tag.TAG_COMPOUND)) {
+        // Decode the complete update before installing it; malformed later actors must not leave
+        // half of the structure replaced. Reuse the snapshot's block/property/type contract.
+        var blocks = view.copyBlocks();
+        var changedPositions = new HashSet<BlockPos>();
+        for (var element : workingList(tag, "ChangedBlocks")) {
             var data = (CompoundTag) element;
-            BlockPos pos = NBTHelper.readBlockPos(data, "Pos");
-            if (!view.getBlocks().containsKey(pos)) throw new IllegalArgumentException("Unknown working block " + pos);
-            var state = NbtUtils.readBlockState(level().holderLookup(net.minecraft.core.registries.Registries.BLOCK), data.getCompound("State"));
-            view.getBlocks().put(pos, new StructureBlockInfo(pos, state,
-                    data.contains("BlockEntity") ? data.getCompound("BlockEntity").copy() : null));
-            view.refreshDisplayTag(level(), view.getBlocks().get(pos));
+            BlockPos pos = workingPosition(data, "Pos");
+            var previous = blocks.get(pos);
+            if (previous == null || !changedPositions.add(pos))
+                throw new IllegalArgumentException("Unknown or duplicate working block " + pos);
+            var state = CarriageSnapshot.readState(data.getCompound("State"), registryAccess());
+            if (state.getBlock() != previous.state().getBlock())
+                throw new IllegalArgumentException("Working state cannot replace a captured block type " + pos);
+            var info = new StructureBlockInfo(pos, state,
+                    data.contains("BlockEntity") ? data.getCompound("BlockEntity").copy() : null);
+            validateWorkingBlock(info, previous);
+            blocks.put(pos, info);
         }
-        if (!tag.getBoolean("CargoInCarriage")) view.getStorage().read(tag, registryAccess(), false, view);
-        view.getActors().clear();
-        for (var element : tag.getList("Actors", Tag.TAG_COMPOUND)) {
+        var actors = new ArrayList<MutablePair<StructureBlockInfo, MovementContext>>();
+        var actorPositions = new HashSet<BlockPos>();
+        for (var element : workingList(tag, "Actors")) {
             var data = (CompoundTag) element;
-            BlockPos pos = NBTHelper.readBlockPos(data, "Pos");
-            var info = view.getBlocks().get(pos);
-            if (info == null || MovementBehaviour.REGISTRY.get(info.state()) == null)
+            BlockPos pos = workingPosition(data, "Pos");
+            var info = blocks.get(pos);
+            if (info == null || !actorPositions.add(pos) || MovementBehaviour.REGISTRY.get(info.state()) == null)
                 throw new IllegalArgumentException("Unknown working actor " + pos);
             if (data.contains("BlockEntity")) {
-                info = new StructureBlockInfo(pos, info.state(), data.getCompound("BlockEntity").copy());
-                view.getBlocks().put(pos, info);
-                view.refreshDisplayTag(level(), info);
+                var changed = new StructureBlockInfo(pos, info.state(), data.getCompound("BlockEntity").copy());
+                validateWorkingBlock(changed, info);
+                info = changed;
+                blocks.put(pos, info);
             }
+            workingVector(data, "Motion"); workingVector(data, "RelativeMotion");
+            if (data.contains("Position")) workingVector(data, "Position");
+            if (!data.contains("Data", Tag.TAG_COMPOUND)) throw new IllegalArgumentException("Missing actor data");
             var context = MovementContext.readNBT(level(), info, data, view);
             context.disabled = data.getBoolean("Disabled");
-            view.getActors().add(MutablePair.of(info, context));
+            actors.add(MutablePair.of(info, context));
         }
-        view.getDisabledActors().clear();
-        view.getDisabledActors().addAll(NBTHelper.readItemList(tag.getList("DisabledActors", Tag.TAG_COMPOUND), registryAccess()));
-        view.getSeatMapping().clear();
-        for (var element : tag.getList("Passengers", Tag.TAG_COMPOUND)) {
+        var passengers = new HashMap<UUID, Integer>();
+        for (var element : workingList(tag, "Passengers")) {
             var data = (CompoundTag) element;
-            view.getSeatMapping().put(data.getUUID("Id"), data.getInt("Seat"));
+            int seat = data.getInt("Seat");
+            if (!data.hasUUID("Id") || !data.contains("Seat", Tag.TAG_INT) || seat < 0 || seat >= view.getSeats().size()
+                    || passengers.put(data.getUUID("Id"), seat) != null)
+                throw new IllegalArgumentException("Invalid working passenger seat");
         }
+        var disabled = NBTHelper.readItemList(workingList(tag, "DisabledActors"), registryAccess());
+        SnapshotCargoManager cargo = null;
+        if (!tag.getBoolean("CargoInCarriage")) {
+            cargo = new SnapshotCargoManager();
+            cargo.read(tag, registryAccess(), false, view);
+            verifyWorkingStorage(tag, "items", cargo.getAllItemStorages().keySet());
+            verifyWorkingStorage(tag, "fluids", cargo.getFluids().storages.keySet());
+        }
+        view.restoreBlocks(blocks);
+        blocks.values().forEach(info -> view.refreshDisplayTag(level(), info));
+        if (cargo != null) {
+            view.replaceStorage(cargo);
+            if (compatibilityCarriage != null) compatibilityCarriage.storage = cargo;
+        }
+        view.getActors().clear(); view.getActors().addAll(actors);
+        view.getDisabledActors().clear();
+        view.getDisabledActors().addAll(disabled);
+        view.getSeatMapping().clear();
+        view.getSeatMapping().putAll(passengers);
         behavioursActive = view.active = tag.getBoolean("Active");
         view.stalled = tag.getBoolean("Stalled");
         view.invalidateColliders();
+    }
+
+    private void validateWorkingBlock(StructureBlockInfo info, StructureBlockInfo previous) {
+        new CarriageSnapshot.Block(info.pos(), info.state(), info.nbt());
+        if (info.nbt() == null) return;
+        CarriageSnapshot.validateEntityType(info.state(), info.nbt(), registryAccess());
+        if (previous.nbt() == null) throw new IllegalArgumentException("Unexpected working block entity");
+        for (String axis : List.of("x", "y", "z"))
+            if (info.nbt().getInt(axis) != previous.nbt().getInt(axis))
+                throw new IllegalArgumentException("Working block entity coordinates changed " + info.pos());
+    }
+
+    private static ListTag workingList(CompoundTag tag, String key) {
+        if (!(tag.get(key) instanceof ListTag list) || !list.isEmpty() && list.getElementType() != Tag.TAG_COMPOUND)
+            throw new IllegalArgumentException("Invalid working list " + key);
+        return list;
+    }
+
+    private static BlockPos workingPosition(CompoundTag tag, String key) {
+        BlockPos position = NBTHelper.readBlockPos(tag, key);
+        if (!NbtUtils.writeBlockPos(position).equals(tag.get(key)))
+            throw new IllegalArgumentException("Invalid working position " + key);
+        return position;
+    }
+
+    private static void workingVector(CompoundTag tag, String key) {
+        if (!(tag.get(key) instanceof ListTag list) || list.size() != 3 || list.getElementType() != Tag.TAG_DOUBLE)
+            throw new IllegalArgumentException("Invalid actor vector " + key);
+        for (int i = 0; i < 3; i++) if (!Double.isFinite(list.getDouble(i)))
+            throw new IllegalArgumentException("Non-finite actor vector " + key);
+    }
+
+    private static void verifyWorkingStorage(CompoundTag tag, String key, Set<BlockPos> restored) {
+        // Legacy storage is decoded by Create; current entries must survive its permissive codec reader.
+        if (!tag.contains(key)) return;
+        var expected = new HashSet<BlockPos>();
+        for (var item : workingList(tag, key)) {
+            var data = (CompoundTag) item;
+            if (!expected.add(workingPosition(data, "pos")) || !data.contains("storage", Tag.TAG_COMPOUND))
+                throw new IllegalArgumentException("Invalid mounted storage entry");
+        }
+        if (!expected.equals(restored)) throw new IllegalArgumentException("Mounted storage entries failed to decode");
     }
 
     @Override
@@ -862,6 +980,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         builder.define(BASIS_FORWARD, Direction.NORTH);
         builder.define(COMPATIBILITY_POINTS, new CarriageSyncData());
         builder.define(COMPATIBILITY_GRAPH, Optional.empty());
+        builder.define(COMPATIBILITY_GRAPHS, new CompoundTag());
         builder.define(COMPATIBILITY_TRAIN, Optional.empty());
         builder.define(COMPATIBILITY_INDEX, 0);
         builder.define(COMPATIBILITY_SPEED, 0f);
@@ -956,16 +1075,19 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
 
     private void readCouplerAnimation(CompoundTag tag, int steps) {
         var before = couplerAnimation.frames();
+        var previousVisuals = couplerAnimation.parameters().stream().map(SnapshotCouplerAnimation.Parameters::visual).toList();
         double oldFloor = couplerAnimation.floorOffset();
         couplerAnimation.read(tag, steps);
         var after = couplerAnimation.frames();
+        boolean visualsChanged = !previousVisuals.equals(couplerAnimation.parameters().stream()
+                .map(SnapshotCouplerAnimation.Parameters::visual).toList());
         boolean hooksChanged = before.size() != after.size();
         for (int i = 0; !hooksChanged && i < before.size(); i++)
             hooksChanged = !before.get(i).position().equals(after.get(i).position());
         if (contraption != null) {
             boolean floorChanged = oldFloor != couplerAnimation.floorOffset();
             if (hooksChanged) floorBoundsSource = null;
-            if (floorChanged || hooksChanged && (oldFloor != 0 || couplerAnimation.floorOffset() != 0))
+            if (visualsChanged || floorChanged || hooksChanged && (oldFloor != 0 || couplerAnimation.floorOffset() != 0))
                 contraption.invalidateClientContraptionStructure();
             else if (hooksChanged) contraption.invalidateClientContraptionChildren();
             if (floorChanged) contraption.invalidateColliders();
@@ -1337,16 +1459,21 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             var blockEntity = BlockEntity.loadStatic(info.pos(), info.state(), info.nbt(), level.registryAccess());
             if (blockEntity == null) return;
             blockEntity.setLevel(level);
+            updateTags.put(info.pos(), displayTag(level, blockEntity, info.nbt()));
+        }
+
+        static CompoundTag displayTag(Level level, BlockEntity blockEntity, CompoundTag saved) {
             var update = blockEntity.getUpdateTag(level.registryAccess());
             if (blockEntity instanceof DeployerBlockEntity) {
                 update.remove("Inventory");
                 update.remove("Overflow");
-                if (info.nbt().contains("HeldItem")) update.put("HeldItem", info.nbt().get("HeldItem").copy());
+                if (saved.contains("HeldItem")) update.put("HeldItem", saved.get("HeldItem").copy());
             }
-            updateTags.put(info.pos(), update);
+            return update;
         }
 
         SnapshotCargoManager cargo() { return (SnapshotCargoManager) storage; }
+        void replaceStorage(SnapshotCargoManager cargo) { storage = cargo; }
         void storageFromCarriage(Carriage carriage) { storage = carriage.storage; }
 
         @Override public MountedStorageManager getStorage() { return storage; }
@@ -1376,7 +1503,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
                     // Bind at creation so the first render and every rebuild read live state.
                     if (be instanceof willow.train.hexie.api.cab.CabDisplayHost console)
                         console.displaySource(() -> ((SnapshotCarriageEntity) SnapshotView.this.entity).cabDisplayState());
-                    if (be instanceof willow.train.hexie.blockentity.DrivingConsoleEntity console)
+                    if (be instanceof willow.train.hexie.api.cab.CabControlsHost console)
                         console.controlsSource(() -> ((SnapshotCarriageEntity) SnapshotView.this.entity).cabControls(info.pos()));
                     return be;
                 }
@@ -1386,20 +1513,15 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
                     // door's current progress, including a transition still in flight.
                     var previousDoors = new java.util.HashMap<BlockPos, BlockEntity>();
                     for (var be : renderedBlockEntityView)
-                        if (be instanceof willow.train.hexie.blockentity.CustomRenderedDoorEntity
-                                || be instanceof willow.train.hexie.blockentity.OBJRenderableEndFaceEntity)
+                        if (be instanceof willow.train.hexie.blocks.base.BlockEntityAnimation)
                             previousDoors.put(be.getBlockPos(), be);
                     super.resetRenderLevel();
                     for (var entry : previousDoors.entrySet()) {
                         var before = entry.getValue();
                         var after = getBlockEntity(entry.getKey());
                         if (after == null || before.getBlockState().getBlock() != after.getBlockState().getBlock()) continue;
-                        if (before instanceof willow.train.hexie.blockentity.CustomRenderedDoorEntity oldDoor
-                                && after instanceof willow.train.hexie.blockentity.CustomRenderedDoorEntity door)
-                            door.copyAnimationFrom(oldDoor);
-                        if (before instanceof willow.train.hexie.blockentity.OBJRenderableEndFaceEntity oldDoor
-                                && after instanceof willow.train.hexie.blockentity.OBJRenderableEndFaceEntity door)
-                            door.counter = oldDoor.counter;
+                        if (after instanceof willow.train.hexie.blocks.base.BlockEntityAnimation animation)
+                            animation.restoreAnimation(before);
                     }
                 }
 
@@ -1409,7 +1531,11 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
                     return new RenderedBlocks(pos -> {
                         var info = SnapshotView.this.getBlocks().get(pos);
                         if (info == null) return net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
-                        var hook = CouplerBlock.of(info.state());
+                        var animation = ((SnapshotCarriageEntity) entity).couplerAnimation();
+                        var visual = animation.visual(pos);
+                        if (visual != null) return willow.train.hexie.vehicle.assembly.CouplerDataRegistry.renderState(
+                                animation.hasShiftedBase(pos) ? visual.shiftedFixed() : visual.fixed());
+                        var hook = info.state().getBlock() instanceof CouplerBlock registered ? registered : null;
                         return hook != null
                                 ? hook.carriageRenderState(info.state(),
                                         ((SnapshotCarriageEntity) entity).couplerAnimation().hasShiftedBase(pos))

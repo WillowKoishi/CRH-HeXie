@@ -20,8 +20,8 @@ public final class Ctcs2DmiLayout {
         void fitted(String s,float x,float y,float width,float scale,int c);
     }
     public static void render(CabDisplayState state,int range,Canvas d) {
-        var data=state.dmi(); var target=DmiGuidance.target(state); var guide=DmiGuidance.from(state);
-        boolean curve=DmiGuidance.hasTargetCurve(state);
+        var data=state.dmi(); var resolved=DmiGuidance.resolve(state); var target=resolved.target(); var guide=resolved.guidance();
+        boolean curve=resolved.hasTargetCurve();
         boolean tsm=curve && (data.lineLimitKmh()<0 || guide.speedKmh()<data.lineLimitKmh());
         boolean overspeed=guide.available() && state.speedKmh()>guide.speedKmh()+.5;
         int pointer=overspeed?ORANGE:tsm?YELLOW:GREY;
@@ -65,8 +65,8 @@ public final class Ctcs2DmiLayout {
         d.line(0,399,64,399,1,BORDER);
         for(int x:new int[]{64,104,144,184,296,336,376,416}) d.line(x,368,x,430,1,BORDER);
         d.center("CTCS 2",32,377,1.2f,WHITE);
-        // Explicit lamp keys distinguish emergency from parking/full service; never infer it from brake force.
-        if(lit(state,"dmi.brake.emergency")) d.icon("brake_emergency",5,401,54,27);
+        // The icon describes the same actual brake amount sent to the bogeys.
+        if(data.brake()>=1) d.icon("brake_emergency",5,401,54,27);
         else if(data.brake()>0) d.icon(serviceBrakeIcon(data.brake()),5,401,54,27);
         // D: no invented titles, advice text, percentages or point markers.
         signal(d,data.ctcs().code());
@@ -79,17 +79,16 @@ public final class Ctcs2DmiLayout {
                 for(var point:data.ctcs().targets()) if(point.speedKmh()==0) end=Math.min(end,point.distanceM());
                 float px=distanceX(0,range),py=speedY(guide.speedKmh());
                 for(int i=1;i<=128;i++) {
-                    double m=end*i/128;float x=distanceX(m,range),y=speedY(DmiGuidance.speedAtDistance(state,m));
+                    double m=end*i/128;float x=distanceX(m,range),y=speedY(resolved.speedAtDistance(m));
                     d.quad(px,py,x,y,x,246,px,246,BLUE);px=x;py=y;
                 }
             } else {
             double end=curve?Math.min(range,target.distanceM()):range;
             float px=distanceX(0,range),py=speedY(guide.speedKmh());
             // The manual draws the first descending segment as a straight line in the plan.
-            double start=curve?Math.max(0,target.distanceM()-Math.pow(Math.max(0,data.lineLimitKmh())/3.6,2)
-                    /(2*data.serviceDeceleration())):range;
+            double start=curve?resolved.descentStartDistance():range;
             if(start>0) {float sx=distanceX(Math.min(start,end),range);d.quad(px,py,sx,py,sx,246,px,246,BLUE);px=sx;}
-            float ex=distanceX(end,range),ey=curve && target.distanceM()<=range?speedY(target.speedKmh()):speedY(DmiGuidance.speedAtDistance(state,end));
+            float ex=distanceX(end,range),ey=curve && target.distanceM()<=range?speedY(target.speedKmh()):speedY(resolved.speedAtDistance(end));
             d.quad(px,py,ex,ey,ex,246,px,246,BLUE);
             if(curve && start<=range) d.line(distanceX(start,range),58,distanceX(start,range),246,2,YELLOW);
             }
@@ -122,8 +121,7 @@ public final class Ctcs2DmiLayout {
         String[] keys={"数据","模式","载频","等级","其它","启动","缓解","警惕"};
         for(int i=0;i<8;i++){outline(d,720,i*75,80,75,BORDER);d.center(keys[i],760,i*75+27,2.3f,WHITE);}
     }
-    private static boolean lit(CabDisplayState s,String key){var l=s.lamps().get(key);return l!=null&&l.lit();}
-    /** Three service levels; emergency is an explicit state, never inferred from force. */
+    /** Three service levels below full commanded braking. */
     private static String serviceBrakeIcon(double brake) {
         return brake <= .3 ? "brake_weak" : brake <= .6 ? "brake_medium" : "brake_service";
     }

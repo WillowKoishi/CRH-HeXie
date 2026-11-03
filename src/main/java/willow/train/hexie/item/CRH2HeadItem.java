@@ -12,26 +12,8 @@ import willow.train.hexie.init.block.BlockInit;
 public final class CRH2HeadItem extends BlockItem {
     public CRH2HeadItem(Block b,Properties p) { super(b,p); }
     @Override protected boolean placeBlock(BlockPlaceContext c,BlockState s) {
-        var w=c.getLevel();var root=c.getClickedPos();var facing=s.getValue(CRH2HeadBlock.FACING);
-        var before=new LinkedHashMap<BlockPos,BlockState>();
-        for(int i=0;i<HeadGeometry.PARTS;i++) {
-            var p=root.offset(HeadGeometry.offset(i,facing));
-            if(w.isOutsideBuildHeight(p)||!w.hasChunkAt(p)||!w.getWorldBorder().isWithinBounds(p)) return false;
-            var old=w.getBlockState(p);
-            if(!old.canBeReplaced() || (c.getPlayer()!=null && !c.getPlayer().mayUseItemAt(p,c.getClickedFace(),c.getItemInHand()))) return false;
-            before.put(p,old);
-        }
-        if(!super.placeBlock(c,s)) return false;
-        for(int i=0;i<HeadGeometry.PARTS;i++) {
-            if(i==HeadGeometry.ROOT_PART)continue;
-            var p=root.offset(HeadGeometry.offset(i,facing));
-            var part=BlockInit.CRH2A_HEAD_FLOOR.get().defaultBlockState().setValue(CRH2HeadBlock.FACING,facing).setValue(HeadFloorBlock.PART,i);
-            if(!w.setBlock(p,part,Block.UPDATE_ALL)) {
-                // Roll back this single placement, including replaceable plants/fluids.
-                for(var entry:before.entrySet()) w.setBlock(entry.getKey(),entry.getValue(),Block.UPDATE_ALL|Block.UPDATE_MOVE_BY_PISTON);
-                return false;
-            }
-        }
-        return true;
+        var w=c.getLevel();var root=c.getClickedPos();
+        return willow.train.hexie.blocks.parts.PartInstallation.install(w,((CRH2HeadBlock)getBlock()).partCells(w,root,s),
+                p->false,p->c.getPlayer()==null||c.getPlayer().mayUseItemAt(p,c.getClickedFace(),c.getItemInHand()));
     }
 }

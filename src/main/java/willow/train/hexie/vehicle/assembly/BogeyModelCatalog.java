@@ -1,6 +1,6 @@
 package willow.train.hexie.vehicle.assembly;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -10,7 +10,7 @@ import net.minecraft.resources.ResourceLocation;
 import willow.train.hexie.blocks.bogeys.HexieBogeyBlock;
 import willow.train.hexie.init.track.TrackMaterialInit;
 import willow.train.hexie.vehicle.bogey.BogeyGeometry;
-import willow.train.hexie.vehicle.bogey.BuiltinBogeyProfile;
+import willow.train.hexie.vehicle.bogey.BuiltinBogeyModel;
 import willow.train.hexie.vehicle.runtime.BogeyParameters;
 import willow.train.hexie.vehicle.runtime.BogeyMount;
 import willow.train.hexie.vehicle.runtime.CouplingEndpoint.Point;
@@ -54,17 +54,27 @@ public final class BogeyModelCatalog {
         }
     }
 
-    private final Map<ResourceLocation, Function<CarriageSnapshot.Block, Model>> models = new HashMap<>();
+    private final Map<ResourceLocation, Function<CarriageSnapshot.Block, Model>> models = new ConcurrentHashMap<>();
+    private static BogeyModelCatalog production;
 
-    /** Built-in definitions; custom blocks can register a definition provider on the returned catalog. */
-    public static BogeyModelCatalog production() {
+    /**
+     * Shared production catalog. Register custom providers here during common setup, after blocks
+     * are registered. Every production assembly uses this same catalog; isolated callers may still
+     * construct their own catalog and pass it to the assembly preparer.
+     */
+    public static synchronized BogeyModelCatalog production() {
+        if (production == null) production = createProduction();
+        return production;
+    }
+
+    private static BogeyModelCatalog createProduction() {
         var catalog = new BogeyModelCatalog();
         for (var block : BuiltInRegistries.BLOCK) {
             if (!(block instanceof HexieBogeyBlock<?> bogey)) continue;
-            var registration = identify(bogey);
+            var registration = BuiltinBogeyModel.find(bogey.getDefaultStyle().id, bogey.getSize().id());
             if (registration == null) continue; // Custom styles need their own registered resolver.
-            var profile = registration.profile;
-            var model = new Model(ResourceLocation.fromNamespaceAndPath("hexie", registration.model),
+            var profile = registration.profile();
+            var model = new Model(registration.id(),
                     profile.geometry(), profile.operating(), new Point(0, 0, 0),
                     profile.mountType(), profile.lateralLimit(), 1.5 - TrackMaterialInit.RAIL_SURFACE_HEIGHT);
             catalog.register(BuiltInRegistries.BLOCK.getKey(block), captured -> {
@@ -85,29 +95,6 @@ public final class BogeyModelCatalog {
             });
         }
         return catalog;
-    }
-
-    private record Registration(String model, BuiltinBogeyProfile profile) {}
-
-    /** Use the registered style and size together to identify the concrete model. */
-    private static Registration identify(HexieBogeyBlock<?> bogey) {
-        String style = bogey.getDefaultStyle().id.toString();
-        String size = bogey.getSize().id().toString();
-        return switch (style + "/" + size) {
-            case "hexie:hxstandardbogey/create:small" -> new Registration("cw2", BuiltinBogeyProfile.CW2);
-            case "hexie:hxstandardbogey/hexie:pk209p" -> new Registration("pk209p", BuiltinBogeyProfile.PK209P);
-            case "hexie:hxstandardbogey/hexie:pk209p_no_motor" -> new Registration("pk209p_no_motor", BuiltinBogeyProfile.PK209P);
-            case "hexie:hxstandardbogey/hexie:pk209p_backward" -> new Registration("pk209p_backward", BuiltinBogeyProfile.PK209P);
-            case "hexie:hxstandardbogey/hexie:sw220k" -> new Registration("sw220k", BuiltinBogeyProfile.SW220K);
-            case "hexie:hxstandardbogey/hexie:sw220k_backward" -> new Registration("sw220k_backward", BuiltinBogeyProfile.SW220K);
-            case "hexie:hxstandardbogey/hexie:sw160" -> new Registration("sw160", BuiltinBogeyProfile.SW160);
-            case "hexie:df11gbogey/create:small" -> new Registration("df11g", BuiltinBogeyProfile.DF11G);
-            case "hexie:df11gbogey/hexie:backward" -> new Registration("df11g_backward", BuiltinBogeyProfile.DF11G);
-            case "hexie:df11gbogey/hexie:qj" -> new Registration("qj", BuiltinBogeyProfile.QJ);
-            case "hexie:df11gbogey/hexie:qj_backward" -> new Registration("qj_backward", BuiltinBogeyProfile.QJ);
-            case "hexie:crhbogey/hexie:dt206" -> new Registration("dt206", BuiltinBogeyProfile.DT206);
-            default -> null;
-        };
     }
 
     public void register(ResourceLocation block, Model model) {

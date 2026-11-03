@@ -9,13 +9,8 @@ import net.minecraft.world.phys.Vec3;
 public final class HarmonyMarking {
     public static final double EMBLEM_HEIGHT = 6.5 / 16d;
     private HarmonyMarking() {}
-    public static int slot(CRH2PanelBlock block, BlockState state, BlockPos root, Vec3 hit) {
-        var bounds=block.placementBounds(state.setValue(CRH2PanelBlock.FACING,Direction.NORTH));
-        double x=hit.x-root.getX()-.5,z=hit.z-root.getZ()-.5;
-        double localX=.5+switch(state.getValue(CRH2PanelBlock.FACING)) {
-            case EAST -> z; case SOUTH -> -x; case WEST -> -z; default -> x;
-        };
-        return bounds.getXsize()>1.5 && localX>=(bounds.minX+bounds.maxX)/2 ? 1 : 0;
+    public static int slot(willow.train.hexie.blocks.parts.VehicleMarkingSurface block, BlockState state, BlockPos root, Vec3 hit) {
+        return block.markingSlot(state,root,hit);
     }
     public record Layout(double left, double top, double width, double height) {}
     public static Layout layout(double cellLeft, double panelTop, boolean emblemRight) {

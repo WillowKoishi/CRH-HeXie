@@ -31,7 +31,7 @@ public final class CouplerBlockEntityRenderer implements BlockEntityRenderer<Cou
         var state = entity.getBlockState();
         if (entity.getLevel() instanceof net.minecraft.client.multiplayer.ClientLevel)
             willow.train.hexie.client.render.SnapshotCouplerRenderer.renderWorldAttachedParts(
-                    state, stack, buffers, light, overlay);
+                    state, entity, partialTick, stack, buffers, light, overlay);
         if (adapter == null || !(state.getBlock() instanceof CouplerBlock hook)
                 || hook.assembled(state)) return;
         stack.pushPose();

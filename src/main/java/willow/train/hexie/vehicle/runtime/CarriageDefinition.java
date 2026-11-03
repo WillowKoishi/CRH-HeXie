@@ -43,8 +43,8 @@ public record CarriageDefinition(UUID id, List<BogeyDefinition> bogeys,
                 b.geometry(), b.parameters(), new BogeyMount(b.mount().bodyPoint().plus(shift), b.mount().trackPivot(),
                 b.mount().type(), b.mount().lateralLimit()))).toList();
         var shiftedCouplings = couplings.stream().map(e -> new CouplingEndpoint(e.id(), e.blockCenter(), e.facing(),
-                e.pivot().plus(shift), e.start().plus(shift), e.complete().plus(shift), e.kind(), e.maxExtension(),
-                e.model(), e.adapter())).toList();
+                e.axis(), e.start().plus(shift), e.complete().plus(shift), e.kind(), e.maxExtension(),
+                e.model(), e.adapter(), e.visual())).toList();
         return new CarriageDefinition(id, shiftedBogeys, shiftedCouplings, rearExtent, frontExtent, next);
     }
 

@@ -1,9 +1,23 @@
+KuaYue 0.3.9n (inherited code and assets)
+Upstream: https://gitee.com/WillowKoishi/KuaYue/
+License reference revision: 3d4322b07fa208ff65c181bbcae4f50cd68b119f
+
+HeXie includes inherited and modified KuaYue code and assets. The upstream
+MIT copyright and permission notice is preserved in
+META-INF/licenses/kuayue/MIT.txt (in the repository under src/main/resources/).
+Copyright (c) 2022 WillowKoishi(Team FairingStudio)
+This notice applies to the inherited portions; it does not attribute all
+HeXie content to the upstream author. Preserve any additional file-level
+credits and separate third-party notices. HeXie's own copyright and artwork
+license declarations do not replace these upstream notices.
+
+
 Create (机械动力)
 Upstream project: https://github.com/Creators-of-Create/Create
 
 HeXie includes code derived from Create, with modifications by HeXie
-contributors. The following files retain Create's copyright and MIT
-license notices:
+contributors. The copyright and MIT license notice below applies to the
+Create-derived portions of the following files:
 
 - src/main/java/willow/train/hexie/blocks/semaphore/through/ThroughSignalBlock.java
 - src/main/java/willow/train/hexie/blocks/semaphore/through/ThroughSignalBlockEntity.java
@@ -73,7 +87,10 @@ Copyright 2007-2009 for TeX Gyre extensions by B. Jackowski and J. M. Nowacki
 Source: https://ctan.org/pkg/tex-gyre
 License: GUST Font License, an instance of LPPL 1.3c.
 Full unmodified upstream work: META-INF/licenses/tex-gyre/tex-gyre-original.zip
-Accompanying licenses, original README and manifest: META-INF/licenses/sign-fonts/.
+GUST license: META-INF/licenses/sign-fonts/GUST-FONT-LICENSE.txt.
+Full LPPL 1.3c: META-INF/licenses/sign-fonts/LPPL-1.3c.txt.
+LPPL source: https://www.latex-project.org/lppl/lppl-1-3c.txt
+Original README, manifests and sources are inside the original ZIP above.
 The original authors do not provide support for HeXie integration.
 
 Barlow is retained for existing resource-pack references only; built-in
@@ -84,7 +101,7 @@ Copyright 2007-2009 for TeX Gyre extensions by B. Jackowski and J. M. Nowacki
 (on behalf of TeX Users Groups). Vietnamese characters by Han The Thanh.
 License: GUST Font License / LPPL 1.3c. The complete original distribution
 is included in META-INF/licenses/tex-gyre/tex-gyre-original.zip.
-Original README and manifest are in META-INF/licenses/sign-fonts/.
+Original README and manifests are inside that original ZIP.
 
 Noto Sans CJK SC Bold: unmodified NotoSansCJKsc-Bold.otf from
 https://github.com/notofonts/noto-cjk/tree/main/Sans/OTF/SimplifiedChinese

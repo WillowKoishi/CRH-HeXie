@@ -29,13 +29,9 @@ import java.util.Random;
 
 public class OrdinaryTrainPanelBlock extends SideMirrorBlockBase {
 
-    protected static final float AABB_OFFSET = 3.0F;
-    protected static final VoxelShape SOUTH_AABB = Block.box(0, 0, 15, 16, 16, 17);
-    protected static final VoxelShape EAST_AABB = Block.box(15, 0, 0, 17, 16, 16);
-    protected static final VoxelShape NORTH_AABB = Block.box(0, 0, -1, 16, 16, 1);
-    protected static final VoxelShape WEST_AABB = Block.box(-1, 0, 0, 1, 16, 16);
-
-    Random random = new Random();
+protected static final VoxelShape SOUTH_AABB = Block.box(0, 0, 15, 16, 16, 17);
+protected static final VoxelShape NORTH_AABB = Block.box(0, 0, -1, 16, 16, 1);
+Random random = new Random();
 
     public OrdinaryTrainPanelBlock(Properties pProperties) {
         super(pProperties);
@@ -46,17 +42,7 @@ public class OrdinaryTrainPanelBlock extends SideMirrorBlockBase {
             BlockGetter p_54373_,
             BlockPos p_54374_,
             CollisionContext p_54375_) {
-        switch ((Direction) p_54372_.getValue(FACING)) {
-            case NORTH:
-                return NORTH_AABB;
-            case SOUTH:
-                return SOUTH_AABB;
-            case WEST:
-                return WEST_AABB;
-            case EAST:
-            default:
-                return EAST_AABB;
-        }
+        return willow.train.hexie.blocks.parts.PartShapeDefinitions.get("boundary_panel_2",p_54372_.getValue(FACING));
     }
 
     public InteractionResult use(
@@ -66,61 +52,7 @@ public class OrdinaryTrainPanelBlock extends SideMirrorBlockBase {
             Player pPlayer,
             InteractionHand pHand,
             BlockHitResult pHit) {
-        if (pPlayer.getItemInHand(pHand).is(EditablePanelItemInit.ColoredBrush.get())) {
-            if (pLevel.isClientSide) {
-                if (!PANEL_TYPE_UTIL.canTransformPanel(this)) return InteractionResult.PASS;
-                int x = pPos.getX();
-                int y = pPos.getY();
-                int z = pPos.getZ();
-                double speedFactor = 0.1;
-                int particle_account = random.nextInt(12, 16);
-                for (int i = 0; i < particle_account; i++) {
-                    pLevel.addParticle(
-                            ParticleTypes.HAPPY_VILLAGER,
-                            (double) x + random.nextDouble(0f, 1.0f),
-                            (double) y + random.nextDouble(0f, 1.0f),
-                            (double) z + random.nextDouble(0f, 1.0f),
-                            random.nextDouble(0f, speedFactor),
-                            random.nextDouble(0f, speedFactor),
-                            random.nextDouble(0f, speedFactor));
-                }
-                pLevel.playSound(
-                        pPlayer, pPos, SoundEvents.PLAYER_LEVELUP, SoundSource.BLOCKS, 8f, 1f);
-                return InteractionResult.SUCCESS;
-            }
-            onBrush(pLevel, pPlayer, pHand, pHit, pState);
-
-            return InteractionResult.SUCCESS;
-        }
-        if (pPlayer.getItemInHand(pHand).is(EditablePanelItemInit.LACQUERED_BOARD.get())) {
-            if (pLevel.isClientSide) {
-                if (!PANEL_TYPE_UTIL.canTransformPanel(this)) return InteractionResult.PASS;
-                int x = pPos.getX();
-                int y = pPos.getY();
-                int z = pPos.getZ();
-                double speedFactor = 0.1;
-                int particle_account = random.nextInt(12, 16);
-                for (int i = 0; i < particle_account; i++) {
-                    pLevel.addParticle(
-                            ParticleTypes.HAPPY_VILLAGER,
-                            (double) x + random.nextDouble(0f, 1.0f),
-                            (double) y + random.nextDouble(0f, 1.0f),
-                            (double) z + random.nextDouble(0f, 1.0f),
-                            random.nextDouble(0f, speedFactor),
-                            random.nextDouble(0f, speedFactor),
-                            random.nextDouble(0f, speedFactor));
-                }
-                pLevel.playSound(
-                        pPlayer, pPos, SoundEvents.PLAYER_LEVELUP, SoundSource.BLOCKS, 8f, 1f);
-                return InteractionResult.SUCCESS;
-            }
-            onLacqueredBoard(pLevel, pPlayer, pHand, pHit, pState);
-            if (!pPlayer.isCreative()) {
-                pPlayer.getItemInHand(pHand).shrink(1);
-            }
-            return InteractionResult.SUCCESS;
-        }
-        return InteractionResult.FAIL;
+        return PanelConversion.bottom(pLevel,pPos,pState,pPlayer,pHand,pHit);
     }
 
     public void onBrush(
@@ -129,21 +61,7 @@ public class OrdinaryTrainPanelBlock extends SideMirrorBlockBase {
             InteractionHand pHand,
             BlockHitResult pHit,
             BlockState blockState) {
-        if (!PANEL_TYPE_UTIL.canTransformPanel(this)) return;
-        pLevel.setBlock(
-                pHit.getBlockPos(),
-                BlockInit.TRAIN_BOTTOM_PANEL_BLOCK
-                        .get()
-                        .getStateForPlacement(
-                                new BlockPlaceContext(
-                                        pLevel, pPlayer, pHand, ItemStack.EMPTY, pHit),
-                                PANEL_TYPE_UTIL.matchBottomBlock2Panel(this),
-                                blockState.getValue(HINGE)),
-                2);
-        if(!pPlayer.isCreative()) {
-            ItemStack stack = ColoredBrush.onEffectiveUse(pPlayer.getItemInHand(pHand));
-            pPlayer.getInventory().setItem(pPlayer.getInventory().selected, stack);
-        }
+        PanelConversion.bottom(pLevel,pHit.getBlockPos(),blockState,pPlayer,pHand,pHit);
     }
 
     public void onLacqueredBoard(
@@ -152,17 +70,7 @@ public class OrdinaryTrainPanelBlock extends SideMirrorBlockBase {
             InteractionHand pHand,
             BlockHitResult pHit,
             BlockState blockState) {
-        if (!PANEL_TYPE_UTIL.canTransformPanel(this)) return;
-        pLevel.setBlock(
-                pHit.getBlockPos(),
-                BlockInit.LAQUERED_BOARD_BLOCK
-                        .get()
-                        .getStateForPlacement(
-                                new BlockPlaceContext(
-                                        pLevel, pPlayer, pHand, ItemStack.EMPTY, pHit),
-                                PANEL_TYPE_UTIL.matchBottomBlock2Panel(this),
-                                blockState.getValue(HINGE)),
-                2);
+        PanelConversion.bottom(pLevel,pHit.getBlockPos(),blockState,pPlayer,pHand,pHit);
     }
 
     @Override

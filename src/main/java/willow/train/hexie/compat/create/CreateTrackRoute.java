@@ -17,12 +17,13 @@ public final class CreateTrackRoute {
 
     /** Call on the graph's owning thread. The supplied nodes must be this graph's node instances. */
     public static TrackRoute build(TrackGraph graph, List<TrackNode> directedNodes) {
-        Objects.requireNonNull(graph);
-        List<TrackNode> nodes = List.copyOf(directedNodes);
+        graph = CreateTrackCompatibility.routeGraph(Objects.requireNonNull(graph));
+        var scope = graph;
+        List<TrackNode> nodes = directedNodes.stream().map(node -> CreateTrackCompatibility.canonical(scope, node)).toList();
         if (nodes.size() < 2) throw new IllegalArgumentException("A route requires at least two nodes");
         List<TrackGeometry> segments = new ArrayList<>(nodes.size() - 1);
         for (TrackNode node : nodes)
-            if (graph.locateNode(node.getLocation()) != node)
+            if (!CreateTrackCompatibility.owns(graph, node))
                 throw new IllegalArgumentException("Route node is not owned by this graph");
         for (int i = 1; i < nodes.size(); i++) {
             Map<TrackNode, TrackEdge> outgoing = graph.getConnectionsFrom(nodes.get(i - 1));

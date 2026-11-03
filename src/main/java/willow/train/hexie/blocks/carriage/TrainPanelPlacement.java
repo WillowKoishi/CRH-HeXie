@@ -46,16 +46,13 @@ public final class TrainPanelPlacement implements IPlacementHelper {
     public TrainPanelPlacement() { this(false); }
     private TrainPanelPlacement(boolean floor) { this.floor = floor; }
     private static boolean isFloor(BlockState state) {
-        return state.is(willow.train.hexie.init.block.BlockInit.CRH2A_FLOOR.get())
-                || state.getBlock() instanceof TopPanelSlabBlock
-                || state.getBlock() instanceof willow.train.hexie.blocks.structure.DirectionalCarpetBlock;
+        return willow.train.hexie.blocks.parts.PartDefinitions.get(state).extension()==willow.train.hexie.blocks.parts.PartDefinitions.Extension.FLOOR;
     }
-
-    private static boolean isSideRun(BlockState state, String kind) {
-        if (!state.hasProperty(SideMirrorBlockBase.FACING)) return false;
-        if (state.is(willow.train.hexie.init.block.BlockInit.CRH2A_SKIRT_FORBOGEY.get())) return false;
-        var id = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock());
-        return id.getNamespace().equals("hexie") && java.util.Arrays.asList(id.getPath().split("_")).contains(kind);
+    private static boolean isSideRun(BlockState state,String kind) {
+        var extension=willow.train.hexie.blocks.parts.PartDefinitions.get(state).extension();
+        return state.hasProperty(SideMirrorBlockBase.FACING)&&(kind.equals("carport")
+                ? extension==willow.train.hexie.blocks.parts.PartDefinitions.Extension.ROOF
+                : extension==willow.train.hexie.blocks.parts.PartDefinitions.Extension.SKIRT);
     }
 
     /** Keep Create's shaft end selection, but only consider the immediately adjacent cell. */
@@ -83,7 +80,7 @@ public final class TrainPanelPlacement implements IPlacementHelper {
             var item = (BlockItem) stack.getItem();
             var initial = item.getBlock().getStateForPlacement(new BlockPlaceContext(level, player, InteractionHand.MAIN_HAND, stack, hit));
             if (initial == null) return PlacementOffset.fail();
-            var placed = align(initial, state);
+            var placed = willow.train.hexie.blocks.parts.LegacyPartLayout.placed(align(initial, state));
             return PlacementOffset.success(offset.getBlockPos(), ignored -> placed).withGhostState(placed);
         }
     }
@@ -91,26 +88,10 @@ public final class TrainPanelPlacement implements IPlacementHelper {
     public static void register() {} // Initialize before the first placement/ghost preview.
 
     private static boolean isPanel(BlockState state) {
-        if (isSideRun(state, "skirt") || isSideRun(state, "carport")) return false;
-        Block block = state.getBlock();
-        if (block instanceof CRH2PanelBlock) return true;
-        boolean supported = block instanceof OrdinaryTrainPanelBlock || block instanceof OrdinaryTrainUpperPanelBlock
-                || block instanceof TrainPanelBlock || block instanceof TrainNoBlock || block instanceof LacqueredBoardBlock
-                || block instanceof PanelBlock25Side || block instanceof TrainGlassPanelBlock
-                || block instanceof TrainOpenableWindowBlock || block instanceof TrainUnOpenableWindowBlock
-                || block instanceof Window25ZLevel || block instanceof MultiType25ZMidBlock
-                || block instanceof CR200jPanelBlocks || block instanceof HXD3DPanelBlocks || block instanceof DF11GPanel3Wide
-                || block instanceof PanelBlock2 || block instanceof PanelBlock4 || block instanceof PanelBlockHalf;
-        if (!supported || !state.hasProperty(SideMirrorBlockBase.FACING)) return false;
-        var shape = state.getShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO);
-        if (shape.isEmpty()) return false;
-        var axis = state.getValue(SideMirrorBlockBase.FACING).getAxis();
-        // Some panel classes also contain roofs/noses. Only their thin vertical variants qualify.
-        return shape.max(axis) - shape.min(axis) <= .5;
+        return willow.train.hexie.blocks.parts.PartDefinitions.get(state).extension()==willow.train.hexie.blocks.parts.PartDefinitions.Extension.SIDE;
     }
-
     private static boolean reverseFacing(Block block) {
-        return block instanceof TrainOpenableWindowBlock || block instanceof TrainUnOpenableWindowBlock;
+        return willow.train.hexie.blocks.parts.PartDefinitions.get(block.defaultBlockState()).reverseFacing();
     }
 
     public static BlockState align(BlockState placed, BlockState source) {
@@ -139,12 +120,13 @@ public final class TrainPanelPlacement implements IPlacementHelper {
         if (!helper.matchesState(state) || !helper.matchesItem(stack)) return null;
         if (isSideRun(state, "carport") && !state.is(((BlockItem) stack.getItem()).getBlock())) return null;
         var offset = helper.getOffset(player, level, state, pos, hit, stack);
-        if (stack.getItem() instanceof CRH2PartItem item) {
+        if (stack.getItem() instanceof willow.train.hexie.item.PartBlockItem item) {
             if (!offset.isSuccessful()) return ItemInteractionResult.FAIL;
             var placed = offset.getTransform().apply(item.getBlock().defaultBlockState());
             var context = new BlockPlaceContext(level,player,hand,stack,hit);
             return willow.train.hexie.compat.InteractionResults.toItemResult(item.placeAtRoot(context,offset.getBlockPos(),placed));
         }
+        if (!offset.isSuccessful()) return ItemInteractionResult.FAIL;
         offset.placeInWorld(level, (BlockItem) stack.getItem(), player, hand, hit);
         return ItemInteractionResult.SUCCESS;
     }
@@ -168,7 +150,7 @@ public final class TrainPanelPlacement implements IPlacementHelper {
             var context = new BlockPlaceContext(level, player, InteractionHand.MAIN_HAND, stack, hit);
             var initial = floorItem.getBlock().getStateForPlacement(context);
             if (initial == null) return PlacementOffset.fail();
-            var placed = align(initial, state);
+            var placed = willow.train.hexie.blocks.parts.LegacyPartLayout.placed(align(initial, state));
             for (var direction : IPlacementHelper.orderedByDistanceExceptAxis(pos, hit.getLocation(), Direction.Axis.Y)) {
                 var target = pos.relative(direction);
                 if (level.getBlockState(target).canBeReplaced())
@@ -180,8 +162,8 @@ public final class TrainPanelPlacement implements IPlacementHelper {
         var prototype = item.getBlock().getStateForPlacement(
                 new BlockPlaceContext(level, player, InteractionHand.MAIN_HAND, stack, hit));
         if (prototype == null) return PlacementOffset.fail();
-        var aligned = align(prototype, state);
-        if(state.getBlock() instanceof CRH2PartBlock source) pos=source.root(pos,state);
+        var aligned = willow.train.hexie.blocks.parts.LegacyPartLayout.placed(align(prototype, state));
+        if(state.getBlock() instanceof willow.train.hexie.blocks.parts.PartStructure source) pos=source.partRoot(level,pos,state);
         var sourceBounds = state.getBlock() instanceof CRH2PartBlock source ? source.placementBounds(state) : state.getShape(level,pos).bounds();
         var targetBounds = aligned.getBlock() instanceof CRH2PartBlock targetBlock ? targetBlock.placementBounds(aligned) : aligned.getShape(level,pos).bounds();
         // A multiblock panel has one set of outer edges, not a separate selection area per cell.
@@ -207,8 +189,8 @@ public final class TrainPanelPlacement implements IPlacementHelper {
             var context = new BlockPlaceContext(level, player, InteractionHand.MAIN_HAND, stack, placementHit);
             var initial = item.getBlock().getStateForPlacement(context);
             if (initial == null) continue;
-            var placed = align(initial, state);
-            if (item instanceof CRH2PartItem crhItem && !crhItem.canFit(context,target,placed)) continue;
+            var placed = willow.train.hexie.blocks.parts.LegacyPartLayout.placed(align(initial, state));
+            if (item instanceof willow.train.hexie.item.PartBlockItem crhItem && !crhItem.canFit(context,target,placed)) continue;
             return PlacementOffset.success(target, ignored -> placed).withGhostState(placed);
         }
         return PlacementOffset.fail();

@@ -1,0 +1,8 @@
+newmtl t0
+map_Kd hexie:block/crh2a/parts/crh2a_carport_antenna
+Kd 1 1 1
+d 1
+newmtl t1
+map_Kd hexie:block/crh2a/parts/crh2a_carport1
+Kd 1 1 1
+d 1

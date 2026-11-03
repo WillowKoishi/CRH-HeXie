@@ -39,6 +39,7 @@ public final class CreateRouteBinding {
     }
 
     private static final int MAX_EDGES = 4096;
+    private static final int GEOMETRY_VERSION = 4;
     private final ServerLevel level;
     private final TrackGraph graph;
     private final List<TrackNode> nodes;
@@ -65,13 +66,16 @@ public final class CreateRouteBinding {
 
     private CreateRouteBinding(ServerLevel level, TrackGraph graph, List<TrackNode> nodes,
                                double originDistance, Vec3 initialPosition) {
-        this(level, graph, nodes, originDistance, initialPosition, 3);
+        this(level, graph, nodes, originDistance, initialPosition, GEOMETRY_VERSION);
     }
 
     private CreateRouteBinding(ServerLevel level, TrackGraph graph, List<TrackNode> nodes,
                                double originDistance, Vec3 initialPosition, int geometryVersion) {
         this.level = Objects.requireNonNull(level);
-        this.graph = Objects.requireNonNull(graph);
+        this.graph = CreateTrackCompatibility.routeGraph(Objects.requireNonNull(graph));
+        graph = this.graph;
+        var selectedGraph = graph;
+        nodes = nodes.stream().map(node -> CreateTrackCompatibility.canonical(selectedGraph, node)).toList();
         this.nodes = List.copyOf(nodes);
         this.geometryVersion = geometryVersion;
         if (nodes.size() < 2 || nodes.size() > MAX_EDGES + 1)
@@ -79,7 +83,7 @@ public final class CreateRouteBinding {
         List<BoundGeometry> geometry = new ArrayList<>(nodes.size() - 1);
         for (TrackNode node : nodes) {
             if (!level.dimension().equals(node.getLocation().getDimension())
-                    || graph.locateNode(node.getLocation()) != node)
+                    || !CreateTrackCompatibility.owns(graph, node))
                 throw new IllegalArgumentException("Route node is not in this level and graph");
         }
         for (int i = 1; i < nodes.size(); i++)
@@ -120,13 +124,15 @@ public final class CreateRouteBinding {
     /** Build a new directed route from a precise Create point, choosing forks only through choice. */
     public static CreateRouteBinding fromPoint(ServerLevel level, TrackGraph graph, TravellingPoint anchor,
                                                boolean forward, RouteChoice choice) {
+        graph = CreateTrackCompatibility.routeGraph(graph);
         Objects.requireNonNull(anchor);
         if (anchor.node1 == null || anchor.node2 == null || anchor.edge == null
                 || graph.getConnectionsFrom(anchor.node1).get(anchor.node2) != anchor.edge)
             throw new IllegalArgumentException("Anchor point is not on this graph");
         parameterOf(anchor);
-        LinkedList<TrackNode> nodes = new LinkedList<>(forward
-                ? List.of(anchor.node1, anchor.node2) : List.of(anchor.node2, anchor.node1));
+        TrackNode first = CreateTrackCompatibility.canonical(graph, anchor.node1);
+        TrackNode second = CreateTrackCompatibility.canonical(graph, anchor.node2);
+        LinkedList<TrackNode> nodes = new LinkedList<>(forward ? List.of(first, second) : List.of(second, first));
         Set<TrackNode> visited = new HashSet<>(nodes);
         extend(graph, nodes, visited, false, choice);
         extend(graph, nodes, visited, true, choice);
@@ -161,6 +167,12 @@ public final class CreateRouteBinding {
 
     /** Called when control has selected new exits, not every tick; old edge arc tables are reused. */
     public Extension extend(boolean forward, RouteChoice choice) {
+        if (!CreateTrackCompatibility.currentScope(graph)) {
+            var current = CreateTrackCompatibility.graph(Create.RAILWAYS,
+                    (forward ? segments.getLast() : segments.getFirst()).owner.id);
+            if (current == null) throw new RouteInvalidException();
+            return new CreateRouteBinding(level, current, nodes, originDistance, null, geometryVersion).extend(forward, choice);
+        }
         if (!isValid()) throw new RouteInvalidException();
         LinkedList<TrackNode> extendedNodes = new LinkedList<>(nodes);
         extend(graph, extendedNodes, new HashSet<>(nodes), forward, choice);
@@ -200,10 +212,10 @@ public final class CreateRouteBinding {
     public Extension refresh(double minimumNeeded, double maximumNeeded) {
         int first = route.segmentIndex(boundDistance(minimumNeeded));
         int end = route.segmentIndex(boundDistance(maximumNeeded)) + 1;
-        boolean current = true;
+        boolean current = CreateTrackCompatibility.currentScope(graph);
         for (int i = first; i < end; i++) current &= segments.get(i).valid();
         if (current) return new Extension(this, 0);
-        var currentGraph = Create.RAILWAYS.trackNetworks.get(graph.id);
+        var currentGraph = CreateTrackCompatibility.graph(Create.RAILWAYS, segments.get(first).owner.id);
         if (currentGraph == null) throw new RouteInvalidException();
         var resolved = new ArrayList<TrackNode>(end - first + 1);
         for (int i = first; i <= end; i++) {
@@ -247,10 +259,17 @@ public final class CreateRouteBinding {
      */
     public Merge merge(CreateRouteBinding other) {
         Objects.requireNonNull(other);
-        if (level != other.level || graph != other.graph)
+        if (!CreateTrackCompatibility.currentScope(graph)) {
+            var current = CreateTrackCompatibility.graph(Create.RAILWAYS, segments.getFirst().owner.id);
+            if (current == null) throw new RouteInvalidException();
+            return new CreateRouteBinding(level, current, nodes, originDistance, null, geometryVersion).merge(other);
+        }
+        if (level != other.level || !CreateTrackCompatibility.sameNetwork(graph, other.graph))
             throw new IllegalArgumentException("Coupling routes must belong to the same level and track graph");
         if (!isValid() || !other.isValid()) throw new RouteInvalidException();
         if (other == this) return new Merge(this, 0, 0, false);
+        if (graph != other.graph)
+            other = new CreateRouteBinding(level, graph, other.nodes, other.originDistance, null, other.geometryVersion);
 
         // A shared physical edge fixes orientation and the index of the entire second path.
         // Checking the complete overlap below rejects divergent fork selections at either end.
@@ -328,12 +347,13 @@ public final class CreateRouteBinding {
                 }
                 TrackEdge incoming = graph.getConnectionsFrom(current.previous).get(current.node);
                 for (var next : graph.getConnectionsFrom(current.node).entrySet()) {
-                    if (next.getKey() == current.previous || left.contains(next.getKey())
-                            || next.getKey() != target && right.contains(next.getKey())) continue;
+                    var nextNode = CreateTrackCompatibility.canonical(graph, next.getKey());
+                    if (nextNode == current.previous || left.contains(nextNode)
+                            || nextNode != target && right.contains(nextNode)) continue;
                     TrackEdge edge = next.getValue();
                     if (!isOwnTrack(edge) || edge.isInterDimensional() || !incoming.canTravelTo(edge)) continue;
-                    if (graph.getConnectionsFrom(next.getKey()).get(current.node) == null) continue;
-                    queue.add(new SearchStep(current.node, next.getKey(), current.distance + edge.getLength(), current));
+                    if (graph.getConnectionsFrom(nextNode).get(current.node) == null) continue;
+                    queue.add(new SearchStep(current.node, nextNode, current.distance + edge.getLength(), current));
                 }
             }
         }
@@ -424,10 +444,10 @@ public final class CreateRouteBinding {
         return segments.stream().map(segment -> new TrackRoute.DirectedSegment(segment, segment.reversed)).toList();
     }
 
-    /** Upgrade old edge direction/tangent sampling through each support's exact edge parameter. */
+    /** Upgrade old geometry through each support's exact edge parameter, preserving saved frames until remap. */
     CreateRouteBinding canonicalized() {
-        if (geometryVersion >= 3) return this;
-        var upgraded = new CreateRouteBinding(level, graph, nodes, 0, null, 3);
+        if (geometryVersion >= GEOMETRY_VERSION) return this;
+        var upgraded = new CreateRouteBinding(level, graph, nodes, 0, null, GEOMETRY_VERSION);
         return new CreateRouteBinding(upgraded, nodes, upgraded.segments, upgraded.route,
                 upgraded.distanceOf(pointAt(originDistance)));
     }
@@ -450,7 +470,7 @@ public final class CreateRouteBinding {
         if (!forward.getAxis().isHorizontal()) throw new IllegalArgumentException("Assembly direction must be horizontal");
         var location = station.edgePoint.determineGraphLocation();
         if (location == null) throw new IllegalArgumentException("Station track is not in a graph");
-        TrackGraph graph = location.graph;
+        TrackGraph graph = CreateTrackCompatibility.routeGraph(location.graph);
         TrackNode first = graph.locateNode(location.edge.getFirst());
         TrackNode second = graph.locateNode(location.edge.getSecond());
         if (first == null || second == null) throw new IllegalArgumentException("Station edge no longer exists");
@@ -504,7 +524,7 @@ public final class CreateRouteBinding {
     /** Future train control supplies its chosen node sequence here; loading never chooses a junction. */
     public static CreateRouteBinding selected(ServerLevel level, UUID graphId,
                                                List<TrackNodeLocation> directedNodes, double originDistance) {
-        TrackGraph graph = Create.RAILWAYS.trackNetworks.get(graphId);
+        TrackGraph graph = CreateTrackCompatibility.graph(Create.RAILWAYS, graphId);
         if (graph == null) throw new IllegalArgumentException("Saved track graph is unavailable: " + graphId);
         List<TrackNode> nodes = new ArrayList<>(directedNodes.size());
         for (TrackNodeLocation location : directedNodes) {
@@ -543,7 +563,7 @@ public final class CreateRouteBinding {
         TrackNode to = forward ? segment.to : segment.from;
         TrackEdge edge = graph.getConnectionsFrom(from).get(to);
         if (edge == null || !edgePositions.containsKey(edge)) throw new RouteInvalidException();
-        return new TravellingPoint(from, to, edge,
+        return CreateTrackCompatibility.point(graph, from, to, edge,
                 (forward ? location.parameter() : 1 - location.parameter()) * edge.getLength(), false);
     }
 
@@ -617,7 +637,7 @@ public final class CreateRouteBinding {
                 for (var candidate : graph.getConnectionsFrom(currentNode).entrySet())
                     if (candidate.getKey() != previousNode && incoming.canTravelTo(candidate.getValue())) exits++;
                 if (exits > 1)
-                    crossedJunction.accept(new TravellingPoint(previousNode, currentNode, incoming,
+                    crossedJunction.accept(CreateTrackCompatibility.point(graph, previousNode, currentNode, incoming,
                             incoming.getLength(), false), List.of(Map.entry(nextNode, outgoing)));
             }
         }
@@ -637,7 +657,12 @@ public final class CreateRouteBinding {
     public CompoundTag save() {
         CompoundTag tag = new CompoundTag();
         tag.putInt("Version", geometryVersion);
-        tag.putUUID("Graph", graph.id);
+        tag.putUUID("Graph", segments.getFirst().owner.id);
+        ListTag graphs = new ListTag();
+        for (var id : segments.stream().map(segment -> segment.owner.id).distinct().toList()) {
+            var entry = new CompoundTag(); entry.putUUID("Id", id); graphs.add(entry);
+        }
+        tag.put("Graphs", graphs);
         tag.putString("Dimension", level.dimension().location().toString());
         tag.putDouble("Origin", originDistance);
         ListTag savedNodes = new ListTag();
@@ -647,7 +672,7 @@ public final class CreateRouteBinding {
     }
 
     public static CreateRouteBinding load(ServerLevel level, CompoundTag tag) {
-        if (tag.getInt("Version") < 1 || tag.getInt("Version") > 3 || !tag.hasUUID("Graph") || !tag.contains("Origin", Tag.TAG_DOUBLE)
+        if (tag.getInt("Version") < 1 || tag.getInt("Version") > GEOMETRY_VERSION || !tag.hasUUID("Graph") || !tag.contains("Origin", Tag.TAG_DOUBLE)
                 || !level.dimension().location().toString().equals(tag.getString("Dimension")))
             throw new IllegalArgumentException("Invalid saved route binding");
         ListTag saved = tag.getList("Nodes", Tag.TAG_COMPOUND);
@@ -659,8 +684,17 @@ public final class CreateRouteBinding {
             if (!node.contains("Pos")) throw new IllegalArgumentException("Missing saved node coordinates");
             nodes.add(TrackNodeLocation.read(node, null).in(level));
         }
-        var graph = Create.RAILWAYS.trackNetworks.get(tag.getUUID("Graph"));
+        var savedGraphs = tag.getList("Graphs", Tag.TAG_COMPOUND);
+        var graphIds = new ArrayList<UUID>();
+        for (var item : savedGraphs) {
+            var entry = (CompoundTag) item;
+            if (!entry.hasUUID("Id")) throw new IllegalArgumentException("Invalid saved graph identity");
+            graphIds.add(entry.getUUID("Id"));
+        }
+        if (graphIds.isEmpty()) graphIds.add(tag.getUUID("Graph"));
+        var graph = CreateTrackCompatibility.resolveGraphs(Create.RAILWAYS, graphIds);
         if (graph == null) throw new IllegalArgumentException("Saved track graph is unavailable");
+        graph = CreateTrackCompatibility.routeGraph(graph);
         var resolved = new ArrayList<TrackNode>(nodes.size());
         for (var location : nodes) {
             var node = graph.locateNode(location);
@@ -724,14 +758,14 @@ public final class CreateRouteBinding {
             for (var candidate : graph.getConnectionsFrom(current).entrySet()) {
                 if (candidate.getKey() == previous || !incoming.canTravelTo(candidate.getValue())) continue;
                 // Count foreign track too: material filtering must not silently select a junction exit.
-                candidates.add(Map.entry(candidate.getKey(), candidate.getValue()));
+                candidates.add(Map.entry(CreateTrackCompatibility.canonical(graph, candidate.getKey()), candidate.getValue()));
             }
             if (candidates.isEmpty()) return;
             Map.Entry<TrackNode, TrackEdge> selected;
             if (candidates.size() == 1) selected = candidates.getFirst();
             else {
                 if (choice == null) return;
-                selected = choice.choose(graph, new TravellingPoint(previous, current, incoming,
+                selected = choice.choose(graph, CreateTrackCompatibility.point(graph, previous, current, incoming,
                         incoming.getLength(), false), front, List.copyOf(candidates));
                 if (selected == null) return;
                 if (candidates.stream().noneMatch(candidate -> candidate.getKey() == selected.getKey()
@@ -756,6 +790,7 @@ public final class CreateRouteBinding {
 
     private static final class BoundGeometry implements TrackGeometry {
         private final TrackGraph graph;
+        private final TrackGraph owner;
         private final TrackNode from;
         private final TrackNode to;
         private final TrackEdge edge;
@@ -771,6 +806,7 @@ public final class CreateRouteBinding {
             this.to = to;
             edge = graph.getConnectionsFrom(from).get(to);
             if (edge == null) throw new IllegalArgumentException("Selected directed edge is unavailable");
+            owner = CreateTrackCompatibility.physicalGraph(graph, edge);
             TrackEdge opposite = graph.getConnectionsFrom(to).get(from);
             if (opposite == null) throw new IllegalArgumentException("Selected track needs a reverse edge");
             // Create renders primary curves. secondary() recomputes handles and can produce
@@ -780,19 +816,21 @@ public final class CreateRouteBinding {
                     ? opposite.getTurn().primary : orderedAfter(from, to));
             canonicalEdge = useOpposite ? opposite : edge;
             reversed = useOpposite;
-            geometry = new CreateTrackGeometry(graph, canonicalEdge, geometryVersion >= 3);
+            geometry = new CreateTrackGeometry(graph, canonicalEdge, geometryVersion >= 3, geometryVersion >= 4);
             boolean smoothed = !edge.isTurn()
-                    && (from.getLocation().yOffsetPixels != 0 || to.getLocation().yOffsetPixels != 0);
+                    && (from.getLocation().yOffsetPixels != 0 || to.getLocation().yOffsetPixels != 0
+                    || geometryVersion >= 4 && CreateTrackCompatibility.straightUsesAdjacentCurves());
             fromSmoothingEdges = smoothed ? Map.copyOf(graph.getConnectionsFrom(from)) : null;
             toSmoothingEdges = smoothed ? Map.copyOf(graph.getConnectionsFrom(to)) : null;
         }
 
         private boolean valid() {
-            return Create.RAILWAYS.trackNetworks.get(graph.id) == graph
-                    && graph.locateNode(from.getLocation()) == from && graph.locateNode(to.getLocation()) == to
+            return Create.RAILWAYS.trackNetworks.get(owner.id) == owner
+                    && owner.locateNode(edge.node1.getLocation()) == edge.node1
+                    && owner.locateNode(edge.node2.getLocation()) == edge.node2
                     && graph.getConnectionsFrom(from).get(to) == edge
                     && (!reversed || graph.getConnectionsFrom(to).get(from) == canonicalEdge)
-                    // Create's raised straight edges also derive endpoints/normals from adjacent curves.
+                    // Raised Create straights and RailX straights depend on adjacent curve endpoints.
                     && (fromSmoothingEdges == null || (fromSmoothingEdges.equals(graph.getConnectionsFrom(from))
                     && toSmoothingEdges.equals(graph.getConnectionsFrom(to))));
         }

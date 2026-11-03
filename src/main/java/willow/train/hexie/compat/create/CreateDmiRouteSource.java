@@ -13,7 +13,8 @@ import com.simibubi.create.content.trains.entity.TravellingPoint;
 final class CreateDmiRouteSource {
     private CreateDmiRouteSource() {}
 
-    static TrainDisplayReadings.Route read(AssembledVehicleMotion motion, CompatibilityTrain train) {
+    static TrainDisplayReadings.Route read(AssembledVehicleMotion motion, CompatibilityTrain train,
+                                           CreateWaypointSupport.Preview preview) {
         var schedule = train.runtime.getSchedule();
         boolean waypoint = CreateWaypointSupport.currentInstruction(train);
         String filter = null, stationLabel = "";
@@ -24,7 +25,9 @@ final class CreateDmiRouteSource {
             filter = destination.getFilterForRegex();
             stationLabel = destination.getFilter();
         }
-        if (train.navigation.destination != null) stationLabel = train.navigation.destination.name;
+        if (waypoint) stationLabel = preview != null && preview.station() != null
+                ? preview.station().name : CreateWaypointSupport.nextStationLabel(train);
+        else if (train.navigation.destination != null) stationLabel = train.navigation.destination.name;
         var route = motion.route();
         if (train.graph == null)
             return new TrainDisplayReadings.Route(null, stationLabel, -1, "Create / 路径待更新");
@@ -38,19 +41,19 @@ final class CreateDmiRouteSource {
                 if (distance > 16000) return true;
                 var edgePoint = event.getFirst();
                 var enteringNode = event.getSecond().getSecond();
-                if (!waypoint && edgePoint instanceof GlobalStation station && scan.station == null && scan.filter != null
+                if (edgePoint instanceof GlobalStation station && scan.station == null
                         && station.canApproachFrom(enteringNode)
-                        && (train.navigation.destination != null ? station == train.navigation.destination : station.name.matches(scan.filter))) {
+                        && (waypoint ? preview != null && station == preview.station()
+                                : train.navigation.destination != null ? station == train.navigation.destination
+                                : scan.filter != null && station.name.matches(scan.filter))) {
                     scan.station = new DmiState.Target(DmiState.TargetKind.STATION, station.name, distance, 0);
                 }
                 if (edgePoint instanceof SignalBoundary signal && scan.signal == null) {
-                    var groupId = signal.getGroup(enteringNode);
-                    boolean primary = signal.isPrimary(enteringNode);
-                    // Opposite-facing markers do not represent a signal seen in this direction.
-                    if (signal.blockEntities.get(primary).isEmpty()) return false;
-                    boolean chained = signal.types.get(primary) == SignalType.CROSS_SIGNAL;
-                    var occupancy = signal.isForcedRed(enteringNode) ? CtcsControl.Occupancy.BLOCKED
-                            : CreateSignalData.occupancy(groupId, train);
+                    var observation = CreateSignalData.observe(signal, enteringNode, train);
+                    if (observation == null) return false;
+                    var groupId = observation.group();
+                    boolean primary = observation.primary(), chained = observation.chained();
+                    var occupancy = observation.occupancy();
                     scan.sections.add(new CtcsControl.Section(groupId == null ? signal.id.toString() : groupId.toString(),
                             distance, occupancy, chained));
                     scan.boundaries.add(signal.id);
@@ -68,9 +71,11 @@ final class CreateDmiRouteSource {
                 return scan.station != null || scan.signal != null;
             };
             // Navigation's selector follows the chosen switches without consuming the live itinerary.
-            if (train.navigation.destination != null && forward == !train.navigation.destinationBehindTrain && point.edge != null) {
-                var scout = new TravellingPoint(point.node1, point.node2, point.edge, point.position, false);
-                scout.travel(train.graph, (waypoint ? 16000 : Math.min(16000, Math.max(0, train.navigation.distanceToDestination) + 50))
+            if (preview != null && forward == (preview.direction() > 0)) {
+                preview.traverse(CreateWaypointSupport.DISPLAY_DISTANCE, listener);
+            } else if (train.navigation.destination != null && forward == !train.navigation.destinationBehindTrain && point.edge != null) {
+                var scout = CreateTrackCompatibility.copy(train.graph, point);
+                scout.travel(train.graph, Math.min(16000, Math.max(0, train.navigation.distanceToDestination) + (waypoint ? .001 : 50))
                         * (forward ? 1 : -1), train.navigation.controlSignalScout(), listener, scout.ignoreTurns());
             } else {
                 double start = route.distanceOf(point);

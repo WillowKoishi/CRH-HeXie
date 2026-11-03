@@ -61,7 +61,7 @@ public abstract class SimpleBogeyRenderer implements BogeyRenderer {
     private static void applyFloorPreview(CompoundTag data, PoseStack pose, boolean inContraption) {
         // Wheels keep their rail height; the separate top model follows height and longitudinal settings.
         // Assembled vehicles already apply longitudinal displacement through the real support pivot.
-        if (!inContraption) pose.translate(0, 0, BogeyFloorData.longitudinal(data) / 16d);
+        if (!inContraption) pose.translate(0, 0, BogeyFloorData.LONGITUDINAL_SETTING.blocks(BogeyFloorData.longitudinal(data)));
     }
 
     protected final BogeyModelData getTransform(PartialModel model, PoseStack poseStack,

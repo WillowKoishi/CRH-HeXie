@@ -27,15 +27,24 @@ final class SnapshotCouplerInteraction {
 
     static boolean handle(SnapshotCarriageEntity entity, Player player, BlockPos position, InteractionHand hand) {
         var info = entity.getContraption() == null ? null : entity.getContraption().getBlocks().get(position);
-        if (info == null || CouplerBlock.of(info.state()) == null
+        UUID endpoint = VehicleCouplingCatalog.endpointId(entity.getUUID(), position);
+        if (info == null || !entity.hasCoupler(position)
                 || player.isSpectator() || !player.mayBuild() || !entity.canInteractWithBlock(player, position, 4))
             return false;
         // Keep the existing wrench relocation available on this block too.
         if (player.getItemInHand(hand).is(net.neoforged.neoforge.common.Tags.Items.TOOLS_WRENCH)) return false;
         if (entity.level().isClientSide) return true;
+        if (willow.train.hexie.blocks.coupler.CouplerInteraction.hasGeometry(info.state())) {
+            var hit = SnapshotCouplerModelInteraction.classify(entity, player, position);
+            // The owner cell is not an interaction target: only a visible model surface is.
+            if (hit == null) return true;
+            if (!hit.head()) {
+                SnapshotCouplerModelInteraction.toggle(entity, info);
+                return true;
+            }
+        }
         var motion = entity.motion();
         if (motion == null) return true;
-        UUID endpoint = VehicleCouplingCatalog.endpointId(entity.getUUID(), position);
         var runtime = motion.runtime();
         if (!runtime.placement().endpoints().containsKey(endpoint)) return true;
         var data = player.getPersistentData();

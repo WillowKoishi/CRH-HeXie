@@ -73,7 +73,7 @@ public class OBJRenderableEndFaceBlock extends BaseEntityBlock implements IWrenc
                         .setValue(POWERED, Boolean.valueOf(false))
                         .setValue(WATERLOGGED, Boolean.valueOf(false)));
         this.doorModelResourceLocations = doorModelResourceLocations.copy();
-        DoorModel = Couple.create(block(doorModelResourceLocations.get(true).getPath()), block(doorModelResourceLocations.get(false).getPath()));
+        DoorModel = Couple.create(block(doorModelResourceLocations.get(true)), block(doorModelResourceLocations.get(false)));
         this.isRotateDoor = isRotateDoor;
     }
 
@@ -94,8 +94,8 @@ public class OBJRenderableEndFaceBlock extends BaseEntityBlock implements IWrenc
 
     public boolean isRotateDoor(){return isRotateDoor;}
 
-    private static PartialModel block(String path) {
-        return PartialModel.of(Main.asResource("block/" + path));
+    private static PartialModel block(ResourceLocation path) {
+        return PartialModel.of(path.withPrefix("block/"));
     }
 
     protected static final VoxelShape NORTH_AABB =

@@ -9,18 +9,21 @@ import net.minecraft.world.item.ItemStack;
 import willow.train.hexie.blockentity.GroundStationSignEntity;
 import willow.train.hexie.init.client.MenuInit;
 
-public class GroundStationSignMenu extends AbstractContainerMenu {
+public class GroundStationSignMenu extends BlockEntityEditMenu<GroundStationSignEntity> {
     public final BlockPos pos;
     public final String[] initialFields;
     public GroundStationSignMenu(int id, Inventory inventory, FriendlyByteBuf buf) {
         this(id, inventory, buf.readBlockPos(), new String[]{buf.readUtf(128), buf.readUtf(128), buf.readUtf(128), buf.readUtf(128)});
     }
     public GroundStationSignMenu(int id, Inventory inventory, BlockPos pos, String[] fields) {
-        super(MenuInit.GROUND_STATION_SIGN_MENU.get(), id); this.pos = pos.immutable(); this.initialFields = fields.clone();
+        super(MenuInit.GROUND_STATION_SIGN_MENU.get(), id,
+                inventory.player.level().getBlockEntity(pos) instanceof GroundStationSignEntity sign ? sign : null,
+                GroundStationSignEntity.class); this.pos = pos.immutable(); this.initialFields = fields.clone();
     }
     @Override public boolean stillValid(Player player) {
         return player.mayBuild() && !player.isSpectator() && player.level().hasChunkAt(pos)
-                && player.level().getBlockEntity(pos) instanceof GroundStationSignEntity
+                && player.level().getBlockEntity(pos) instanceof GroundStationSignEntity sign
+                && target != null && sign == target && !target.isRemoved()
                 && player.distanceToSqr(pos.getX() + .5, pos.getY() + 1.5, pos.getZ() + .5) <= 64;
     }
     @Override public boolean clickMenuButton(Player player, int id) {

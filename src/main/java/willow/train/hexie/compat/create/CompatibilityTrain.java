@@ -139,7 +139,7 @@ public final class CompatibilityTrain extends Train {
             else {
                 pending.put("Runtime", willow.train.hexie.vehicle.assembly.VehicleRuntimeNbt.saveCheckpoint(
                         willow.train.hexie.vehicle.runtime.VehicleRuntime.subsetCheckpoint(checkpoint, remaining)));
-                for (String key : List.of("CarriageSources", "DerailedCarriages", "StalledCarriages")) {
+                for (String key : List.of("CarriageSources", "DerailedCarriages", "StalledCarriages", "CabModules", "AutomaticCabs")) {
                     if (!pending.contains(key)) continue;
                     var entries = new ListTag();
                     for (var value : pending.getList(key, Tag.TAG_COMPOUND))
@@ -341,6 +341,7 @@ public final class CompatibilityTrain extends Train {
         var carriages = source.carriages;
         var result = new CompatibilityTrain(source.id, source.owner, tag.getUUID(ASSEMBLY_KEY), ids,
                 source.graph, carriages, source.carriageSpacing);
+        CreateTrackCompatibility.synchronizeGraph(result);
         // A saved graph reference can be read before the railway graph itself is loaded.
         // This differs from Create deliberately detaching a live train from its tracks.
         if (source.graph == null && tag.hasUUID("Graph")) result.unresolvedGraphId = tag.getUUID("Graph");
@@ -361,6 +362,7 @@ public final class CompatibilityTrain extends Train {
         result.savedMotionOwner = tag.hasUUID("HeXieMotionOwner") ? tag.getUUID("HeXieMotionOwner") : null;
         result.savedMotion = tag.contains("HeXieMotion") ? tag.getCompound("HeXieMotion").copy() : null;
         result.motionDimension = tag.getString("HeXieMotionDimension");
+        CreateTrackCompatibility.restoreTrain(source, result, tag);
         var station = result.getCurrentStation();
         if (station != null) { station.cancelReservation(source); station.reserveFor(result); }
         return result;

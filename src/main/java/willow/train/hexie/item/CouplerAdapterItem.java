@@ -12,6 +12,8 @@ import net.minecraft.world.item.context.UseOnContext;
 import willow.train.hexie.blockentity.CouplerBlockEntity;
 import willow.train.hexie.blocks.coupler.CouplerAdapterData;
 import willow.train.hexie.blocks.coupler.CouplerBlock;
+import willow.train.hexie.blocks.coupler.CouplerInteraction;
+import willow.train.hexie.blocks.coupler.AbstractCouplerBlock;
 import willow.train.hexie.vehicle.runtime.CouplerAdapter;
 
 /** A reversible converter registered by its two mating models and physical thickness in blocks. */
@@ -64,6 +66,18 @@ public class CouplerAdapterItem extends Item {
         if (player == null || player.isSpectator() || !player.mayBuild()
                 || coupler.assembled(state))
             return InteractionResult.FAIL;
+        // Sneaking can bypass the block's useItemOn hook and arrive directly here.
+        // Preserve the same surface routing before attempting to install an adapter.
+        if (coupler.geometry() != null) {
+            var requested = new net.minecraft.world.phys.BlockHitResult(context.getClickLocation(),
+                    context.getClickedFace(), pos, context.isInside());
+            var surface = CouplerInteraction.classifyWorld(level, pos, state, player, requested);
+            if (surface == null) return InteractionResult.FAIL;
+            if (!surface.head()) {
+                AbstractCouplerBlock.toggleCover(level, pos, state);
+                return InteractionResult.sidedSuccess(level.isClientSide);
+            }
+        }
         CouplerAdapter value = adapter(context.getItemInHand());
         if (value == null || !(level.getBlockEntity(pos) instanceof CouplerBlockEntity entity)
                 || value.otherModel(entity.adapter() == null ? coupler.model() : entity.adapter().otherModel(coupler.model())) == null)

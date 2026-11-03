@@ -9,7 +9,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class TooltipAppendableItem extends BlockItem {
+public class TooltipAppendableItem extends PartBlockItem {
 
     final String[] tooltipKeys;
     public TooltipAppendableItem(Block pBlock, Properties pProperties, String... tooltipKeys) {

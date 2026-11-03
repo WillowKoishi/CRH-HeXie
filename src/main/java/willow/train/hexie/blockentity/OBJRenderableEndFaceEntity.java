@@ -15,7 +15,18 @@ import willow.train.hexie.blocks.base.IContraptionMovementBlockEntity;
 
 import java.util.List;
 
-public class OBJRenderableEndFaceEntity extends SmartBlockEntity implements IContraptionMovementBlockEntity {
+public class OBJRenderableEndFaceEntity extends SmartBlockEntity implements IContraptionMovementBlockEntity, willow.train.hexie.blocks.base.BlockEntityAnimation {
+    private final net.createmod.catnip.animation.LerpedFloat animation=net.createmod.catnip.animation.LerpedFloat.linear();
+    public float progress(float partial) { return animation.getValue(partial); }
+    @Override public void restoreAnimation(BlockEntity previous) {
+        if(previous instanceof OBJRenderableEndFaceEntity source) {
+            counter=source.counter;animation.startWithValue(source.animation.getValue());
+        }
+    }
+    private void advanceAnimation() {
+        animation.chase(isDoorOpen?1:0,.075,net.createmod.catnip.animation.LerpedFloat.Chaser.LINEAR);
+        animation.tickChaser();counter=animation.getValue();
+    }
 
     public Couple<PartialModel> doorModels;
     public float counter = 0f;
@@ -32,12 +43,15 @@ public class OBJRenderableEndFaceEntity extends SmartBlockEntity implements ICon
             doorModels = null;
         this.isRotateDoor = block.isRotateDoor();
         this.isDoorOpen = block.isOpen(pBlockState);
+        animation.startWithValue(isDoorOpen?1:0);
+        counter=isDoorOpen?1:0;
     }
 
     @Override
     public void tick() {
         if(level == null) return;
         this.isDoorOpen = getBlockState().getValue(DoorBlock.OPEN);
+        advanceAnimation();
     }
 
     @Override
@@ -57,6 +71,8 @@ public class OBJRenderableEndFaceEntity extends SmartBlockEntity implements ICon
 
     @Override
     public void doMovement(Contraption contraption, BlockPos blockPos, BlockState blockState, BlockEntity blockEntity) {
-        ((OBJRenderableEndFaceEntity) blockEntity).setOpen(contraption.getBlocks().get(blockPos).state().getValue(DoorBlock.OPEN));
+        var entity=(OBJRenderableEndFaceEntity)blockEntity;
+        entity.setOpen(contraption.getBlocks().get(blockPos).state().getValue(DoorBlock.OPEN));
+        entity.advanceAnimation();
     }
 }

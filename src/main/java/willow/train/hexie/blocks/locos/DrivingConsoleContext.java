@@ -35,18 +35,23 @@ public record DrivingConsoleContext(SeatAccess seatAccess, BlockPos console) {
         return seatAccess.toLocal(world, partialTick).subtract(Vec3.atLowerCornerOf(console));
     }
 
+    /** Shared layout lookup for seat placement, occupied input and dismount; it imposes no occupancy rule. */
+    public static Direction consoleFacing(BlockPos seat, Function<BlockPos, BlockState> states) {
+        for (Direction facing : Direction.Plane.HORIZONTAL) {
+            var state = states.apply(seat.relative(facing));
+            if (state != null && state.getBlock() instanceof willow.train.hexie.api.cab.CabControlHost host
+                    && host.cabFacing(state) == facing) return facing;
+        }
+        return null;
+    }
+
     public static DrivingConsoleContext find(Player player) {
         if (player == null || !player.isAlive()) return null;
         for (var provider : SEAT_PROVIDERS) {
             var access = provider.apply(player);
             if (access == null) continue;
-            for (Direction facing : Direction.Plane.HORIZONTAL) {
-                BlockPos console = access.seat().relative(facing);
-                var state = access.blockState(console);
-                if (state != null && state.getBlock() instanceof willow.train.hexie.api.cab.CabControlHost host
-                        && host.cabFacing(state) == facing)
-                    return new DrivingConsoleContext(access, console);
-            }
+            var facing = consoleFacing(access.seat(), access::blockState);
+            if (facing != null) return new DrivingConsoleContext(access, access.seat().relative(facing));
         }
         return null;
     }

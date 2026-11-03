@@ -30,6 +30,18 @@
     "hexie:waxed_yellowing_weathering_steel_block",
     "hexie:waxed_rusted_weathering_steel_block",
     "hexie:waxed_stably_rusted_weathering_steel_block",
-    "hexie:waxed_fully_rusted_weathering_steel_block"
+    "hexie:waxed_fully_rusted_weathering_steel_block",
+    {
+      "id": "hexie:railx_standard_track",
+      "required": false
+    },
+    {
+      "id": "hexie:railx_ballastless_track",
+      "required": false
+    },
+    {
+      "id": "hexie:railx_tieless_track",
+      "required": false
+    }
   ]
 }

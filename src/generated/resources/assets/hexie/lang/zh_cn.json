@@ -620,5 +620,6 @@
   "gui.hexie.carriage_marking.example_chinese": "二等座车",
   "gui.hexie.carriage_marking.switch": "切换左右",
   "gui.hexie.carriage_marking.hint": "空手右键切换说明文字位置",
-  "block.hexie.crh2a_endface": "CRH2A 端面（车钩与风挡）"
+  "block.hexie.crh2a_endface": "CRH2A 端面（车钩与风挡）",
+  "block.hexie.crh2a_auto_coupler": "CRH2 自动车钩"
 }

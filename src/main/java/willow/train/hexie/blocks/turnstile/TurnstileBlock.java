@@ -4,8 +4,6 @@ import com.simibubi.create.content.equipment.wrench.IWrenchable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
-import willow.train.hexie.compat.ItemData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
@@ -36,9 +34,6 @@ import org.jetbrains.annotations.Nullable;
 import willow.train.hexie.Main;
 import willow.train.hexie.init.BlockEntitiesInit;
 import willow.train.hexie.init.SoundsInit;
-import willow.train.hexie.item.tickets.CardItem;
-import willow.train.hexie.item.tickets.TicketItem;
-import willow.train.hexie.item.tickets.Ticketable;
 import willow.train.hexie.blockentity.TurnstileBlockEntity;
 
 
@@ -113,59 +108,10 @@ public class TurnstileBlock extends BaseEntityBlock implements IWrenchable {
         if (world.isClientSide()) return InteractionResult.SUCCESS;
         ItemStack stack = player.getItemInHand(hand);
         BlockEntity be = world.getBlockEntity(pos);
-        if (be instanceof TurnstileBlockEntity turnstile) {
-            if (!turnstile.exit) {
-                if (stack.getItem() instanceof TicketItem) {
-                    CompoundTag nbt = ItemData.getOrCreateTagElement(stack, "ticketInfo");
-                    if (!nbt.getBoolean("used")) {
-                        nbt.putBoolean("used", true);
-                        ItemData.setTagElement(stack, "ticketInfo", nbt);
-                        ItemData.updateTagElement(stack, "stationInfo", data -> data.putBoolean("enteredStation", true));
-                        turnstile.setTimer(60);
-                        world.playSound(
-                                null,
-                                pos,
-                                SoundsInit.BEEP_TURNSTILE.get(),
-                                SoundSource.BLOCKS,
-                                1f,
-                                1f);
-                        return InteractionResult.SUCCESS;
-                    }
-                } else if (stack.getItem() instanceof CardItem) {
-                    CompoundTag nbt = ItemData.getOrCreateTagElement(stack, "cardInfo");
-                    if (nbt.getLong("money") >= 100) {
-                        nbt.putLong("money", nbt.getLong("money") - 100);
-                        ItemData.setTagElement(stack, "cardInfo", nbt);
-                        ItemData.updateTagElement(stack, "stationInfo", data -> data.putBoolean("enteredStation", true));
-                        turnstile.setTimer(60);
-                        world.playSound(
-                                null,
-                                pos,
-                                SoundsInit.BEEP_TURNSTILE.get(),
-                                SoundSource.BLOCKS,
-                                1f,
-                                1f);
-                        return InteractionResult.SUCCESS;
-                    }
-                }
-            } else {
-                if (stack.getItem() instanceof Ticketable) {
-                    CompoundTag nbt = ItemData.getOrCreateTagElement(stack, "stationInfo");
-                    if (nbt.getBoolean("enteredStation")) {
-                        turnstile.setTimer(60);
-                        nbt.putBoolean("enteredStation", false);
-                        ItemData.setTagElement(stack, "stationInfo", nbt);
-                        world.playSound(
-                                null,
-                                pos,
-                                SoundsInit.BEEP_TURNSTILE.get(),
-                                SoundSource.BLOCKS,
-                                1f,
-                                1f);
-                        return InteractionResult.SUCCESS;
-                    }
-                }
-            }
+        if (be instanceof TurnstileBlockEntity turnstile && TurnstilePayment.accept(stack, turnstile.exit)) {
+            turnstile.setTimer(60);
+            world.playSound(null, pos, SoundsInit.BEEP_TURNSTILE.get(), SoundSource.BLOCKS, 1f, 1f);
+            return InteractionResult.SUCCESS;
         }
         return super.useWithoutItem(state, world, pos, player, hit);
     }

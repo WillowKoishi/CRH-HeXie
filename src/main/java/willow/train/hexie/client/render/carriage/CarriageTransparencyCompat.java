@@ -19,12 +19,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class CarriageTransparencyCompat {
     private CarriageTransparencyCompat() {}
 
+    public static boolean required() {
+        return ModList.get().isLoaded("sable") && ModList.get().isLoaded("veil");
+    }
+
     public static void register(IEventBus modBus) {
         modBus.addListener(CarriageTransparencyCompat::onLoadComplete);
     }
 
     private static void onLoadComplete(FMLLoadCompleteEvent event) {
-        if (ModList.get().isLoaded("sable") && ModList.get().isLoaded("veil")) {
+        if (required()) {
             event.enqueueWork(CarriageTransparencyCompat::install);
         }
     }

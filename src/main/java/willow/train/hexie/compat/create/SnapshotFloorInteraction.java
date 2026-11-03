@@ -24,8 +24,7 @@ public final class SnapshotFloorInteraction {
         if (player.isShiftKeyDown()) { FloorSwitcherItem.switchMode(player, hand); return true; }
         // Client block-entity tags can lag behind a moving carriage's synchronized floor pose.
         double offset = entity.couplerAnimation().floorOffset();
-        int height = Math.clamp((int) Math.round(BogeyFloorData.DEFAULT_HEIGHT + offset * 10),
-                BogeyFloorData.MIN_HEIGHT, BogeyFloorData.MAX_HEIGHT);
+        int height = BogeyFloorData.heightFromOffset(offset);
         FloorSwitcherItem.beginUsing(player, hand, entity.getUUID(), position,
                 FloorSwitcherItem.mode(player.getItemInHand(hand)) == FloorSwitcherItem.Mode.HEIGHT ? height
                         : BogeyFloorData.longitudinalFromEntity(info.nbt()));
@@ -35,7 +34,7 @@ public final class SnapshotFloorInteraction {
     /** Apply a confirmed slider value or a short-click setting to the whole selected carriage. */
     public static void apply(Player player, UUID carriage, BlockPos position, InteractionHand hand, int height) {
         if (!(player.level() instanceof ServerLevel level) || player.isSpectator() || !player.mayBuild()
-                || height < 10 || height > 30
+                || !BogeyFloorData.valid(height)
                 || !(player.getItemInHand(hand).getItem() instanceof FloorSwitcherItem)
                 || !(level.getEntity(carriage) instanceof SnapshotCarriageEntity entity)
                 || entity.isRemoved() || entity.getContraption() == null

@@ -30,6 +30,10 @@ The artwork in art_assets/, including its subdirectories and asset archives,
 is licensed under the GNU General Public License, version 3 only
 (SPDX-License-Identifier: GPL-3.0-only). See art_assets/README.md for the
 scope and art_assets/LICENSE.txt for the complete license text.
+In distributed JARs, these files are included at
+META-INF/licenses/hexie-art/README.md and LICENSE.txt respectively.
 
 Third-party components retain their own licenses and copyright notices.
 See THIRD_PARTY_NOTICES.txt and any notices accompanying those components.
+In particular, inherited KuaYue portions retain the upstream MIT notice in
+META-INF/licenses/kuayue/MIT.txt (under src/main/resources/ in this repository).

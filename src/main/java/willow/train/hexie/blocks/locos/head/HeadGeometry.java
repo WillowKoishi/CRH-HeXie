@@ -68,18 +68,21 @@ public final class HeadGeometry {
     public static AABB bounds(Direction facing) {
         // The simplified collision markers do not include every visible trim piece.
         return COLLISION.get(facing).stream().reduce(
-                rotate(new AABB(-20/16d,-2/16d,-144/16d,36/16d,60/16d,17/16d), facing), AABB::minmax);
+                rotate(new AABB(-20/16d,-2/16d,-144/16d,36/16d,64/16d,17/16d), facing), AABB::minmax);
     }
     public static BlockPos owner(BlockGetter world, BlockPos pos) {
+        if(world instanceof Level level&&!level.hasChunkAt(pos))return null;
         var state=world.getBlockState(pos);
         if (state.getBlock() instanceof CRH2HeadBlock) return pos;
         if (state.getBlock() instanceof HeadFloorBlock) {
             var root=pos.subtract(offset(state.getValue(HeadFloorBlock.PART),state.getValue(CRH2HeadBlock.FACING)));
+            if(world instanceof Level level&&!level.hasChunkAt(root))return null;
             return world.getBlockState(root).getBlock() instanceof CRH2HeadBlock ? root : null;
         }
         if (state.getBlock() instanceof HexieBogeyBlock<?> && state.getValue(HexieBogeyBlock.HEAD_MOUNTED)) {
             for (var d:Direction.Plane.HORIZONTAL) {
                 var neighbour=pos.relative(d);
+                if(world instanceof Level level&&!level.hasChunkAt(neighbour))continue;
                 var part=world.getBlockState(neighbour);
                 if (!(part.getBlock() instanceof HeadFloorBlock)) continue;
                 var root=owner(world,neighbour);

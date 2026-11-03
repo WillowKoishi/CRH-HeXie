@@ -11,7 +11,6 @@ import com.simibubi.create.content.trains.bogey.BogeyVisual;
 import dev.engine_room.flywheel.api.visual.DynamicVisual;
 import dev.engine_room.flywheel.api.visualization.VisualizationContext;
 import dev.engine_room.flywheel.lib.instance.InstanceTypes;
-import net.neoforged.fml.ModList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import willow.train.hexie.compat.create.SnapshotCarriageEntity;
@@ -22,7 +21,7 @@ public final class SnapshotCarriageVisual extends ContraptionVisual<SnapshotCarr
     private record Entry(BlockPos position, AbstractBogeyBlockEntity blockEntity, BogeyStyle style, BogeyVisual visual) {}
     private final List<Entry> bogeys = new ArrayList<>();
     private final PoseStack pose = new PoseStack();
-    private final boolean compatibleTransparency = ModList.get().isLoaded("sable") && ModList.get().isLoaded("veil");
+    private final boolean compatibleTransparency = willow.train.hexie.client.render.carriage.CarriageTransparencyCompat.required();
     private int compatibleStructureVersion = Integer.MIN_VALUE;
 
     public SnapshotCarriageVisual(VisualizationContext context, SnapshotCarriageEntity entity, float partialTick) {

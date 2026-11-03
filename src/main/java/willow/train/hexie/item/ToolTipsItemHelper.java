@@ -10,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class ToolTipsItemHelper extends BlockItem {
+public class ToolTipsItemHelper extends PartBlockItem {
     public ToolTipsItemHelper(Block pBlock, Properties pProperties) {
         super(pBlock, pProperties);
     }

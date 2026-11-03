@@ -53,17 +53,7 @@ public class CustomRenderedDoorRenderer implements BlockEntityRenderer<CustomRen
         pose.translate(leftSide ? .5 : -.5, 0, -.5);
         upper.translate(0, 1, 0);
 
-        if(open && entity.animation_controller < 1) {
-            entity.animation_controller += slide ? 0.025f : 0.05f;
-        } else if (!open && entity.animation_controller > 0) {
-            entity.animation_controller -= slide ? 0.025f : 0.05f;
-        } else if(open && entity.animation_controller > 1){
-            entity.animation_controller = 1;
-        } else if(!open && entity.animation_controller < 0){
-            entity.animation_controller = 0;
-        }
-
-        float counter = entity.animation_controller;
+        float counter = entity.crh2Progress(partial);
 
         if(slide){
             float level1 = .4f;

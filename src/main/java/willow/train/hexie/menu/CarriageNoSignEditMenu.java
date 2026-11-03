@@ -2,52 +2,21 @@ package willow.train.hexie.menu;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.*;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.level.block.entity.BlockEntity;
-
-
-import willow.train.hexie.init.client.MenuInit;
 import willow.train.hexie.blockentity.CarriageNoSignEntity;
+import willow.train.hexie.init.client.MenuInit;
 
-public class CarriageNoSignEditMenu extends AbstractContainerMenu {
-    CarriageNoSignEntity ctse;
-
-    @Override
-    public ItemStack quickMoveStack(Player pPlayer, int pIndex) {
-        return null;
+public class CarriageNoSignEditMenu extends BlockEntityEditMenu<CarriageNoSignEntity> {
+    public CarriageNoSignEditMenu(int id, Inventory inventory, FriendlyByteBuf data) {
+        this(id, inventory, inventory.player.level().getBlockEntity(data.readBlockPos()), new SimpleContainerData(2));
     }
 
-    public CarriageNoSignEditMenu(int pContainerId, Inventory inv, FriendlyByteBuf extraData) {
-        this(
-                pContainerId,
-                inv,
-                inv.player.level().getBlockEntity(extraData.readBlockPos()),
-                new SimpleContainerData(2));
+    public CarriageNoSignEditMenu(int id, Inventory inventory, BlockEntity entity, ContainerData data) {
+        super(MenuInit.CARRIAGE_NO_SIGN_EDIT_MENU.get(), id, entity, CarriageNoSignEntity.class);
     }
 
-    public CarriageNoSignEditMenu(
-            int pContainerId, Inventory inv, BlockEntity entity, ContainerData data) {
-        super(MenuInit.CARRIAGE_NO_SIGN_EDIT_MENU.get(), pContainerId);
-        this.ctse = ((CarriageNoSignEntity) entity);
-    }
-
-    @Override
-    public boolean stillValid(Player pPlayer) {
-        return true;
-    }
-
-    public void setCtse(CarriageNoSignEntity ctse) {
-        this.ctse = ctse;
-    }
-
-    /**
-     * 这个方法将负责将方块实体向Screen传递
-     *
-     * @return 对应的方块实体
-     */
-    public CarriageNoSignEntity getCtse() {
-        return ctse;
-    }
+    public CarriageNoSignEntity getCtse() { return target; }
+    public void setCtse(CarriageNoSignEntity entity) { target = entity; }
 }

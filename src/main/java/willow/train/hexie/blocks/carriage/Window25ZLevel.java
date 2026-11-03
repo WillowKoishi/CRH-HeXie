@@ -31,6 +31,9 @@ import java.util.List;
 import java.util.Random;
 
 public class Window25ZLevel extends HorizontalBlockBase {
+    @Override public BlockState mirror(BlockState state,net.minecraft.world.level.block.Mirror mirror) {
+        return mirror==net.minecraft.world.level.block.Mirror.NONE?state:super.mirror(state,mirror).cycle(HINGE);
+    }
 
     public static final EnumProperty<DoorHingeSide> HINGE = BlockStateProperties.DOOR_HINGE;
     public static final BooleanProperty MIRROR = BlockStateProperties.OPEN;
@@ -138,38 +141,9 @@ public class Window25ZLevel extends HorizontalBlockBase {
             InteractionHand pHand,
             BlockHitResult pHit) {
         if (pPlayer.getItemInHand(pHand).is(EditablePanelItemInit.ColoredBrush.get())) {
-            if (pLevel.isClientSide) {
-                int x = pPos.getX();
-                int y = pPos.getY();
-                int z = pPos.getZ();
-                double speedFactor = 0.1;
-                int particle_account = random.nextInt(12, 16);
-                for (int i = 0; i < particle_account; i++) {
-                    pLevel.addParticle(
-                            ParticleTypes.HAPPY_VILLAGER,
-                            (double) x + random.nextDouble(0f, 1.0f),
-                            (double) y + random.nextDouble(0f, 1.0f),
-                            (double) z + random.nextDouble(0f, 1.0f),
-                            random.nextDouble(0f, speedFactor),
-                            random.nextDouble(0f, speedFactor),
-                            random.nextDouble(0f, speedFactor));
-                }
-                pLevel.playSound(
-                        pPlayer, pPos, SoundEvents.PLAYER_LEVELUP, SoundSource.BLOCKS, 8f, 1f);
-                return InteractionResult.SUCCESS;
-            }
-            pLevel.setBlock(
-                    pHit.getBlockPos(),
-                    BlockInit.ORIGINAL_COLOR_WINDOW_25Z_LEVEL
-                            .get()
-                            .getStateForPlacement(
-                                    new BlockPlaceContext(
-                                            pLevel, pPlayer, pHand, ItemStack.EMPTY, pHit),
-                                    pState.getValue(FACING),
-                                    pState.getValue(TYPE) == 1 ? 0 : 1,
-                                    pState.getValue(HINGE)),
-                    2);
-            return InteractionResult.SUCCESS;
+            var target=BlockInit.ORIGINAL_COLOR_WINDOW_25Z_LEVEL.get().defaultBlockState()
+                    .setValue(TYPE,pState.getValue(TYPE)==1?0:1);
+            return PanelConversion.apply(pLevel,pPos,pState,target,pPlayer,pHand,pHit,true);
         }
         if (pPlayer.getMainHandItem().is(ItemStack.EMPTY.getItem())) {
             pState = pState.cycle(MIRROR);

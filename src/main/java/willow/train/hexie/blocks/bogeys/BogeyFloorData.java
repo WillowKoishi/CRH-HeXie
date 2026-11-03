@@ -8,7 +8,22 @@ import willow.train.hexie.init.track.TrackMaterialInit;
 public final class BogeyFloorData {
     public static final String KEY = "HexieFloorHeight";
     public static final String LONGITUDINAL_KEY = "HexieBogeyLongitudinal";
-    public static boolean validLongitudinal(int value) { return value >= -8 && value <= 8; }
+    /** Integer slider units; physical displacement and UI positions use the same descriptor. */
+    public record Setting(int minimum, int maximum, int unitsPerBlock, int majorTick) {
+        public Setting {
+            if (minimum > maximum || unitsPerBlock <= 0 || majorTick <= 0)
+                throw new IllegalArgumentException("Invalid bogey setting range or units");
+        }
+        public boolean valid(int value) { return value >= minimum && value <= maximum; }
+        public int clamp(int value) { return Math.clamp(value, minimum, maximum); }
+        public int range() { return maximum - minimum; }
+        public int coordinate(int value) { return clamp(value) - minimum; }
+        public int value(int coordinate) { return clamp(coordinate + minimum); }
+        public double blocks(int value) { return value / (double) unitsPerBlock; }
+    }
+    public static final Setting HEIGHT_SETTING = new Setting(10, 30, 10, 5);
+    public static final Setting LONGITUDINAL_SETTING = new Setting(-8, 8, 16, 4);
+    public static boolean validLongitudinal(int value) { return LONGITUDINAL_SETTING.valid(value); }
     public static int longitudinal(CompoundTag data) {
         int value = data.getInt(LONGITUDINAL_KEY);
         return validLongitudinal(value) ? value : 0;
@@ -20,7 +35,7 @@ public final class BogeyFloorData {
         if (!validLongitudinal(value)) throw new IllegalArgumentException("Bogey offset must be -8..8");
         return state.getOptionalValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_AXIS)
                 .orElse(net.minecraft.core.Direction.Axis.Z) == net.minecraft.core.Direction.Axis.X
-                ? new net.minecraft.world.phys.Vec3(value / 16d, 0, 0) : new net.minecraft.world.phys.Vec3(0, 0, value / 16d);
+                ? new net.minecraft.world.phys.Vec3(LONGITUDINAL_SETTING.blocks(value), 0, 0) : new net.minecraft.world.phys.Vec3(0, 0, LONGITUDINAL_SETTING.blocks(value));
     }
     public static void writeLongitudinal(CompoundTag entityData, int value) {
         if (!validLongitudinal(value)) throw new IllegalArgumentException("Bogey offset must be -8..8");
@@ -33,7 +48,7 @@ public final class BogeyFloorData {
         bogey.setChanged();
         if (bogey.getLevel() != null && !bogey.getLevel().isClientSide) bogey.sendData();
     }
-    public static final int MIN_HEIGHT = 10, DEFAULT_HEIGHT = 20, MAX_HEIGHT = 30;
+    public static final int MIN_HEIGHT = HEIGHT_SETTING.minimum(), DEFAULT_HEIGHT = 20, MAX_HEIGHT = HEIGHT_SETTING.maximum();
     private static final String LEGACY_KEY = "HexieFloorMode";
     private static final String BOGEY_DATA = "BogeyData";
 
@@ -55,11 +70,17 @@ public final class BogeyFloorData {
         };
     }
 
-    public static boolean valid(int height) { return height >= MIN_HEIGHT && height <= MAX_HEIGHT; }
+    public static boolean valid(int height) { return HEIGHT_SETTING.valid(height); }
 
     public static double offset(int height) {
         requireHeight(height);
-        return height == 24 ? TrackMaterialInit.RAIL_HEIGHT_INCREASE : (height - DEFAULT_HEIGHT) / 10.0;
+        return height == 24 ? TrackMaterialInit.RAIL_HEIGHT_INCREASE : HEIGHT_SETTING.blocks(height - DEFAULT_HEIGHT);
+    }
+
+    public static int heightFromOffset(double offset) {
+        if (!Double.isFinite(offset)) throw new IllegalArgumentException("Non-finite floor offset");
+        if (Math.abs(offset - TrackMaterialInit.RAIL_HEIGHT_INCREASE) < 1e-6) return 24;
+        return HEIGHT_SETTING.clamp((int) Math.round(DEFAULT_HEIGHT + offset * HEIGHT_SETTING.unitsPerBlock()));
     }
 
     public static void write(CompoundTag blockEntityData, int height) {

@@ -30,6 +30,12 @@ public class DirectionalCarpetBlock extends CarpetBlock {
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         return super.getStateForPlacement(context).setValue(DIRECTION, context.getHorizontalDirection());
     }
+    @Override public BlockState rotate(BlockState state,net.minecraft.world.level.block.Rotation rotation) {
+        return state.setValue(DIRECTION,rotation.rotate(state.getValue(DIRECTION)));
+    }
+    @Override public BlockState mirror(BlockState state,net.minecraft.world.level.block.Mirror mirror) {
+        return rotate(state,mirror.getRotation(state.getValue(DIRECTION)));
+    }
     @Override public net.minecraft.world.ItemInteractionResult useItemOn(net.minecraft.world.item.ItemStack stack,
             BlockState state, net.minecraft.world.level.Level level, net.minecraft.core.BlockPos pos,
             net.minecraft.world.entity.player.Player player, net.minecraft.world.InteractionHand hand,

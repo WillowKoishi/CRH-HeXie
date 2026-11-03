@@ -24,126 +24,19 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 import javax.annotation.Nullable;
 
-public class TrainUnOpenableWindowBlock extends TrapDoorBlock implements IWrenchable {
+public class TrainUnOpenableWindowBlock extends VehicleWindowBlock {
     public static final EnumProperty<Half> HALF = BlockStateProperties.HALF;
     public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
-    protected int type = 0;
 
     public TrainUnOpenableWindowBlock(Properties pProperties, int itype) {
         super(net.minecraft.world.level.block.state.properties.BlockSetType.OAK, pProperties);
         this.registerDefaultState(
                 this.stateDefinition
-                        .any()
+                        .any().setValue(willow.train.hexie.blocks.parts.LegacyPartLayout.OCCUPIED,false)
                         .setValue(FACING, Direction.NORTH)
                         .setValue(HALF, Half.BOTTOM)
                         .setValue(WATERLOGGED, Boolean.valueOf(false)));
         type = itype;
-    }
-
-    protected static final float AABB_OFFSET = 3.0F;
-    protected static final VoxelShape NORTH_AABB = Block.box(0, 0, 15, 16, 16, 17);
-    protected static final VoxelShape WEST_AABB = Block.box(15, 0, 0, 17, 16, 16);
-    protected static final VoxelShape SOUTH_AABB = Block.box(0, 0, -1, 16, 16, 1);
-    protected static final VoxelShape EAST_AABB = Block.box(-1, 0, 0, 1, 16, 16);
-    // "top"
-    protected static final VoxelShape NORTH_AABB2 = Block.box(0, 0, 15, 32, 16, 17);
-    protected static final VoxelShape WEST_AABB2 = Block.box(15, 0, -16, 17, 16, 16);
-    protected static final VoxelShape SOUTH_AABB2 = Block.box(-16, 0, -1, 16, 16, 1);
-    protected static final VoxelShape EAST_AABB2 = Block.box(-1, 0, 0, 1, 16, 32);
-    // "bottom"
-    protected static final VoxelShape NORTH_AABB2_LH = Block.box(-16, 0, 15, 16, 16, 17);
-    protected static final VoxelShape WEST_AABB2_LH = Block.box(15, 0, 0, 17, 16, 32);
-    protected static final VoxelShape SOUTH_AABB2_LH = Block.box(0, 0, -1, 32, 16, 1);
-    protected static final VoxelShape EAST_AABB2_LH = Block.box(-1, 0, -16, 1, 16, 16);
-
-    //    }
-
-    public VoxelShape getShape(
-            BlockState p_54372_,
-            BlockGetter p_54373_,
-            BlockPos p_54374_,
-            CollisionContext p_54375_) {
-
-        if (type == 0) {
-            switch ((Direction) p_54372_.getValue(FACING)) {
-                case NORTH:
-                    return NORTH_AABB;
-                case SOUTH:
-                    return SOUTH_AABB;
-                case WEST:
-                    return WEST_AABB;
-                case EAST:
-                default:
-                    return EAST_AABB;
-            }
-        } else {
-            if (p_54372_.getValue(HALF) == Half.TOP) {
-                switch ((Direction) p_54372_.getValue(FACING)) {
-                    case NORTH:
-                        return NORTH_AABB2;
-                    case SOUTH:
-                        return SOUTH_AABB2;
-                    case WEST:
-                        return WEST_AABB2;
-                    case EAST:
-                    default:
-                        return EAST_AABB2;
-                }
-            } else {
-                switch ((Direction) p_54372_.getValue(FACING)) {
-                    case NORTH:
-                        return NORTH_AABB2_LH;
-                    case SOUTH:
-                        return SOUTH_AABB2_LH;
-                    case WEST:
-                        return WEST_AABB2_LH;
-                    case EAST:
-                    default:
-                        return EAST_AABB2_LH;
-                }
-            }
-        }
-    }
-
-    private Half getHinge(BlockPlaceContext pContext) {
-        BlockGetter blockgetter = pContext.getLevel();
-        BlockPos blockpos = pContext.getClickedPos();
-        Direction direction = pContext.getHorizontalDirection();
-        BlockPos blockpos1 = blockpos.above();
-        Direction direction1 = direction.getCounterClockWise();
-        BlockPos blockpos2 = blockpos.relative(direction1);
-        BlockState blockstate = blockgetter.getBlockState(blockpos2);
-        BlockPos blockpos3 = blockpos1.relative(direction1);
-        BlockState blockstate1 = blockgetter.getBlockState(blockpos3);
-        Direction direction2 = direction.getClockWise();
-        BlockPos blockpos4 = blockpos.relative(direction2);
-        BlockState blockstate2 = blockgetter.getBlockState(blockpos4);
-        BlockPos blockpos5 = blockpos1.relative(direction2);
-        BlockState blockstate3 = blockgetter.getBlockState(blockpos5);
-        int i =
-                (blockstate.isCollisionShapeFullBlock(blockgetter, blockpos2) ? -1 : 0)
-                        + (blockstate1.isCollisionShapeFullBlock(blockgetter, blockpos3) ? -1 : 0)
-                        + (blockstate2.isCollisionShapeFullBlock(blockgetter, blockpos4) ? 1 : 0)
-                        + (blockstate3.isCollisionShapeFullBlock(blockgetter, blockpos5) ? 1 : 0);
-        if (i <= 0) {
-            if (i >= 0) {
-                int j = direction.getStepX();
-                int k = direction.getStepZ();
-                Vec3 vec3 = pContext.getClickLocation();
-                double d0 = vec3.x - (double) blockpos.getX();
-                double d1 = vec3.z - (double) blockpos.getZ();
-                return (j >= 0 || !(d1 < 0.5D))
-                                && (j <= 0 || !(d1 > 0.5D))
-                                && (k >= 0 || !(d0 > 0.5D))
-                                && (k <= 0 || !(d0 < 0.5D))
-                        ? Half.BOTTOM
-                        : Half.TOP;
-            } else {
-                return Half.BOTTOM;
-            }
-        } else {
-            return Half.TOP;
-        }
     }
 
     @Nullable

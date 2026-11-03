@@ -4,6 +4,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
 import willow.train.hexie.vehicle.runtime.CouplingEndpoint;
 import willow.train.hexie.vehicle.runtime.CouplingEndpoint.Point;
+import willow.train.hexie.vehicle.runtime.CouplingEndpoint.Axis;
 
 /** Coupling points are relative to the block centre with the model facing north. */
 public interface CouplerBlock {
@@ -14,11 +15,14 @@ public interface CouplerBlock {
     }
     /** Identifies the mating head, independently of its visual model and motion parameters. */
     String model();
+    /** Optional authored surfaces for head/cover interaction and body-attached cover animation. */
+    default CouplerGeometry geometry() { return null; }
     /** Render-only state; stored block data remains unchanged. */
     default BlockState carriageRenderState(BlockState state, boolean shiftedBase) { return state; }
     default boolean assembled(BlockState state) { return false; }
     Direction facing(BlockState state);
-    Point pivot();
+    /** Vertical rotation axis in the block's north-facing X/Z plane. */
+    Axis axis();
     Point start();
     Point complete();
     default CouplingEndpoint.Kind kind() { return CouplingEndpoint.Kind.RIGID; }

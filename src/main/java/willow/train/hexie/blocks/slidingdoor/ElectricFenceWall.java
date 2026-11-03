@@ -32,8 +32,7 @@ public class ElectricFenceWall extends HorizontalBlockBase implements IWrenchabl
     public ElectricFenceWall(Properties pProperties) {
         super(pProperties);
         this.registerDefaultState(
-                this.getStateDefinition()
-                        .any()
+                this.defaultBlockState()
                         .setValue(TYPE, 0)
                         .setValue(FACING, Direction.NORTH));
     }
@@ -69,7 +68,8 @@ public class ElectricFenceWall extends HorizontalBlockBase implements IWrenchabl
     }
 
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> p_54370_) {
-        p_54370_.add(FACING, TYPE);
+        super.createBlockStateDefinition(p_54370_);
+        p_54370_.add(TYPE);
     }
 
     @Override

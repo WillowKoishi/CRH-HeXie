@@ -327,8 +327,8 @@ public final class VehicleConstraintSolver {
                 if (a.kind() != CouplingEndpoint.Kind.RIGID || b.kind() != CouplingEndpoint.Kind.RIGID)
                     throw new ConstraintFailure("Articulated joints require their registered constraint adapter");
                 if (!a.matches(b)) throw new IllegalArgumentException("Coupler models do not match");
-                double firstLength = length(vector(a.effectiveComplete()).subtract(vector(a.pivot())));
-                double secondLength = length(vector(b.effectiveComplete()).subtract(vector(b.pivot())));
+                double firstLength = length(vector(a.effectiveComplete()).subtract(vector(a.axisPoint())));
+                double secondLength = length(vector(b.effectiveComplete()).subtract(vector(b.axisPoint())));
                 links.add(new Link(a, b, firstLength, secondLength));
                 int rows = firstLength + secondLength + a.maxExtension() + b.maxExtension() < 1e-12 ? 3 : 1;
                 for (int i = 0; i < rows; i++) labels.add("coupler " + a.id() + " / " + b.id());
@@ -448,11 +448,15 @@ public final class VehicleConstraintSolver {
                     Vector direction = b.pivot.subtract(a.pivot).normalized();
                     // Registered facing rotates the local points; it is not a joint-angle limit.
                     // Each visible arm retains its registered length; an extended link may have a gap.
-                    endpointPoses.put(link.first.id(), orientedEndpoint(a,
-                            add(a.pivot, direction.scale(link.firstLength)), direction));
-                    endpointPoses.put(link.second.id(), orientedEndpoint(b,
-                            add(b.pivot, direction.scale(-link.secondLength)), direction.scale(-1)));
+                    endpointPoses.put(link.first.id(), orientedEndpoint(a, direction,
+                            endpointBody(link.first, bodyPoses)));
+                    endpointPoses.put(link.second.id(), orientedEndpoint(b, direction.scale(-1),
+                            endpointBody(link.second, bodyPoses)));
                 }
+                if (length(endpointPoses.get(link.first.id()).complete
+                        .subtract(endpointPoses.get(link.second.id()).complete))
+                        > link.first.maxExtension() + link.second.maxExtension() + POSITION_TOLERANCE)
+                    throw new ConstraintFailure("Coupled heads exceed their extension after vertical-axis rotation");
             }
             return new Solution(bodyPoses, bogeyPositions, endpointPoses);
         }
@@ -480,6 +484,10 @@ public final class VehicleConstraintSolver {
         BodyPose endpointBody(CouplingEndpoint endpoint, BodyPose[] poses) {
             Body owner = owners.get(endpoint.id());
             return owner == null ? fixedEndpoint.body : poses[owner.slot];
+        }
+        BodyPose endpointBody(CouplingEndpoint endpoint, Map<UUID, BodyPose> poses) {
+            Body owner = owners.get(endpoint.id());
+            return owner == null ? fixedEndpoint.body : poses.get(owner.definition.id());
         }
         TrackReference track(double distance) {
             return trackReferences.computeIfAbsent(distance, key -> {
@@ -540,21 +548,21 @@ public final class VehicleConstraintSolver {
                 sample.normal().dot(base.rotate(new Point(0, 1, 0))));
         return new BodyPose(sample.position(), yaw, pitch, roll);
     }
-    static EndpointPose orientedEndpoint(EndpointPose old, Vector shared, Vector direction) {
+    /** Swing about the body's vertical axis; the model's local heights do not change. */
+    static EndpointPose orientedEndpoint(EndpointPose old, Vector direction, BodyPose body) {
         Vector arm = old.complete.subtract(old.pivot), start = old.start.subtract(old.pivot);
-        if (length(arm) < 1e-12) return new EndpointPose(old.pivot, old.start, shared);
-        Vector rotated = rotateBetween(start, arm.normalized(), direction);
-        return new EndpointPose(old.pivot, add(old.pivot, rotated), shared);
+        Vector up = body.rotate(new Point(0, 1, 0)).normalized();
+        Vector from = arm.subtract(up.scale(arm.dot(up)));
+        Vector to = direction.subtract(up.scale(direction.dot(up)));
+        if (length(from) < 1e-12 || length(to) < 1e-12) return old;
+        from = from.normalized(); to = to.normalized();
+        double cosine = Math.clamp(from.dot(to), -1, 1);
+        double sine = Math.clamp(up.dot(cross(from, to)), -1, 1);
+        return new EndpointPose(old.pivot,
+                add(old.pivot, rotateAroundAxis(start, up, sine, cosine)),
+                add(old.pivot, rotateAroundAxis(arm, up, sine, cosine)));
     }
-    static Vector rotateBetween(Vector value, Vector from, Vector to) {
-        Vector axis = cross(from, to);
-        double sine = length(axis), cosine = Math.clamp(from.dot(to), -1, 1);
-        if (sine < 1e-12) {
-            if (cosine >= 0) return value;
-            // A half-turn has no unique axis; use a fixed perpendicular, never fail motion.
-            Vector up = Math.abs(from.y()) < .9 ? new Vector(0, 1, 0) : new Vector(1, 0, 0);
-            axis = up.subtract(from.scale(up.dot(from))).normalized();
-        } else axis = axis.scale(1 / sine);
+    private static Vector rotateAroundAxis(Vector value, Vector axis, double sine, double cosine) {
         return add(add(value.scale(cosine), cross(axis, value).scale(sine)),
                 axis.scale(axis.dot(value) * (1 - cosine)));
     }

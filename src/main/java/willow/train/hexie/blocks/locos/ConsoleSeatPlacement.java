@@ -8,12 +8,7 @@ public final class ConsoleSeatPlacement {
     private ConsoleSeatPlacement() {}
 
     public static Direction facing(BlockPlaceContext context) {
-        for (Direction direction : Direction.Plane.HORIZONTAL) {
-            var state = context.getLevel().getBlockState(context.getClickedPos().relative(direction));
-            if (state.getBlock() instanceof CRH2DrivingConsoleBlock
-                    && state.getValue(CRH2DrivingConsoleBlock.FACING) == direction)
-                return direction;
-        }
-        return context.getHorizontalDirection().getOpposite();
+        var facing = DrivingConsoleContext.consoleFacing(context.getClickedPos(), context.getLevel()::getBlockState);
+        return facing == null ? context.getHorizontalDirection().getOpposite() : facing;
     }
 }

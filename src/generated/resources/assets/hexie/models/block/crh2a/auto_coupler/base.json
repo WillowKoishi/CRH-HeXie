@@ -1,0 +1,14 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "ambientocclusion": false,
+  "shade_quads": false,
+  "emissive_ambient": false,
+  "automatic_culling": false,
+  "flip_v": true,
+  "model": "hexie:models/block/crh2a/auto_coupler/base.obj",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "particle": "hexie:block/crh2a/auto_coupler/crh2a_auto_coupler"
+  }
+}

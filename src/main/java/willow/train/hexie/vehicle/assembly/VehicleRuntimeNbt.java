@@ -19,7 +19,7 @@ import willow.train.hexie.vehicle.track.TrackPath;
 
 /** Runtime state serialization; structure blocks remain in their separate carriage snapshots. */
 public final class VehicleRuntimeNbt {
-    private static final int VERSION = 9;
+    private static final int VERSION = 11;
     private static final int STRICT_PLACEMENT_VERSION = 6;
     private VehicleRuntimeNbt() {}
 
@@ -30,6 +30,9 @@ public final class VehicleRuntimeNbt {
     public static CompoundTag saveCheckpoint(VehicleRuntime.Checkpoint checkpoint) {
         var tag = new CompoundTag();
         tag.putInt("Version", VERSION);
+        // Pending relocation/subset saves can be rewritten before a route is available.
+        // Keep the one-time pose upgrade attached to their checkpoint until it is solved.
+        if (checkpoint.legacyCouplerAxes()) tag.putBoolean("LegacyCouplerAxes", true);
         var cars = new ListTag();
         for (var saved : checkpoint.carriages()) {
             var car = new CompoundTag();
@@ -77,6 +80,7 @@ public final class VehicleRuntimeNbt {
                 e.putString("Facing", endpoint.facing().name());
                 e.putString("Kind", endpoint.kind().name());
                 e.putString("Model", endpoint.model());
+                if (endpoint.visual() != null) e.put("Visual", writeCouplerVisual(endpoint.visual()));
                 if (endpoint.adapter() != null) {
                     var adapterTag = willow.train.hexie.blocks.coupler.CouplerAdapterData.encode(endpoint.adapter());
                     number(adapterTag, "Thickness", endpoint.adapter().thickness());
@@ -84,7 +88,7 @@ public final class VehicleRuntimeNbt {
                 }
                 number(e, "MaxExtension", endpoint.maxExtension());
                 e.put("Block", point(endpoint.blockCenter()));
-                e.put("Pivot", point(endpoint.pivot()));
+                e.put("Axis", axis(endpoint.axis()));
                 e.put("Start", point(endpoint.start()));
                 e.put("Complete", point(endpoint.complete()));
                 endpoints.add(e);
@@ -127,6 +131,7 @@ public final class VehicleRuntimeNbt {
             throw new IllegalArgumentException("Unknown vehicle runtime version");
         var cars = new ArrayList<VehicleRuntime.SavedCarriage>();
         for (var car : entries(tag, "Carriages")) {
+            double floorOffset = car.contains("FloorOffset") ? number(car, "FloorOffset") : 0;
             var bogeys = new ArrayList<BogeyDefinition>();
             var controls = new LinkedHashMap<UUID, VehicleRuntime.Control>();
             for (var b : entries(car, "Bogeys")) {
@@ -161,13 +166,21 @@ public final class VehicleRuntimeNbt {
                     decoded.putDouble("Thickness", number(a, "Thickness"));
                     adapter = willow.train.hexie.blocks.coupler.CouplerAdapterData.decode(decoded);
                 }
+                var complete = point(e, "Complete");
+                // Legacy markers described a vertical line using an arbitrary point on it.
+                // Only X/Z locate that line; its old Y must never become a hinge height.
+                var axis = axis(e, version >= 11 ? "Axis" : "Pivot");
+                var visual = e.contains("Visual") ? readCouplerVisual(e.getCompound("Visual")) : null;
+                if (version < 11 && visual != null)
+                    visual = new CouplingEndpoint.Visual(visual.facing(), visual.fixed(), visual.shiftedFixed(),
+                            visual.moving(), axis.atHeight(complete.y() + floorOffset), visual.movingOffset());
                 endpoints.add(new CouplingEndpoint(uuid(e,"Id"), point(e,"Block"),
-                        CouplingEndpoint.Facing.valueOf(string(e,"Facing")), point(e,"Pivot"), point(e,"Start"),
-                        point(e,"Complete"), CouplingEndpoint.Kind.valueOf(string(e,"Kind")), maxExtension, model, adapter));
+                        CouplingEndpoint.Facing.valueOf(string(e,"Facing")), axis, point(e,"Start"),
+                        complete, CouplingEndpoint.Kind.valueOf(string(e,"Kind")), maxExtension, model, adapter, visual));
             }
             var definition = new CarriageDefinition(uuid(car,"Id"), bogeys, endpoints,
                     number(car,"RearExtent"), number(car,"FrontExtent"),
-                    car.contains("FloorOffset") ? number(car, "FloorOffset") : 0);
+                    floorOffset);
             cars.add(new VehicleRuntime.SavedCarriage(definition, number(car,"Distance"), number(car,"Speed"), controls));
         }
         var connections = entries(tag,"Connections").stream()
@@ -201,7 +214,9 @@ public final class VehicleRuntimeNbt {
         for (var entry : entries(placement, "Endpoints")) unique(solvedEndpoints, uuid(entry, "Id"),
                 new VehicleConstraintSolver.EndpointPose(vector(entry, "Pivot"), vector(entry, "Start"), vector(entry, "Complete")));
         var solution = new VehicleConstraintSolver.Solution(bodies, positions, solvedEndpoints);
-        return new VehicleRuntime.Checkpoint(cars, connections, approaches, solution, speeds, motionDistances);
+        boolean legacyAxes = tag.getBoolean("LegacyCouplerAxes") || version < 11
+                && cars.stream().anyMatch(car -> !car.definition().couplings().isEmpty());
+        return new VehicleRuntime.Checkpoint(cars, connections, approaches, solution, speeds, motionDistances, legacyAxes);
     }
 
     private static CompoundTag placement(VehicleConstraintSolver.Solution solution, Map<UUID, Double> speeds,
@@ -239,6 +254,43 @@ public final class VehicleRuntimeNbt {
         tag.put("Endpoints", endpoints);
         return tag;
     }
+    public static CompoundTag writeCouplerVisual(CouplingEndpoint.Visual visual) {
+        var tag = new CompoundTag();
+        tag.putString("Facing", visual.facing().name());
+        tag.put("Fixed", renderState(visual.fixed()));
+        tag.put("ShiftedFixed", renderState(visual.shiftedFixed()));
+        if (visual.moving() != null) tag.put("Moving", renderState(visual.moving()));
+        tag.put("Origin", point(visual.origin()));
+        tag.put("Offset", point(visual.movingOffset()));
+        return tag;
+    }
+
+    public static CouplingEndpoint.Visual readCouplerVisual(CompoundTag tag) {
+        return new CouplingEndpoint.Visual(CouplingEndpoint.Facing.valueOf(string(tag, "Facing")),
+                renderState(tag, "Fixed"), renderState(tag, "ShiftedFixed"),
+                tag.contains("Moving") ? renderState(tag, "Moving") : null,
+                point(tag, tag.contains("Origin") ? "Origin" : "Pivot"), point(tag, "Offset"));
+    }
+
+    private static CompoundTag renderState(CouplingEndpoint.RenderState state) {
+        var tag = new CompoundTag();
+        tag.putString("Block", state.block());
+        var properties = new CompoundTag();
+        state.properties().forEach(properties::putString);
+        tag.put("Properties", properties);
+        return tag;
+    }
+
+    private static CouplingEndpoint.RenderState renderState(CompoundTag parent, String key) {
+        require(parent, key, Tag.TAG_COMPOUND);
+        var tag = parent.getCompound(key);
+        require(tag, "Properties", Tag.TAG_COMPOUND);
+        var values = new TreeMap<String, String>();
+        var properties = tag.getCompound("Properties");
+        for (String name : properties.getAllKeys()) values.put(name, string(properties, name));
+        return new CouplingEndpoint.RenderState(string(tag, "Block"), values);
+    }
+
     private static <T> void unique(Map<UUID, T> values, UUID id, T value) {
         if (values.putIfAbsent(id, value) != null) throw new IllegalArgumentException("Duplicate saved placement UUID: " + id);
     }
@@ -250,6 +302,13 @@ public final class VehicleRuntimeNbt {
     }
     private static CompoundTag point(CouplingEndpoint.Point point) {
         var tag = new CompoundTag(); number(tag, "X", point.x()); number(tag, "Y", point.y()); number(tag, "Z", point.z()); return tag;
+    }
+    private static CompoundTag axis(CouplingEndpoint.Axis axis) {
+        var tag = new CompoundTag(); number(tag, "X", axis.x()); number(tag, "Z", axis.z()); return tag;
+    }
+    private static CouplingEndpoint.Axis axis(CompoundTag tag, String key) {
+        require(tag, key, Tag.TAG_COMPOUND); var axis = tag.getCompound(key);
+        return new CouplingEndpoint.Axis(number(axis, "X"), number(axis, "Z"));
     }
     private static CouplingEndpoint.Point point(CompoundTag tag, String key) {
         require(tag,key,Tag.TAG_COMPOUND); var p = tag.getCompound(key);

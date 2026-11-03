@@ -19,11 +19,12 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import willow.train.hexie.blocks.coupler.AbstractCouplerBlock;
 import willow.train.hexie.blocks.locos.head.HeadGeometry;
 import willow.train.hexie.vehicle.runtime.CouplingEndpoint.Point;
+import willow.train.hexie.vehicle.runtime.CouplingEndpoint.Axis;
 
 /** End wall, gangways and coupler share only the central floor installation block. */
 public final class CRH2EndFaceBlock extends AbstractCouplerBlock {
     public static final MapCodec<CRH2EndFaceBlock> CODEC = simpleCodec(CRH2EndFaceBlock::new);
-    public static final Point PIVOT = new Point(0, -.05, -.08125);
+    public static final Axis AXIS = new Axis(0, -.08125);
     public static final double BELLOWS_BASE_Z = -1 / 16d;
     public static final double BELLOWS_FRONT_Z = -5 / 16d;
     // User-selected maximum (model units), shared by free-state rendering and contact onset.
@@ -41,7 +42,7 @@ public final class CRH2EndFaceBlock extends AbstractCouplerBlock {
         return FLOOR;
     }
     @Override public String model() { return "hexie:crh2_semiauto"; }
-    @Override public Point pivot() { return PIVOT; }
+    @Override public Axis axis() { return AXIS; }
     @Override public Point start() { return new Point(0, -.05, BELLOWS_BASE_Z - MAX_BELLOWS_THICKNESS - .5); }
     @Override public Point complete() { return new Point(0, -.05, -.8125); }
     @Override public double maxExtension() {

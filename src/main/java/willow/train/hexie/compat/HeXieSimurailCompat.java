@@ -20,7 +20,7 @@ import willow.train.hexie.init.track.TrackMaterialInit;
 
 import java.util.List;
 import willow.train.hexie.vehicle.bogey.BogeyGeometry;
-import willow.train.hexie.vehicle.bogey.BuiltinBogeyProfile;
+import willow.train.hexie.vehicle.bogey.BuiltinBogeyModel;
 
 /** Only loaded from common setup when Simurail is installed. */
 public final class HeXieSimurailCompat {
@@ -81,19 +81,13 @@ public final class HeXieSimurailCompat {
 
     /** Nominal rolling radii and axle positions from HeXie's sizes and renderers, in blocks. */
     private static void configureParameters() {
-        // CW2 shares the passenger wheel dimensions; forward/backward DF11G share one wheel model.
-        configureBogey(DT206, BuiltinBogeyProfile.DT206.geometry());
-        configureBogey(CW2, BuiltinBogeyProfile.CW2.geometry());
-        configureBogey(PK209P, BuiltinBogeyProfile.PK209P.geometry());
-        configureBogey(PK209P_NO_MOTOR, BuiltinBogeyProfile.PK209P.geometry());
-        configureBogey(PK209P_BACKWARD, BuiltinBogeyProfile.PK209P.geometry());
-        configureBogey(SW220K, BuiltinBogeyProfile.SW220K.geometry());
-        configureBogey(SW220K_BACKWARD, BuiltinBogeyProfile.SW220K.geometry());
-        configureBogey(SW160, BuiltinBogeyProfile.SW160.geometry());
-        configureBogey(DF11G, BuiltinBogeyProfile.DF11G.geometry());
-        configureBogey(DF11G_BACKWARD, BuiltinBogeyProfile.DF11G.geometry());
-        configureBogey(QJ, BuiltinBogeyProfile.QJ.geometry());
-        configureBogey(QJ_BACKWARD, BuiltinBogeyProfile.QJ.geometry());
+        for (var entry : List.of(DT206, CW2, PK209P, PK209P_NO_MOTOR, PK209P_BACKWARD,
+                SW220K, SW220K_BACKWARD, SW160, DF11G, DF11G_BACKWARD, QJ, QJ_BACKWARD)) {
+            var type = entry.type();
+            var model = BuiltinBogeyModel.find(type.style().id, type.size().id());
+            if (model == null) throw new IllegalStateException("Missing built-in bogey geometry: " + type);
+            configureBogey(entry, model.profile().geometry());
+        }
     }
 
     private static void configureBogey(BogeyEntry entry, BogeyGeometry geometry) {

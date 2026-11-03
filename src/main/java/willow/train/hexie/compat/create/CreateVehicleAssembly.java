@@ -311,7 +311,7 @@ public final class CreateVehicleAssembly {
         for (var block : carrier.getContraption().getBlocks().values()) {
             BlockPos target = transform.apply(block.pos());
             if (!occupied.containsKey(target)) continue;
-            UUID endpoint = CouplerBlock.of(block.state()) != null
+            UUID endpoint = carrier.hasCoupler(block.pos())
                     ? VehicleCouplingCatalog.endpointId(carrier.getUUID(), block.pos()) : null;
             if (endpoint == null || partners.get(endpoint) == null
                     || !partners.get(endpoint).equals(occupied.get(target)))
@@ -324,7 +324,7 @@ public final class CreateVehicleAssembly {
     private static void addCarriageCells(SnapshotCarriageEntity carrier, StructureTransform transform,
             Map<BlockPos, UUID> occupied) {
         for (var block : carrier.getContraption().getBlocks().values())
-            occupied.put(transform.apply(block.pos()), CouplerBlock.of(block.state()) != null
+            occupied.put(transform.apply(block.pos()), carrier.hasCoupler(block.pos())
                     ? VehicleCouplingCatalog.endpointId(carrier.getUUID(), block.pos()) : null);
     }
 

@@ -119,7 +119,7 @@ public abstract class MixinAbstractContraptionEntity extends Entity {
     private void hexie$mountHardSeatPassenger(Entity passenger, int seatIndex, int position) {
         if (!passenger.startRiding(this, true)) return;
         removeHardSeatTags(passenger);
-        passenger.addTag("seats" + seatIndex + "," + position);
+        passenger.addTag(willow.train.hexie.blocks.seats.HardSeatPosition.tag(seatIndex, position));
         if (passenger instanceof TamableAnimal animal)
             animal.setInSittingPose(true);
 
@@ -291,15 +291,11 @@ public abstract class MixinAbstractContraptionEntity extends Entity {
             if (feet != null) passenger.getPersistentData().put("ContraptionDismountLocation",
                     net.createmod.catnip.math.VecHelper.writeNBT(feet));
         }
-        if (seatIndex >= 0) {
-            if (level().isClientSide) {
-                ContraptionSeatPositionCache.update(getUUID(), passenger.getUUID(), seatIndex, -1);
-            } else {
-                PacketDistributor.sendToPlayersTrackingEntity(
-                        this,
-                        new ContraptionSeatPositionPacket(
-                                getUUID(), passenger.getUUID(), seatIndex, -1));
-            }
+        // The client temporarily ejects every passenger when applying a native passenger-list
+        // packet. Only the server's explicit removal delta may discard the quadrant cache.
+        if (seatIndex >= 0 && !level().isClientSide) {
+            PacketDistributor.sendToPlayersTrackingEntity(this,
+                    new ContraptionSeatPositionPacket(getUUID(), passenger.getUUID(), seatIndex, -1));
         }
         removeHardSeatTags(passenger);
     }
@@ -307,21 +303,10 @@ public abstract class MixinAbstractContraptionEntity extends Entity {
     @Unique
     private boolean[] getHardSeatOccupancy(int seatIndex, Entity ignoredPassenger) {
         boolean[] occupied = new boolean[4];
-        String tagPrefix = "seats" + seatIndex + ",";
-        for (Entity currentPassenger : getPassengers()) {
-            if (currentPassenger == ignoredPassenger)
-                continue;
-            for (String tag : currentPassenger.getTags()) {
-                if (!tag.startsWith(tagPrefix))
-                    continue;
-                try {
-                    int position = Integer.parseInt(tag.substring(tagPrefix.length()));
-                    if (position >= 0 && position < occupied.length)
-                        occupied[position] = true;
-                } catch (NumberFormatException ignored) {
-                    // Ignore stale or malformed seat tags.
-                }
-            }
+        for (Entity passenger : getPassengers()) {
+            if (passenger == ignoredPassenger) continue;
+            int position = willow.train.hexie.blocks.seats.HardSeatPosition.read(passenger.getTags(), seatIndex);
+            if (position >= 0) occupied[position] = true;
         }
         return occupied;
     }
@@ -346,31 +331,11 @@ public abstract class MixinAbstractContraptionEntity extends Entity {
     @Unique
     private static int getHardSeatPosition(
             java.util.Set<String> tags, BlockPos seatPos, Contraption contraption) {
-        for (String tag : tags) {
-            if (!tag.startsWith("seats"))
-                continue;
-            String[] values = tag.substring("seats".length()).split(",", -1);
-            if (values.length != 2)
-                continue;
-            try {
-                int seatIndex = Integer.parseInt(values[0]);
-                int position = Integer.parseInt(values[1]);
-                if (seatIndex >= 0 && seatIndex < contraption.getSeats().size()
-                        && contraption.getSeats().get(seatIndex).equals(seatPos)
-                        && position >= 0 && position < 4)
-                    return position;
-            } catch (NumberFormatException ignored) {
-                // Ignore stale or malformed seat tags.
-            }
-        }
-        return -1;
+        return willow.train.hexie.blocks.seats.HardSeatPosition.read(tags, contraption.getSeats().indexOf(seatPos));
     }
 
     @Unique
     private static void removeHardSeatTags(Entity passenger) {
-        for (String tag : java.util.Set.copyOf(passenger.getTags())) {
-            if (tag.startsWith("seats"))
-                passenger.removeTag(tag);
-        }
+        willow.train.hexie.blocks.seats.HardSeatPosition.clear(passenger);
     }
 }

@@ -4,8 +4,6 @@ package willow.train.hexie.network.c2s.signs;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import willow.train.hexie.network.c2s.HexiePacket;
@@ -30,28 +28,17 @@ public class CarriageNoSignUpdatePacket implements HexiePacket {
     public CarriageNoSignUpdatePacket(FriendlyByteBuf buffer) {
         this.pos = buffer.readBlockPos();
         this.color = buffer.readInt();
-        this.message = Component.literal(buffer.readUtf());
+        this.message = Component.literal(buffer.readUtf(SignEditSubmission.MAX_TEXT_LENGTH));
         this.isLeftSide = buffer.readBoolean();
     }
 
     @Override
     public boolean handle(IPayloadContext var1) {
-        var1.enqueueWork(
-                () -> {
-                    ServerLevel level = ((net.minecraft.server.level.ServerPlayer) var1.player()).serverLevel();
-                    BlockEntity entity = level.getBlockEntity(pos);
-                    if (entity == null) {
-                        return;
-                    }
-
-                    if (entity instanceof CarriageNoSignEntity) {
-                        ((CarriageNoSignEntity) entity).setMessage(message);
-                        ((CarriageNoSignEntity) entity).setColor(color);
-                        ((CarriageNoSignEntity) entity).setLeftSide(isLeftSide);
-                        entity.setChanged();
-                        ((CarriageNoSignEntity) entity).sendData();
-                    }
-                });
+        var1.enqueueWork(() -> SignEditSubmission.commit(var1.player(), pos, CarriageNoSignEntity.class, entity -> {
+            entity.setMessage(message);
+            entity.setColor(color);
+            entity.setLeftSide(isLeftSide);
+        }));
         return true;
     }
 

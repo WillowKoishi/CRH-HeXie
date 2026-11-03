@@ -13,13 +13,15 @@ public final class CreateTrackGeometry implements TrackGeometry {
     private final TrackGraph graph;
     private final TrackEdge edge;
     private final boolean analyticTangent;
+    private final Vec3 straightStart;
+    private final Vec3 straightEnd;
 
     public CreateTrackGeometry(TrackGraph graph, TrackEdge edge) {
-        this(graph, edge, true);
+        this(graph, edge, true, true);
     }
 
     /** Legacy frames are retained only while restoring route snapshots for migration. */
-    CreateTrackGeometry(TrackGraph graph, TrackEdge edge, boolean analyticTangent) {
+    CreateTrackGeometry(TrackGraph graph, TrackEdge edge, boolean analyticTangent, boolean preciseStraightEndpoints) {
         this.graph = Objects.requireNonNull(graph);
         this.edge = Objects.requireNonNull(edge);
         this.analyticTangent = analyticTangent;
@@ -30,6 +32,10 @@ public final class CreateTrackGeometry implements TrackGeometry {
             throw new IllegalArgumentException("Not a HeXie track edge");
         if (edge.isInterDimensional() || !Double.isFinite(edge.getLength()) || edge.getLength() <= 0)
             throw new IllegalArgumentException("A spatial edge with positive length is required");
+        straightStart = edge.isTurn() ? null : preciseStraightEndpoints
+                ? CreateTrackCompatibility.straightEndpoint(graph, edge, true) : edge.getPosition(graph, 0);
+        straightEnd = edge.isTurn() ? null : preciseStraightEndpoints
+                ? CreateTrackCompatibility.straightEndpoint(graph, edge, false) : edge.getPosition(graph, 1);
     }
 
     @Override
@@ -53,7 +59,7 @@ public final class CreateTrackGeometry implements TrackGeometry {
     }
 
     private Vec3 tangent(double parameter) {
-        if (!edge.isTurn()) return edge.getPosition(graph, 1).subtract(edge.getPosition(graph, 0));
+        if (!edge.isTurn()) return straightEnd.subtract(straightStart);
         var turn = edge.getTurn();
         Vec3 start = turn.starts.getFirst();
         Vec3 end = turn.starts.getSecond();
@@ -70,8 +76,8 @@ public final class CreateTrackGeometry implements TrackGeometry {
 
     private Vec3 position(double parameter) {
         if (!edge.isTurn())
-            // These endpoints retain Create's smoothing on raised straight edges.
-            return lerp(edge.getPosition(graph, 0), edge.getPosition(graph, 1), parameter);
+            // Resolve both joints through the backend, including unquantized RailX curve starts.
+            return lerp(straightStart, straightEnd, parameter);
         var turn = edge.getTurn();
         Vec3 start = turn.starts.getFirst();
         Vec3 end = turn.starts.getSecond();

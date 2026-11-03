@@ -34,8 +34,9 @@ public final class VehicleCouplingCatalog {
             };
             endpoints.add(new CouplingEndpoint(endpointId(snapshot.id(), block.position()),
                     northForward(block.position(), forward), CouplingEndpoint.Facing.valueOf(relative.name()),
-                    coupler.pivot(), coupler.start(), coupler.complete(), coupler.kind(), coupler.maxExtension(),
-                    coupler.model(), CouplerAdapterData.read(block.entityData())));
+                    coupler.axis(), coupler.start(), coupler.complete(), coupler.kind(), coupler.maxExtension(),
+                    coupler.model(), CouplerAdapterData.read(block.entityData()),
+                    CouplerDataRegistry.capture(coupler, block.state())));
         }
         return List.copyOf(endpoints);
     }

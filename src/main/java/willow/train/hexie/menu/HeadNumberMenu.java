@@ -12,17 +12,16 @@ import willow.train.hexie.blocks.locos.head.CRH2HeadBlock;
 import willow.train.hexie.init.client.MenuInit;
 import willow.train.hexie.item.editable_panels.ColoredBrush;
 
-public final class HeadNumberMenu extends AbstractContainerMenu {
+public final class HeadNumberMenu extends BlockEntityEditMenu<CRH2HeadEntity> {
     public final BlockPos pos;
     public final String initialNumber;
-    private final CRH2HeadEntity target;
     public HeadNumberMenu(int id, Inventory inventory, FriendlyByteBuf buf) {
-        super(MenuInit.HEAD_NUMBER_MENU.get(), id);
+        super(MenuInit.HEAD_NUMBER_MENU.get(), id, null, CRH2HeadEntity.class);
         pos = buf.readBlockPos(); initialNumber = buf.readUtf(CRH2HeadEntity.MAX_LENGTH * 2); target = null;
     }
     public HeadNumberMenu(int id, Inventory inventory, CRH2HeadEntity target) {
-        super(MenuInit.HEAD_NUMBER_MENU.get(), id);
-        this.target = target; pos = target.getBlockPos(); initialNumber = target.number();
+        super(MenuInit.HEAD_NUMBER_MENU.get(), id, target, CRH2HeadEntity.class);
+        pos = target.getBlockPos(); initialNumber = target.number();
     }
     @Override public boolean stillValid(Player player) {
         if (!player.mayBuild() || player.isSpectator() || !player.level().hasChunkAt(pos)

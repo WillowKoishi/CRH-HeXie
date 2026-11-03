@@ -19,7 +19,7 @@ public record TestCabActionPacket(int vehicleId, int action) implements HexiePac
             if (cab == null || !(cab.seatAccess().blockState(cab.console()).getBlock() instanceof TestDrivingConsoleBlock)) return;
             if (cab.seatAccess().vehicle() instanceof SnapshotCarriageEntity car && car.motion() != null)
                 car.motion().updateCabControls(car, cab, player,
-                        module -> willow.train.hexie.vehicle.control.TestCabControls.apply(module, action));
+                        (state, speed) -> willow.train.hexie.vehicle.control.TestCabControls.apply(state, action, speed));
             else if (!(cab.seatAccess().vehicle() instanceof com.simibubi.create.content.contraptions.AbstractContraptionEntity)
                     && player.level().getBlockEntity(cab.console()) instanceof willow.train.hexie.blockentity.DrivingConsoleEntity bench
                     && action >= 0 && action <= 6) bench.benchAction(action);

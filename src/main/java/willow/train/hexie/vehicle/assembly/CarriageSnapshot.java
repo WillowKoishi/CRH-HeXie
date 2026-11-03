@@ -184,7 +184,7 @@ public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos o
         return new CarriageSnapshot(root.getUUID("Id"), dimension, position(root, "Origin"), blocks, supports, glue);
     }
 
-    private static BlockState readState(CompoundTag tag, RegistryAccess registries) {
+    public static BlockState readState(CompoundTag tag, RegistryAccess registries) {
         require(tag, "Name", Tag.TAG_STRING);
         var name = identifier(tag.getString("Name"));
         var registry = registries.registryOrThrow(Registries.BLOCK);
@@ -202,6 +202,11 @@ public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos o
                 properties = properties.copy();
                 properties.putString("head_mounted", "false");
             }
+            if(state.hasProperty(willow.train.hexie.blocks.parts.LegacyPartLayout.OCCUPIED)&&!properties.contains("occupied")) {
+                properties=properties.copy();
+                // Old snapshots remain single-root layouts. Their cells are not invented during decoding.
+                properties.putString("occupied","false");
+            }
             if (properties.size() != state.getProperties().size())
                 throw new IllegalArgumentException("Incomplete block state properties: " + name);
             for (String key : properties.getAllKeys()) {
@@ -214,7 +219,7 @@ public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos o
         return state;
     }
 
-    private static void validateEntityType(BlockState state, CompoundTag tag, RegistryAccess registries) {
+    public static void validateEntityType(BlockState state, CompoundTag tag, RegistryAccess registries) {
         require(tag, "id", Tag.TAG_STRING);
         var name = identifier(tag.getString("id"));
         var registry = registries.registryOrThrow(Registries.BLOCK_ENTITY_TYPE);

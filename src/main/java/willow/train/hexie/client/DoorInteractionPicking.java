@@ -1,6 +1,7 @@
 package willow.train.hexie.client;
 
 import com.simibubi.create.content.contraptions.AbstractContraptionEntity;
+import com.simibubi.create.content.contraptions.Contraption;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.DoorBlock;
@@ -90,15 +91,27 @@ public final class DoorInteractionPicking {
             if (!(state.getBlock() instanceof CRH2DoorBlock door)
                     || state.getValue(DoorBlock.HALF) != DoubleBlockHalf.LOWER
                     || contraption.isHiddenInPortal(position)) continue;
-            float progress = contraption.getBlockEntityClientSide(position) instanceof CustomRenderedDoorEntity doorEntity
-                    ? doorEntity.crh2InteractionProgress() : (state.getValue(DoorBlock.OPEN) ? 1 : 0);
-            var hit = door.interactionShape(state, progress).clip(localOrigin, localTarget, position);
+            var hit = blockHit(contraption, position, localOrigin, localTarget);
             if (hit == null) continue;
             double distance = hit.getLocation().distanceToSqr(localOrigin);
             if (distance >= closest) continue;
             closest = distance;
-            result = hit.withPosition(position.above(hit.getLocation().y - position.getY() >= 1 ? 1 : 0));
+            result = hit;
         }
         return result;
+    }
+
+    /** Queries one visible block, retaining the door leaf's current animation and owner half. */
+    public static BlockHitResult blockHit(Contraption contraption, BlockPos position, Vec3 from, Vec3 to) {
+        var info = contraption.getBlocks().get(position);
+        if (info == null || contraption.isHiddenInPortal(position)) return null;
+        var state = info.state();
+        if (!(state.getBlock() instanceof CRH2DoorBlock door))
+            return state.getShape(contraption.getContraptionWorld(), BlockPos.ZERO.below()).clip(from, to, position);
+        if (state.getValue(DoorBlock.HALF) != DoubleBlockHalf.LOWER) return null;
+        float progress = contraption.getBlockEntityClientSide(position) instanceof CustomRenderedDoorEntity entity
+                ? entity.crh2InteractionProgress() : (state.getValue(DoorBlock.OPEN) ? 1 : 0);
+        var hit = door.interactionShape(state, progress).clip(from, to, position);
+        return hit == null ? null : hit.withPosition(position.above(hit.getLocation().y - position.getY() >= 1 ? 1 : 0));
     }
 }

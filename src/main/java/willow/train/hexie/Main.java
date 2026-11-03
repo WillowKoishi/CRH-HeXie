@@ -104,6 +104,10 @@ public class Main {
 
         modSetup();
 
+        if (ModList.get().isLoaded("railx")) {
+            willow.train.hexie.compat.create.railx.RailxTracks.register(bus);
+        }
+
         SoundsInit.register(bus);
 
         EffectInit.register(bus);

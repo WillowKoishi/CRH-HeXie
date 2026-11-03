@@ -115,7 +115,14 @@ public class HeXieClientInit {
 
     public static void registerEntityVisuals(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
-            var pivot = willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock.PIVOT;
+            willow.train.hexie.client.render.SnapshotCouplerRenderer.register(
+                    willow.train.hexie.init.block.BlockInit.CRH2A_AUTO_COUPLER.get(),
+                    new willow.train.hexie.client.render.CoveredCouplerRenderer(
+                            PartialModelInit.CRH2_AUTO_COUPLER_BASE, PartialModelInit.CRH2_AUTO_COUPLER_ARM,
+                            PartialModelInit.CRH2_AUTO_COUPLER_COVER_LEFT, PartialModelInit.CRH2_AUTO_COUPLER_COVER_RIGHT,
+                            willow.train.hexie.init.block.BlockInit.CRH2A_AUTO_COUPLER.get().geometry()));
+            var endCoupler = willow.train.hexie.init.block.BlockInit.CRH2A_END_FACE.get();
+            var pivot = endCoupler.axis().atHeight(endCoupler.complete().y());
             double back = willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock.BELLOWS_BASE_Z;
             double front = willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock.BELLOWS_FRONT_Z;
             double maximum = willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock.MAX_BELLOWS_THICKNESS;

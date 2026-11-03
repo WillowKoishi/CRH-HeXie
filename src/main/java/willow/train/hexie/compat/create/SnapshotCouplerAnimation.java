@@ -14,6 +14,7 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import willow.train.hexie.blocks.coupler.CouplerAdapterData;
 import willow.train.hexie.vehicle.assembly.CarriageSnapshot;
+import willow.train.hexie.vehicle.assembly.VehicleRuntimeNbt;
 import willow.train.hexie.vehicle.kinematics.VehicleConstraintSolver.BodyPose;
 import willow.train.hexie.vehicle.runtime.CarriageDefinition;
 import willow.train.hexie.vehicle.runtime.CouplerAngles;
@@ -79,7 +80,8 @@ public final class SnapshotCouplerAnimation {
 
     /** Shared head gap in blocks, with this hook's angles relative to its registered resting direction. */
     public record Parameters(UUID endpoint, BlockPos position, double extension, CouplerAngles angles,
-                             AdapterAttachment attachment, boolean coupled, PartnerPose partnerPose) {
+                             AdapterAttachment attachment, boolean coupled, PartnerPose partnerPose,
+                             CouplingEndpoint.Visual visual) {
         public Parameters {
             Objects.requireNonNull(endpoint);
             position = position.immutable();
@@ -104,11 +106,16 @@ public final class SnapshotCouplerAnimation {
             this(endpoint, position, extension, angles, attachment, coupled, null);
         }
 
+        public Parameters(UUID endpoint, BlockPos position, double extension, CouplerAngles angles,
+                AdapterAttachment attachment, boolean coupled, PartnerPose partnerPose) {
+            this(endpoint, position, extension, angles, attachment, coupled, partnerPose, null);
+        }
+
         public Parameters interpolate(Parameters next, float fraction) {
             if (fraction >= 1 || !endpoint.equals(next.endpoint) || !position.equals(next.position)) return next;
             return new Parameters(endpoint, position, extension + (next.extension - extension) * fraction,
                     angles.interpolate(next.angles, fraction), next.attachment, next.coupled,
-                    partnerPose == null ? next.partnerPose : partnerPose.interpolate(next.partnerPose, fraction));
+                    partnerPose == null ? next.partnerPose : partnerPose.interpolate(next.partnerPose, fraction), next.visual);
         }
     }
 
@@ -124,6 +131,10 @@ public final class SnapshotCouplerAnimation {
     public SnapshotBogeyAnimation.Frame frame(int index, float partialTick) { return poses.frame(index, partialTick); }
     public List<Parameters> parameters() { return currentParameters; }
     public double floorOffset() { return floorOffset; }
+    public CouplingEndpoint.Visual visual(BlockPos position) {
+        for (var parameter : currentParameters) if (parameter.position().equals(position)) return parameter.visual();
+        return null;
+    }
     public boolean hasShiftedBase(BlockPos position) {
         if (floorOffset == 0) return false;
         for (var frame : frames()) if (frame.position().equals(position)) return true;
@@ -146,6 +157,7 @@ public final class SnapshotCouplerAnimation {
             tag.putDouble("Yaw", parameters.angles().yaw());
             tag.putDouble("Pitch", parameters.angles().pitch());
             tag.putBoolean("Coupled", parameters.coupled());
+            if (parameters.visual() != null) tag.put("Visual", VehicleRuntimeNbt.writeCouplerVisual(parameters.visual()));
             if (parameters.partnerPose() != null) {
                 var partner = parameters.partnerPose();
                 var partnerTag = new CompoundTag();
@@ -198,14 +210,16 @@ public final class SnapshotCouplerAnimation {
             }
             decoded.add(new Parameters(tag.getUUID("Id"), BlockPos.of(tag.getLong("Pos")), tag.getDouble("Extension"),
                     new CouplerAngles(tag.getDouble("Yaw"), tag.getDouble("Pitch")), attachment,
-                    !tag.contains("Coupled", Tag.TAG_BYTE) || tag.getBoolean("Coupled"), partner));
+                    !tag.contains("Coupled", Tag.TAG_BYTE) || tag.getBoolean("Coupled"), partner,
+                    tag.contains("Visual") ? VehicleRuntimeNbt.readCouplerVisual(tag.getCompound("Visual")) : null));
         }
         targetParameters = List.copyOf(decoded);
         boolean sameHooks = currentParameters.size() == targetParameters.size();
         for (int i = 0; sameHooks && i < currentParameters.size(); i++) {
             var current = currentParameters.get(i);
             var target = targetParameters.get(i);
-            sameHooks = current.endpoint().equals(target.endpoint()) && current.position().equals(target.position());
+            sameHooks = current.endpoint().equals(target.endpoint()) && current.position().equals(target.position())
+                    && Objects.equals(current.visual(), target.visual());
         }
         // Legacy animation payloads still supply poses; their absent hook parameters stay empty.
         if (!sameHooks || steps <= 0) previousParameters = currentParameters = targetParameters;
@@ -229,6 +243,21 @@ public final class SnapshotCouplerAnimation {
     public void update(VehicleRuntime runtime, CarriageSnapshot snapshot, Direction forward) {
         if (snapshot == null) return;
         CarriageDefinition definition = runtime.definition(snapshot.id());
+        if (definition.couplings().stream().anyMatch(endpoint -> endpoint.visual() == null)) {
+            for (var block : snapshot.blocks()) {
+                var id = willow.train.hexie.vehicle.assembly.VehicleCouplingCatalog.endpointId(snapshot.id(), block.position());
+                var endpoint = definition.couplings().stream().filter(value -> value.id().equals(id)).findFirst().orElse(null);
+                if (endpoint == null || endpoint.visual() != null) continue;
+                var hook = willow.train.hexie.blocks.coupler.CouplerBlock.of(block.state());
+                if (hook == null) continue;
+                var captured = willow.train.hexie.vehicle.assembly.CouplerDataRegistry.capture(hook, block.state());
+                // Old saves already own their geometry; only the previously absent render selection is recovered.
+                runtime.captureCouplerVisual(id, new CouplingEndpoint.Visual(captured.facing(), captured.fixed(),
+                        captured.shiftedFixed(), captured.moving(), endpoint.axisPoint().plus(new Point(0, definition.floorOffset(), 0)),
+                        captured.movingOffset()));
+            }
+            definition = runtime.definition(snapshot.id());
+        }
         floorOffset = definition.floorOffset();
         if (sourceDefinition != definition || sourceForward != forward) {
             // Convert once from the runtime's north-forward coordinates to the captured block coordinates.
@@ -266,16 +295,9 @@ public final class SnapshotCouplerAnimation {
             var solved = solution.endpoints().get(endpoint.id());
             if (solved == null) continue;
             Quaternionf restingRotation = new Quaternionf(bodyRotation).rotateY(facingYaw(endpoint.facing()));
-            var p = endpoint.pivot();
-            var c = endpoint.effectiveComplete();
-            Vector3f initialDirection = restingRotation.transform(new Vector3f(
-                    (float) (c.x() - p.x()), (float) (c.y() - p.y()), (float) (c.z() - p.z())));
-            var actualArm = solved.complete().subtract(solved.pivot());
-            Vector3f actualDirection = new Vector3f((float) actualArm.x(), (float) actualArm.y(), (float) actualArm.z());
-            Quaternionf swing = new Quaternionf();
-            if (initialDirection.lengthSquared() > 1e-12f && actualDirection.lengthSquared() > 1e-12f)
-                swing.rotationTo(initialDirection.normalize(), actualDirection.normalize());
-            Quaternionf relative = new Quaternionf(inverseSourceBody).mul(swing).mul(restingRotation);
+            var angles = CouplerAngles.from(endpoint, body, solved);
+            // A vertical axis permits yaw in the body's own frame. Body pitch/roll still follow the track.
+            Quaternionf relative = new Quaternionf(inverseSourceBody).mul(restingRotation).rotateY((float) angles.yaw());
             var offset = solved.pivot().subtract(body.position());
             Vector3f local = inverseSourceBody.transform(new Vector3f((float) offset.x(), (float) offset.y(), (float) offset.z()));
             // The frame origin is the registered pivot. Rendering subtracts the arm model's own pivot.
@@ -287,9 +309,9 @@ public final class SnapshotCouplerAnimation {
             var partnerPose = partnerMount == null ? null
                     : PartnerPose.between(endpoint, body, partnerMount.endpoint, partnerMount.body);
             nextParameters.add(new Parameters(endpoint.id(), arm.position, gap == null ? 0 : Math.sqrt(gap.dot(gap)),
-                    CouplerAngles.from(endpoint, body, solved), endpoint.adapter() == null ? null
-                    : new AdapterAttachment(endpoint.adapter(), modelPoint(endpoint.pivot()), modelPoint(endpoint.complete()),
-                            !endpoint.model().equals(endpoint.adapter().firstModel())), partner != null, partnerPose));
+                    angles, endpoint.adapter() == null ? null
+                    : new AdapterAttachment(endpoint.adapter(), modelPoint(endpoint.axisPoint()), modelPoint(endpoint.complete()),
+                            !endpoint.model().equals(endpoint.adapter().firstModel())), partner != null, partnerPose, endpoint.visual()));
         }
         poses.setFrames(next);
         setParameters(nextParameters);

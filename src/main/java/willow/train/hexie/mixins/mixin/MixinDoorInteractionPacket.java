@@ -10,8 +10,9 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import willow.train.hexie.blocks.locos.crh2a.CRH2DoorInteraction;
+import willow.train.hexie.blocks.coupler.CouplerInteraction;
 
-/** Keep vanilla interaction handling, permitting only a validated door leaf outside its source cell. */
+/** Keep vanilla handling, permitting only validated model surfaces outside their source cells. */
 @Mixin(ServerGamePacketListenerImpl.class)
 public abstract class MixinDoorInteractionPacket {
     @Shadow public ServerPlayer player;
@@ -25,6 +26,7 @@ public abstract class MixinDoorInteractionPacket {
             return delta;
         // This alters only the following coordinate sanity check. The actual hit, native
         // block reach, permissions, item use and block updates remain in the native handler.
-        return CRH2DoorInteraction.validExtendedHit(player, packet.getHitResult()) ? Vec3.ZERO : delta;
+        return CRH2DoorInteraction.validExtendedHit(player, packet.getHitResult())
+                || CouplerInteraction.validExtendedHit(player, packet.getHitResult()) ? Vec3.ZERO : delta;
     }
 }

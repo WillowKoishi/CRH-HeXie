@@ -23,13 +23,9 @@ public final class TrainControl {
 
     /** Recomputed from the current consist, including non-powered vehicles and world braking tuning. */
     public static double serviceDeceleration(VehicleRuntime runtime, java.util.UUID member, Source source) {
-        double mass = 0, force = 0;
-        for (var id : runtime.state(member).consist()) {
-            var definition = runtime.definition(id);
-            mass += definition.massKg();
-            for (var bogey : definition.bogeys()) force += bogey.parameters().brakeForceN();
-        }
-        return mass > 0 ? force / mass * source.serviceBrakeLimit() * runtime.brakingMultiplier() : 0;
+        var capacity = runtime.capabilities(member);
+        return capacity.massKg() > 0 ? capacity.maximumBrakeForceN() / capacity.massKg()
+                * runtime.brakingMultiplier() * source.serviceBrakeLimit() : 0;
     }
 
     /** Inputs span the available handle travel; a full service handle maps to the source's cap. */

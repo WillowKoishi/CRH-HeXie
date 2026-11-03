@@ -16,6 +16,14 @@ public class BlockEntitySynchronizeBehaviour implements MovementBehaviour {
         BlockState state = context.state;
         if(be instanceof IContraptionMovementBlockEntity icmbe)
             icmbe.doMovement(context.contraption, pos, state, be);
+        else if (be instanceof willow.train.hexie.blockentity.CouplerBlockEntity coupler
+                && state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN)) {
+            // Create's block-change packet updates the block map before rebuilding the display BEs;
+            // the actor context can still contain the previous OPEN state on this client.
+            var current = context.contraption.getBlocks().get(pos);
+            coupler.setBlockState(current == null ? state : current.state());
+            coupler.tickCoverAnimation();
+        }
     }
 
     @Override

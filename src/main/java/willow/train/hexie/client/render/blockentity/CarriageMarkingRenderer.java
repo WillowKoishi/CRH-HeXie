@@ -21,17 +21,18 @@ public final class CarriageMarkingRenderer implements BlockEntityRenderer<CRH2Pa
     public CarriageMarkingRenderer(BlockEntityRendererProvider.Context context) {}
     @Override public void render(CRH2PartEntity entity,float partialTick,PoseStack pose,MultiBufferSource buffers,int light,int overlay) {
         var state=entity.getBlockState();
-        if(!(state.getBlock() instanceof CRH2PanelBlock block)||state.getValue(CRH2PanelBlock.PART)!=0)return;
+        if(!(state.getBlock() instanceof willow.train.hexie.blocks.parts.VehicleMarkingSurface block)
+                ||!block.markingRoot(entity.getLevel(),entity.getBlockPos(),state).equals(entity.getBlockPos()))return;
         var fields=entity.fields();
         if(java.util.Arrays.stream(fields).allMatch(String::isBlank)&&entity.harmony(0)==0&&entity.harmony(1)==0)return;
-        var localBounds=block.placementBounds(state.setValue(CRH2PanelBlock.FACING,Direction.NORTH));
+        var localBounds=block.markingBounds(state);
         pose.pushPose();
         pose.translate(.5,0,.5);
-        pose.mulPose(Axis.YP.rotationDegrees(switch(state.getValue(CRH2PanelBlock.FACING)){
+        pose.mulPose(Axis.YP.rotationDegrees(switch(block.markingFacing(state)){
             case EAST -> -90;case SOUTH -> 180;case WEST -> 90;default -> 0;
         }));
         pose.translate(-.5,0,-.5);
-        for(int slot=0;slot<(localBounds.getXsize()>1.5 ? 2 : 1);slot++) {
+        for(int slot=0;slot<block.markingSlots(state);slot++) {
             if(entity.harmony(slot)==0)continue;
             boolean right=entity.harmony(slot)==2;
             var layout=willow.train.hexie.blocks.locos.crh2a.HarmonyMarking.layout(localBounds.minX+slot,localBounds.maxY,right);
@@ -39,12 +40,12 @@ public final class CarriageMarkingRenderer implements BlockEntityRenderer<CRH2Pa
                     "textures/logo/crh-chinarailwayhighspeed"+(right ? "_r" : "")+".png"),pose,buffers,
                     layout.left(),layout.top(),layout.width(),layout.height(),light,
                     (x,y)->new net.minecraft.world.phys.Vec3(x,y,
-                            willow.train.hexie.blocks.locos.crh2a.HarmonyMarking.surfaceDepth(y)+.002));
+                            block.markingDepth(y)+.002));
         }
         // Panels stand on the floor; the head's origin is the floor block itself.
-        double cellLeft=localBounds.minX+(localBounds.getXsize()>1.5 ? entity.markingSlot() : 0);
+        double cellLeft=localBounds.minX+(block.markingSlots(state)>1 ? entity.markingSlot() : 0);
         double anchor=entity.descriptionLeft() ? cellLeft+EDGE_INSET : cellLeft+1-EDGE_INSET;
-        pose.translate(anchor,HeadNumberRenderer.NUMBER_BOTTOM-1,block.markingDepth()+.002);
+        pose.translate(anchor,HeadNumberRenderer.NUMBER_BOTTOM-1,block.markingDepth(1)+.002);
         drawMarking(fields,entity.descriptionLeft(),pose,buffers,light);
         pose.popPose();
     }
@@ -67,8 +68,8 @@ public final class CarriageMarkingRenderer implements BlockEntityRenderer<CRH2Pa
                 0xFF171717,light,alignment,true,SignTextRenderer.FLAT_SURFACE);
     }
     @Override public AABB getRenderBoundingBox(CRH2PartEntity entity) {
-        if(entity.getBlockState().getBlock() instanceof CRH2PanelBlock panel)
-            return panel.placementBounds(entity.getBlockState()).inflate(3,.2,3).move(entity.getBlockPos());
+        if(entity.getBlockState().getBlock() instanceof willow.train.hexie.blocks.parts.VehicleMarkingSurface panel)
+            return panel.markingRenderBounds(entity.getBlockState()).inflate(3,.2,3).move(entity.getBlockPos());
         return new AABB(entity.getBlockPos());
     }
     @Override public boolean shouldRenderOffScreen(CRH2PartEntity entity) { return true; }

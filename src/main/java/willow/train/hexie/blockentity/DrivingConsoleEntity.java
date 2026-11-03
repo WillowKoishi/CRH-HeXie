@@ -12,25 +12,30 @@ import java.util.Objects;
 import java.util.function.DoubleSupplier;
 
 /** Live display sources, plus stationary test-fixture handles. Moving train control remains with the runtime owner. */
-public final class DrivingConsoleEntity extends BlockEntity implements CabDisplayHost {
-    public static final String PENDING_TIMETABLE = "PendingTimetable";
+public final class DrivingConsoleEntity extends BlockEntity implements CabDisplayHost, willow.train.hexie.api.cab.CabControlsHost,
+        willow.train.hexie.api.cab.CabTimetableHost {
     private net.minecraft.nbt.CompoundTag pendingTimetable = new net.minecraft.nbt.CompoundTag();
+    @Override public net.minecraft.nbt.CompoundTag timetable() { return pendingTimetable.copy(); }
     /** Opaque backend data; the console does not interpret Create's schedule format. */
-    public void readTimetable(net.minecraft.nbt.CompoundTag data) {
+    @Override public void readTimetable(net.minecraft.nbt.CompoundTag data) {
         pendingTimetable = data.copy();
         setChanged();
+        if (level != null) level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
     }
     private CabDisplaySource source = () -> CabDisplayState.speedOnly(0);
     private willow.train.hexie.vehicle.control.CabModule benchControls = new willow.train.hexie.vehicle.control.CabModule();
-    private java.util.function.Supplier<willow.train.hexie.vehicle.control.CabModule> controlsSource = () -> benchControls;
+    private java.util.function.Supplier<willow.train.hexie.vehicle.control.CabModule.State> controlsSource = () -> benchControls.state();
     private boolean vehicleSource;
     public boolean hasVehicleSource() { return vehicleSource; }
-    public void controlsSource(java.util.function.Supplier<willow.train.hexie.vehicle.control.CabModule> source) { controlsSource = source; vehicleSource = true; }
-    public willow.train.hexie.vehicle.control.CabModule controls() { return controlsSource.get(); }
-    public willow.train.hexie.vehicle.control.TestCabControls testControls() { return willow.train.hexie.vehicle.control.TestCabControls.read(controls().write()); }
+    @Override public void controlsSource(java.util.function.Supplier<willow.train.hexie.vehicle.control.CabModule.State> source) {
+        controlsSource = Objects.requireNonNull(source); vehicleSource = true;
+    }
+    @Override public willow.train.hexie.vehicle.control.CabModule.State controls() { return controlsSource.get(); }
+    public willow.train.hexie.vehicle.control.TestCabControls.View testControls() {
+        return willow.train.hexie.vehicle.control.TestCabControls.view(controls());
+    }
     public void benchAction(int action) {
-        willow.train.hexie.vehicle.control.TestCabControls.apply(benchControls, action);
-        benchControls.update(benchControls.mode(), 1, 0, null, 1);
+        benchControls.submit(willow.train.hexie.vehicle.control.TestCabControls.apply(benchControls.state(), action, 0));
         setChanged();
         if (level != null) level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
     }
@@ -67,6 +72,14 @@ public final class DrivingConsoleEntity extends BlockEntity implements CabDispla
 
     @Override
     public CabDisplayState displayState() {
+        if (!vehicleSource && getBlockState().getBlock() instanceof willow.train.hexie.blocks.locos.TestDrivingConsoleBlock) {
+            var state = benchControls.state();
+            var command = benchControls.update(state.mode(), 1, 0, null, 0);
+            return new CabDisplayState(0, java.util.Map.of(), new willow.train.hexie.api.cab.DmiState(
+                    state.automatic() ? willow.train.hexie.api.cab.DmiState.Mode.AUTOMATIC : willow.train.hexie.api.cab.DmiState.Mode.MANUAL,
+                    null, willow.train.hexie.vehicle.control.TrainControl.LINE_SPEED_LIMIT_KMH, 0,
+                    Math.abs(command.throttle()), command.brake(), "静态测试台", "", "", "", ""));
+        }
         return source.displayState();
     }
 

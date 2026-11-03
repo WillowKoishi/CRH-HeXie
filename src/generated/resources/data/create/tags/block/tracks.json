@@ -2,6 +2,18 @@
   "values": [
     "hexie:standard_track",
     "hexie:ballastless_track",
-    "hexie:tieless_track"
+    "hexie:tieless_track",
+    {
+      "id": "hexie:railx_standard_track",
+      "required": false
+    },
+    {
+      "id": "hexie:railx_ballastless_track",
+      "required": false
+    },
+    {
+      "id": "hexie:railx_tieless_track",
+      "required": false
+    }
   ]
 }

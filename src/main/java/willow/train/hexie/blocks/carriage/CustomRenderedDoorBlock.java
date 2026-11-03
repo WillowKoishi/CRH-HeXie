@@ -57,8 +57,8 @@ public class CustomRenderedDoorBlock extends DoorBlock implements IBE<CustomRend
         super(net.minecraft.world.level.block.state.properties.BlockSetType.OAK, pProperties);
         this.leftDoorModelLocations = leftDoorModels.copy();
         this.rightDoorModelLocations = rightDoorModels.copy();
-        this.leftDoorModels = Couple.create(block(leftDoorModels.get(true).getPath()), block(leftDoorModels.get(false).getPath()));
-        this.rightDoorModels = Couple.create(block(rightDoorModels.get(true).getPath()), block(rightDoorModels.get(false).getPath()));
+        this.leftDoorModels = Couple.create(block(leftDoorModels.get(true)), block(leftDoorModels.get(false)));
+        this.rightDoorModels = Couple.create(block(rightDoorModels.get(true)), block(rightDoorModels.get(false)));
         this.renderShape = renderShape;
         this.isSlideDoor = isSlideDoor;
     }
@@ -79,8 +79,8 @@ public class CustomRenderedDoorBlock extends DoorBlock implements IBE<CustomRend
         return rightDoorModels;
     }
 
-    private static PartialModel block(String path) {
-        return PartialModel.of(Main.asResource("block/" + path));
+    private static PartialModel block(ResourceLocation path) {
+        return PartialModel.of(path.withPrefix("block/"));
     }
 
     @Override

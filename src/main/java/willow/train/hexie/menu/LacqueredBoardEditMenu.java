@@ -2,52 +2,21 @@ package willow.train.hexie.menu;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.*;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.level.block.entity.BlockEntity;
-
-
-import willow.train.hexie.init.client.MenuInit;
 import willow.train.hexie.blockentity.LacqueredBoardEntity;
+import willow.train.hexie.init.client.MenuInit;
 
-public class LacqueredBoardEditMenu extends AbstractContainerMenu {
-    LacqueredBoardEntity lbe;
-
-    @Override
-    public ItemStack quickMoveStack(Player pPlayer, int pIndex) {
-        return null;
+public class LacqueredBoardEditMenu extends BlockEntityEditMenu<LacqueredBoardEntity> {
+    public LacqueredBoardEditMenu(int id, Inventory inventory, FriendlyByteBuf data) {
+        this(id, inventory, inventory.player.level().getBlockEntity(data.readBlockPos()), new SimpleContainerData(2));
     }
 
-    public LacqueredBoardEditMenu(int pContainerId, Inventory inv, FriendlyByteBuf extraData) {
-        this(
-                pContainerId,
-                inv,
-                inv.player.level().getBlockEntity(extraData.readBlockPos()),
-                new SimpleContainerData(2));
+    public LacqueredBoardEditMenu(int id, Inventory inventory, BlockEntity entity, ContainerData data) {
+        super(MenuInit.LAQUERED_BOARD_EDIT_MENU.get(), id, entity, LacqueredBoardEntity.class);
     }
 
-    public LacqueredBoardEditMenu(
-            int pContainerId, Inventory inv, BlockEntity entity, ContainerData data) {
-        super(MenuInit.LAQUERED_BOARD_EDIT_MENU.get(), pContainerId);
-        this.lbe = ((LacqueredBoardEntity) entity);
-    }
-
-    @Override
-    public boolean stillValid(Player pPlayer) {
-        return true;
-    }
-
-    public void setLbe(LacqueredBoardEntity lbe) {
-        this.lbe = lbe;
-    }
-
-    /**
-     * 这个方法将负责将方块实体向Screen传递
-     *
-     * @return 对应的方块实体
-     */
-    public LacqueredBoardEntity getLbe() {
-        return lbe;
-    }
+    public LacqueredBoardEntity getLbe() { return target; }
+    public void setLbe(LacqueredBoardEntity entity) { target = entity; }
 }

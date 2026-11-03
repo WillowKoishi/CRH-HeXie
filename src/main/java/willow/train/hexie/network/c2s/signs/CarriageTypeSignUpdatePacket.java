@@ -2,8 +2,6 @@ package willow.train.hexie.network.c2s.signs;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import willow.train.hexie.network.c2s.HexiePacket;
@@ -40,21 +38,10 @@ public class CarriageTypeSignUpdatePacket implements HexiePacket {
 
     @Override
     public boolean handle(IPayloadContext context) {
-
-        context.enqueueWork(
-                () -> {
-                    ServerLevel level = ((net.minecraft.server.level.ServerPlayer) context.player()).serverLevel();
-                    BlockEntity entity = level.getBlockEntity(pos);
-                    if (entity == null) {
-                        return;
-                    }
-                    if (entity instanceof CarriageTypeSignEntity) {
-                        ((CarriageTypeSignEntity) entity).setMessages(this.lines);
-                        ((CarriageTypeSignEntity) entity).setColor(color);
-                        entity.setChanged();
-                        ((CarriageTypeSignEntity) entity).sendData();
-                    }
-                });
+        context.enqueueWork(() -> SignEditSubmission.commit(context.player(), pos, CarriageTypeSignEntity.class, entity -> {
+            entity.setMessages(lines);
+            entity.setColor(color);
+        }));
         return true;
     }
 

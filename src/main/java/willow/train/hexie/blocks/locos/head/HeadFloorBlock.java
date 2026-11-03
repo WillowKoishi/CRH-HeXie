@@ -13,7 +13,10 @@ import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.phys.shapes.*;
 
 /** Invisible floor occupancy belonging to one head item; no blocks above the floor. */
-public final class HeadFloorBlock extends Block {
+public final class HeadFloorBlock extends Block implements com.simibubi.create.api.schematic.requirement.SpecialBlockItemRequirement {
+    @Override public com.simibubi.create.content.schematics.requirement.ItemRequirement getRequiredItems(BlockState state,net.minecraft.world.level.block.entity.BlockEntity entity) {
+        return com.simibubi.create.content.schematics.requirement.ItemRequirement.NONE;
+    }
     public static final IntegerProperty PART=IntegerProperty.create("part",0,HeadGeometry.PARTS-1);
     public HeadFloorBlock(Properties p) {
         super(p.dynamicShape());
@@ -21,11 +24,27 @@ public final class HeadFloorBlock extends Block {
     }
     @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b) { b.add(CRH2HeadBlock.FACING,PART); }
     @Override public BlockState rotate(BlockState s,Rotation r) { return s.setValue(CRH2HeadBlock.FACING,r.rotate(s.getValue(CRH2HeadBlock.FACING))); }
-    @Override public BlockState mirror(BlockState s,Mirror m) { return rotate(s,m.getRotation(s.getValue(CRH2HeadBlock.FACING))); }
+    @Override public BlockState mirror(BlockState s,Mirror m) {
+        if(m==Mirror.NONE)return s;
+        int part=s.getValue(PART);
+        return rotate(s,m.getRotation(s.getValue(CRH2HeadBlock.FACING))).setValue(PART,part/5*5+4-part%5);
+    }
     @Override public RenderShape getRenderShape(BlockState s) { return RenderShape.INVISIBLE; }
     @Override public VoxelShape getShape(BlockState s,BlockGetter w,BlockPos p,CollisionContext c) { return HeadGeometry.floor(s.getValue(PART),s.getValue(CRH2HeadBlock.FACING)); }
     @Override public VoxelShape getCollisionShape(BlockState s,BlockGetter w,BlockPos p,CollisionContext c) { return getShape(s,w,p,c); }
-    @Override public List<ItemStack> getDrops(BlockState s,LootParams.Builder b) { return List.of(); }
+    @Override public List<ItemStack> getDrops(BlockState s,LootParams.Builder b) {
+        var origin=b.getOptionalParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.ORIGIN);
+        var root=origin==null?null:HeadGeometry.owner(b.getLevel(),BlockPos.containing(origin));
+        return root==null?List.of():List.of(b.getLevel().getBlockState(root).getBlock().asItem().getDefaultInstance());
+    }
+    @Override protected void onRemove(BlockState state,Level level,BlockPos pos,BlockState next,boolean moving) {
+        if(!moving&&!state.is(next.getBlock())&&!willow.train.hexie.blocks.parts.PartInstallation.mutating()) {
+            var root=pos.subtract(HeadGeometry.offset(state.getValue(PART),state.getValue(CRH2HeadBlock.FACING)));
+            if(level.hasChunkAt(root) && level.getBlockState(root).getBlock() instanceof CRH2HeadBlock head)
+                willow.train.hexie.blocks.parts.PartInstallation.removeOtherCells(level,pos,head.partCells(level,root,level.getBlockState(root)));
+        }
+        super.onRemove(state,level,pos,next,moving);
+    }
     @Override public ItemStack getCloneItemStack(LevelReader w,BlockPos p,BlockState s) { return willow.train.hexie.init.block.BlockInit.CRH2A_HEAD.get().asItem().getDefaultInstance(); }
     @Override public BlockState playerWillDestroy(Level w,BlockPos p,BlockState s,Player player) {
         var root=HeadGeometry.owner(w,p);

@@ -23,6 +23,8 @@ import net.neoforged.neoforge.event.OnDatapackSyncEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import willow.train.hexie.blocks.coupler.CouplerBlock;
 import willow.train.hexie.vehicle.runtime.CouplingEndpoint.Point;
+import willow.train.hexie.vehicle.runtime.CouplingEndpoint.Axis;
+import willow.train.hexie.vehicle.runtime.CouplingEndpoint;
 import willow.train.hexie.network.s2c.CouplerDefinitionsPacket;
 
 /** Data-pack-owned block selectors, mating types, geometry and render parts. */
@@ -32,7 +34,7 @@ public final class CouplerDataRegistry {
     private static volatile String synchronizedJson = "{}";
 
     public record Definition(ResourceLocation id, String model, Direction direction,
-            Point pivot, Point start, Point complete, double maxExtension,
+            Axis axis, Point start, Point complete, double maxExtension,
             BlockState fixedState, BlockState movingState, Point movingOffset) implements CouplerBlock {
         @Override public Direction facing(BlockState state) { return direction; }
         @Override public BlockState carriageRenderState(BlockState state, boolean shiftedBase) { return fixedState; }
@@ -42,6 +44,27 @@ public final class CouplerDataRegistry {
     public static Definition find(BlockState state) { return definitions.get(state); }
     public static Map<BlockState, Definition> definitions() { return definitions; }
     public static String synchronizedJson() { return synchronizedJson; }
+
+    public static CouplingEndpoint.Visual capture(CouplerBlock hook, BlockState state) {
+        var moving = hook instanceof Definition definition ? renderState(definition.movingState()) : null;
+        var offset = hook instanceof Definition definition ? definition.movingOffset() : new Point(0, 0, 0);
+        return new CouplingEndpoint.Visual(CouplingEndpoint.Facing.valueOf(hook.facing(state).name()),
+                renderState(hook.carriageRenderState(state, false)), renderState(hook.carriageRenderState(state, true)),
+                moving, hook.axis().atHeight(hook.complete().y()), offset);
+    }
+
+    private static CouplingEndpoint.RenderState renderState(BlockState state) {
+        var values = new java.util.TreeMap<String, String>();
+        for (var property : state.getProperties()) values.put(property.getName(), propertyValue(state, property));
+        return new CouplingEndpoint.RenderState(BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString(), values);
+    }
+
+    /** Resolves only the captured block identity/properties; never consults the active coupler definitions. */
+    public static BlockState renderState(CouplingEndpoint.RenderState saved) {
+        var id = ResourceLocation.parse(saved.block());
+        if (!BuiltInRegistries.BLOCK.containsKey(id)) throw new IllegalArgumentException("Unknown coupler render block " + id);
+        return applyProperties(BuiltInRegistries.BLOCK.get(id).defaultBlockState(), saved.properties());
+    }
 
     @SubscribeEvent public static void reload(AddReloadListenerEvent event) {
         event.addListener(new SimpleJsonResourceReloadListener(new Gson(), "vehicle/couplers") {
@@ -68,7 +91,8 @@ public final class CouplerDataRegistry {
             try {
                 var data = entry.getValue().getAsJsonObject();
                 if (data.has("required_mod") && !ModList.get().isLoaded(data.get("required_mod").getAsString())) continue;
-                if (data.get("schema").getAsInt() != 1) throw new IllegalArgumentException("Unsupported schema");
+                int schema = data.get("schema").getAsInt();
+                if (schema != 1 && schema != 2) throw new IllegalArgumentException("Unsupported schema");
                 var selector = data.getAsJsonObject("block");
                 var blockId = ResourceLocation.parse(selector.get("id").getAsString());
                 if (!BuiltInRegistries.BLOCK.containsKey(blockId)) throw new IllegalArgumentException("Unknown block " + blockId);
@@ -81,7 +105,8 @@ public final class CouplerDataRegistry {
                 String property = facing.has("property") ? facing.get("property").getAsString() : null;
                 Direction fixed = facing.has("value") ? horizontal(facing.get("value").getAsString()) : null;
                 if ((property == null) == (fixed == null)) throw new IllegalArgumentException("Specify one facing property or value");
-                Point pivot = point(data, "pivot", null), start = point(data, "start", null), complete = point(data, "complete", null);
+                Axis axis = axis(data, schema);
+                Point start = point(data, "start", null), complete = point(data, "complete", null);
                 double extension = data.get("max_extension").getAsDouble();
                 if (!Double.isFinite(extension) || extension < 0) throw new IllegalArgumentException("Invalid maximum extension");
                 for (var state : block.getStateDefinition().getPossibleStates()) {
@@ -91,7 +116,7 @@ public final class CouplerDataRegistry {
                     var stationary = part(data.get("stationary"), state);
                     var moving = data.getAsJsonObject("moving");
                     var movingState = part(moving, state);
-                    var definition = new Definition(id, type, direction, pivot, start, complete, extension,
+                    var definition = new Definition(id, type, direction, axis, start, complete, extension,
                             stationary, movingState, point(moving, "offset", new Point(0, 0, 0)));
                     if (next.putIfAbsent(state, definition) != null) throw new IllegalArgumentException("Overlapping selectors for " + state);
                 }
@@ -145,6 +170,16 @@ public final class CouplerDataRegistry {
         var direction = Direction.byName(value);
         if (direction == null || !direction.getAxis().isHorizontal()) throw new IllegalArgumentException("Expected horizontal facing");
         return direction;
+    }
+    private static Axis axis(JsonObject object, int schema) {
+        if (schema == 1) {
+            // Legacy definitions used a point for a vertical line. Its Y is not a joint height.
+            var old = point(object, "pivot", null);
+            return new Axis(old.x(), old.z());
+        }
+        var array = object.getAsJsonArray("axis");
+        if (array == null || array.size() != 2) throw new IllegalArgumentException("Expected X/Z coordinates for axis");
+        return new Axis(array.get(0).getAsDouble(), array.get(1).getAsDouble());
     }
     private static Point point(JsonObject object, String key, Point fallback) {
         if (!object.has(key) && fallback != null) return fallback;

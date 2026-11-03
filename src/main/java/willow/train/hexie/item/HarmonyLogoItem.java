@@ -12,10 +12,12 @@ public final class HarmonyLogoItem extends Item {
     @Override public InteractionResult useOn(UseOnContext context) {
         var level=context.getLevel(); var player=context.getPlayer();
         var state=level.getBlockState(context.getClickedPos());
-        if (!(state.getBlock() instanceof CRH2PanelBlock panel) || player==null) return InteractionResult.PASS;
+        var resolved=willow.train.hexie.blocks.parts.PartStructures.resolve(level,context.getClickedPos());
+        if(resolved!=null)state=resolved.state();
+        if (!(state.getBlock() instanceof willow.train.hexie.blocks.parts.VehicleMarkingSurface panel) || player==null) return InteractionResult.PASS;
         if (level!=player.level() || !player.mayBuild() || player.isSpectator()) return InteractionResult.FAIL;
-        var root=panel.root(context.getClickedPos(),state);
-        if (!(level.getBlockEntity(root) instanceof CRH2PartEntity entity)) return InteractionResult.FAIL;
+        var root=resolved!=null?resolved.pos():panel.markingRoot(level,context.getClickedPos(),state);
+        if (!(level.getBlockEntity(root) instanceof willow.train.hexie.blocks.parts.VehicleMarkings entity)) return InteractionResult.FAIL;
         int slot=HarmonyMarking.slot(panel,state,root,context.getClickLocation());
         if (entity.harmony(slot)!=0) return InteractionResult.PASS;
         if (!level.isClientSide) {

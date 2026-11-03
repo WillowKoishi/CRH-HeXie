@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "required_mod": "railways",
   "type": "railways:knuckle",
   "block": {
@@ -12,8 +12,7 @@
     "property": "facing",
     "opposite": false
   },
-  "pivot": [
-    0,
+  "axis": [
     0,
     0.5
   ],

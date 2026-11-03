@@ -9,7 +9,7 @@ public record CouplingRegion(Vector centre, Vector right, Vector up, Vector dept
     public static CouplingRegion of(CouplingEndpoint hook, BodyPose body, double floorOffset, boolean engagement) {
         double front = engagement ? hook.start().z() - (hook.adapter() == null ? 0 : hook.adapter().thickness())
                 : hook.effectiveComplete().z();
-        double back = hook.pivot().z();
+        double back = hook.axis().z();
         Point middle = hook.blockCenter().plus(hook.rotated(new Point(0, -floorOffset, (front + back) * .5)));
         return new CouplingRegion(body.transform(middle), body.rotate(hook.rotated(new Point(1, 0, 0))),
                 body.rotate(hook.rotated(new Point(0, 1, 0))), body.rotate(hook.rotated(new Point(0, 0, 1))),

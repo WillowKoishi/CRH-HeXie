@@ -1,37 +1,49 @@
 package willow.train.hexie.api.cab;
 
-/** Advisory only. Conservative constant service braking; no controller calls or ATP intervention. */
+import willow.train.hexie.vehicle.control.BrakingCurve;
+
+/** Advisory only. Resolves the target once and shares the same envelope with every display region. */
 public record DmiGuidance(boolean available, double speedKmh, double brakingDistanceM,
                           double secondsToBrake, boolean brakeNow) {
-    public static DmiGuidance from(CabDisplayState state) {
-        var dmi = state.dmi();
-        var target = target(state);
-        double a = dmi.serviceDeceleration();
-        if (!hasTargetCurve(state)) {
-            boolean known = dmi.lineLimitKmh() >= 0;
-            return new DmiGuidance(known, known ? dmi.lineLimitKmh() : 0, 0, Double.POSITIVE_INFINITY,
-                    known && state.speedKmh() > dmi.lineLimitKmh() + .5);
+    public record Resolved(DmiState data, DmiState.Target target, DmiGuidance guidance) {
+        public boolean hasTargetCurve() { return target != null && data.serviceDeceleration() > 0; }
+        public double speedAtDistance(double aheadM) { return envelope(data, aheadM); }
+        public double descentStartDistance() {
+            if (!hasTargetCurve()) return Double.POSITIVE_INFINITY;
+            if (data.lineLimitKmh() < 0) return 0;
+            return Math.max(0, target.distanceM() - BrakingCurve.distance(data.lineLimitKmh() / 3.6,
+                    target.speedKmh() / 3.6, data.serviceDeceleration()));
+        }
+    }
+
+    public static Resolved resolve(CabDisplayState state) {
+        var data = state.dmi();
+        var target = selectTarget(data);
+        double a = data.serviceDeceleration();
+        if (target == null || a <= 0) {
+            boolean known = data.lineLimitKmh() >= 0;
+            return new Resolved(data, target, new DmiGuidance(known, known ? data.lineLimitKmh() : 0,
+                    0, Double.POSITIVE_INFINITY, known && state.speedKmh() > data.lineLimitKmh() + .5));
         }
         double v = state.speedKmh() / 3.6, end = target.speedKmh() / 3.6;
-        double distance = Math.max(0, (v * v - end * end) / (2 * a));
-        double permitted = speedAtDistance(state, 0);
+        double distance = BrakingCurve.distance(v, end, a);
+        double permitted = envelope(data, 0);
         double seconds = v > 0 ? Math.max(0, target.distanceM() - distance) / v : Double.POSITIVE_INFINITY;
-        return new DmiGuidance(true, permitted, distance, seconds,
-                state.speedKmh() > permitted + .5 || (v > end && distance >= target.distanceM()));
+        return new Resolved(data, target, new DmiGuidance(true, permitted, distance, seconds,
+                state.speedKmh() > permitted + .5 || v > end && distance >= target.distanceM()));
     }
 
-    public static boolean hasTargetCurve(CabDisplayState state) {
-        return target(state) != null && state.dmi().serviceDeceleration() > 0;
-    }
-
-    /** Pick the most restrictive supplied endpoint; keep the station identity when constraints tie. */
-    public static DmiState.Target target(CabDisplayState state) {
-        var best = state.dmi().target();
-        double a = state.dmi().serviceDeceleration();
+    public static DmiGuidance from(CabDisplayState state) { return resolve(state).guidance(); }
+    public static boolean hasTargetCurve(CabDisplayState state) { return resolve(state).hasTargetCurve(); }
+    public static DmiState.Target target(CabDisplayState state) { return selectTarget(state.dmi()); }
+    /** Pick the most restrictive supplied endpoint; station identity wins a tied constraint. */
+    private static DmiState.Target selectTarget(DmiState data) {
+        var best = data.target();
+        double a = data.serviceDeceleration();
         double bound = best == null ? Double.POSITIVE_INFINITY
-                : Math.pow(best.speedKmh() / 3.6, 2) + 2 * a * best.distanceM();
-        for (var point : state.dmi().ctcs().targets()) {
-            double value = Math.pow(point.speedKmh() / 3.6, 2) + 2 * a * point.distanceM();
+                : BrakingCurve.speedSquared(best.speedKmh() / 3.6, best.distanceM(), a);
+        for (var point : data.ctcs().targets()) {
+            double value = BrakingCurve.speedSquared(point.speedKmh() / 3.6, point.distanceM(), a);
             if (value < bound) {
                 bound = value;
                 best = new DmiState.Target(point.speedKmh() == 0 ? DmiState.TargetKind.SIGNAL : DmiState.TargetKind.SPEED_RESTRICTION,
@@ -40,17 +52,13 @@ public record DmiGuidance(boolean available, double speedKmh, double brakingDist
         }
         return best;
     }
-
-    /** Same envelope for the dial and planning area; -1 means no supplied guidance. */
-    public static double speedAtDistance(CabDisplayState state, double aheadM) {
+    public static double speedAtDistance(CabDisplayState state, double aheadM) { return envelope(state.dmi(), aheadM); }
+    private static double envelope(DmiState data, double aheadM) {
         if (!Double.isFinite(aheadM) || aheadM < 0) throw new IllegalArgumentException("Invalid look-ahead distance");
-        var data = state.dmi();
         double speed = data.ctcs().speedAt(aheadM, data.serviceDeceleration(), data.lineLimitKmh());
         if (data.target() != null && data.serviceDeceleration() > 0) {
             var target = data.target();
-            double end = target.speedKmh() / 3.6;
-            double curve = Math.sqrt(end * end + 2 * data.serviceDeceleration()
-                    * Math.max(0, target.distanceM() - aheadM)) * 3.6;
+            double curve = BrakingCurve.speed(target.speedKmh() / 3.6, target.distanceM() - aheadM, data.serviceDeceleration()) * 3.6;
             speed = speed >= 0 ? Math.min(speed, curve) : curve;
         }
         return speed;

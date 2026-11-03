@@ -32,8 +32,7 @@ public final class CtcsControl {
             double speed = lineLimitKmh;
             if (deceleration <= 0) return speed;
             for (var target : targets) {
-                double end = target.speedKmh() / 3.6;
-                double allowed = Math.sqrt(end * end + 2 * deceleration * Math.max(0, target.distanceM() - aheadM)) * 3.6;
+                double allowed = BrakingCurve.speed(target.speedKmh() / 3.6, target.distanceM() - aheadM, deceleration) * 3.6;
                 speed = speed < 0 ? allowed : Math.min(speed, allowed);
             }
             return speed;

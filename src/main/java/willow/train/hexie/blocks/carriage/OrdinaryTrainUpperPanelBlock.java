@@ -33,13 +33,9 @@ import java.util.Random;
 public class OrdinaryTrainUpperPanelBlock extends SideMirrorBlockBase {
 
     Random random = HEXIE_RANDOM;
-    protected static final float AABB_OFFSET = 3.0F;
-    protected static final VoxelShape SOUTH_AABB = Block.box(0.0D, 0.0D, 15, 16, 16, 16);
-    protected static final VoxelShape WEST_AABB = Block.box(0, 0.0D, 0.0D, 1, 16.0D, 16.0D);
-    protected static final VoxelShape NORTH_AABB = Block.box(0.0D, 0.0D, 0.0D, 16.0D, 16.0D, 1);
-    protected static final VoxelShape EAST_AABB = Block.box(15, 0.0D, 0D, 16.0D, 16.0D, 16.0D);
-
-    public OrdinaryTrainUpperPanelBlock(Properties p_52325_) {
+protected static final VoxelShape SOUTH_AABB = Block.box(0.0D, 0.0D, 15, 16, 16, 16);
+protected static final VoxelShape NORTH_AABB = Block.box(0.0D, 0.0D, 0.0D, 16.0D, 16.0D, 1);
+public OrdinaryTrainUpperPanelBlock(Properties p_52325_) {
         super(p_52325_);
     }
 
@@ -48,17 +44,7 @@ public class OrdinaryTrainUpperPanelBlock extends SideMirrorBlockBase {
             BlockGetter p_54373_,
             BlockPos p_54374_,
             CollisionContext p_54375_) {
-        switch ((Direction) p_54372_.getValue(FACING)) {
-            case NORTH:
-                return NORTH_AABB;
-            case SOUTH:
-                return SOUTH_AABB;
-            case WEST:
-                return WEST_AABB;
-            case EAST:
-            default:
-                return EAST_AABB;
-        }
+        return willow.train.hexie.blocks.parts.PartShapeDefinitions.get("edge_panel_1",p_54372_.getValue(FACING));
     }
 
     public InteractionResult use(
@@ -68,35 +54,7 @@ public class OrdinaryTrainUpperPanelBlock extends SideMirrorBlockBase {
             Player pPlayer,
             InteractionHand pHand,
             BlockHitResult pHit) {
-        if (pPlayer.getItemInHand(pHand).is(EditablePanelItemInit.Sticker.get())) {
-            if (pLevel.isClientSide) {
-                if (!PANEL_TYPE_UTIL.canTransformUpperPanel(this)) return InteractionResult.PASS;
-                int x = pPos.getX();
-                int y = pPos.getY();
-                int z = pPos.getZ();
-                double speedFactor = 0.1;
-                int particle_account = random.nextInt(12, 16);
-                for (int i = 0; i < particle_account; i++) {
-                    pLevel.addParticle(
-                            ParticleTypes.HAPPY_VILLAGER,
-                            (double) x + random.nextDouble(0f, 1.0f),
-                            (double) y + random.nextDouble(0f, 1.0f),
-                            (double) z + random.nextDouble(0f, 1.0f),
-                            random.nextDouble(0f, speedFactor),
-                            random.nextDouble(0f, speedFactor),
-                            random.nextDouble(0f, speedFactor));
-                }
-                pLevel.playSound(
-                        pPlayer, pPos, SoundEvents.PLAYER_LEVELUP, SoundSource.BLOCKS, 8f, 1f);
-                return InteractionResult.SUCCESS;
-            }
-            onPaper(pLevel, pPlayer, pHand, pHit, pState);
-            if (!pPlayer.isCreative()) {
-                pPlayer.getItemInHand(pHand).shrink(1);
-            }
-            return InteractionResult.SUCCESS;
-        }
-        return InteractionResult.FAIL;
+        return PanelConversion.upper(pLevel,pPos,pState,pPlayer,pHand,pHit);
     }
 
     public void onPaper(
@@ -105,17 +63,7 @@ public class OrdinaryTrainUpperPanelBlock extends SideMirrorBlockBase {
             InteractionHand pHand,
             BlockHitResult pHit,
             BlockState blockState) {
-        if (!PANEL_TYPE_UTIL.canTransformUpperPanel(this)) return;
-        pLevel.setBlock(
-                pHit.getBlockPos(),
-                BlockInit.TRAIN_NO_BLOCK
-                        .get()
-                        .getStateForPlacement(
-                                new BlockPlaceContext(
-                                        pLevel, pPlayer, pHand, ItemStack.EMPTY, pHit),
-                                blockState.getValue(HINGE),
-                                PANEL_TYPE_UTIL.matchUpperBlock2Panel(this)),
-                2);
+        PanelConversion.upper(pLevel,pHit.getBlockPos(),blockState,pPlayer,pHand,pHit);
     }
 
     public @NotNull VoxelShape getVisualShape(

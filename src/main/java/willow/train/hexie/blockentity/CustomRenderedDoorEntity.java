@@ -21,7 +21,7 @@ import willow.train.hexie.blocks.base.IContraptionMovementBlockEntity;
 
 import java.util.List;
 
-public class CustomRenderedDoorEntity extends SmartBlockEntity implements IContraptionMovementBlockEntity {
+public class CustomRenderedDoorEntity extends SmartBlockEntity implements IContraptionMovementBlockEntity, willow.train.hexie.blocks.base.BlockEntityAnimation {
 
     boolean isSlideDoor = false, open = false;
     public float animation_controller;
@@ -43,6 +43,9 @@ public class CustomRenderedDoorEntity extends SmartBlockEntity implements IContr
         animation_controller = source.animation_controller;
         crh2Animation.startWithValue(source.crh2Progress());
     }
+    @Override public void restoreAnimation(BlockEntity previous) {
+        if(previous instanceof CustomRenderedDoorEntity source)copyAnimationFrom(source);
+    }
 
     public CustomRenderedDoorEntity(BlockPos pPos, BlockState pBlockState) {
         super(BlockEntitiesInit.CUSTOM_RENDERED_DOOR_ENTITY.get(), pPos, pBlockState);
@@ -54,6 +57,12 @@ public class CustomRenderedDoorEntity extends SmartBlockEntity implements IContr
 
     @Override protected void write(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
         super.write(tag, registries, clientPacket);
+        writeAppearance(tag);
+    }
+    @Override public void writeSafe(CompoundTag tag,HolderLookup.Provider registries) {
+        super.writeSafe(tag,registries);writeAppearance(tag);
+    }
+    private void writeAppearance(CompoundTag tag) {
         if (passengerFrame) tag.putBoolean("PassengerFrame", true);
         else tag.remove("PassengerFrame");
     }
@@ -83,12 +92,12 @@ public class CustomRenderedDoorEntity extends SmartBlockEntity implements IContr
     }
 
     private void advanceCRH2Animation() {
-        if (getBlockState().getBlock() instanceof willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock) {
-            crh2Animation.chase(open ? 1 : 0,
-                    willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock.ANIMATION_SPEED,
+        crh2Animation.chase(open ? 1 : 0,
+                    getBlockState().getBlock() instanceof willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock
+                            ? willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock.ANIMATION_SPEED : isSlideDoor ? .075 : .15,
                     net.createmod.catnip.animation.LerpedFloat.Chaser.LINEAR);
-            crh2Animation.tickChaser();
-        }
+        crh2Animation.tickChaser();
+        animation_controller=crh2Animation.getValue();
     }
 
     public boolean isOpen(){

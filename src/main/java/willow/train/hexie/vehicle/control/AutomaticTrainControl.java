@@ -50,7 +50,7 @@ public final class AutomaticTrainControl {
     public static double guidanceSpeed(Target target, double serviceDeceleration) {
         if (!target.stop()) return Math.min(TrainControl.LINE_SPEED_LIMIT_MPS, target.speedLimitMps());
         double distance = Math.max(0, target.distanceM() - (target.station() ? 1 : .5));
-        double desired = Math.sqrt(2 * planningDeceleration(serviceDeceleration) * distance);
+        double desired = BrakingCurve.speed(0, distance, planningDeceleration(serviceDeceleration));
         // Signals stop before the boundary. Stations creep across the existing native capture point.
         if (target.station() && target.distanceM() >= 0) desired = Math.max(.15, desired);
         return Math.min(TrainControl.LINE_SPEED_LIMIT_MPS, Math.min(target.speedLimitMps(), desired));

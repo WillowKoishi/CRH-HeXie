@@ -2,52 +2,21 @@ package willow.train.hexie.menu;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.*;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.level.block.entity.BlockEntity;
-
-
-import willow.train.hexie.init.client.MenuInit;
 import willow.train.hexie.blockentity.TrainSpeedSignEntity;
+import willow.train.hexie.init.client.MenuInit;
 
-public class TrainSpeedSignEditMenu extends AbstractContainerMenu {
-    TrainSpeedSignEntity tsse;
-
-    @Override
-    public ItemStack quickMoveStack(Player pPlayer, int pIndex) {
-        return null;
+public class TrainSpeedSignEditMenu extends BlockEntityEditMenu<TrainSpeedSignEntity> {
+    public TrainSpeedSignEditMenu(int id, Inventory inventory, FriendlyByteBuf data) {
+        this(id, inventory, inventory.player.level().getBlockEntity(data.readBlockPos()), new SimpleContainerData(2));
     }
 
-    public TrainSpeedSignEditMenu(int pContainerId, Inventory inv, FriendlyByteBuf extraData) {
-        this(
-                pContainerId,
-                inv,
-                inv.player.level().getBlockEntity(extraData.readBlockPos()),
-                new SimpleContainerData(2));
+    public TrainSpeedSignEditMenu(int id, Inventory inventory, BlockEntity entity, ContainerData data) {
+        super(MenuInit.TRAIN_SPEED_SIGN_EDIT_MENU.get(), id, entity, TrainSpeedSignEntity.class);
     }
 
-    public TrainSpeedSignEditMenu(
-            int pContainerId, Inventory inv, BlockEntity entity, ContainerData data) {
-        super(MenuInit.TRAIN_SPEED_SIGN_EDIT_MENU.get(), pContainerId);
-        this.tsse = ((TrainSpeedSignEntity) entity);
-    }
-
-    @Override
-    public boolean stillValid(Player pPlayer) {
-        return true;
-    }
-
-    public void setTsse(TrainSpeedSignEntity tsse) {
-        this.tsse = tsse;
-    }
-
-    /**
-     * 这个方法将负责将方块实体向Screen传递
-     *
-     * @return 对应的方块实体
-     */
-    public TrainSpeedSignEntity getTsse() {
-        return tsse;
-    }
+    public TrainSpeedSignEntity getTsse() { return target; }
+    public void setTsse(TrainSpeedSignEntity entity) { target = entity; }
 }

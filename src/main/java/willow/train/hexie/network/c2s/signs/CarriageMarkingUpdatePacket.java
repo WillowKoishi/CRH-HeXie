@@ -2,7 +2,6 @@ package willow.train.hexie.network.c2s.signs;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import willow.train.hexie.blockentity.CRH2PartEntity;
 import willow.train.hexie.menu.CarriageMarkingMenu;
@@ -17,13 +16,8 @@ public record CarriageMarkingUpdatePacket(BlockPos pos, String number, String ch
         buf.writeBlockPos(pos); buf.writeUtf(number,128);buf.writeUtf(chinese,128);buf.writeUtf(english,128);buf.writeBoolean(left);
     }
     @Override public boolean handle(IPayloadContext context) {
-        context.enqueueWork(() -> {
-            if (!(context.player() instanceof ServerPlayer player)
-                    || !(player.containerMenu instanceof CarriageMarkingMenu menu)
-                    || !menu.pos.equals(pos) || !menu.stillValid(player)) return;
-            if (player.level().getBlockEntity(pos) instanceof CRH2PartEntity panel)
-                panel.update(new String[]{number,chinese,english},left);
-        });
+        context.enqueueWork(() -> SignEditSubmission.commit(context.player(), pos, willow.train.hexie.blocks.parts.VehicleMarkings.class,
+                panel -> panel.update(new String[]{number,chinese,english},left)));
         return true;
     }
 }

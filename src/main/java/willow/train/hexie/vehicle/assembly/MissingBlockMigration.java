@@ -66,6 +66,16 @@ public final class MissingBlockMigration {
         properties.putString("hinge", name.getPath().equals("crh2a_panel_wide_window") ? "right" : "left");
         return true;
     }
+    private static boolean restoreLegacyPartLayout(CompoundTag entry,ServerLevel level) {
+        if(!entry.contains("State",Tag.TAG_COMPOUND))return false;
+        var state=entry.getCompound("State");var name=ResourceLocation.tryParse(state.getString("Name"));
+        var registry=level.registryAccess().registryOrThrow(Registries.BLOCK);
+        if(name==null||!registry.containsKey(name)||!registry.get(name).defaultBlockState().hasProperty(
+                willow.train.hexie.blocks.parts.LegacyPartLayout.OCCUPIED))return false;
+        var properties=state.getCompound("Properties");
+        if(properties.contains("occupied"))return false;
+        properties.putString("occupied","false");state.put("Properties",properties);return true;
+    }
 
     private static boolean removeRetiredRenderEntity(CompoundTag entry, ServerLevel level) {
         if (!entry.contains("State", Tag.TAG_COMPOUND)
@@ -93,6 +103,7 @@ public final class MissingBlockMigration {
                 for (var value : compound.getList("Blocks", Tag.TAG_COMPOUND)) {
                     var block = (CompoundTag) value;
                     changed |= restoreLegacyPanelHinge(block, level);
+                    changed |= restoreLegacyPartLayout(block, level);
                     changed |= removeRetiredRenderEntity(block, level);
                     if (!missing(block, level)) continue;
                     var air = new CompoundTag();
@@ -107,6 +118,7 @@ public final class MissingBlockMigration {
             for (int i = changes.size() - 1; i >= 0; i--) {
                 var block = changes.getCompound(i);
                 changed |= restoreLegacyPanelHinge(block, level);
+                changed |= restoreLegacyPartLayout(block, level);
                 changed |= removeRetiredRenderEntity(block, level);
                 if (!missing(block, level)) continue;
                 if (block.contains("Pos")) removed.add(block.get("Pos").copy());
