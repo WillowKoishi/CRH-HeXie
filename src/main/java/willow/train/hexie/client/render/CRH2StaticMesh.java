@@ -13,26 +13,28 @@ import net.minecraft.client.renderer.RenderType;
 
 /** Resource-time clipping only: retain the authored surface, UVs and normals. */
 final class CRH2StaticMesh {
-    record Face(BlockPos cell, BakedQuad quad) {}
+    record Face(BlockPos cell, BakedQuad quad, RenderType renderType) {}
     final List<Face> faces;
 
     CRH2StaticMesh(BakedModel model, BlockState state) {
         var result = new ArrayList<Face>();
         var random = RandomSource.create(42);
-        for (int side = -1; side < 6; side++) {
-            random.setSeed(42);
-            for (var quad : model.getQuads(state, side < 0 ? null : Direction.values()[side], random,
-                    ModelData.EMPTY, RenderType.cutout())) {
-                var vertices = new Vertex[4];
-                for (int i = 0; i < 4; i++) vertices[i] = Vertex.read(quad.getVertices(), i);
-                split(List.of(vertices[0], vertices[1], vertices[2]), quad, result);
-                split(List.of(vertices[0], vertices[2], vertices[3]), quad, result);
+        for (var renderType : model.getRenderTypes(state, random, ModelData.EMPTY)) {
+            for (int side = -1; side < 6; side++) {
+                random.setSeed(42);
+                for (var quad : model.getQuads(state, side < 0 ? null : Direction.values()[side], random,
+                        ModelData.EMPTY, renderType)) {
+                    var vertices = new Vertex[4];
+                    for (int i = 0; i < 4; i++) vertices[i] = Vertex.read(quad.getVertices(), i);
+                    split(List.of(vertices[0], vertices[1], vertices[2]), quad, renderType, result);
+                    split(List.of(vertices[0], vertices[2], vertices[3]), quad, renderType, result);
+                }
             }
         }
         faces = List.copyOf(result);
     }
 
-    private static void split(List<Vertex> triangle, BakedQuad source, List<Face> output) {
+    private static void split(List<Vertex> triangle, BakedQuad source, RenderType renderType, List<Face> output) {
         if (areaSquared(triangle.get(0), triangle.get(1), triangle.get(2)) < 1e-18) return;
         int[] min = new int[3], max = new int[3];
         for (int axis = 0; axis < 3; axis++) {
@@ -59,7 +61,7 @@ final class CRH2StaticMesh {
                         a.write(packed, 0, cell); b.write(packed, 1, cell);
                         c.write(packed, 2, cell); c.write(packed, 3, cell);
                         output.add(new Face(cell, new BakedQuad(packed, source.getTintIndex(),
-                                source.getDirection(), source.getSprite(), false, false)));
+                                source.getDirection(), source.getSprite(), false, false), renderType));
                     }
                 }
     }

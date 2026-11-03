@@ -76,6 +76,8 @@ public final class TrainPanelPlacement implements IPlacementHelper {
         }
         @Override public PlacementOffset getOffset(Player player, Level level, BlockState state, BlockPos pos, BlockHitResult hit, ItemStack stack) {
             if (!matchesState(state) || !matchesItem(stack)) return PlacementOffset.fail();
+            if (kind.equals("carport") && !state.is(((BlockItem) stack.getItem()).getBlock()))
+                return PlacementOffset.fail();
             var offset = super.getOffset(player, level, state, pos, hit);
             if (!offset.isSuccessful()) return offset;
             var item = (BlockItem) stack.getItem();
@@ -135,6 +137,7 @@ public final class TrainPanelPlacement implements IPlacementHelper {
         if (player.isShiftKeyDown() || !player.mayBuild()) return null;
         var helper = PlacementHelpers.get(isFloor(state) ? FLOOR_HELPER : isSideRun(state, "carport") ? ROOF_HELPER : isSideRun(state, "skirt") ? SKIRT_HELPER : HELPER);
         if (!helper.matchesState(state) || !helper.matchesItem(stack)) return null;
+        if (isSideRun(state, "carport") && !state.is(((BlockItem) stack.getItem()).getBlock())) return null;
         var offset = helper.getOffset(player, level, state, pos, hit, stack);
         if (stack.getItem() instanceof CRH2PartItem item) {
             if (!offset.isSuccessful()) return ItemInteractionResult.FAIL;

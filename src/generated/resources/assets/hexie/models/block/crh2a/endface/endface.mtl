@@ -1,0 +1,12 @@
+newmtl t0
+map_Kd hexie:block/crh2a/endface/crh2a_end_face
+Kd 1 1 1
+d 1
+newmtl t1
+map_Kd hexie:block/crh2a/endface/crh2a_slab_side_skirt_forend
+Kd 1 1 1
+d 1
+newmtl t2
+map_Kd hexie:block/crh2a/endface/crh2a_semiauto_coupler
+Kd 1 1 1
+d 1

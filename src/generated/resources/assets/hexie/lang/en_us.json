@@ -1,4 +1,7 @@
 {
+  "item.hexie.harmony_logo": "Harmony Logo",
+  "block.hexie.crh2a_passenger_door": "CRH2A Passenger Door",
+  "block.hexie.crh2a_cab_door": "CRH2A Cab Door",
   "gui.hexie.bogey_offset.title": "Bogey Longitudinal Position",
   "gui.hexie.bogey_offset.axis": "Offset (1/16 block)",
   "gui.hexie.bogey_offset.value": "Bogey offset: %s / 16 block",
@@ -611,5 +614,6 @@
   "gui.hexie.carriage_marking.english": "English description",
   "gui.hexie.carriage_marking.example_chinese": "Second class coach",
   "gui.hexie.carriage_marking.switch": "Swap sides",
-  "gui.hexie.carriage_marking.hint": "Empty-hand right-click swaps description sides"
+  "gui.hexie.carriage_marking.hint": "Empty-hand right-click swaps description sides",
+  "block.hexie.crh2a_endface": "CRH2A End Face with Coupler and Gangway"
 }

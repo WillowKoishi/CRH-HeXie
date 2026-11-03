@@ -29,6 +29,9 @@ public final class CouplerBlockEntityRenderer implements BlockEntityRenderer<Cou
                                  MultiBufferSource buffers, int light, int overlay) {
         var adapter = entity.adapter();
         var state = entity.getBlockState();
+        if (entity.getLevel() instanceof net.minecraft.client.multiplayer.ClientLevel)
+            willow.train.hexie.client.render.SnapshotCouplerRenderer.renderWorldAttachedParts(
+                    state, stack, buffers, light, overlay);
         if (adapter == null || !(state.getBlock() instanceof CouplerBlock hook)
                 || hook.assembled(state)) return;
         stack.pushPose();
@@ -73,6 +76,8 @@ public final class CouplerBlockEntityRenderer implements BlockEntityRenderer<Cou
         var base = new AABB(entity.getBlockPos());
         var adapter = entity.adapter();
         var state = entity.getBlockState();
+        var attached = willow.train.hexie.client.render.SnapshotCouplerRenderer.attachedBounds(state);
+        if (attached != null) base = base.minmax(attached.move(entity.getBlockPos()));
         if (adapter == null || !(state.getBlock() instanceof CouplerBlock hook)) return base;
         var complete = hook.complete();
         double x = complete.x(), z = complete.z() - adapter.thickness() / 2;

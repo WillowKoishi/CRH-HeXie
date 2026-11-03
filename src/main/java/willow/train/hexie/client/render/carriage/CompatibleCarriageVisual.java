@@ -121,6 +121,11 @@ public final class CompatibleCarriageVisual extends CarriageContraptionVisual {
 
     private static Material compatibleMaterial(RenderType renderType, boolean shaded, boolean ambientOcclusion) {
         Material material = originalMaterial(renderType, shaded, ambientOcclusion);
+        return withCompatibleTransparency(material, renderType);
+    }
+
+    /** Preserve the caller's lighting while sharing the glass workaround with world shells. */
+    public static Material withCompatibleTransparency(Material material, RenderType renderType) {
         if (material != null && renderType == RenderType.translucent()) {
             // Keep original alpha, lighting and cutout settings. Bypass only the OIT framebuffer
             // combination that loses these glass meshes with Sable and Veil on affected renderers.

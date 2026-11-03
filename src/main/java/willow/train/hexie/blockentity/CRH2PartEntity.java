@@ -19,6 +19,17 @@ import java.util.List;
 public final class CRH2PartEntity extends SmartBlockEntity implements MenuProvider {
     private final String[] fields = {"", "", ""};
     private boolean descriptionLeft;
+    private int markingSlot;
+    public int markingSlot() { return markingSlot; }
+    public void selectMarkingSlot(int slot) {
+        int selected=Math.clamp(slot,0,1);
+        if(markingSlot==selected)return;
+        markingSlot=selected; setChanged(); sendData();
+    }
+    private final int[] harmony={0,0};
+    public int harmony(int slot) { return harmony[slot]; }
+    public void attachHarmony(int slot) { harmony[slot]=1; setChanged(); sendData(); }
+    public void toggleHarmony(int slot) { if(harmony[slot]!=0) { harmony[slot]=3-harmony[slot]; setChanged(); sendData(); } }
     public CRH2PartEntity(BlockPos pos, BlockState state) { super(BlockEntitiesInit.CRH2A_PART.get(), pos, state); }
     @Override public void addBehaviours(List<BlockEntityBehaviour> behaviours) {}
     public String[] fields() { return fields.clone(); }
@@ -33,11 +44,16 @@ public final class CRH2PartEntity extends SmartBlockEntity implements MenuProvid
         super.write(tag, registries, clientPacket);
         for (int i=0;i<fields.length;i++) tag.putString("CarriageMarking"+i, fields[i]);
         tag.putBoolean("DescriptionLeft", descriptionLeft);
+        tag.putInt("CarriageMarkingSlot", markingSlot);
+        tag.putIntArray("HarmonyLogos",harmony);
     }
     @Override protected void read(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
         super.read(tag, registries, clientPacket);
         for (int i=0;i<fields.length;i++) fields[i]=GroundStationSignEntity.clean(tag.getString("CarriageMarking"+i));
         descriptionLeft=tag.getBoolean("DescriptionLeft");
+        markingSlot=Math.clamp(tag.getInt("CarriageMarkingSlot"),0,1);
+        var logos=tag.getIntArray("HarmonyLogos");
+        for(int i=0;i<2;i++) harmony[i]=i<logos.length && logos[i]>=1 && logos[i]<=2 ? logos[i] : 0;
     }
     @Override public Component getDisplayName() { return Component.translatable("gui.hexie.carriage_marking.title"); }
     @Override public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {

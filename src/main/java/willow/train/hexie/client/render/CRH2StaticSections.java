@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import dev.engine_room.flywheel.api.visualization.VisualizationManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.LevelRenderer;
@@ -26,14 +27,16 @@ import willow.train.hexie.Main;
 import willow.train.hexie.blocks.locos.head.CRH2HeadBlock;
 import willow.train.hexie.blocks.locos.crh2a.CRH2PartBlock;
 
-/** Static chunk meshes, including Sodium's implementation of AddSectionGeometryEvent. */
+/** Shared world-shell index: Flywheel instances with vanilla/Sodium section meshes as fallback. */
 public final class CRH2StaticSections {
     private record Models(Map<BlockState, CRH2StaticMesh> meshes) {}
-    private record Draw(BlockPos cell, BakedQuad quad, int[] light) {}
+    private record Draw(BlockPos cell, BakedQuad quad, RenderType renderType, int[] light) {}
     private static volatile Models models = new Models(Map.of());
     // All world-dependent state is owned by the main client thread.
     private static ClientLevel observedLevel;
     private static Models observedModels;
+    private static VisualizationManager visualizationManager;
+    private static final Map<BlockPos, CRH2ShellVisual.Shell> shells = new HashMap<>();
     private static final Map<BlockPos, Map<BlockPos, BlockState>> observed = new HashMap<>();
     private static final Set<BlockPos> dirty = new HashSet<>();
     // Geometry membership changes only when owners/chunks/models change, never for lighting.
@@ -53,13 +56,15 @@ public final class CRH2StaticSections {
 
     private static boolean owner(BlockState state) {
         return state.getBlock() instanceof CRH2HeadBlock
+                || state.getBlock() instanceof willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock
                 || state.getBlock() instanceof CRH2PartBlock && state.getValue(CRH2PartBlock.PART) == 0;
     }
 
     private static void bake(ModelEvent.ModifyBakingResult event) {
         var meshes = new HashMap<BlockState, CRH2StaticMesh>();
         for (var block : BuiltInRegistries.BLOCK) {
-            if (!(block instanceof CRH2HeadBlock) && !(block instanceof CRH2PartBlock)) continue;
+            if (!(block instanceof CRH2HeadBlock) && !(block instanceof CRH2PartBlock)
+                    && !(block instanceof willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock)) continue;
             for (var state : block.getStateDefinition().getPossibleStates()) {
                 if (!owner(state)) continue;
                 var key = BlockModelShaper.stateToModelLocation(state);
@@ -85,11 +90,35 @@ public final class CRH2StaticSections {
             observedModels = models;
             for (var roots : observed.values()) roots.forEach(CRH2StaticSections::index);
         }
+        // Manager identity also changes on renderer/resource reload and backend switches.
+        var manager = VisualizationManager.get(level);
+        if (manager != visualizationManager) {
+            clearVisuals();
+            visualizationManager = manager;
+            dirty.addAll(destinations.keySet());
+            if (manager != null)
+                for (var roots : observed.values()) roots.forEach(CRH2StaticSections::addVisual);
+        }
     }
 
     private static void clear() {
+        clearVisuals();
         observed.clear(); dirty.clear(); destinations.clear(); ownerDestinations.clear();
         observedLevel = null; observedModels = null;
+    }
+
+    private static void clearVisuals() {
+        if (visualizationManager != null)
+            shells.values().forEach(visualizationManager.effects()::queueRemove);
+        shells.clear();
+        visualizationManager = null;
+    }
+
+    private static void addVisual(BlockPos root, BlockState state) {
+        if (visualizationManager == null || !models.meshes.containsKey(state)) return;
+        var shell = new CRH2ShellVisual.Shell(observedLevel, root.immutable(), state);
+        shells.put(root, shell);
+        visualizationManager.effects().queueAdd(shell);
     }
 
     private static BlockPos section(BlockPos p) {
@@ -97,6 +126,9 @@ public final class CRH2StaticSections {
     }
 
     private static void index(BlockPos root, BlockState state) {
+        var oldShell = shells.remove(root);
+        if (oldShell != null && visualizationManager != null)
+            visualizationManager.effects().queueRemove(oldShell);
         var previous = ownerDestinations.remove(root);
         if (previous != null) for (var target : previous) {
             var entries = destinations.get(target);
@@ -108,6 +140,7 @@ public final class CRH2StaticSections {
         }
         var mesh = models.meshes.get(state);
         if (mesh == null) return;
+        addVisual(root, state);
         var groups = new HashMap<BlockPos, List<CRH2StaticMesh.Face>>();
         for (var face : mesh.faces)
             groups.computeIfAbsent(section(root.offset(face.cell())), ignored -> new ArrayList<>()).add(face);
@@ -153,6 +186,9 @@ public final class CRH2StaticSections {
         var destination = section(origin);
         var entries = destinations.get(destination);
         dirty.remove(destination);
+        // The baked-model wrapper still suppresses owner quads. Only one shell path emits
+        // geometry: Flywheel instances when available, these existing section meshes otherwise.
+        if (visualizationManager != null) return;
         // Ordinary terrain sections do no train lookups or lighting work.
         if (entries == null) return;
         var draws = new ArrayList<Draw>();
@@ -169,16 +205,16 @@ public final class CRH2StaticSections {
                             cell.getY()+Float.intBitsToFloat(vertices[p+1]),
                             cell.getZ()+Float.intBitsToFloat(vertices[p+2]));
                 }
-                draws.add(new Draw(cell.subtract(origin), face.quad(), light));
+                draws.add(new Draw(cell.subtract(origin), face.quad(), face.renderType(), light));
             }
         }
         if (draws.isEmpty()) return;
         var snapshot = List.copyOf(draws);
         event.addRenderer(context -> {
             var pose = context.getPoseStack();
-            var buffer = context.getOrCreateChunkBuffer(RenderType.cutout());
             float[] brightness = {1, 1, 1, 1};
             for (var draw : snapshot) {
+                var buffer = context.getOrCreateChunkBuffer(draw.renderType());
                 pose.pushPose();
                 pose.translate(draw.cell.getX(), draw.cell.getY(), draw.cell.getZ());
                 // Supply the actual vertex lightmap directly: no owner-block lighting pass afterwards.
@@ -190,7 +226,8 @@ public final class CRH2StaticSections {
     }
 
     /** Same continuous light field for both shells, independent of anchor and face direction. */
-    private static int lightAt(ClientLevel level, Map<BlockPos, Integer> cache, double x, double y, double z) {
+    public static int lightAt(net.minecraft.world.level.BlockAndTintGetter level, Map<BlockPos, Integer> cache,
+                              double x, double y, double z) {
         x -= .5; y -= .5; z -= .5;
         int bx = (int)Math.floor(x), by = (int)Math.floor(y), bz = (int)Math.floor(z);
         double fx = x-bx, fy = y-by, fz = z-bz, block = 0, sky = 0;

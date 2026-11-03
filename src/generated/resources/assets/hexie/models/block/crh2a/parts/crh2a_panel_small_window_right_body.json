@@ -1,0 +1,15 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "ambientocclusion": false,
+  "shade_quads": false,
+  "emissive_ambient": false,
+  "automatic_culling": false,
+  "flip_v": true,
+  "model": "hexie:models/block/crh2a/parts/crh2a_panel_small_window_right.obj",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "particle": "hexie:block/crh2a/parts/crh2a_panel_side_smallwin",
+    "t0": "hexie:block/crh2a/parts/crh2a_panel_side_smallwin_body"
+  }
+}

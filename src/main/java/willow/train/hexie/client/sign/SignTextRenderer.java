@@ -15,6 +15,16 @@ import java.util.LinkedHashMap;
 
 /** Shared world-space sign lettering. Caller supplies a pose with +Y up, face toward +Z. */
 public final class SignTextRenderer {
+    /** Existing surface lettering pass, also accepting an authored RGBA decal texture. */
+    public static void drawDecal(ResourceLocation texture,PoseStack pose,MultiBufferSource buffers,
+            double left,double top,double width,double height,int light,Surface surface) {
+        var vertex=buffers.getBuffer(RenderType.text(texture));
+        for(float[] uv:new float[][]{{0,1},{1,1},{1,0},{0,0}}) {
+            var point=surface.point((float)(left+width*uv[0]),(float)(top-height*uv[1]));
+            vertex.addVertex(pose.last().pose(),(float)point.x,(float)point.y,(float)point.z)
+                    .setColor(0xFFFFFFFF).setUv(uv[0],uv[1]).setLight(light);
+        }
+    }
     /** A persistent mesh buffer must keep its text textures until the mesh is closed. */
     public interface TextureOwner extends MultiBufferSource {
         void retainSignTexture(ResourceLocation texture);

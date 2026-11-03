@@ -1,0 +1,20 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:composite",
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "hexie:block/crh2a/doors/crh2a_cab_door"
+  },
+  "children": {
+    "body": {
+      "parent": "hexie:block/crh2a/doors/crh2a_cab_door_left_body"
+    },
+    "glass": {
+      "parent": "hexie:block/crh2a/doors/crh2a_cab_door_left_glass"
+    }
+  },
+  "item_render_order": [
+    "body",
+    "glass"
+  ]
+}

@@ -1,4 +1,7 @@
 {
+  "item.hexie.harmony_logo": "和谐号标识",
+  "block.hexie.crh2a_passenger_door": "CRH2A 客室门",
+  "block.hexie.crh2a_cab_door": "CRH2A 驾驶室门",
   "gui.hexie.bogey_offset.title": "转向架前后位置",
   "gui.hexie.bogey_offset.axis": "前后（1/16格）",
   "gui.hexie.bogey_offset.value": "转向架前后偏移：%s / 16格",
@@ -615,5 +618,6 @@
   "gui.hexie.carriage_marking.english": "英文说明",
   "gui.hexie.carriage_marking.example_chinese": "二等座车",
   "gui.hexie.carriage_marking.switch": "切换左右",
-  "gui.hexie.carriage_marking.hint": "空手右键切换说明文字位置"
+  "gui.hexie.carriage_marking.hint": "空手右键切换说明文字位置",
+  "block.hexie.crh2a_endface": "CRH2A 端面（车钩与风挡）"
 }

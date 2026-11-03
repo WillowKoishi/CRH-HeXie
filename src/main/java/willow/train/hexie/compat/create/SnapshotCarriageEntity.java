@@ -1396,7 +1396,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
                         if (after == null || before.getBlockState().getBlock() != after.getBlockState().getBlock()) continue;
                         if (before instanceof willow.train.hexie.blockentity.CustomRenderedDoorEntity oldDoor
                                 && after instanceof willow.train.hexie.blockentity.CustomRenderedDoorEntity door)
-                            door.animation_controller = oldDoor.animation_controller;
+                            door.copyAnimationFrom(oldDoor);
                         if (before instanceof willow.train.hexie.blockentity.OBJRenderableEndFaceEntity oldDoor
                                 && after instanceof willow.train.hexie.blockentity.OBJRenderableEndFaceEntity door)
                             door.counter = oldDoor.counter;

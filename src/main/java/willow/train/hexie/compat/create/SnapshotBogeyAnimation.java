@@ -109,7 +109,10 @@ public final class SnapshotBogeyAnimation {
             Point mount = definitionBogey.mount().bodyPoint();
             var pivotOffset = trackFrame.rotate(new Point(definitionBogey.mount().trackPivot().x(),
                     mount.y() + definition.floorOffset() - normalizedBlock.y, definitionBogey.mount().trackPivot().z()));
-            var centre = support.pivot().subtract(pivotOffset).subtract(body.position());
+            // Suspension and off-rail offsets belong to the body solver only. Every rendered
+            // bogey uses its own rail reference, regardless of bolstered/bolsterless mount type.
+            var railPivot = trackFrame.transform(definitionBogey.mount().trackPivot());
+            var centre = railPivot.subtract(pivotOffset).subtract(body.position());
             Vector3f local = inverseBody.transform(new Vector3f((float) centre.x(), (float) centre.y(), (float) centre.z()));
             // Preserve the actual placed model's axis, including asymmetric and backward variants.
             // Track direction is the animation reference, not permission to turn a placed model around.

@@ -1,0 +1,30 @@
+package willow.train.hexie.blocks.locos.crh2a;
+
+import net.minecraft.core.Direction;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
+
+/** Visible emblem bounds: left texture 500 x 123, right texture 500 x 131. */
+public final class HarmonyMarking {
+    public static final double EMBLEM_HEIGHT = 6.5 / 16d;
+    private HarmonyMarking() {}
+    public static int slot(CRH2PanelBlock block, BlockState state, BlockPos root, Vec3 hit) {
+        var bounds=block.placementBounds(state.setValue(CRH2PanelBlock.FACING,Direction.NORTH));
+        double x=hit.x-root.getX()-.5,z=hit.z-root.getZ()-.5;
+        double localX=.5+switch(state.getValue(CRH2PanelBlock.FACING)) {
+            case EAST -> z; case SOUTH -> -x; case WEST -> -z; default -> x;
+        };
+        return bounds.getXsize()>1.5 && localX>=(bounds.minX+bounds.maxX)/2 ? 1 : 0;
+    }
+    public record Layout(double left, double top, double width, double height) {}
+    public static Layout layout(double cellLeft, double panelTop, boolean emblemRight) {
+        double scale=EMBLEM_HEIGHT/(emblemRight ? 77 : 73);
+        double left=emblemRight ? cellLeft+1-500*scale : cellLeft;
+        // Full-image UVs must use each texture's actual height to preserve square pixels.
+        double textureHeight=emblemRight ? 131 : 123;
+        return new Layout(left,panelTop+(emblemRight ? 22 : 20)*scale,500*scale,textureHeight*scale);
+    }
+    // Authored exterior: z=3/16 at y=1, z=2.6/16 at y=2.
+    public static double surfaceDepth(double y) { return 3/16d-Math.max(0,y-1)*.025; }
+}

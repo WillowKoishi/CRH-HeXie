@@ -9,6 +9,20 @@ import willow.train.hexie.Main;
 public class PartialModelInit {
 
     public static final PartialModel
+            CRH2_PASSENGER_DOOR_FRAME = block("crh2a/doors/crh2a_passenger_door_frame"),
+            CRH2_PASSENGER_DOOR_LEFT_BODY = block("crh2a/doors/crh2a_passenger_door_left_body"),
+            CRH2_PASSENGER_DOOR_RIGHT_BODY = block("crh2a/doors/crh2a_passenger_door_right_body"),
+            CRH2_PASSENGER_DOOR_LEFT_GLASS = block("crh2a/doors/crh2a_passenger_door_left_glass"),
+            CRH2_PASSENGER_DOOR_RIGHT_GLASS = block("crh2a/doors/crh2a_passenger_door_right_glass"),
+            CRH2_CAB_DOOR_LEFT_BODY = block("crh2a/doors/crh2a_cab_door_left_body"),
+            CRH2_CAB_DOOR_RIGHT_BODY = block("crh2a/doors/crh2a_cab_door_right_body"),
+            CRH2_CAB_DOOR_LEFT_GLASS = block("crh2a/doors/crh2a_cab_door_left_glass"),
+            CRH2_CAB_DOOR_RIGHT_GLASS = block("crh2a/doors/crh2a_cab_door_right_glass"),
+            CRH2_END_COUPLER = block("crh2a/endface/coupler"),
+            CRH2_END_BELLOWS_LEFT = block("crh2a/endface/bellows_left"),
+            CRH2_END_BELLOWS_RIGHT = block("crh2a/endface/bellows_right"),
+            CRH2_END_BELLOWS_TOP = block("crh2a/endface/bellows_top"),
+            CRH2_END_BELLOWS_BOTTOM = block("crh2a/endface/bellows_bottom"),
             HX_TRACK_SEGMENT_LEFT = block("track/standard/segment_left"),
             HX_TRACK_SEGMENT_RIGHT = block("track/standard/segment_right"),
             HX_TRACK_TIE = block("track/standard/tie"),
@@ -69,6 +83,15 @@ public class PartialModelInit {
 
     private static PartialModel block(String path) {
         return PartialModel.of(Main.asResource("block/" + path));
+    }
+
+    public static PartialModel crh2DoorLayer(boolean passenger, boolean mirrored, boolean glass) {
+        if (passenger) {
+            if (glass) return mirrored ? CRH2_PASSENGER_DOOR_RIGHT_GLASS : CRH2_PASSENGER_DOOR_LEFT_GLASS;
+            return mirrored ? CRH2_PASSENGER_DOOR_RIGHT_BODY : CRH2_PASSENGER_DOOR_LEFT_BODY;
+        }
+        if (glass) return mirrored ? CRH2_CAB_DOOR_RIGHT_GLASS : CRH2_CAB_DOOR_LEFT_GLASS;
+        return mirrored ? CRH2_CAB_DOOR_RIGHT_BODY : CRH2_CAB_DOOR_LEFT_BODY;
     }
 
     @SuppressWarnings("EmptyMethod")

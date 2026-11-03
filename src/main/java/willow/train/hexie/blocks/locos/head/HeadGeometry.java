@@ -13,6 +13,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import willow.train.hexie.blocks.bogeys.HexieBogeyBlock;
+import willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock;
 
 /** Installation transform: model pixels + (8,16,8); floor top is local y=1. */
 public final class HeadGeometry {
@@ -94,14 +95,21 @@ public final class HeadGeometry {
                 (int)Math.floor(query.maxX)+2,(int)Math.floor(query.maxY)+1,(int)Math.floor(query.maxZ)+2)) {
             if (world instanceof Level level && !level.hasChunkAt(p)) continue;
             var state=world.getBlockState(p);
+            if (state.getBlock() instanceof CRH2EndFaceBlock) {
+                roots.add(p.immutable());
+                continue;
+            }
             if (!(state.getBlock() instanceof CRH2HeadBlock) && !(state.getBlock() instanceof HeadFloorBlock)) continue;
             var root=owner(world,p);
             if (root!=null) roots.add(root.immutable());
         }
         var result=new ArrayList<VoxelShape>();
         for (var root:roots) {
-            var facing=world.getBlockState(root).getValue(CRH2HeadBlock.FACING);
-            for (var box:boxes(facing)) {
+            var state=world.getBlockState(root);
+            var facing=state.getValue(CRH2HeadBlock.FACING);
+            var collisionBoxes=state.getBlock() instanceof CRH2EndFaceBlock
+                    ? CRH2EndFaceBlock.playerBoxes(facing) : boxes(facing);
+            for (var box:collisionBoxes) {
                 var shifted=box.move(root);
                 if (shifted.intersects(query)) result.add(Shapes.create(shifted));
             }

@@ -23,12 +23,24 @@ public class CustomRenderedDoorEntity extends SmartBlockEntity implements IContr
 
     boolean isSlideDoor = false, open = false;
     public float animation_controller;
+    private final net.createmod.catnip.animation.LerpedFloat crh2Animation = net.createmod.catnip.animation.LerpedFloat.linear();
+    public float crh2Progress() { return crh2Animation.getValue(); }
+    public float crh2Progress(float partial) { return crh2Animation.getValue(partial); }
+    public float crh2InteractionProgress() {
+        // Every transition uses the closed trigger. Only the fully open state uses the open one.
+        return open && getBlockState().getValue(DoorBlock.OPEN) && crh2Progress() >= 1 ? 1 : 0;
+    }
+    public void copyAnimationFrom(CustomRenderedDoorEntity source) {
+        animation_controller = source.animation_controller;
+        crh2Animation.startWithValue(source.crh2Progress());
+    }
 
     public CustomRenderedDoorEntity(BlockPos pPos, BlockState pBlockState) {
         super(BlockEntitiesInit.CUSTOM_RENDERED_DOOR_ENTITY.get(), pPos, pBlockState);
         open = pBlockState.getValue(DoorBlock.OPEN);
         if(pBlockState.getBlock() instanceof CustomRenderedDoorBlock block)
             this.isSlideDoor = block.isSlideDoor();
+        crh2Animation.startWithValue(open ? 1 : 0);
     }
 
     public boolean isLeftSide(BlockState state) {
@@ -47,6 +59,16 @@ public class CustomRenderedDoorEntity extends SmartBlockEntity implements IContr
     public void tick() {
         if(level == null) return;
         this.open = getBlockState().getValue(DoorBlock.OPEN);
+        advanceCRH2Animation();
+    }
+
+    private void advanceCRH2Animation() {
+        if (getBlockState().getBlock() instanceof willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock) {
+            crh2Animation.chase(open ? 1 : 0,
+                    willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock.ANIMATION_SPEED,
+                    net.createmod.catnip.animation.LerpedFloat.Chaser.LINEAR);
+            crh2Animation.tickChaser();
+        }
     }
 
     public boolean isOpen(){
@@ -77,6 +99,8 @@ public class CustomRenderedDoorEntity extends SmartBlockEntity implements IContr
 
     @Override
     public void doMovement(Contraption contraption, BlockPos blockPos, BlockState blockState, BlockEntity blockEntity) {
-        ((CustomRenderedDoorEntity) blockEntity).setOpen(contraption.getBlocks().get(blockPos).state().getValue(DoorBlock.OPEN));
+        var door = (CustomRenderedDoorEntity) blockEntity;
+        door.setOpen(contraption.getBlocks().get(blockPos).state().getValue(DoorBlock.OPEN));
+        door.advanceCRH2Animation();
     }
 }

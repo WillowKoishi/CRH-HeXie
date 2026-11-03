@@ -1,6 +1,7 @@
 package willow.train.hexie.compat.create;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -32,25 +33,82 @@ public final class SnapshotCouplerAnimation {
         }
     }
 
+    /** Partner's north-facing block-corner model space, expressed in this hook's same model space. */
+    public record PartnerPose(UUID endpoint, Point origin, float qx, float qy, float qz, float qw) {
+        public PartnerPose {
+            Objects.requireNonNull(endpoint);
+            Objects.requireNonNull(origin);
+            double length = Math.sqrt((double) qx * qx + (double) qy * qy + (double) qz * qz + (double) qw * qw);
+            if (!Double.isFinite(length) || length < 1e-12)
+                throw new IllegalArgumentException("Invalid partner orientation");
+            qx = (float) (qx / length); qy = (float) (qy / length);
+            qz = (float) (qz / length); qw = (float) (qw / length);
+        }
+
+        public Quaternionf rotation() { return new Quaternionf(qx, qy, qz, qw); }
+
+        public Point transform(Point point) {
+            var rotated = rotation().transform(new Vector3f((float) point.x(), (float) point.y(), (float) point.z()));
+            return new Point(origin.x() + rotated.x, origin.y() + rotated.y, origin.z() + rotated.z);
+        }
+
+        public PartnerPose interpolate(PartnerPose next, float fraction) {
+            if (next == null || fraction >= 1 || !endpoint.equals(next.endpoint)) return next;
+            var rotation = rotation().slerp(next.rotation(), fraction);
+            return new PartnerPose(endpoint, new Point(origin.x() + (next.origin.x() - origin.x()) * fraction,
+                    origin.y() + (next.origin.y() - origin.y()) * fraction,
+                    origin.z() + (next.origin.z() - origin.z()) * fraction),
+                    rotation.x, rotation.y, rotation.z, rotation.w);
+        }
+
+        /** Use the two fixed body mounts, never the independently swinging coupler pivot. */
+        public static PartnerPose between(CouplingEndpoint own, BodyPose ownBody,
+                CouplingEndpoint partner, BodyPose partnerBody) {
+            Quaternionf ownRotation = orientation(ownBody).rotateY(facingYaw(own.facing()));
+            Quaternionf inverseOwn = new Quaternionf(ownRotation).conjugate();
+            Quaternionf relative = new Quaternionf(inverseOwn)
+                    .mul(orientation(partnerBody).rotateY(facingYaw(partner.facing()))).normalize();
+            var delta = partnerBody.transform(partner.blockCenter()).subtract(ownBody.transform(own.blockCenter()));
+            var localDelta = inverseOwn.transform(new Vector3f((float) delta.x(), (float) delta.y(), (float) delta.z()));
+            var rotatedCenter = relative.transform(new Vector3f(.5f, .5f, .5f));
+            return new PartnerPose(partner.id(), new Point(.5 + localDelta.x - rotatedCenter.x,
+                    .5 + localDelta.y - rotatedCenter.y, .5 + localDelta.z - rotatedCenter.z),
+                    relative.x, relative.y, relative.z, relative.w);
+        }
+    }
+
     /** Shared head gap in blocks, with this hook's angles relative to its registered resting direction. */
     public record Parameters(UUID endpoint, BlockPos position, double extension, CouplerAngles angles,
-                             AdapterAttachment attachment) {
+                             AdapterAttachment attachment, boolean coupled, PartnerPose partnerPose) {
         public Parameters {
             Objects.requireNonNull(endpoint);
             position = position.immutable();
             Objects.requireNonNull(angles);
             if (!Double.isFinite(extension) || extension < 0)
                 throw new IllegalArgumentException("Invalid coupler extension");
+            if (!coupled) partnerPose = null;
         }
 
         public Parameters(UUID endpoint, BlockPos position, double extension, CouplerAngles angles) {
-            this(endpoint, position, extension, angles, null);
+            this(endpoint, position, extension, angles, null, true);
+        }
+
+        /** Older callers/payloads already describe the rendered arm; retain their previous deformation. */
+        public Parameters(UUID endpoint, BlockPos position, double extension, CouplerAngles angles,
+                AdapterAttachment attachment) {
+            this(endpoint, position, extension, angles, attachment, true);
+        }
+
+        public Parameters(UUID endpoint, BlockPos position, double extension, CouplerAngles angles,
+                AdapterAttachment attachment, boolean coupled) {
+            this(endpoint, position, extension, angles, attachment, coupled, null);
         }
 
         public Parameters interpolate(Parameters next, float fraction) {
             if (fraction >= 1 || !endpoint.equals(next.endpoint) || !position.equals(next.position)) return next;
             return new Parameters(endpoint, position, extension + (next.extension - extension) * fraction,
-                    angles.interpolate(next.angles, fraction), next.attachment);
+                    angles.interpolate(next.angles, fraction), next.attachment, next.coupled,
+                    partnerPose == null ? next.partnerPose : partnerPose.interpolate(next.partnerPose, fraction));
         }
     }
 
@@ -87,6 +145,16 @@ public final class SnapshotCouplerAnimation {
             tag.putDouble("Extension", parameters.extension());
             tag.putDouble("Yaw", parameters.angles().yaw());
             tag.putDouble("Pitch", parameters.angles().pitch());
+            tag.putBoolean("Coupled", parameters.coupled());
+            if (parameters.partnerPose() != null) {
+                var partner = parameters.partnerPose();
+                var partnerTag = new CompoundTag();
+                partnerTag.putUUID("Id", partner.endpoint());
+                writePoint(partnerTag, "Origin", partner.origin());
+                partnerTag.putFloat("Qx", partner.qx()); partnerTag.putFloat("Qy", partner.qy());
+                partnerTag.putFloat("Qz", partner.qz()); partnerTag.putFloat("Qw", partner.qw());
+                tag.put("PartnerPose", partnerTag);
+            }
             if (parameters.attachment() != null) {
                 var attachment = parameters.attachment();
                 var adapter = new CompoundTag();
@@ -118,8 +186,19 @@ public final class SnapshotCouplerAnimation {
                 if (definition != null) attachment = new AdapterAttachment(definition,
                         readPoint(adapter, "Pivot"), readPoint(adapter, "Complete"), adapter.getBoolean("Reversed"));
             }
+            PartnerPose partner = null;
+            if (tag.contains("PartnerPose", Tag.TAG_COMPOUND)) {
+                var partnerTag = tag.getCompound("PartnerPose");
+                if (partnerTag.hasUUID("Id") && partnerTag.contains("Origin", Tag.TAG_COMPOUND)
+                        && partnerTag.contains("Qx", Tag.TAG_FLOAT) && partnerTag.contains("Qy", Tag.TAG_FLOAT)
+                        && partnerTag.contains("Qz", Tag.TAG_FLOAT) && partnerTag.contains("Qw", Tag.TAG_FLOAT))
+                    partner = new PartnerPose(partnerTag.getUUID("Id"), readPoint(partnerTag, "Origin"),
+                            partnerTag.getFloat("Qx"), partnerTag.getFloat("Qy"),
+                            partnerTag.getFloat("Qz"), partnerTag.getFloat("Qw"));
+            }
             decoded.add(new Parameters(tag.getUUID("Id"), BlockPos.of(tag.getLong("Pos")), tag.getDouble("Extension"),
-                    new CouplerAngles(tag.getDouble("Yaw"), tag.getDouble("Pitch")), attachment));
+                    new CouplerAngles(tag.getDouble("Yaw"), tag.getDouble("Pitch")), attachment,
+                    !tag.contains("Coupled", Tag.TAG_BYTE) || tag.getBoolean("Coupled"), partner));
         }
         targetParameters = List.copyOf(decoded);
         boolean sameHooks = currentParameters.size() == targetParameters.size();
@@ -172,6 +251,12 @@ public final class SnapshotCouplerAnimation {
         }
         var solution = runtime.placement();
         BodyPose body = solution.bodies().get(snapshot.id());
+        var partnerMounts = new HashMap<UUID, Mount>();
+        for (var carriage : runtime.definitions()) {
+            var carriageBody = solution.bodies().get(carriage.id());
+            if (carriageBody != null) for (var endpoint : carriage.couplings())
+                partnerMounts.put(endpoint.id(), new Mount(endpoint, carriageBody));
+        }
         Quaternionf bodyRotation = orientation(body);
         Quaternionf inverseSourceBody = new Quaternionf(bodyRotation).rotateY(sourceYaw(forward)).conjugate();
         var next = new ArrayList<SnapshotBogeyAnimation.Frame>(arms.size());
@@ -198,10 +283,13 @@ public final class SnapshotCouplerAnimation {
                     relative.x, relative.y, relative.z, relative.w, 0, 0));
             UUID partner = runtime.couplingPartner(endpoint.id());
             var gap = partner == null ? null : solved.complete().subtract(solution.endpoints().get(partner).complete());
+            var partnerMount = partner == null ? null : partnerMounts.get(partner);
+            var partnerPose = partnerMount == null ? null
+                    : PartnerPose.between(endpoint, body, partnerMount.endpoint, partnerMount.body);
             nextParameters.add(new Parameters(endpoint.id(), arm.position, gap == null ? 0 : Math.sqrt(gap.dot(gap)),
                     CouplerAngles.from(endpoint, body, solved), endpoint.adapter() == null ? null
                     : new AdapterAttachment(endpoint.adapter(), modelPoint(endpoint.pivot()), modelPoint(endpoint.complete()),
-                            !endpoint.model().equals(endpoint.adapter().firstModel()))));
+                            !endpoint.model().equals(endpoint.adapter().firstModel())), partner != null, partnerPose));
         }
         poses.setFrames(next);
         setParameters(nextParameters);
@@ -251,4 +339,5 @@ public final class SnapshotCouplerAnimation {
     }
 
     private record Arm(CouplingEndpoint endpoint, BlockPos position) {}
+    private record Mount(CouplingEndpoint endpoint, BodyPose body) {}
 }

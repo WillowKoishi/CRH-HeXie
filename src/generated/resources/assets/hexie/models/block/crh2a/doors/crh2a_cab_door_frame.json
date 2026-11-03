@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [],
+  "textures": {
+    "particle": "hexie:block/crh2a/doors/crh2a_cab_door"
+  }
+}

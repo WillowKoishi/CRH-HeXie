@@ -1,0 +1,4 @@
+newmtl door
+map_Kd #door
+Kd 1 1 1
+d 1

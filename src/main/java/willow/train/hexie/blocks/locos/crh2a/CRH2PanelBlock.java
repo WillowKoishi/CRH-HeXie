@@ -42,6 +42,7 @@ public final class CRH2PanelBlock extends CRH2PartBlock implements EntityBlock {
         if(level.isClientSide)return net.minecraft.world.ItemInteractionResult.SUCCESS;
         var entity=markingEntity(level,pos,state);
         if(entity==null)return net.minecraft.world.ItemInteractionResult.FAIL;
+        entity.selectMarkingSlot(HarmonyMarking.slot(this,state,entity.getBlockPos(),hit.getLocation()));
         if(player instanceof net.minecraft.server.level.ServerPlayer server)server.openMenu(entity,buf->{
             buf.writeBlockPos(entity.getBlockPos());for(String field:entity.fields())buf.writeUtf(field,128);
             buf.writeBoolean(entity.descriptionLeft());
@@ -53,8 +54,17 @@ public final class CRH2PanelBlock extends CRH2PartBlock implements EntityBlock {
         if(level!=player.level()||!player.mayBuild()||player.isSpectator()||!player.getMainHandItem().isEmpty()||!player.getOffhandItem().isEmpty())
             return net.minecraft.world.InteractionResult.PASS;
         var entity=markingEntity(level,pos,state);
-        if(entity==null||java.util.Arrays.stream(entity.fields()).allMatch(String::isBlank))return net.minecraft.world.InteractionResult.PASS;
-        if(!level.isClientSide)entity.toggleDescription();
+        if(entity==null)return net.minecraft.world.InteractionResult.PASS;
+        int logoSlot=HarmonyMarking.slot(this,state,entity.getBlockPos(),hit.getLocation());
+        if(entity.harmony(logoSlot)!=0) {
+            if(!level.isClientSide)entity.toggleHarmony(logoSlot);
+            return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide);
+        }
+        if(java.util.Arrays.stream(entity.fields()).allMatch(String::isBlank))return net.minecraft.world.InteractionResult.PASS;
+        if(!level.isClientSide) {
+            entity.selectMarkingSlot(logoSlot);
+            entity.toggleDescription();
+        }
         return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide);
     }
 }

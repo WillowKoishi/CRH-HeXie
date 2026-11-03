@@ -60,6 +60,19 @@ public class BlockInit {
     public static final DeferredHolder<Block, CRH2PartBlock> CRH2A_SKIRT_FORBOGEY = crh2Part("crh2a_skirt_forbogey");
     public static final DeferredHolder<Block, CRH2PartBlock> CRH2A_SKIRT_NORMAL = crh2Part("crh2a_skirt_normal");
     public static final DeferredHolder<Block, CRH2PartBlock> CRH2A_FLOOR = crh2Part("crh2a_floor");
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock> CRH2A_PASSENGER_DOOR =
+            register("crh2a_passenger_door", () -> new willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock(
+                    BlockBehaviour.Properties.of().strength(2).sound(SoundType.METAL).noOcclusion().dynamicShape(), true),
+                    block -> () -> new BlockItem(block.get(), new Item.Properties()));
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock> CRH2A_CAB_DOOR =
+            register("crh2a_cab_door", () -> new willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock(
+                    BlockBehaviour.Properties.of().strength(2).sound(SoundType.METAL).noOcclusion().dynamicShape(), false),
+                    block -> () -> new BlockItem(block.get(), new Item.Properties()));
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock> CRH2A_END_FACE =
+            register("crh2a_endface", () -> new willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock(
+                    BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
+                            .sound(SoundType.METAL).noOcclusion()),
+                    block -> () -> new BlockItem(block.get(), new Item.Properties()));
 
     private static DeferredHolder<Block, CRH2PanelBlock> crh2Panel(String name) {
         return register(name, () -> new CRH2PanelBlock(BlockBehaviour.Properties.of()

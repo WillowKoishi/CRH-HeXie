@@ -38,6 +38,19 @@ repositories {
     maven { url = 'https://maven.createmod.net' }
     maven { url = 'https://maven.ithundxr.dev/snapshots' }
     maven { url = 'https://maven.crystaelix.com/releases' }
+    maven {
+        name = 'KotlinForForge'
+        url = 'https://thedarkcolour.github.io/KotlinForForge/'
+        content { includeGroup 'thedarkcolour' }
+    }
+    // RailX publishes JARs on GitHub Releases rather than a Maven repository.
+    ivy {
+        name = 'RailXReleases'
+        url = 'https://github.com/lhwdev/railx/releases/download'
+        patternLayout { artifact "mc${minecraft_version}-[revision]/[artifact]-[revision].[ext]" }
+        metadataSources { artifact() }
+        content { includeModule 'com.lhwdev.minecraft.railx', 'railx' }
+    }
 
     mavenCentral()
 }
@@ -47,6 +60,11 @@ sourceSets {
         java.setSrcDirs([])
         resources.setSrcDirs([])
         runtimeClasspath += sourceSets.main.runtimeClasspath
+    }
+    aeronauticsRailx {
+        java.setSrcDirs([])
+        resources.setSrcDirs([])
+        runtimeClasspath += sourceSets.aeronautics.runtimeClasspath
     }
 }
 
@@ -77,6 +95,12 @@ neoForge {
             sourceSet = sourceSets.aeronautics
             ideName = 'Client - Create + Aeronautics'
             gameDirectory = layout.projectDirectory.dir('run-1.21.1/client').asFile
+        }
+        clientAeronauticsRailx {
+            client()
+            sourceSet = sourceSets.aeronauticsRailx
+            ideName = 'Client - Create + Aeronautics + RailX'
+            gameDirectory = layout.projectDirectory.dir('run-1.21.1/client-aeronautics-railx').asFile
         }
         server {
             server()
@@ -111,11 +135,16 @@ dependencies {
     compileOnly("com.crystaelix:simurail:${simurail_version}") {
         transitive = false
     }
+    compileOnly("com.lhwdev.minecraft.railx:railx:${railx_version}") {
+        transitive = false
+    }
 
     // Aviation mods are selected per run.
     aeronauticsRuntimeOnly "com.crystaelix:simurail:${simurail_version}"
     aeronauticsRuntimeOnly "maven.modrinth:create-aeronautics:${aeronautics_version}"
     aeronauticsRuntimeOnly "maven.modrinth:sable:${sable_version}"
+    aeronauticsRailxRuntimeOnly "com.lhwdev.minecraft.railx:railx:${railx_version}"
+    aeronauticsRailxRuntimeOnly "thedarkcolour:kotlinforforge-neoforge:${railx_kotlinforforge_version}"
 }
 
 tasks.named('processResources', ProcessResources).configure {

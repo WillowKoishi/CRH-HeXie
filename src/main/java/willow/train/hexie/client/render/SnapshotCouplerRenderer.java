@@ -22,6 +22,17 @@ public final class SnapshotCouplerRenderer {
 
         /** Base origin is the block's lower corner, rotated to the registered facing. */
         default void renderBase(BlockState state, PoseStack stack, MultiBufferSource buffers, int light, int overlay) {}
+
+        /** Parts attached to the body, before applying the independent arm's pivot transform. */
+        default void renderAttachedParts(BlockState state, SnapshotCouplerAnimation.Parameters parameters,
+                float partialTick, PoseStack stack, MultiBufferSource buffers, int light, int overlay) {}
+
+        /** Free state in the world, where no runtime endpoint or coupling payload exists. */
+        default void renderUncoupledAttachedParts(BlockState state, PoseStack stack,
+                MultiBufferSource buffers, int light, int overlay) {}
+
+        /** Local block-space bounds, with the block facing already applied; null means no extra bounds. */
+        default net.minecraft.world.phys.AABB attachedBounds(BlockState state) { return null; }
     }
 
     private SnapshotCouplerRenderer() {}
@@ -29,6 +40,28 @@ public final class SnapshotCouplerRenderer {
     /** Register on the client during setup; no concrete test models are loaded by this renderer. */
     public static void register(Block block, Renderer renderer) {
         RENDERERS.put(java.util.Objects.requireNonNull(block), java.util.Objects.requireNonNull(renderer));
+    }
+
+    public static net.minecraft.world.phys.AABB attachedBounds(BlockState state) {
+        var renderer = RENDERERS.get(state.getBlock());
+        return renderer == null ? null : renderer.attachedBounds(state);
+    }
+
+    /** Uses the same registered parts in the world; does not draw the static arm a second time. */
+    public static void renderWorldAttachedParts(BlockState state, PoseStack stack,
+            MultiBufferSource buffers, int light, int overlay) {
+        var hook = CouplerBlock.of(state);
+        var renderer = RENDERERS.get(state.getBlock());
+        if (hook == null || renderer == null || hook.assembled(state)) return;
+        stack.pushPose();
+        stack.translate(.5, .5, .5);
+        float yaw = switch (hook.facing(state)) {
+            case EAST -> -90; case SOUTH -> 180; case WEST -> 90; default -> 0;
+        };
+        stack.mulPose(Axis.YP.rotationDegrees(yaw));
+        stack.translate(-.5, -.5, -.5);
+        renderer.renderUncoupledAttachedParts(state, stack, buffers, light, overlay);
+        stack.popPose();
     }
 
     public static void render(SnapshotCarriageEntity entity, float partialTick, PoseStack stack,
@@ -45,6 +78,21 @@ public final class SnapshotCouplerRenderer {
             if (hook == null) continue;
             var renderer = RENDERERS.get(block.state().getBlock());
             int light = SnapshotCarriageRenderer.light(entity, frame, partialTick);
+            var parameters = i < animation.parameters().size() ? animation.parameters(i, partialTick) : null;
+            if (renderer != null) {
+                stack.pushPose();
+                // Bellows remain attached to the body's floor. Unlike an independent coupler base,
+                // their mount must not subtract floorOffset when the body height is adjusted.
+                stack.translate(frame.position().getX() + .5, frame.position().getY() + .5,
+                        frame.position().getZ() + .5);
+                float yaw = switch (hook.facing(block.state())) {
+                    case EAST -> -90; case SOUTH -> 180; case WEST -> 90; default -> 0;
+                };
+                stack.mulPose(Axis.YP.rotationDegrees(yaw));
+                stack.translate(-.5, -.5, -.5);
+                renderer.renderAttachedParts(block.state(), parameters, partialTick, stack, buffers, light, overlay);
+                stack.popPose();
+            }
             if (renderer != null && animation.floorOffset() != 0) {
                 // The body mesh moved with the floor; this fixed base follows the body's heading at its old height.
                 stack.pushPose();
@@ -73,8 +121,7 @@ public final class SnapshotCouplerRenderer {
                 dispatcher.renderSingleBlock(definition.movingState(), stack, buffers, light, overlay, modelData, null);
                 stack.popPose();
             } else if (renderer != null)
-                renderer.renderArm(block.state(), i < animation.parameters().size()
-                        ? animation.parameters(i, partialTick) : null, partialTick, stack, buffers, light, overlay);
+                renderer.renderArm(block.state(), parameters, partialTick, stack, buffers, light, overlay);
             if (i < animation.parameters().size()) {
                 var attachment = animation.parameters(i, partialTick).attachment();
                 if (attachment != null) {

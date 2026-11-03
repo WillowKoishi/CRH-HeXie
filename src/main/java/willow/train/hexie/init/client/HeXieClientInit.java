@@ -114,6 +114,24 @@ public class HeXieClientInit {
     }
 
     public static void registerEntityVisuals(FMLClientSetupEvent event) {
+        event.enqueueWork(() -> {
+            var pivot = willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock.PIVOT;
+            double back = willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock.BELLOWS_BASE_Z;
+            double front = willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock.BELLOWS_FRONT_Z;
+            double maximum = willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock.MAX_BELLOWS_THICKNESS;
+            var bellows = java.util.stream.Stream.of(PartialModelInit.CRH2_END_BELLOWS_LEFT,
+                    PartialModelInit.CRH2_END_BELLOWS_RIGHT, PartialModelInit.CRH2_END_BELLOWS_TOP,
+                    PartialModelInit.CRH2_END_BELLOWS_BOTTOM)
+                    .map(model -> new willow.train.hexie.client.render.PartialCouplerRenderer.BellowsPart(
+                            model, back, front, maximum)).toList();
+            willow.train.hexie.client.render.SnapshotCouplerRenderer.register(
+                    willow.train.hexie.init.block.BlockInit.CRH2A_END_FACE.get(),
+                    new willow.train.hexie.client.render.PartialCouplerRenderer(PartialModelInit.CRH2_END_COUPLER,
+                            new net.minecraft.world.phys.Vec3(pivot.x() + .5, pivot.y() + .5, pivot.z() + .5),
+                            null, bellows, .5, state -> willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock.bounds(
+                                    state.getValue(willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock.FACING)),
+                            new willow.train.hexie.client.render.PartialCouplerRenderer.ContactSpan(14 / 16d, 51 / 16d)));
+        });
         event.enqueueWork(() -> SimpleEntityVisualizer.builder(EntityInit.ASSEMBLED_CARRIAGE.get())
                 .factory(SnapshotCarriageVisual::new)
                 // The base renderer still draws the non-instanced parts of a contraption.
