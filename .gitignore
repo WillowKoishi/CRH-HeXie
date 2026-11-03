@@ -30,3 +30,4 @@ forge*changelog.txt
 /.codex/
 /develop_art_resource/
 /.vscode/
+/lib/hexie-dev-sodium.jar
