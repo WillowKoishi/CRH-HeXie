@@ -1,6 +1,7 @@
 {
   "item.hexie.harmony_logo": "Harmony Logo",
   "block.hexie.crh2a_passenger_door": "CRH2A Passenger Door",
+  "block.hexie.crh2a_passenger_door_wide": "CRH2A Wide Passenger Door",
   "block.hexie.crh2a_cab_door": "CRH2A Cab Door",
   "gui.hexie.bogey_offset.title": "Bogey Longitudinal Position",
   "gui.hexie.bogey_offset.axis": "Offset (1/16 block)",

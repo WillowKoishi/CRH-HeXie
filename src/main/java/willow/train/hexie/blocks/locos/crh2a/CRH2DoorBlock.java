@@ -3,22 +3,42 @@ package willow.train.hexie.blocks.locos.crh2a;
 import net.createmod.catnip.data.Couple;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.DoorHingeSide;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.*;
 import willow.train.hexie.Main;
 import willow.train.hexie.blocks.carriage.CustomRenderedDoorBlock;
 import willow.train.hexie.blocks.locos.head.HeadGeometry;
 import willow.train.hexie.blockentity.CustomRenderedDoorEntity;
+import willow.train.hexie.item.FloorSwitcherItem;
 
 /** Door placement uses the authored reference cube as the supporting neighbour. */
 public class CRH2DoorBlock extends CustomRenderedDoorBlock {
+    public enum Type {
+        PASSENGER("crh2a_passenger_door", CRH2DoorBlock.SLIDE_TRAVEL),
+        WIDE_PASSENGER("crh2a_passenger_door_wide", 16.1 / 16d),
+        CAB("crh2a_cab_door", 0);
+
+        private final String model;
+        private final double slideTravel;
+        Type(String model, double slideTravel) {
+            this.model = model;
+            this.slideTravel = slideTravel;
+        }
+    }
+
     // Model units are 1/16 block. Adjust these constants to tune the cab hinge.
     public static final double CAB_EDGE_X = 1;
     // Complete crh2a_head_adapted's cab reference: [-24,0,-40]..[-8,16,-24].
@@ -32,6 +52,7 @@ public class CRH2DoorBlock extends CustomRenderedDoorBlock {
     public static final double SLIDE_TRAVEL = 12.1 / 16d;
     public static final double PASSENGER_OPEN_TRIGGER_EXTENSION = 1 / 16d;
     private static final double PASSENGER_HEIGHT = 29.8 / 16d;
+    private final Type doorType;
     private final VoxelShape[] interactionShapes = new VoxelShape[16];
     private final VoxelShape[] halfInteractionShapes = new VoxelShape[32];
 
@@ -45,11 +66,32 @@ public class CRH2DoorBlock extends CustomRenderedDoorBlock {
     }
 
     public CRH2DoorBlock(Properties properties, boolean passenger) {
-        super(properties, models(passenger, "left"), models(passenger, "right"), RenderShape.ENTITYBLOCK_ANIMATED, passenger);
+        this(properties, passenger ? Type.PASSENGER : Type.CAB);
     }
-    private static Couple<net.minecraft.resources.ResourceLocation> models(boolean passenger, String side) {
-        var location = Main.asResource("crh2a/doors/crh2a_"+(passenger ? "passenger" : "cab")+"_door_"+side);
+    public CRH2DoorBlock(Properties properties, Type doorType) {
+        super(properties, models(doorType, "left"), models(doorType, "right"),
+                RenderShape.ENTITYBLOCK_ANIMATED, doorType != Type.CAB);
+        this.doorType = doorType;
+    }
+    public Type doorType() { return doorType; }
+    public double slideTravel() { return doorType.slideTravel; }
+    public boolean supportsPassengerFrame() { return doorType == Type.PASSENGER; }
+    private static Couple<net.minecraft.resources.ResourceLocation> models(Type doorType, String side) {
+        var location = Main.asResource("crh2a/doors/"+doorType.model+"_"+side);
         return Couple.create(location, location);
+    }
+    @Override public ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
+            BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        if (supportsPassengerFrame() && stack.getItem() instanceof FloorSwitcherItem && !player.isShiftKeyDown()) {
+            if (player.isSpectator() || !player.mayBuild()) return ItemInteractionResult.FAIL;
+            BlockPos lower = state.getValue(HALF)==DoubleBlockHalf.UPPER ? pos.below() : pos;
+            if (!level.getBlockState(lower).is(this)
+                    || !(level.getBlockEntity(lower) instanceof CustomRenderedDoorEntity door))
+                return ItemInteractionResult.FAIL;
+            if (!level.isClientSide) door.togglePassengerFrame();
+            return ItemInteractionResult.sidedSuccess(level.isClientSide);
+        }
+        return super.useItemOn(stack, state, level, pos, player, hand, hit);
     }
     @Override public BlockState getStateForPlacement(BlockPlaceContext context) {
         BlockState state = super.getStateForPlacement(context);
@@ -106,18 +148,18 @@ public class CRH2DoorBlock extends CustomRenderedDoorBlock {
     private VoxelShape buildInteractionShape(BlockState state, float endpoint) {
         boolean mirrored = state.getValue(HINGE)==DoorHingeSide.RIGHT;
         if (!isSlideDoor()) return cabLeafShape(state, mirrored, endpoint);
-        // Authored leaf is 12.1 x 29.8 units, flush with the bottom and one side of a 16 x 32 opening.
-        // Its complement is the reserved frame, not an arbitrary pair of narrow side strips.
+        // Both passenger variants use the narrow door's trigger, independently of model width.
+        double travel = SLIDE_TRAVEL;
         VoxelShape frame = Shapes.or(
-                shapeBox(state, mirrored, new AABB(SLIDE_TRAVEL,0,13.3/16d,1,2,14.7/16d)),
-                shapeBox(state, mirrored, new AABB(0,PASSENGER_HEIGHT,13.3/16d,SLIDE_TRAVEL,2,14.7/16d)));
+                shapeBox(state, mirrored, new AABB(travel,0,13.3/16d,1,2,14.7/16d)),
+                shapeBox(state, mirrored, new AABB(0,PASSENGER_HEIGHT,13.3/16d,travel,2,14.7/16d)));
         if (endpoint >= 1) return Shapes.or(frame,
                 // The open leaf starts at the frame; extend its clickable edge into the opening.
-                shapeBox(state, mirrored, new AABB(SLIDE_TRAVEL-PASSENGER_OPEN_TRIGGER_EXTENSION,0,13.3/16d,
-                        SLIDE_TRAVEL,PASSENGER_HEIGHT,14.7/16d)));
+                shapeBox(state, mirrored, new AABB(travel-PASSENGER_OPEN_TRIGGER_EXTENSION,0,13.3/16d,
+                        travel,PASSENGER_HEIGHT,14.7/16d)));
         return Shapes.or(frame,
-                shapeBox(state, mirrored, new AABB(0,0,13.3/16d,SLIDE_TRAVEL,1,14.3/16d)),
-                shapeBox(state, mirrored, new AABB(0,1,13.3/16d,SLIDE_TRAVEL,PASSENGER_HEIGHT,14.7/16d)));
+                shapeBox(state, mirrored, new AABB(0,0,13.3/16d,travel,1,14.3/16d)),
+                shapeBox(state, mirrored, new AABB(0,1,13.3/16d,travel,PASSENGER_HEIGHT,14.7/16d)));
     }
 
     private VoxelShape shapeBox(BlockState state, boolean mirrored, AABB box) {

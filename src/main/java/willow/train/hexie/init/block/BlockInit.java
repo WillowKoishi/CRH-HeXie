@@ -64,6 +64,11 @@ public class BlockInit {
             register("crh2a_passenger_door", () -> new willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock(
                     BlockBehaviour.Properties.of().strength(2).sound(SoundType.METAL).noOcclusion().dynamicShape(), true),
                     block -> () -> new BlockItem(block.get(), new Item.Properties()));
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock> CRH2A_PASSENGER_DOOR_WIDE =
+            register("crh2a_passenger_door_wide", () -> new willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock(
+                    BlockBehaviour.Properties.of().strength(2).sound(SoundType.METAL).noOcclusion().dynamicShape(),
+                    willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock.Type.WIDE_PASSENGER),
+                    block -> () -> new BlockItem(block.get(), new Item.Properties()));
     public static final DeferredHolder<Block, willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock> CRH2A_CAB_DOOR =
             register("crh2a_cab_door", () -> new willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock(
                     BlockBehaviour.Properties.of().strength(2).sound(SoundType.METAL).noOcclusion().dynamicShape(), false),

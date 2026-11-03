@@ -527,18 +527,22 @@ public final class CreateTrainBridge {
             throw new IllegalStateException("Compatibility bogey has no registered Create block");
         CompoundTag data = block.entityData() == null ? new CompoundTag() : block.entityData().getCompound("BogeyData").copy();
         double half = type.getWheelPointSpacing() / 2;
-        var leading = point(car.id(), definition, half);
-        var trailing = point(car.id(), definition, -half);
-        return new CarriageBogey(type, false, data, leading, trailing);
+        double centre = supportDistance(definition);
+        var leading = motion.route().boundedPointAt(centre + half);
+        var trailing = motion.route().boundedPointAt(centre - half);
+        var bogey = new CarriageBogey(type, false, data, leading, trailing);
+        // Constructor mixins (RailX) may replace the supplied points. Bind the
+        // instances actually retained by the bogey, which all later readers use.
+        bindPoint(car.id(), definition, half, bogey.leading());
+        bindPoint(car.id(), definition, -half, bogey.trailing());
+        return bogey;
     }
 
-    private TravellingPoint point(UUID carriage, BogeyDefinition bogey, double offset) {
+    private void bindPoint(UUID carriage, BogeyDefinition bogey, double offset, TravellingPoint point) {
         double distance = supportDistance(bogey) + offset;
-        var point = motion.route().boundedPointAt(distance);
         var binding = new PointBinding(bogey.id(), offset, point, distance);
         carriagePoints.computeIfAbsent(carriage, ignored -> new ArrayList<>()).add(binding);
         pointLookup.put(point, binding);
-        return point;
     }
 
     private double supportDistance(BogeyDefinition bogey) { return motion.runtime().placement().bogeys().get(bogey.id()).distance(); }

@@ -1,6 +1,7 @@
 {
   "item.hexie.harmony_logo": "和谐号标识",
   "block.hexie.crh2a_passenger_door": "CRH2A 客室门",
+  "block.hexie.crh2a_passenger_door_wide": "CRH2A 宽体客室门",
   "block.hexie.crh2a_cab_door": "CRH2A 驾驶室门",
   "gui.hexie.bogey_offset.title": "转向架前后位置",
   "gui.hexie.bogey_offset.axis": "前后（1/16格）",

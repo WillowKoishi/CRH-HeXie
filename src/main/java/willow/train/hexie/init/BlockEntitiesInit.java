@@ -148,6 +148,7 @@ public class BlockEntitiesInit {
             "custom_rendered_door_entity",
             () -> BlockEntityType.Builder.of(CustomRenderedDoorEntity::new,
                             BlockInit.CRH2A_PASSENGER_DOOR.get(),
+                            BlockInit.CRH2A_PASSENGER_DOOR_WIDE.get(),
                             BlockInit.CRH2A_CAB_DOOR.get(),
                             CustomRenderedDoorBlockInit.MARSHALLED_CR200J_DOOR.get(),
                             CustomRenderedDoorBlockInit.MARSHALLED_CR200J_DOOR_2.get(),
