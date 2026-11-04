@@ -165,6 +165,8 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
 
     /** 时刻表卡在 PRE_TRANSIT 的计时。 */
     private int stallTicks = 0;
+    private int rebindCooldown = 0;
+    private boolean leakSwept = false;
 
     /** true = 玩家操控中（暂停自动寻路）；false = 自动驾驶中。 */
     private boolean manualMode = false;
@@ -396,13 +398,24 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
 
     /** 由 DispatcherTicker 每 tick 调用。 */
     public void serverTick() {
+        if (!leakSwept) {
+            leakSwept = true;
+            try {
+                java.util.List<UUID> stale = new java.util.ArrayList<>(TrainBinder.OUR_TRAINS);
+                stale.removeAll(TrainBinder.SUBLEVEL_TRAINS.values());
+                stale.remove(boundTrain);
+                for (UUID id : stale) TrainBinder.unregister(id);
+                if (!stale.isEmpty()) HexieTrain.LOGGER.info("[HexieTrain][clean] 清理泄露列车 {} 辆", stale.size());
+            } catch (Throwable ignored) {}
+        }
         updateMeasuredSpeed();
         try {
             if (boundTrain != null && !Create.RAILWAYS.trains.containsKey(boundTrain)) {
                 HexieTrain.LOGGER.warn("[HexieTrain][run] RAILWAYS 找不到列车 {}，保留绑定等待", boundTrain);
                 return;
             }
-            if (boundTrain == null && !scheduleSlot.isEmpty() && level instanceof ServerLevel
+            if (boundTrain == null && !scheduleSlot.isEmpty() && rebindCooldown-- <= 0 && level instanceof ServerLevel
+                    && (rebindCooldown = 200) > 0
                     && scheduleSlot.getItem() instanceof com.simibubi.create.content.trains.schedule.ScheduleItem) {
                 HexieTrain.LOGGER.info("[HexieTrain][rebind] 槽内有时刻表但未绑定，重建中");
                 setScheduleSlot(scheduleSlot);
@@ -781,7 +794,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     @Override
     protected void read(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
         super.read(tag, registries, clientPacket);
-        boundTrain = tag.hasUUID("BoundTrain") ? tag.getUUID("BoundTrain") : null;
+        if (tag.hasUUID("BoundTrain")) boundTrain = tag.getUUID("BoundTrain");   // 缺失时保留已有绑定
         if (boundTrain != null) {
             // 重启后 OUR_TRAINS 是空的，必须重新登记，否则车厢会失去 mixin 保护
             TrainBinder.OUR_TRAINS.add(boundTrain);
