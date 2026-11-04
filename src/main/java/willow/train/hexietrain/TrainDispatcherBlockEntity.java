@@ -172,6 +172,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     private GlobalStation dwellingStation = null;   // 停站锁：物理车没走就不再判到站
     private String lastDestName = "";
     private int lastEntryLogged = -1;
+    private double pendingLeg = -1;   // Create 刚规划出的新段长度（在被我们写脏之前捕获）
     private boolean leakSwept = false;
 
     /** true = 玩家操控中（暂停自动寻路）；false = 自动驾驶中。 */
@@ -440,6 +441,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
                 if (!dn.equals(lastDestName)) {
                     HexieTrain.LOGGER.info("[HexieTrain][evt] dest {} → {}", lastDestName, dn);
                     lastDestName = dn;
+                    if (nv.destination != null) pendingLeg = Math.max(0.0, nv.distanceToDestination);   // ★ 抢先捕获
                 }
                 if (diagTicks++ % 20 == 0) {
                     HexieTrain.LOGGER.info("[HexieTrain][diag] st={} entry={} dest={} dDest={} behind={} spd={} vphys={} vtrack={} leg={} dir={} vpos={} spos={} vdist={}",
@@ -574,8 +576,9 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
             GlobalStation st = nav.destination;
 
             // ① 开始新段：记录沿轨长度
-            if (st != lastLegDest || train.runtime.currentEntry != lastLegEntry || legRemaining < 0) {
-                legRemaining = Math.max(0.0, nav.distanceToDestination);
+            if (pendingLeg >= 0 || st != lastLegDest || train.runtime.currentEntry != lastLegEntry || legRemaining < 0) {
+                legRemaining = pendingLeg >= 0 ? pendingLeg : Math.max(0.0, nav.distanceToDestination);
+                pendingLeg = -1;
                 lastLegDest = st;
                 lastLegEntry = train.runtime.currentEntry;
                 HexieTrain.LOGGER.info("[HexieTrain][leg] → {} 沿轨长度={}", st.name, String.format("%.1f", legRemaining));
