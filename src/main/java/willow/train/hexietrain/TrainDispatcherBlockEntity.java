@@ -444,7 +444,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
                             String.format("%.2f", bodySpeedAlongTrackBps()),
                             String.format("%.1f", legRemaining), autoDirection,
                             virtPos(train), statPos(nv.destination), virtDist(train, nv.destination)
-                                    + " tid=" + (train.id.toString().substring(0,8)) + " edgeLen=" + String.format("%.1f", edgeLen(train)) + " edgePos=" + String.format("%.1f", edgePos(train)) + " bound=" + (boundTrain==null?"null":boundTrain.toString().substring(0,8)));
+                                    + " disp=" + worldPosition.toShortString() + " tid=" + (train.id.toString().substring(0,8)) + " edgeLen=" + String.format("%.1f", edgeLen(train)) + " edgePos=" + String.format("%.1f", edgePos(train)) + " bound=" + (boundTrain==null?"null":boundTrain.toString().substring(0,8)));
                 }
             } catch (Throwable t) { HexieTrain.LOGGER.warn("[HexieTrain][diag] {}", t.toString()); }
 
