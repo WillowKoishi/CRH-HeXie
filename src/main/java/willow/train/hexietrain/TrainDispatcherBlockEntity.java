@@ -495,25 +495,25 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         return leftIsForward;
     }
 
-    /** 输出传动方向：写 blockstate 的 LEFT/RIGHT_POWERED 并重建动力学网络。 */
+    /**
+     * 设定自动模式的方向：只驱动本方块自己的左右红石通道。
+     *
+     * <p>传输链：setOutput(LEFT/RIGHT) → 无线发射 → 方块旁的接收器 →
+     * 方块自身的红石输入 → Block.neighborChanged 写 LEFT/RIGHT_POWERED → 传动。
+     * 绝不直接写 blockstate（那是红石输入的唯一主人）。
+     */
     private void setAutoDirection(float dir) {
         if (Math.abs(dir - autoDirection) < 1.0E-4f) return;
         autoDirection = dir;
-        if (!(level instanceof ServerLevel sl)) return;
-        try {
-            BlockState st = getBlockState();
-            if (!(st.getBlock() instanceof TrainDispatcherBlock block)) return;
-            boolean forward = dir > 0.001f, reverse = dir < -0.001f;
-            boolean pol = leftPolarity();
-            boolean left  = forward ? pol : (reverse ? !pol : false);
-            boolean right = forward ? !pol : (reverse ? pol : false);
-            if (st.getValue(TrainDispatcherBlock.LEFT_POWERED) == left
-                    && st.getValue(TrainDispatcherBlock.RIGHT_POWERED) == right) return;
-            sl.setBlock(worldPosition, st.setValue(TrainDispatcherBlock.LEFT_POWERED, left)
-                    .setValue(TrainDispatcherBlock.RIGHT_POWERED, right), 3);
-            block.detachKinetics(sl, worldPosition, true);
-        } catch (Throwable t) { HexieTrain.LOGGER.warn("[HexieTrain][kinetics] {}", t.toString()); }
+        boolean pol = leftPolarity();
+        boolean forward = dir > 0.001f, reverse = dir < -0.001f;
+        boolean left  = forward ? pol : (reverse ? !pol : false);
+        boolean right = forward ? !pol : (reverse ? pol : false);
+        setOutput(SignalChannel.LEFT,  left  ? 15 : 0);
+        setOutput(SignalChannel.RIGHT, right ? 15 : 0);
+        refreshWireless();
     }
+
 
     /** 沿轨距离核减 + 物理到站。 */
     private double legRemaining = -1;
