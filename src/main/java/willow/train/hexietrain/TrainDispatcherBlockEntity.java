@@ -331,8 +331,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         // ① 刹车通道（做了平方根补偿）
         // ① 刹车通道：由 driveToStation 计算并写入，这里不再覆盖
         // （旧 BrakeController 已删除）
-        setOutput(SignalChannel.LEFT, 0);
-        setOutput(SignalChannel.RIGHT, 0);
 
         // ③ 反向传动逼停：反推强度 → 负转速；但没红石就不输出
         int left = leftSignal();
