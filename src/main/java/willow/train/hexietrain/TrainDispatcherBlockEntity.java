@@ -154,6 +154,16 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
 
     /** 所有已加载的调度台（由全局 ticker 驱动，不依赖方块实体自身 tick）。 */
     private static final Set<TrainDispatcherBlockEntity> ACTIVE = ConcurrentHashMap.newKeySet();
+    /** 每个列车 id 只认一个 BE 实例（身份认领，坐标不同也能识别副本）。 */
+    private static final java.util.Map<UUID, TrainDispatcherBlockEntity> TRAIN_OWNER = new ConcurrentHashMap<>();
+
+
+    /** 本 BE 是否是这列车唯一的驱动者。 */
+    private boolean isOwner() {
+        if (boundTrain == null) return false;
+        TrainDispatcherBlockEntity o = TRAIN_OWNER.putIfAbsent(boundTrain, this);
+        return o == null || o == this;
+    }
 
     public static Set<TrainDispatcherBlockEntity> activeDispatchers() {
         return ACTIVE;
@@ -169,6 +179,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     private int rebindCooldown = 0;
     private int missingTicks = 0;
     private int presenceTicks = 0;
+    private long lastSendTick = -1;
     private int diagTicks = 0;
     private GlobalStation dwellingStation = null;   // 停站锁：物理车没走就不再判到站
     private String lastDestName = "";
@@ -442,18 +453,19 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
                     if (nv.destination != null) pendingLeg = Math.max(0.0, nv.distanceToDestination);   // ★ 抢先捕获
                 }
                 if (diagTicks++ % 20 == 0) {
-                    HexieTrain.LOGGER.info("[HexieTrain][diag] st={} entry={} dest={} dDest={} behind={} spd={} vphys={} vtrack={} leg={} dir={} vpos={} spos={} vdist={}",
+                    HexieTrain.LOGGER.info("[HexieTrain][diag] st={} entry={} dest={} dDest={} behind={} spd={} vphys={} vtrack={} leg={} dir={} vpos={} spos={} vdist={} wc={}",
                             train.runtime.state, train.runtime.currentEntry, dn,
                             String.format("%.1f", nv.distanceToDestination), nv.destinationBehindTrain,
                             String.format("%.3f", train.speed),
                             String.format("%.2f", measuredSpeedMps()),
                             String.format("%.2f", bodySpeedAlongTrackBps()),
                             String.format("%.1f", legRemaining), autoDirection,
-                            virtPos(train), statPos(nv.destination), virtDist(train, nv.destination)
+                            virtPos(train), statPos(nv.destination), virtDist(train, nv.destination), SubLevelSuspend.worldCenter((ServerLevel) level, worldPosition).toString()
                                     + " disp=" + worldPosition.toShortString() + " tid=" + (train.id.toString().substring(0,8)) + " edgeLen=" + String.format("%.1f", edgeLen(train)) + " edgePos=" + String.format("%.1f", edgePos(train)) + " bound=" + (boundTrain==null?"null":boundTrain.toString().substring(0,8)));
                 }
             } catch (Throwable t) { HexieTrain.LOGGER.warn("[HexieTrain][diag] {}", t.toString()); }
 
+            if (!isOwner()) return;   // 非认领者不得驱动
             int left = leftSignal(), right = rightSignal();
             boolean redstonePresent = left > 0 || right > 0;
 
@@ -661,11 +673,20 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     }
 
 
+
+    /** 每 tick 最多同步一次，避免同步风暴（曾出现每秒 2.8 次 read、菜单疯狂重建）。 */
+    private void sendDataThrottled() {
+        long t = level == null ? 0 : level.getGameTime();
+        if (t == lastSendTick) return;
+        lastSendTick = t;
+        sendData();
+    }
+
     private void setOutput(SignalChannel channel, int value) {
         int v = Math.max(0, Math.min(15, value));
         if (outputs[channel.index()] == v) return;
         outputs[channel.index()] = v;
-        setChanged();
+        sendDataThrottled();
         sendData();
     }
 
@@ -750,46 +771,13 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
      * <p>放入：检查附近转向架 + 物理结构是否在轨道上 → 建 Train → 绑定。
      * <p>取出：注销 Train（解除寻路、离站、从 RAILWAYS 移除）。
      */
+    /** 只负责保存时刻表；虚拟列车的有无统一由 syncTrainPresence 决定。 */
     public void setScheduleSlot(ItemStack stack) {
         this.scheduleSlot = stack == null ? ItemStack.EMPTY : stack.copyWithCount(1);
-
-        if (level instanceof ServerLevel serverLevel) {
-            if (!scheduleSlot.isEmpty() && scheduleSlot.getItem() instanceof ScheduleItem) {
-                // ★ 先注销旧车，避免重复加载造成列车冗余
-                if (boundTrain != null) {
-                    HexieTrain.LOGGER.info("[HexieTrain] 重新加载时刻表：先注销旧列车 {}", boundTrain);
-                    dissolve();
-                }
-                TrainBinder.Result result;
-                try {
-                result = TrainBinder.bind(serverLevel, worldPosition, scheduleSlot, owner);
-                } catch (Throwable t) {
-                    // 崩溃兜底：绝不让建车的异常冒到 tick 里把游戏带崩
-                    HexieTrain.LOGGER.error("[HexieTrain] 建车异常 @{}", worldPosition, t);
-                    result = new TrainBinder.Result(false, null,
-                            "建车异常：" + t.getClass().getSimpleName());
-                }
-                lastBindMessage = result.message();
-                HexieTrain.LOGGER.info("[HexieTrain][ui] bind 返回 ok={} msg={}", result.ok(), result.message());
-                if (result.ok()) {
-                    bindTrain(result.trainId());
-                    // ★ 每辆物理列车单独持有一个"永不被视距卸载"的力加载票据
-                    boolean loaded = SubLevelSuspend.resume(serverLevel, worldPosition);
-                    if (loaded) {
-                        TrainBinder.PERSISTENT_LOADS.add(result.trainId());
-                    }
-                    HexieTrain.LOGGER.info("[HexieTrain][ui] 列车已挂持久加载票据={}（共 {} 辆）",
-                            loaded, TrainBinder.PERSISTENT_LOADS.size());
-                }
-            } else if (boundTrain != null) {
-                dissolve();
-                SubLevelSuspend.suspend(serverLevel, worldPosition);
-                lastBindMessage = "已取消列车身份";
-            }
-        }
         refreshStopNames();
+        syncTrainPresence();
         setChanged();
-        sendData();
+        sendDataThrottled();
     }
 
     /** 拆除列车身份：解除寻路 → 离站 → 从 RAILWAYS 移除。 */
