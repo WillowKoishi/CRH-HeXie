@@ -884,145 +884,83 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         return owner;
     }
 
+    // 【实验性代码】开始：沿轨距离核减 + 物理到站
+    private double legRemaining = -1;
+    private Object lastLegDest = null;
+    private int lastLegEntry = -1;
+
     /**
-     * 自动驾驶：只控制"给不给传动"和"刹不刹车"，速度由转向架的推力决定。
-     *
-     * <p>进制动区后，目标速度由剩余距离决定；实际速度超标就持续刹车，
-     * 直到降到目标速度以下（与 Create 的 Navigation 行为一致）。
-     */
-    /**
-     * 自动行驶：只控制传动方向与刹车，速度由转向架推力决定。
+     * 自动行驶：
+     * ① 出发瞬间取 Create 算出的沿轨距离当基准
+     * ② 每 tick 用物理沿轨位移核减，并写回 distanceToDestination
+     * ③ 剩余 <= 0 即到站：虚拟点对齐站点 → arriveAt（Create 推进时刻表/升旗）
      */
     private void driveToStation(Train train) {
         try {
-            if (train.derailed || train.invalid) { setAutoDirection(0f); return; }
-            if (!isPrimaryDispatcher()) { setAutoDirection(0f); return; }
-
-            if (waitingForSchedule) {
-                if (train.runtime != null && train.runtime.currentEntry != stoppedEntry) {
-                    waitingForSchedule = false;
-                    SetOutputBrake(0);
-                } else {
-                    setAutoDirection(0f);
-                    SetOutputBrake(15);
-                    return;
-                }
-            }
-
-            if (train.carriages.isEmpty()) return;
-            var lp = train.carriages.get(0).getLeadingPoint();
-            if (lp == null || lp.edge == null) return;
-
-            if (lastEntrySeen != train.runtime.currentEntry) {
-                HexieTrain.LOGGER.info("[HexieTrain][entry] currentEntry {} → {}",
-                        lastEntrySeen, train.runtime.currentEntry);
-                lastEntrySeen = train.runtime.currentEntry;
-            }
-
-            GlobalStation target = stationForCurrentEntry(train);
-            if (target == null) { setAutoDirection(0f); return; }
-
-            // 剩余距离：优先用 Create 的轨道距离（有导航目标时才有效），否则退回直线距离
-            double d = remainingDistance(train, target);
-            if (d < 0) { setAutoDirection(0f); return; }
-
-            double v = Math.abs(measuredSpeedMps());            // m/s
-            boolean forward = isStationAhead(train, target, lp);
-            double sign = forward ? 1.0 : -1.0;
-
-            if (++targetLogTicks >= 20) {
-                targetLogTicks = 0;
-                HexieTrain.LOGGER.info("[HexieTrain][drive] entry={} 目标={} d={} v={}",
-                        train.runtime.currentEntry, target.name, String.format("%.2f", d), String.format("%.2f", v));
-            }
-
-            // ① 已经到位：刹死
-            if (d <= 0.05) {
+            if (train.derailed || train.invalid || !isPrimaryDispatcher()) { setAutoDirection(0f); return; }
+            var nav = train.navigation;
+            if (nav == null || nav.destination == null) {
                 setAutoDirection(0f);
-                SetOutputBrake(15);
-                completeArrival(train, target);
+                SetOutputBrake(0);
                 return;
             }
 
-            // ② 目标速度曲线：>5 格不限速；<=5 格线性降到 3 m/s；下限蠕行
-            double targetV;
-            if (d > SLOW_ZONE_BLOCKS) {
-                targetV = Double.MAX_VALUE;
-            } else {
-                targetV = Math.max(CREEP_SPEED_MPS, SLOW_ZONE_SPEED_MPS * (d / SLOW_ZONE_BLOCKS));
+            // ① 新的一段：取 Create 的沿轨长度当基准
+            if (nav.destination != lastLegDest || train.runtime.currentEntry != lastLegEntry || legRemaining < 0) {
+                legRemaining = Math.max(0.0, nav.distanceToDestination);
+                lastLegDest = nav.destination;
+                lastLegEntry = train.runtime.currentEntry;
+                HexieTrain.LOGGER.info("[HexieTrain][leg] 新段 → {} 沿轨长度={}", nav.destination.name,
+                        String.format("%.1f", legRemaining));
             }
 
-            // ③ 期望滑行距离：v² / (2a)
-            double dStop = (v * v) / (2.0 * EXPECTED_BRAKE_DECEL);
-            boolean cantStop = d < REVERSE_ZONE_BLOCKS && (dStop + STOP_MARGIN_BLOCKS > d);
+            // ② 物理位移核减（带符号，倒车会回增）
+            double moved = bodySpeedAlongTrackBps() / 20.0;
+            legRemaining = Math.max(0.0, legRemaining - moved);
+            nav.distanceToDestination = legRemaining;      // 写回：车站倒计时/旗子跟着它
 
-            // ④ 给红石强度（纯距离映射）
-            int brake = SignalChannel.brakeStrength(d, v / 20.0, linearizeBrake);
+            double v = Math.abs(measuredSpeedMps());
+            double sign = nav.destinationBehindTrain ? -1.0 : 1.0;
+            double targetV = legRemaining > SLOW_ZONE_BLOCKS ? Double.MAX_VALUE
+                    : Math.max(CREEP_SPEED_MPS, SLOW_ZONE_SPEED_MPS * (legRemaining / SLOW_ZONE_BLOCKS));
+            int brake = SignalChannel.brakeStrength(legRemaining, v / 20.0, linearizeBrake);
 
-            if (cantStop) {
-                // 刹不住：反向传动提供反向推力 + 距离强度刹车
-                setAutoDirection((float) -sign);
-                SetOutputBrake(brake);
-            } else if (v > targetV + 0.25) {
-                // 超速：顺向传动 + 距离强度刹车
-                setAutoDirection((float) sign);
-                SetOutputBrake(brake);
-            } else if (v < targetV - 0.25) {
-                // 需要加速
-                setAutoDirection((float) sign);
-                SetOutputBrake(0);
-            } else {
-                // 速度合适：松刹车滑行
-                setAutoDirection((float) sign);
-                SetOutputBrake(0);
-            }
+            setAutoDirection((float) sign);
+            SetOutputBrake(v > targetV + 0.25 ? brake : 0);
+            if (legRemaining < 1.0 && v < 0.2) SetOutputBrake(0);   // 蠕行兜底
 
-            // ⑤ 蠕行兜底：很近但还没跨过站点 → 松刹车 + 前进推力，确保压过站点
-            if (d < 1.0 && v < 0.2) {
-                SetOutputBrake(0);
-                setAutoDirection((float) sign);
+            // ③ 到站：沿轨距离走完
+            if (legRemaining <= 0.05 && v < 0.5) {
+                GlobalStation st = nav.destination;
+                snapVirtualTo(train, st);
+                try { train.arriveAt(st); } catch (Throwable ignored) {}
+                HexieTrain.LOGGER.info("[HexieTrain][arrive] 到站 {} → arriveAt()", st.name);
+                legRemaining = -1;
+                lastLegDest = null;
             }
         } catch (Throwable t) {
             HexieTrain.LOGGER.warn("[HexieTrain][auto] 驱动异常: {}", t.toString());
         }
     }
 
-    /** 剩余距离：优先 Create 的轨道距离，拿不到时退回直线距离。 */
-    private double remainingDistance(Train train, GlobalStation target) {
+    /** 把虚拟车头点对齐到车站（一次性，仅到站时）。 */
+    private void snapVirtualTo(Train train, GlobalStation st) {
         try {
-            var nav = train.navigation;
-            if (nav != null && nav.destination == target) {
-                return Math.abs(nav.distanceToDestination);
-            }
-        } catch (Throwable ignored) {
-        }
-        return distanceToStation(train, target);
+            var graph = train.graph;
+            if (graph == null || train.carriages.isEmpty()) return;
+            var loc = st.edgeLocation;
+            var n1 = graph.locateNode(loc.getFirst());
+            var n2 = graph.locateNode(loc.getSecond());
+            var e = graph.getConnectionsFrom(n1).get(n2);
+            if (e == null) return;
+            var lp = train.carriages.get(0).getLeadingPoint();
+            lp.node1 = n1; lp.node2 = n2; lp.edge = e;
+            lp.position = st.getLocationOn(e);
+        } catch (Throwable ignored) {}
     }
+    // 【实验性代码】结束
 
-    /**
-     * 完成一次到站：车站登记 + 状态前置 + arriveAt + 清理导航目标。
-     *
-     * <p>顺序不能变：reserveFor 让车站"认得"这辆车（getPresentTrain），
-     * state 必须是 IN_TRANSIT 否则 destinationReached 直接 return。
-     */
-    private void completeArrival(Train train, GlobalStation target) {
-        if (arrivedEntry == train.runtime.currentEntry) return;
-        try {
-            int entryBefore = train.runtime.currentEntry;
-            target.reserveFor(train);                                             // ① 车站登记
-            train.runtime.state = com.simibubi.create.content.trains.schedule.ScheduleRuntime.State.IN_TRANSIT;  // ② 前置
-            train.arriveAt(target);                                               // ③ 到站
-            if (train.navigation != null) train.navigation.destination = null;    // ④ 清理
-            arrivedEntry = entryBefore;
-            stoppedEntry = entryBefore;
-            waitingForSchedule = true;
-            HexieTrain.LOGGER.info("[HexieTrain][arrive] 到达 {}：currentEntry {} → {}（cyclic={}）",
-                    target.name, entryBefore, train.runtime.currentEntry,
-                    train.runtime.schedule != null && train.runtime.schedule.cyclic);
-        } catch (Throwable t) {
-            HexieTrain.LOGGER.warn("[HexieTrain][arrive] 到站处理异常: {}", t.toString());
-        }
-    }
+
 
     private void SetOutputBrake(int value) {
         setOutput(SignalChannel.BRAKE, Math.max(0, Math.min(15, value)));
@@ -1110,35 +1048,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         sendData();
     }
 
-    /**
-     * 时刻表当前条目指定的车站。
-     *
-     * <p>原版就是这样：目标由条目里的 DestinationInstruction 决定，
-     * 而不是"图里第一个车站"。</p>
-     */
-    private GlobalStation stationForCurrentEntry(Train train) {
-        try {
-            if (train.runtime == null || train.runtime.schedule == null) return null;
-            var entries = train.runtime.schedule.entries;
-            int idx = Math.max(0, Math.min(entries.size() - 1, train.runtime.currentEntry));
-            if (entries.isEmpty()) return null;
-
-            var instruction = entries.get(idx).instruction;
-            if (!(instruction instanceof com.simibubi.create.content.trains.schedule.destination.DestinationInstruction dest)) {
-                return null;
-            }
-            String filter = dest.getFilter();
-            if (filter == null || filter.isBlank()) return null;
-
-            for (GlobalStation st : train.graph.getPoints(
-                    com.simibubi.create.content.trains.graph.EdgePointType.STATION)) {
-                if (st.name != null && st.name.matches(filter)) return st;
-            }
-        } catch (Throwable t) {
-            HexieTrain.LOGGER.warn("[HexieTrain][auto] 解析目标站失败: {}", t.toString());
-        }
-        return null;
-    }
 
     /** 频率变了：必须从网络摘掉再挂回去，否则仍用旧的网络键。 */
     private void refreshWireless() {
@@ -1237,30 +1146,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         }
     }
 
-    /** 车头到车站方块中心的直线距离（替代原来的图搜索距离）。 */
-    private double distanceToStation(Train train, GlobalStation target) {
-        try {
-            var head = train.carriages.get(0).getLeadingPoint().getPosition(train.graph);
-            var sp = net.minecraft.world.phys.Vec3.atCenterOf(target.getBlockEntityPos());
-            if (head == null) return -1;
-            return head.distanceTo(sp);
-        } catch (Throwable t) {
-            return -1;
-        }
-    }
 
-    /** 车站是否在车头前进方向上（用轨道切线与指向车站的向量点积判断）。 */
-    private boolean isStationAhead(Train train, GlobalStation target,
-                                   com.simibubi.create.content.trains.entity.TravellingPoint lp) {
-        try {
-            var head = lp.getPosition(train.graph);
-            var sp = net.minecraft.world.phys.Vec3.atCenterOf(target.getBlockEntityPos());
-            if (head == null || lp.edge == null) return true;
-            var tangent = lp.edge.getDirection(true);
-            return tangent.dot(sp.subtract(head)) >= 0;
-        } catch (Throwable t) {
-            return true;
-        }
-    }
 
 }
