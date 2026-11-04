@@ -1052,7 +1052,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
             if (e == null) return;
             var lp = train.carriages.get(0).getLeadingPoint();
             lp.node1 = n1; lp.node2 = n2; lp.edge = e;
-            lp.position = st.getLocationOn(e);
+            lp.position = Math.max(0.0, st.getLocationOn(e) - 1.0);   // 停在站点前 1 格，避免立刻再次触发到站
         } catch (Throwable ignored) {}
     }
     // 【实验性代码】结束
