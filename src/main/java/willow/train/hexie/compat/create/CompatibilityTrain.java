@@ -11,6 +11,9 @@ import com.simibubi.create.content.trains.entity.CarriageBogey;
 import com.simibubi.create.content.trains.entity.Train;
 import com.simibubi.create.content.trains.graph.DimensionPalette;
 import com.simibubi.create.content.trains.graph.TrackGraph;
+import com.simibubi.create.content.trains.graph.EdgePointType;
+import com.simibubi.create.content.trains.schedule.ScheduleRuntime;
+import com.simibubi.create.content.trains.station.GlobalStation;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -40,13 +43,33 @@ public final class CompatibilityTrain extends Train {
     public final UUID assemblyId;
     public final List<UUID> carriageIds;
     CreateTrainBridge bridge;
-    willow.train.hexie.vehicle.control.AutomaticTrainControl.Target automaticTarget;
+    CreateCabTimetable currentCabTimetable;
+    private com.simibubi.create.content.trains.entity.Navigation reservationRoute;
+    private GlobalStation reservedDestination;
+
+    /** Reservations belong to this physical train. Only its current route may retain them. */
+    void usingReservationRoute(com.simibubi.create.content.trains.entity.Navigation route) {
+        var destination = route == null ? null : route.destination;
+        if (reservedDestination != null && (destination != reservedDestination || route != reservationRoute)) {
+            if (reservedDestination != getCurrentStation()) reservedDestination.cancelReservation(this);
+            reservedSignalBlocks.clear();
+        }
+        reservationRoute = route;
+        reservedDestination = destination;
+    }
+    boolean automaticRouteAvailable;
+    boolean controlObservationsReady;
+    boolean controlResetRequested;
+    boolean controlStopRequested;
+    boolean waypointTransitionActive;
     boolean automaticControlActive;
     willow.train.hexie.vehicle.control.TrainDisplayReadings.Route displayRoute =
             willow.train.hexie.vehicle.control.TrainDisplayReadings.Route.unavailable();
     boolean hadSchedule;
     boolean retiringProxy;
     int mailTransferTicks;
+    private final willow.train.hexie.vehicle.control.StationStopControl stationStop =
+            new willow.train.hexie.vehicle.control.StationStopControl();
     UUID unresolvedGraphId;
     private CompoundTag savedMotion;
     private UUID savedMotionOwner;
@@ -56,9 +79,62 @@ public final class CompatibilityTrain extends Train {
     private PendingVehicleRelocation pendingRelocation;
     boolean hasLifecycleData() { return bridge != null || savedMotionOwner != null; }
 
+    /** A reported stop lasts until timetable departure or leaving the station range, independently of docking. */
+    public boolean isWaitingForDeparture() { return stationStopControl().state().waitingForDeparture(); }
+
+    public willow.train.hexie.vehicle.control.StationStopControl stationStopControl() {
+        return currentCabTimetable == null ? stationStop : currentCabTimetable.stationStop;
+    }
+
+    public GlobalStation waitingStation() {
+        return graph == null || !isWaitingForDeparture() ? null
+                : graph.getPoint(EdgePointType.STATION, UUID.fromString(stationStopControl().state().stationId()));
+    }
+
+    public void clearStationStop() { stationStopControl().clear(); }
+
+    void updateStationDeparture() {
+        stationStopControl().observeDeparture(runtime.getSchedule() != null && !runtime.paused && !runtime.completed
+                && runtime.state == ScheduleRuntime.State.IN_TRANSIT && navigation.destination != null);
+    }
+
+    void inheritStationStop(CompatibilityTrain previous) { stationStop.restore(previous.stationStop.state()); }
+
+    @Override public void arriveAt(GlobalStation station) {
+        if (currentCabTimetable == null || currentCabTimetable.publishing()) {
+            super.arriveAt(station);
+            return;
+        }
+        runtime.destinationReached();
+    }
+
+    @Override public void leaveStation() {
+        if (currentCabTimetable == null || currentCabTimetable.publishing()) super.leaveStation();
+    }
+
+    @Override public void setCurrentStation(GlobalStation station) {
+        if (currentCabTimetable == null || currentCabTimetable.publishing()) super.setCurrentStation(station);
+    }
+
+    /** A temporarily unavailable graph still has an authoritative saved cab for item exchanges. */
+    CompoundTag pendingCabModule(AssembledVehicleMotion.ControlKey key) {
+        var saved = savedMotion;
+        if (saved == null && savedMotionOwner != null
+                && Create.RAILWAYS.trains.get(savedMotionOwner) instanceof CompatibilityTrain ownerTrain)
+            saved = ownerTrain.savedMotion;
+        if (saved == null) return null;
+        for (var value : saved.getList("CabModules", Tag.TAG_COMPOUND)) {
+            var cab = (CompoundTag) value;
+            if (key.carriage().equals(cab.getUUID("Carriage")) && key.position().asLong() == cab.getLong("Position"))
+                return cab;
+        }
+        return null;
+    }
+
     CompatibilityTrain(UUID id, UUID owner, UUID assembly, List<UUID> ids, TrackGraph graph,
                        List<Carriage> carriages, List<Integer> spacing) {
         super(id, owner, graph, carriages, spacing, true, 0);
+        runtime = new CreateConsoleTimetable.Runtime(this);
         assemblyId = assembly;
         carriageIds = List.copyOf(ids);
         updateSignalBlocks = true;
@@ -293,12 +369,15 @@ public final class CompatibilityTrain extends Train {
         if (bridge != null) bridge.crashed(this);
     }
 
-    // This adapter exposes the vehicle's cab/control module to Create navigation.
-    // The module itself supplies the timetable driver in either direction; it is not
-    // a console block, a seat passenger, or the current manual/automatic mode.
-    // Keep this independent of bridge attachment so reloads cannot lose the driver.
-    @Override public boolean hasForwardConductor() { return true; }
-    @Override public boolean hasBackwardConductor() { return true; }
+    /** Route generation is available independently of the selected actuator source. */
+    @Override public boolean hasForwardConductor() {
+        return bridge != null || super.hasForwardConductor();
+    }
+    @Override public boolean hasBackwardConductor() {
+        return bridge != null || super.hasBackwardConductor();
+    }
+    public boolean hasNativeForwardConductor() { return super.hasForwardConductor(); }
+    public boolean hasNativeBackwardConductor() { return super.hasBackwardConductor(); }
 
     @Override public void detachFromTracks() {
         unresolvedGraphId = null;
@@ -318,6 +397,10 @@ public final class CompatibilityTrain extends Train {
         ListTag ids = new ListTag();
         for (UUID id : carriageIds) { var entry = new CompoundTag(); entry.putUUID("Id", id); ids.add(entry); }
         tag.put("HeXieCarriages", ids);
+        if (isWaitingForDeparture()) {
+            tag.putUUID("HeXieAwaitingDeparture", UUID.fromString(stationStop.state().stationId()));
+            tag.putString("HeXieWaitingStationName", stationStop.state().stationName());
+        }
         if (bridge != null) {
             var ownerTrain = bridge.trains().getFirst();
             tag.putUUID("HeXieMotionOwner", ownerTrain.id);
@@ -359,6 +442,17 @@ public final class CompatibilityTrain extends Train {
         result.occupiedObservers.addAll(source.occupiedObservers);
         result.runtime.read(registries, tag.getCompound("Runtime"));
         result.navigation.read(tag.getCompound("Navigation"), result.graph, dimensions);
+        if (result.navigation.destination == null && result.runtime instanceof CreateConsoleTimetable.Runtime legacy)
+            legacy.keepUnresolvedNavigation(tag.getCompound("Navigation"), dimensions);
+        if (tag.hasUUID("HeXieAwaitingDeparture")) result.stationStop.restore(
+                new willow.train.hexie.vehicle.control.StationStopControl.State(true,
+                        tag.getUUID("HeXieAwaitingDeparture").toString(), tag.getString("HeXieWaitingStationName")));
+        else if (result.currentStation != null && result.runtime.state == ScheduleRuntime.State.POST_TRANSIT
+                && result.navigation.destination == null) {
+            var station = result.getCurrentStation();
+            result.stationStop.restore(new willow.train.hexie.vehicle.control.StationStopControl.State(true,
+                    result.currentStation.toString(), station == null ? "" : station.name));
+        }
         result.savedMotionOwner = tag.hasUUID("HeXieMotionOwner") ? tag.getUUID("HeXieMotionOwner") : null;
         result.savedMotion = tag.contains("HeXieMotion") ? tag.getCompound("HeXieMotion").copy() : null;
         result.motionDimension = tag.getString("HeXieMotionDimension");

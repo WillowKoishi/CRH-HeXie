@@ -16,8 +16,12 @@ final class CreateSignalData {
     /** Shared interpretation only; reservation and display publication remain in their own phases. */
     static Observation observe(SignalBoundary signal, TrackNode enteringNode, Train train) {
         boolean primary = signal.isPrimary(enteringNode);
-        if (signal.blockEntities.get(primary).isEmpty()) return null;
         UUID group = signal.getGroup(enteringNode);
+        if (signal.blockEntities.get(primary).isEmpty()) {
+            if (signal.blockEntities.get(!primary).isEmpty()) return null;
+            // The only signal faces the other way. This approach has a red at the boundary.
+            return new Observation(signal, group, primary, false, Occupancy.BLOCKED);
+        }
         return new Observation(signal, group, primary, signal.types.get(primary) == SignalType.CROSS_SIGNAL,
                 signal.isForcedRed(enteringNode) ? Occupancy.BLOCKED : occupancy(group, train));
     }

@@ -2,8 +2,9 @@ package willow.train.hexie.api.cab;
 
 import net.minecraft.nbt.CompoundTag;
 
-/** Stores opaque backend timetable data; the console never interprets its contents. */
+/** Owns the timetable stored in this console; backend execution never consumes this storage. */
 public interface CabTimetableHost {
+    // Retain the existing save key, including after assembly.
     String PENDING_TIMETABLE = "PendingTimetable";
     /** Returns a copy; an empty tag means no timetable is stored. */
     CompoundTag timetable();

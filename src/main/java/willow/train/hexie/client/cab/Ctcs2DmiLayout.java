@@ -2,13 +2,14 @@ package willow.train.hexie.client.cab;
 
 import willow.train.hexie.api.cab.CabDisplayState;
 import willow.train.hexie.api.cab.DmiGuidance;
+import willow.train.hexie.api.cab.DmiSpeedReadings;
 import willow.train.hexie.api.cab.DmiState;
 
 /** 200H manual figures 2-3 through 2-8. Coordinates refer to the 800 x 600 LCD. */
 public final class Ctcs2DmiLayout {
     private static final int BLACK=0xff000000, WHITE=0xffdddddd, GREY=0xffbfbfbf,
             DARK=0xff404040, BORDER=0xff181818, YELLOW=0xffffff00, ORANGE=0xffff8000,
-            BLUE=0xff000080, PLOT=0xff000020;
+            RED=0xffff0000, BLUE=0xff000080, PLOT=0xff000020;
     private Ctcs2DmiLayout() {}
     public interface Canvas {
         void icon(String name,float x,float y,float w,float h);
@@ -23,8 +24,8 @@ public final class Ctcs2DmiLayout {
         var data=state.dmi(); var resolved=DmiGuidance.resolve(state); var target=resolved.target(); var guide=resolved.guidance();
         boolean curve=resolved.hasTargetCurve();
         boolean tsm=curve && (data.lineLimitKmh()<0 || guide.speedKmh()<data.lineLimitKmh());
-        boolean overspeed=guide.available() && state.speedKmh()>guide.speedKmh()+.5;
-        int pointer=overspeed?ORANGE:tsm?YELLOW:GREY;
+        var speeds=data.speedReadings()==null?DmiSpeedReadings.fromGuidance(resolved):data.speedReadings();
+        int pointer=pointerColor(speeds,state.speedKmh());
         d.rect(0,0,800,600,BLACK);
         // A1 is above A2; no labels or distance scale when no target is being monitored.
         if(tsm || curve && guide.secondsToBrake()<=8) {
@@ -41,22 +42,7 @@ public final class Ctcs2DmiLayout {
             float h=distanceBar(target.distanceM())*220;
             d.rect(45,321-h,12,h,WHITE);
         }
-        // B1/B2: filled needle and hub; central digits are dark on a grey/yellow hub.
-        float cx=240,cy=184,r=155;
-        if(guide.available()) {
-            double from=target==null?0:Math.min(target.speedKmh(),guide.speedKmh());
-            arc(d,cx,cy,r+5,0,from,9,DARK);
-            arc(d,cx,cy,r+5,from,guide.speedKmh(),9,tsm||overspeed?YELLOW:GREY);
-            radial(d,cx,cy,r-4,r+10,angle(guide.speedKmh()),5,tsm||overspeed?YELLOW:GREY);
-        }
-        for(int v=0;v<=400;v+=10) {
-            double a=angle(v); radial(d,cx,cy,r-(v%50==0?22:13),r-3,a,1,WHITE);
-            if(v%50==0) d.center(Integer.toString(v),cx+(float)Math.cos(a)*(r-43),cy+(float)Math.sin(a)*(r-43)-7,1.8f,WHITE);
-        }
-        double a=angle(state.speedKmh()); float dx=(float)Math.cos(a),dy=(float)Math.sin(a);
-        d.quad(cx-dy*8,cy+dx*8,cx+dx*(r-26),cy+dy*(r-26),cx+dy*8,cy-dx*8,cx-dx*12,cy-dy*12,pointer);
-        circle(d,cx,cy,30,pointer);
-        d.center(Integer.toString((int)Math.round(state.speedKmh())),cx,cy-10,2.5f,BLACK);
+        speedometer(d,state.speedKmh(),speeds);
         // B3/B4/B5 command slots. Only a known station has a corresponding supplied command.
         for(int x:new int[]{176,220,264}) outline(d,x,324,44,44,BORDER);
         if(target!=null && target.kind()==DmiState.TargetKind.STATION) d.icon("station",181,329,34,34);
@@ -72,26 +58,18 @@ public final class Ctcs2DmiLayout {
         signal(d,data.ctcs().code());
         d.rect(416,64,304,182,PLOT);
         if(guide.available()) {
-            if(data.ctcs().targets().size()>1 || !data.ctcs().targets().isEmpty()
-                    && data.target()!=null && data.target().kind()==DmiState.TargetKind.STATION) {
-                // Intersect all supplied speed constraints, including later station stops.
-                double end=data.target()!=null && data.target().speedKmh()==0?Math.min(range,data.target().distanceM()):range;
-                for(var point:data.ctcs().targets()) if(point.speedKmh()==0) end=Math.min(end,point.distanceM());
-                float px=distanceX(0,range),py=speedY(guide.speedKmh());
-                for(int i=1;i<=128;i++) {
-                    double m=end*i/128;float x=distanceX(m,range),y=speedY(resolved.speedAtDistance(m));
-                    d.quad(px,py,x,y,x,246,px,246,BLUE);px=x;py=y;
-                }
-            } else {
-            double end=curve?Math.min(range,target.distanceM()):range;
+            // Every plan segment uses the same safety envelope, including a single stop.
+            // The driver's chosen running curve and actual speed never set this plot's origin.
+            var points=resolved.plotPoints(range);
             float px=distanceX(0,range),py=speedY(guide.speedKmh());
-            // The manual draws the first descending segment as a straight line in the plan.
-            double start=curve?resolved.descentStartDistance():range;
-            if(start>0) {float sx=distanceX(Math.min(start,end),range);d.quad(px,py,sx,py,sx,246,px,246,BLUE);px=sx;}
-            float ex=distanceX(end,range),ey=curve && target.distanceM()<=range?speedY(target.speedKmh()):speedY(resolved.speedAtDistance(end));
-            d.quad(px,py,ex,ey,ex,246,px,246,BLUE);
-            if(curve && start<=range) d.line(distanceX(start,range),58,distanceX(start,range),246,2,YELLOW);
+            for(int i=1;i<points.size();i++) {
+                var point=points.get(i);float x=distanceX(point.distanceM(),range),y=speedY(point.speedKmh());
+                d.quad(px,py,x,y,x,246,px,246,BLUE);px=x;py=y;
             }
+            double start=curve?resolved.descentStartDistance():range;
+            boolean multiple=data.ctcs().targets().size()>1 || !data.ctcs().targets().isEmpty()
+                    && data.target()!=null && data.target().kind()==DmiState.TargetKind.STATION;
+            if(!multiple && curve && start<=range) d.line(distanceX(start,range),58,distanceX(start,range),246,2,YELLOW);
         }
         for(int v=0;v<=300;v+=50) {float y=speedY(v);d.line(416,y,720,y,1,DARK);d.text(Integer.toString(v),418,y-12,1.2f,WHITE);}
         for(int m:new int[]{0,1000,2000,4000,8000,16000}) if(m<=range) {
@@ -121,6 +99,55 @@ public final class Ctcs2DmiLayout {
         String[] keys={"数据","模式","载频","等级","其它","启动","缓解","警惕"};
         for(int i=0;i<8;i++){outline(d,720,i*75,80,75,BORDER);d.center(keys[i],760,i*75+27,2.3f,WHITE);}
     }
+    /** 200H figures 2-6/2-7 and table 2-4; LKC table 7.2 supplies the SBI/EBI band sequence. */
+    private static void speedometer(Canvas d,double speed,DmiSpeedReadings data) {
+        float cx=240,cy=184,r=155,outer=164,band=9;
+        for(int v=0;v<=400;v+=10) {
+            double a=angle(v);
+            radial(d,cx,cy,r-(v%50==0?22:13),r-3,a,v%50==0?2:1,WHITE);
+            if(v%50==0) d.center(Integer.toString(v),cx+(float)Math.cos(a)*(r-43),
+                    cy+(float)Math.sin(a)*(r-43)-7,1.8f,WHITE);
+        }
+        var status=data.status(speed);
+        if(data.hasPermittedSpeed()) {
+            double permitted=data.permittedKmh(),intervention=data.displayedInterventionKmh(speed);
+            if(data.fullMonitoring()) {
+                double target=data.targetKmh()<0?0:Math.min(data.targetKmh(),permitted);
+                // A zero target has no separate dark segment. The permission ends in a double-width hook.
+                ring(d,cx,cy,outer,band,angle(0),angle(target),DARK);
+                int permittedColor=data.monitor()==DmiSpeedReadings.Monitor.TSM
+                        || status!=DmiSpeedReadings.Status.NORMAL?YELLOW:GREY;
+                ring(d,cx,cy,outer,band,angle(target),angle(permitted),permittedColor);
+                ring(d,cx,cy,outer,band*2,angle(permitted)-Math.toRadians(3),angle(permitted),permittedColor);
+                if(intervention>=0)
+                    ring(d,cx,cy,outer,band*2,angle(permitted),angle(intervention),
+                            status==DmiSpeedReadings.Status.INTERVENTION?RED:ORANGE);
+            } else {
+                // PS/OS/SH/CO show short marks, not the full-supervision annular band.
+                radial(d,cx,cy,r-10,r+6,angle(permitted),7,GREY);
+                if(intervention>=0) radial(d,cx,cy,r-10,r+6,angle(intervention),7,
+                        status==DmiSpeedReadings.Status.INTERVENTION?RED:ORANGE);
+            }
+        }
+        int pointer=pointerColor(data,speed);
+        double a=angle(speed);float dx=(float)Math.cos(a),dy=(float)Math.sin(a);
+        float shoulder=r-42,tip=r-12;
+        d.quad(cx-dy*7,cy+dx*7,cx+dx*shoulder-dy*4,cy+dy*shoulder+dx*4,
+                cx+dx*shoulder+dy*4,cy+dy*shoulder-dx*4,cx+dy*7,cy-dx*7,pointer);
+        d.quad(cx+dx*shoulder-dy*4,cy+dy*shoulder+dx*4,cx+dx*tip,cy+dy*tip,
+                cx+dx*shoulder+dy*4,cy+dy*shoulder-dx*4,cx+dx*shoulder,cy+dy*shoulder,pointer);
+        circle(d,cx,cy,30,pointer);
+        // 200H figure 2-6 uses light digits on the red hub; normal/orange digits remain dark.
+        d.center(Integer.toString((int)Math.round(speed)),cx,cy-10,2.5f,pointer==RED?WHITE:BLACK);
+    }
+
+    private static int pointerColor(DmiSpeedReadings data,double speed) {
+        return switch(data.status(speed)) {
+            case INTERVENTION->RED;
+            case OVERSPEED->ORANGE;
+            case NORMAL->data.hasPermittedSpeed() && data.monitor()==DmiSpeedReadings.Monitor.TSM?YELLOW:GREY;
+        };
+    }
     /** Three service levels below full commanded braking. */
     private static String serviceBrakeIcon(double brake) {
         return brake <= .3 ? "brake_weak" : brake <= .6 ? "brake_medium" : "brake_service";
@@ -148,6 +175,16 @@ public final class Ctcs2DmiLayout {
     private static float distanceX(double m,int range){double v=Math.clamp(m,0,range);return 464+(float)(v<=1000?v/1000*84:84+Math.log(v/1000)/Math.log(range/1000d)*168);}
     private static float distanceBar(double m){double v=Math.clamp(m,0,1000);return(float)(v<=100?v/300:1d/3+Math.log10(v/100)*2/3);}
     private static void radial(Canvas d,float x,float y,float from,float to,double a,float w,int c){float dx=(float)Math.cos(a),dy=(float)Math.sin(a);d.line(x+dx*from,y+dy*from,x+dx*to,y+dy*to,w,c);}
-    private static void arc(Canvas d,float x,float y,float r,double from,double to,float w,int c){double a=angle(from),b=angle(to);int n=Math.max(1,(int)Math.ceil(Math.abs(b-a)*r/3));for(int i=0;i<n;i++){double p=a+(b-a)*i/n,q=a+(b-a)*(i+1)/n;d.line(x+(float)Math.cos(p)*r,y+(float)Math.sin(p)*r,x+(float)Math.cos(q)*r,y+(float)Math.sin(q)*r,w,c);}}
+    private static void ring(Canvas d,float x,float y,float outer,float width,double from,double to,int color) {
+        if(to<=from)return;
+        float inner=outer-width;
+        int n=Math.max(1,(int)Math.ceil((to-from)*outer/3));
+        for(int i=0;i<n;i++) {
+            double a=from+(to-from)*i/n,b=from+(to-from)*(i+1)/n;
+            float ax=(float)Math.cos(a),ay=(float)Math.sin(a),bx=(float)Math.cos(b),by=(float)Math.sin(b);
+            d.quad(x+ax*outer,y+ay*outer,x+bx*outer,y+by*outer,
+                    x+bx*inner,y+by*inner,x+ax*inner,y+ay*inner,color);
+        }
+    }
     private static void circle(Canvas d,float x,float y,float r,int c){for(int i=0;i<64;i++){double a=i*Math.PI/32,b=(i+1)*Math.PI/32;d.quad(x,y,x+(float)Math.cos(a)*r,y+(float)Math.sin(a)*r,x+(float)Math.cos(b)*r,y+(float)Math.sin(b)*r,x,y,c);}}
 }

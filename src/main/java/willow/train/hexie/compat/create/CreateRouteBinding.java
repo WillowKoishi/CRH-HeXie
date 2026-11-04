@@ -586,6 +586,22 @@ public final class CreateRouteBinding {
         return parameter;
     }
 
+    /** Measured arc length on bound track; Create's edge distance on an unbound preview branch. */
+    double previewDistanceOn(TrackEdge edge, double position) {
+        var known = edgePositions.get(edge);
+        if (known == null || edge.getLength() == 0) return position;
+        double t = Math.clamp(position / edge.getLength(), 0, 1);
+        return Math.abs(route.distanceAt(known.segment, known.reverse ? 1 - t : t)
+                - route.distanceAt(known.segment, known.reverse ? 1 : 0));
+    }
+
+    TrackNode boundExitAfter(TrackEdge incoming) {
+        var pos = edgePositions.get(incoming);
+        if (pos == null) return null;
+        int next = pos.reverse ? pos.segment - 1 : pos.segment + 2;
+        return next < 0 || next >= nodes.size() ? null : nodes.get(next);
+    }
+
     /**
      * Notify Create's existing station/signal listeners along the actual solved arc interval.
      * This does not move a Create carriage or choose an exit. Like TravellingPoint, the start
@@ -754,12 +770,7 @@ public final class CreateRouteBinding {
             TrackNode previous = front ? nodes.get(nodes.size() - 2) : nodes.get(1);
             TrackEdge incoming = graph.getConnectionsFrom(previous).get(current);
             if (incoming == null) throw new IllegalArgumentException("Route needs both directed track connections");
-            List<Map.Entry<TrackNode, TrackEdge>> candidates = new ArrayList<>();
-            for (var candidate : graph.getConnectionsFrom(current).entrySet()) {
-                if (candidate.getKey() == previous || !incoming.canTravelTo(candidate.getValue())) continue;
-                // Count foreign track too: material filtering must not silently select a junction exit.
-                candidates.add(Map.entry(CreateTrackCompatibility.canonical(graph, candidate.getKey()), candidate.getValue()));
-            }
+            var candidates = continuations(graph, previous, current, incoming);
             if (candidates.isEmpty()) return;
             Map.Entry<TrackNode, TrackEdge> selected;
             if (candidates.size() == 1) selected = candidates.getFirst();
@@ -782,7 +793,27 @@ public final class CreateRouteBinding {
         }
     }
 
-    private static boolean isOwnTrack(TrackEdge edge) {
+    static List<Map.Entry<TrackNode, TrackEdge>> continuations(TrackGraph graph, TrackNode previous, TrackNode current, TrackEdge incoming) {
+        var candidates = new ArrayList<Map.Entry<TrackNode, TrackEdge>>();
+        for (var exit : graph.getConnectionsFrom(current).entrySet()) {
+            if (exit.getKey() != previous && incoming.canTravelTo(exit.getValue()))
+                candidates.add(Map.entry(CreateTrackCompatibility.canonical(graph, exit.getKey()), exit.getValue()));
+        }
+        return candidates;
+    }
+
+    /** The probe faces outward; manual steering is expressed along the train's positive axis. */
+    static Map.Entry<TrackNode, TrackEdge> manualExit(TrackGraph graph, TravellingPoint probe, boolean forward,
+            TravellingPoint.SteerDirection steer, List<Map.Entry<TrackNode, TrackEdge>> choices) {
+        if (!forward) steer = switch (steer) {
+            case LEFT -> TravellingPoint.SteerDirection.RIGHT;
+            case RIGHT -> TravellingPoint.SteerDirection.LEFT;
+            case NONE -> TravellingPoint.SteerDirection.NONE;
+        };
+        return probe.steer(steer, probe.edge.getNormal(graph, .5)).apply(graph, Pair.of(true, choices));
+    }
+
+    static boolean isOwnTrack(TrackEdge edge) {
         var material = edge.getTrackMaterial();
         return material == TrackMaterialInit.STANDARD || material == TrackMaterialInit.BALLASTLESS
                 || material == TrackMaterialInit.TIELESS;

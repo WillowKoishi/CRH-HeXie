@@ -12,12 +12,13 @@ public final class TestCabControls {
     }
     /** Produces a validated replacement before the owner installs anything. */
     public static CabModule.State apply(CabModule.State previous, int action, double speed) {
+        // This surface uses the reverser as its enable switch. Other surfaces may provide a button.
         if (action == 7) return previous.withApproach(true);
         if (action == 8 || action == -1) return previous.withApproach(false);
         if (action < 0 || action > 6) throw new IllegalArgumentException("Unknown test cab action");
         var view = view(previous);
         int power = view.power(), brake = view.brake(), reverser = view.reverser();
-        boolean automatic = view.automatic(), parking = view.parking();
+        boolean automatic = previous.mode() == CabController.Mode.AUTOMATIC, parking = view.parking();
         switch (action) {
             case 0 -> power = Math.min(10, power + 1);
             case 1 -> power = Math.max(0, power - 1);
@@ -33,6 +34,6 @@ public final class TestCabControls {
                 view.brake() == 11 && brake != 11, powerAmount, reverser, speed);
         return new CabModule.State(new CabController.Input(powerAmount, converted.brake(), reverser),
                 automatic ? CabController.Mode.AUTOMATIC : CabController.Mode.MANUAL,
-                converted.state(), previous.approachHeld());
+                converted.state(), previous.approachHeld(), reverser != 0, previous.simple());
     }
 }

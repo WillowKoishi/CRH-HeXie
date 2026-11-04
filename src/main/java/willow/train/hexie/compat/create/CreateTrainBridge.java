@@ -21,8 +21,11 @@ import com.simibubi.create.content.trains.entity.CarriageBogey;
 import com.simibubi.create.content.trains.entity.RemoveTrainPacket;
 import com.simibubi.create.content.trains.entity.TravellingPoint;
 import com.simibubi.create.content.trains.graph.DimensionPalette;
+import com.simibubi.create.content.trains.graph.TrackNode;
+import com.simibubi.create.content.trains.signal.SignalBoundary;
 import com.simibubi.create.content.trains.station.GlobalStation;
 import com.simibubi.create.content.trains.station.StationBlockEntity;
+import com.simibubi.create.foundation.advancement.AllAdvancements;
 import net.createmod.catnip.data.Couple;
 import net.createmod.catnip.platform.CatnipServices;
 import net.minecraft.nbt.CompoundTag;
@@ -53,6 +56,7 @@ public final class CreateTrainBridge {
 
     static CreateTrainBridge create(AssembledVehicleMotion motion, UUID owner, List<CompatibilityTrain> previous) {
         var bridge = new CreateTrainBridge(motion, owner);
+        previous.forEach(train -> CreateConsoleTimetable.migrateLegacy(train, motion));
         // Explicit ownership transfer also works for carriages whose entities are unloaded.
         for (var train : previous) for (int i = 0; i < train.carriageIds.size(); i++) {
             UUID id = train.carriageIds.get(i);
@@ -102,15 +106,29 @@ public final class CreateTrainBridge {
         // Consume its result before checking the local geometry used by this frame.
         for (var train : List.copyOf(trains.values())) {
             if (removed) return;
+            // Reloads and regrouping can retain native keyboard state; enabled cabs exclude that input too.
+            var member = train.carriageIds.getFirst();
+            if (motion.hasEnabledCabModule(member)) {
+                int input = motion.isSimpleControlSelected(member) ? motion.cabManualSteer(member) : 0;
+                train.manualSteer = input < 0 ? TravellingPoint.SteerDirection.LEFT
+                        : input > 0 ? TravellingPoint.SteerDirection.RIGHT : TravellingPoint.SteerDirection.NONE;
+            }
             boolean hasSchedule = train.runtime.getSchedule() != null;
             train.displayRoute = willow.train.hexie.vehicle.control.TrainDisplayReadings.Route.unavailable();
-            train.automaticTarget = null;
+            train.automaticRouteAvailable = false;
+            train.controlObservationsReady = false;
+            train.waypointTransitionActive = false;
+            if (train.graph == null) for (var cab : motion.cabTimetables(member).values()) {
+                cab.displayRoute = willow.train.hexie.vehicle.control.TrainDisplayReadings.Route.unavailable();
+                cab.controlObservationsReady = false;
+                cab.automaticRouteAvailable = false;
+                cab.waypointTransitionActive = false;
+            }
             CreateSignalAspects.publish(motion.level(), train.id, List.of());
-            if (train.hadSchedule && !hasSchedule
+            if (!motion.hasEnabledCabModule(member) && train.hadSchedule && !hasSchedule
                     && !motion.isManuallyControlled(train.carriageIds.getFirst())) {
                 CreateNavigationState.cancel(train, CreateNavigationState.Reason.SCHEDULE_REMOVED);
-                motion.runtime().controlsForConsist(train.carriageIds.getFirst(),
-                        willow.train.hexie.vehicle.runtime.VehicleRuntime.Control.NEUTRAL);
+                train.controlResetRequested = true;
             }
             train.hadSchedule = hasSchedule;
             if (train.graph != null && detectRelocation(train)) {
@@ -123,7 +141,10 @@ public final class CreateTrainBridge {
         for (var train : List.copyOf(trains.values())) {
             if (removed) return;
             if (train.graph == null) continue;
-            extendNearBoundary(train);
+            UUID member = train.carriageIds.getFirst();
+            var selected = motion.selectedCabTimetable(member);
+            boolean backend = !motion.hasEnabledCabModule(member);
+            withPhysicalRoute(train, selected, () -> { extendNearBoundary(train); return null; });
             train.carriages.forEach(Carriage::updateConductors);
             var station = train.getCurrentStation();
             if (station == null) train.mailTransferTicks = 0;
@@ -133,38 +154,44 @@ public final class CreateTrainBridge {
             }
             train.speed = motion.runtime().speed(train.carriageIds.getFirst()) / 20;
             train.manualTick = motion.isManuallyControlled(train.carriageIds.getFirst());
-            train.runtime.tick(motion.level());
-            var member = train.carriageIds.getFirst();
-            double deceleration = willow.train.hexie.vehicle.control.TrainControl.serviceDeceleration(
-                    motion.runtime(), member, motion.controlSource(member));
-            boolean automatic = motion.isAutomaticControlSelected(member);
-            var preview = CreateWaypointSupport.preview(train);
-            train.displayRoute = CreateDmiRouteSource.read(motion, train, preview);
-            train.automaticTarget = automatic ? CreateAutomaticRouteData.read(train, deceleration, preview) : null;
-            if (train.navigation.destination != null) train.waypointTransitionTicks = 0;
-            else if (train.waypointTransitionTicks > 0) {
-                train.waypointTransitionTicks--;
-                // Coast while the native timetable advances past a waypoint; it is not a lost stop target.
-                if (automatic && !train.runtime.completed)
-                    train.automaticTarget = new willow.train.hexie.vehicle.control.AutomaticTrainControl.Target(
-                            motion.runtime().speed(member) < 0 ? -1 : 1, 0,
-                            Math.abs(motion.runtime().speed(member)), false, false);
+            SnapshotCarriageEntity.prepareTimetableTick(train, motion.level().getGameTime());
+            if (backend) updateTimetable(train, member, motion.isAutomaticControlSelected(member), motion.controlSource(member), true);
+            else if (selected == null) {
+                train.usingReservationRoute(null);
+                CreateDmiRouteSource.readPhysicalSignals(motion, train);
             }
-            if (train.automaticTarget != null) {
-                var target = train.automaticTarget;
-                double continuousLimit = train.displayRoute.ctcs().speedAt(0,
-                        willow.train.hexie.vehicle.control.AutomaticTrainControl.planningDeceleration(deceleration),
-                        willow.train.hexie.vehicle.control.TrainControl.LINE_SPEED_LIMIT_KMH) / 3.6;
-                train.automaticTarget = new willow.train.hexie.vehicle.control.AutomaticTrainControl.Target(
-                        target.direction(), target.distanceM(), Math.min(target.speedLimitMps(), continuousLimit), target.station(), target.stop());
+            for (var cab : motion.cabTimetables(member).values()) {
+                boolean publish = cab == selected;
+                cab.with(train, publish, () -> {
+                    cab.measureFromConsistEnds();
+                    updateTimetable(train, member, motion.cabAutomatic(cab.key()), motion.controlSource(cab.key()), publish);
+                    return null;
+                });
             }
-            if (automatic)
-                motion.controlAutomatic(member, train.automaticTarget, deceleration);
-            else if (train.automaticControlActive && !motion.isManuallyControlled(member))
-                motion.runtime().controlsForConsist(member,
-                        willow.train.hexie.vehicle.runtime.VehicleRuntime.Control.NEUTRAL);
-            train.automaticControlActive = automatic;
         }
+    }
+
+    private void updateTimetable(CompatibilityTrain train, UUID member, boolean automatic, TrainControl.Source source, boolean publish) {
+        reportStoppedAtStation(train);
+        train.runtime.tick(motion.level());
+        train.updateStationDeparture();
+        var preview = CreateWaypointSupport.preview(train);
+        train.displayRoute = CreateDmiRouteSource.read(motion, train, preview, publish);
+        if (publish) train.usingReservationRoute(automatic ? train.navigation : null);
+        double deceleration = TrainControl.serviceDeceleration(motion.runtime(), member, source);
+        train.automaticRouteAvailable = automatic && CreateAutomaticRouteData.observe(train,
+                TrainControl.reservationDistance(motion.runtime().speed(member), deceleration), preview, publish);
+        train.waypointTransitionActive = false;
+        if (train.navigation.destination != null) train.waypointTransitionTicks = 0;
+        else if (train.waypointTransitionTicks > 0) {
+            train.waypointTransitionActive = !train.runtime.completed;
+            train.waypointTransitionTicks--;
+        }
+        train.controlObservationsReady = true;
+    }
+
+    private <T> T withPhysicalRoute(CompatibilityTrain train, CreateCabTimetable cab, java.util.function.Supplier<T> action) {
+        return cab == null ? action.get() : cab.with(train, true, action);
     }
 
     /** Native stop state remains available even if a compatibility geometry refresh fails. */
@@ -253,10 +280,19 @@ public final class CreateTrainBridge {
             double distance = actualTravel(train);
             train.graph = motion.route().graph();
             double requested = requestedTravel(train);
-            if ((distance != 0 || requested != 0) && advanceNativeEvents(train, requested != 0 ? requested : distance)) distance = 0;
+            var member = train.carriageIds.getFirst();
+            var selected = motion.selectedCabTimetable(member);
+            double travel = requested != 0 ? requested : distance;
+            if (travel != 0) {
+                boolean intercepted = withPhysicalRoute(train, selected, () -> advanceNativeEvents(train, travel));
+                // Only the consist traverses physical signals. Each other cab observes the committed journey.
+                for (var cab : motion.cabTimetables(member).values()) if (cab != selected)
+                    cab.with(train, false, () -> { observeCabTravel(train, travel); return null; });
+                if (intercepted) distance = 0;
+            }
             sync(train);
             train.speed = motion.runtime().speed(train.carriageIds.getFirst()) / 20;
-            train.currentlyBackwards = train.speed < 0;
+            if (train.speed != 0) train.currentlyBackwards = train.speed < 0;
             if (train.speed != 0 && train.getCurrentStation() != null) train.leaveStation();
             travelled.put(train, distance);
         }
@@ -269,8 +305,37 @@ public final class CreateTrainBridge {
             Carriage leading = train.carriages.get(train.speed < 0 ? train.carriages.size() - 1 : 0);
             ((CreateTrainAccess) (Object) train).hexie$collideWithOtherTrains(motion.level(), leading);
             if (train.graph == null) continue;
-            ((CreateTrainAccess) (Object) train).hexie$updateNavigationTarget(motion.level(), entry.getValue());
+            var member = train.carriageIds.getFirst();
+            var selected = motion.selectedCabTimetable(member);
+            if (!motion.hasEnabledCabModule(member)) updateAfterTravel(train, entry.getValue());
+            for (var cab : motion.cabTimetables(member).values()) cab.with(train, cab == selected, () -> {
+                if (cab == selected) updateAfterTravel(train, entry.getValue());
+                else reportStoppedAtStation(train);
+                return null;
+            });
         }
+    }
+
+    private void updateAfterTravel(CompatibilityTrain train, double distance) {
+        ((CreateTrainAccess) (Object) train).hexie$updateNavigationTarget(motion.level(), distance);
+        reportStoppedAtStation(train);
+    }
+
+    private void observeCabTravel(CompatibilityTrain train, double travel) {
+        var point = travel > 0 ? train.carriages.getFirst().getLeadingPoint() : train.carriages.getLast().getTrailingPoint();
+        var leading = binding(point);
+        double end = currentDistance(leading);
+        if (end == leading.distance) return;
+        motion.route().traversePoints(leading.distance, end, (distance, event) -> {
+            if (event.getFirst() instanceof GlobalStation station && station == train.navigation.destination
+                    && CreateWaypointSupport.currentInstruction(train) && !train.runtime.paused && !train.runtime.completed
+                    && station.canApproachFrom(event.getSecond().getSecond())) {
+                completeStationVisit(train, station);
+                train.waypointTransitionTicks = 40;
+            }
+            return false;
+        }, (probe, exit) -> train.navigation.control(probe).apply(train.graph, net.createmod.catnip.data.Pair.of(travel > 0, exit)));
+        ((CreateTrainAccess) (Object) train).hexie$updateNavigationTarget(motion.level(), end - leading.distance);
     }
 
     /** A topology change after integration must retain this frame's event traversal origins. */
@@ -345,6 +410,7 @@ public final class CreateTrainBridge {
 
     private void unregister(CompatibilityTrain train) {
         train.retiringProxy = true;
+        train.usingReservationRoute(null);
         if (Create.RAILWAYS.trains.get(train.id) != train) { train.bridge = null; return; }
         var station = train.getCurrentStation();
         if (station != null) station.cancelReservation(train);
@@ -362,6 +428,7 @@ public final class CreateTrainBridge {
     private void rebuild() {
         var runtime = motion.runtime();
         var old = new LinkedHashMap<>(trains);
+        old.values().forEach(train -> CreateConsoleTimetable.migrateLegacy(train, motion));
         var retainedCars = new HashMap<>(carriages);
         // Reload and regroup preserve the native carriage's cargo and serialized body identity.
         for (var existing : Create.RAILWAYS.trains.values())
@@ -441,6 +508,7 @@ public final class CreateTrainBridge {
                 if (previous != null) transferControl(previous, train);
             }
             trains.put(id, train);
+            CreateConsoleTimetable.bindStored(train, motion);
             sync(train);
             Create.RAILWAYS.addTrain(train);
             if (train.getCurrentStation() != null) train.getCurrentStation().reserveFor(train);
@@ -486,9 +554,12 @@ public final class CreateTrainBridge {
         if (previous.carriageWaitingForChunks >= 0 && previous.carriageWaitingForChunks < previous.carriageIds.size())
             target.carriageWaitingForChunks = target.carriageIds.indexOf(previous.carriageIds.get(previous.carriageWaitingForChunks));
         CreateTrackCompatibility.transferTrain(motion.level(), previous, target);
-        // A split does not duplicate a driver's schedule. Its original leading carriage retains it.
-        if (!target.carriageIds.contains(previous.carriageIds.getFirst())) return;
+        // Console execution follows that console. Native schedules retain their original transfer rule.
+        var timetableCab = CreateConsoleTimetable.source(previous);
+        UUID timetableCarriage = timetableCab == null ? previous.carriageIds.getFirst() : timetableCab.carriage();
+        if (!target.carriageIds.contains(timetableCarriage)) return;
         target.currentStation = previous.currentStation;
+        target.inheritStationStop(previous);
         var station = previous.getCurrentStation();
         if (station != null) station.cancelReservation(previous);
         var dimensions = new DimensionPalette();
@@ -503,6 +574,7 @@ public final class CreateTrainBridge {
             var source = predecessor(previous, train);
             if (source == null) continue;
             transferControl(source, train);
+            CreateConsoleTimetable.bindStored(train, motion);
             var station = train.getCurrentStation();
             if (station != null) station.reserveFor(train);
             CatnipServices.NETWORK.sendToAllClients(new AddTrainPacket(train));
@@ -603,11 +675,34 @@ public final class CreateTrainBridge {
         if (target == leading.distance) return false;
         boolean[] intercepted = { false };
         var listener = train.frontSignalListener();
-        boolean manualCab = motion.cabMode(train.carriageIds.getFirst()) == willow.train.hexie.vehicle.control.CabController.Mode.MANUAL
+        boolean conflict = motion.cabSelection(train.carriageIds.getFirst()).conflicting();
+        boolean simpleOutput = motion.isSimpleControlSelected(train.carriageIds.getFirst());
+        boolean manualCab = (motion.isManuallyControlled(train.carriageIds.getFirst()) || simpleOutput)
                 && !motion.isApproachingStation(train.carriageIds.getFirst());
         double allowed = motion.route().traversePoints(leading.distance, target, (travelled, event) -> {
+            // Steam 'n' Rails suppresses its waypoint listener during native manual control.
+            // Our manual driving still follows the same timetable: report passage without docking.
+            if (!conflict && (train.manualTick || simpleOutput) && !train.runtime.paused && !train.runtime.completed
+                    && CreateWaypointSupport.currentInstruction(train)
+                    && event.getFirst() instanceof GlobalStation station
+                    && station == train.navigation.destination
+                    && station.canApproachFrom(event.getSecond().getSecond())) {
+                completeStationVisit(train, station);
+                train.waypointTransitionTicks = 40;
+                return false;
+            }
             if (manualCab && event.getFirst() instanceof GlobalStation) return false;
             boolean waypoint = CreateWaypointSupport.active(train) && event.getFirst() == train.navigation.destination;
+            if (!waypoint && event.getFirst() instanceof GlobalStation station) {
+                // Docking may still capture the exact marker. Reporting arrival is a separate
+                // operation after the independent body has actually stopped and been synchronized.
+                return intercepted[0] = station == train.navigation.destination
+                        && station.canApproachFrom(event.getSecond().getSecond());
+            }
+            if (event.getFirst() instanceof SignalBoundary signal) {
+                reportSignalPassage(train, signal, event.getSecond().getSecond());
+                return false;
+            }
             boolean handled = listener.test(travelled, event);
             if (waypoint && handled) {
                 // Steam 'n' Rails returns true for passage without stopping. Keep its schedule
@@ -617,8 +712,10 @@ public final class CreateTrainBridge {
             }
             return intercepted[0] = handled;
         },
-                (preview, selected) -> train.navigation.control(preview).apply(train.graph,
-                        net.createmod.catnip.data.Pair.of(requested > 0, selected)));
+                (preview, selected) -> {
+                    if (!conflict) train.navigation.control(preview).apply(train.graph,
+                            net.createmod.catnip.data.Pair.of(requested > 0, selected));
+                });
         if (!intercepted[0] && trackEnd == null) {
             motion.route().traversePoints(trailing.distance, currentDistance(trailing), train.backSignalListener());
             return false;
@@ -629,15 +726,116 @@ public final class CreateTrainBridge {
             // This is Train.tick's native blocked branch. Driver input remains available
             // so reversing or extending the track can move the train on a later frame.
             train.speed = 0;
-            CreateNavigationState.cancel(train, CreateNavigationState.Reason.TRACK_END);
-            train.runtime.tick(motion.level());
+            if (!conflict) {
+                CreateNavigationState.cancel(train, CreateNavigationState.Reason.TRACK_END);
+                train.runtime.tick(motion.level());
+            }
             train.status.endOfTrack();
         } else if (train.navigation.destination == null && train.getCurrentStation() != null)
-            motion.controlAutomatic(train.carriageIds.getFirst(), null, 0);
+            train.controlStopRequested = true;
         motion.route().traversePoints(trailing.distance, currentDistance(trailing), train.backSignalListener());
-        if (train.navigation.destination != null) train.navigation.distanceToDestination -=
+        if (!conflict && train.navigation.destination != null) train.navigation.distanceToDestination -=
                 (train.navigation.destinationBehindTrain ? -1 : 1) * (allowed - leading.distance);
         return true;
+    }
+
+    /** Mirror Create's signal-passage bookkeeping; braking decisions belong to the common controller. */
+    private static void reportSignalPassage(CompatibilityTrain train, SignalBoundary signal, TrackNode enteringNode) {
+        if (train.navigation.waitingForSignal != null
+                && train.navigation.waitingForSignal.getFirst().equals(signal.id))
+            CreateNavigationState.clearSignalWait(train);
+        UUID groupId = signal.getGroup(enteringNode);
+        var group = Create.RAILWAYS.signalEdgeGroups.get(groupId);
+        if (group == null) return;
+        if ((train.runtime.getSchedule() == null || train.runtime.paused) && group.isOccupiedUnless(train))
+            train.carriages.forEach(carriage -> carriage.forEachPresentEntity(entity -> entity.getControllingPlayer()
+                    .ifPresent(uuid -> AllAdvancements.RED_SIGNAL.awardTo(entity.level().getPlayerByUUID(uuid)))));
+        group.reserved = signal;
+        train.reservedSignalBlocks.remove(groupId);
+        train.occupiedSignalBlocks.put(groupId, signal.id);
+    }
+
+    /** Supply distance to the recorded station independently of the current driving direction or mode. */
+    private void updateStationRange(CompatibilityTrain train) {
+        if (!train.isWaitingForDeparture()) return;
+        var station = train.waitingStation();
+        if (station == null) return;
+        var first = train.graph.locateNode(station.edgeLocation.getFirst());
+        var second = train.graph.locateNode(station.edgeLocation.getSecond());
+        if (first == null || second == null) return;
+        var edge = train.graph.getConnectionsFrom(first).get(second);
+        if (edge == null) return;
+        double distance;
+        try {
+            var route = motion.route();
+            double stationPosition = route.distanceOf(CreateTrackCompatibility.point(train.graph, first, second, edge,
+                    station.getLocationOn(edge), false));
+            double start = route.distanceOf(CreateTrackCompatibility.point(train.graph, first, second, edge, 0, false));
+            double end = route.distanceOf(CreateTrackCompatibility.point(train.graph, first, second, edge, edge.getLength(), false));
+            // Keep the same physical end when reversing away from the station.
+            boolean forward = station.canApproachFrom(end > start ? second : first);
+            var front = forward ? train.carriages.getFirst().getLeadingPoint() : train.carriages.getLast().getTrailingPoint();
+            distance = stationPosition - currentDistance(binding(front));
+        } catch (CreateRouteBinding.RouteInvalidException | IllegalArgumentException unavailable) {
+            return;
+        }
+        if (train.stationStopControl().observeDistance(distance) && station.id.equals(train.currentStation))
+            train.leaveStation();
+    }
+
+    /** Report station position and actual stops; this never moves a body or changes driver input. */
+    private void reportStoppedAtStation(CompatibilityTrain train) {
+        updateStationRange(train);
+        if (train.isWaitingForDeparture() || CreateWaypointSupport.currentInstruction(train)) return;
+        var navigation = train.navigation;
+        var selected = navigation.destination;
+        var schedule = train.runtime.getSchedule();
+        String filter = null;
+        if (selected == null && schedule != null) {
+            int index = train.runtime.currentEntry;
+            if (train.runtime.completed || index < 0 || index >= schedule.entries.size()
+                    || !(schedule.entries.get(index).instruction
+                    instanceof com.simibubi.create.content.trains.schedule.destination.DestinationInstruction destination)) return;
+            filter = destination.getFilterForRegex();
+        }
+        boolean forward = selected != null ? !navigation.destinationBehindTrain : !train.currentlyBackwards;
+        var front = forward ? train.carriages.getFirst().getLeadingPoint() : train.carriages.getLast().getTrailingPoint();
+        double center = currentDistance(binding(front));
+        int direction = forward ? 1 : -1;
+        double range = willow.train.hexie.vehicle.control.StationStopControl.ARRIVAL_DISTANCE_M;
+        double start = center - direction * range;
+        String stationFilter = filter;
+        GlobalStation[] nearest = {null};
+        double[] nearestDistance = {Double.POSITIVE_INFINITY};
+        motion.route().traversePoints(start, center + direction * (range + 1e-7), (distance, event) -> {
+            if (!(event.getFirst() instanceof GlobalStation station)
+                    || !station.canApproachFrom(event.getSecond().getSecond())
+                    || selected != null && station != selected
+                    || selected == null && stationFilter != null && !station.name.matches(stationFilter)) return false;
+            double offset = Math.abs(distance - range);
+            if (offset < Math.abs(nearestDistance[0])) {
+                nearest[0] = station;
+                nearestDistance[0] = distance - range;
+            }
+            return false;
+        });
+        var station = nearest[0];
+        if (station == null || !train.stationStopControl().observeStop(motion.runtime().speed(train.carriageIds.getFirst()),
+                new willow.train.hexie.vehicle.control.StationStopControl.StationObservation(
+                        station.id.toString(), station.name, nearestDistance[0]))) return;
+        completeStationVisit(train, station);
+    }
+
+    /** Native visit notification shared by a confirmed stop and a timetable waypoint passage. */
+    private static void completeStationVisit(CompatibilityTrain train, GlobalStation station) {
+        var navigation = train.navigation;
+        navigation.distanceToDestination = 0;
+        if (train.currentCabTimetable == null || train.currentCabTimetable.publishing()) station.reserveFor(train);
+        train.arriveAt(station);
+        navigation.destination = null;
+        // With no destination, Create only clears the path/distance and does not interrupt the arrived timetable.
+        navigation.cancelNavigation();
+        train.automaticRouteAvailable = false;
     }
 
     /** Probe native rail connectivity without moving a carriage or firing a signal twice. */
@@ -645,7 +843,9 @@ public final class CreateTrainBridge {
         if (target >= motion.route().path().minimumDistance() && target <= motion.route().path().maximumDistance())
             return null;
         var preview = CreateTrackCompatibility.copy(motion.route().graph(), leading.point);
-        var selector = train.navigation.destination == null
+        boolean simpleManual = motion.isSimpleControlSelected(train.carriageIds.getFirst())
+                && !motion.isApproachingStation(train.carriageIds.getFirst());
+        var selector = train.navigation.destination == null || simpleManual || motion.cabSelection(train.carriageIds.getFirst()).conflicting()
                 ? preview.steer(train.manualSteer, new Vec3(0, 1, 0))
                 : train.navigation.controlSignalScout();
         preview.travel(train.graph, target - leading.distance, selector, preview.ignoreEdgePoints(), preview.ignoreTurns());
@@ -721,8 +921,11 @@ public final class CreateTrainBridge {
     }
 
     private void extendNearBoundary(CompatibilityTrain train) {
-        double speed = motion.runtime().speed(train.carriageIds.getFirst());
-        double direction = speed != 0 ? speed : train.navigation.destination != null
+        var member = train.carriageIds.getFirst();
+        double speed = motion.runtime().speed(member);
+        boolean simpleManual = motion.isSimpleControlSelected(member) && !motion.isApproachingStation(member);
+        var destination = simpleManual || motion.cabSelection(member).conflicting() ? null : train.navigation.destination;
+        double direction = speed != 0 ? speed : destination != null
                 ? (train.navigation.destinationBehindTrain ? -1 : 1)
                 : motion.runtime().tractionDirection(train.carriageIds.getFirst());
         // At a stopped route end, integration cannot produce velocity until the selected
@@ -748,23 +951,14 @@ public final class CreateTrainBridge {
         }
         var retainedEdge = motion.route().boundedPointAt(forward ? minimumOccupied : maximumOccupied).edge;
         var attempt = new ExtensionAttempt(motion.route(), forward, adjacent, train.manualSteer,
-                train.navigation.destination, train.navigation.distanceStartedAt, retainedEdge);
+                destination, train.navigation.distanceStartedAt, retainedEdge);
         if (attempt.equals(extensionAttempts.get(train.id))) return;
         extensionAttempts.put(train.id, attempt);
-        var navigation = train.navigation.destination == null ? null : train.navigation.controlSignalScout();
+        var navigation = destination == null ? null : train.navigation.controlSignalScout();
         boolean extended = motion.extendRoute(forward, (graph, preview, extendingForward, choices) -> {
             if (navigation != null)
                 return navigation.apply(graph, net.createmod.catnip.data.Pair.of(extendingForward, choices));
-            // The preview always faces outward, including at the rear route boundary. Native
-            // manualSteer uses the route's positive axis, so reverse it into that preview frame.
-            var steer = train.manualSteer;
-            if (!extendingForward) steer = switch (steer) {
-                case LEFT -> TravellingPoint.SteerDirection.RIGHT;
-                case RIGHT -> TravellingPoint.SteerDirection.LEFT;
-                case NONE -> TravellingPoint.SteerDirection.NONE;
-            };
-            return preview.steer(steer, preview.edge.getNormal(graph, .5))
-                    .apply(graph, net.createmod.catnip.data.Pair.of(true, choices));
+            return CreateRouteBinding.manualExit(graph, preview, extendingForward, train.manualSteer, choices);
         }, minimumOccupied, maximumOccupied);
         if (extended) {
             for (var compatible : trains.values()) {

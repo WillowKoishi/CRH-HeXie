@@ -34,6 +34,10 @@ public final class CreateDrivingConsoleSeats {
 
     private record StationarySeat(SeatEntity vehicle, BlockPos seat) implements DrivingConsoleContext.SeatAccess {
         @Override public BlockState blockState(BlockPos position) { return vehicle.level().getBlockState(position); }
+        @Override public willow.train.hexie.vehicle.control.CabModule.State cabControls(BlockPos position) {
+            return vehicle.level().getBlockEntity(position) instanceof willow.train.hexie.api.cab.CabControlsHost host
+                    ? host.controls() : willow.train.hexie.vehicle.control.CabModule.State.NEUTRAL;
+        }
         @Override public Vec3 toLocal(Vec3 world, float partialTick) { return world; }
     }
 
@@ -41,6 +45,13 @@ public final class CreateDrivingConsoleSeats {
         @Override public BlockState blockState(BlockPos position) {
             var info = vehicle.getContraption().getBlocks().get(position);
             return info == null ? null : info.state();
+        }
+        @Override public willow.train.hexie.vehicle.control.CabModule.State cabControls(BlockPos position) {
+            if (vehicle instanceof SnapshotCarriageEntity car) return car.cabControls(position);
+            var info = vehicle.getContraption().getBlocks().get(position);
+            if (info == null || info.nbt() == null) return willow.train.hexie.vehicle.control.CabModule.State.NEUTRAL;
+            return willow.train.hexie.vehicle.control.CabModule.read(info.nbt().getCompound(
+                    info.nbt().contains("CabControls") ? "CabControls" : "TestControls")).state();
         }
         @Override public Vec3 toLocal(Vec3 world, float partialTick) {
             if (vehicle instanceof SnapshotCarriageEntity car)

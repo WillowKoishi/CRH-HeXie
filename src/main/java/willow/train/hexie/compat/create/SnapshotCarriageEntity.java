@@ -120,8 +120,16 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
     private int interpolationSteps;
     private CompoundTag pendingClientMotionFrame;
     private CabDisplayState cabDisplayState = CabDisplayState.speedOnly(0);
+    private CabDisplayState simpleCabDisplayState = CabDisplayState.speedOnly(0);
+    private record CabDisplayViews(CabDisplayState normal, CabDisplayState simple) {}
+    private Map<BlockPos, CabDisplayViews> cabDisplayStates = Map.of();
     public double displaySpeedKmh() { return cabDisplayState.speedKmh(); }
     public CabDisplayState cabDisplayState() { return cabDisplayState; }
+    public CabDisplayState cabDisplayState(BlockPos position) {
+        var views = cabDisplayStates.get(position);
+        if (views != null) return cabControls(position).simple() ? views.simple() : views.normal();
+        return cabControls(position).simple() ? simpleCabDisplayState : cabDisplayState;
+    }
     private Map<BlockPos, willow.train.hexie.vehicle.control.CabModule.State> cabControlStates = Map.of();
     public willow.train.hexie.vehicle.control.CabModule.State cabControls(BlockPos position) {
         return cabControlStates.getOrDefault(position, willow.train.hexie.vehicle.control.CabModule.State.NEUTRAL);
@@ -142,6 +150,12 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
     private double boundsFloorOffset = Double.NaN;
     private boolean nativeManaged;
     private boolean restoringNativeEntity;
+
+    /** All timetable contexts observe one shared cargo clock for this physical train tick. */
+    static void prepareTimetableTick(com.simibubi.create.content.trains.entity.Train train, long gameTime) {
+        for (var carriage : train.carriages)
+            if (carriage.storage instanceof SnapshotCargoManager cargo) cargo.timetableTick = gameTime;
+    }
 
     static void preparePersistentCargo(Carriage carriage, ServerLevel level) {
         if (carriage.storage instanceof SnapshotCargoManager) return;
@@ -207,7 +221,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         firstPositionUpdate = false;
         if (level().isClientSide) compatibilitySyncPending = true;
         else {
-            CreateConsoleTimetable.importPending(this, carriage.train);
+            CreateConsoleTimetable.bindStored(this, carriage.train);
             if (restoringNativeEntity && motion() != null) {
                 motion().applyCurrent(this);
                 prevYaw = yaw; prevPitch = pitch; prevRoll = roll;
@@ -252,8 +266,9 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             var owner = motion();
             if (owner != null) owner.applyCurrent(this);
             var frame = new CompoundTag();
-            frame.put("CabDisplay", CabDisplayStateNbt.write(CreateCabDisplaySource.read(owner, getUUID())));
-            if (owner != null) frame.put("CabControls", owner.cabFrame(getUUID()));
+            var normalDisplay = CreateCabDisplaySource.read(owner, getUUID(), false);
+            frame.put("CabDisplay", CabDisplayStateNbt.write(normalDisplay));
+            if (owner != null) frame.put("CabControls", cabDisplayFrame(owner, normalDisplay));
             frame.putDouble("X", getX()); frame.putDouble("Y", getY()); frame.putDouble("Z", getZ());
             frame.putFloat("Yaw", yaw); frame.putFloat("Pitch", pitch); frame.putFloat("Roll", roll);
             frame.putString("Forward", originalForward.getName());
@@ -385,13 +400,58 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             compatibilitySyncPending = true;
     }
 
+    private CompoundTag cabDisplayFrame(AssembledVehicleMotion owner, CabDisplayState base) {
+        var frame = owner.cabFrame(getUUID());
+        var states = owner.cabStates(getUUID());
+        for (var value : frame.getList("Modules", Tag.TAG_COMPOUND)) {
+            var entry = (CompoundTag) value;
+            var key = new AssembledVehicleMotion.ControlKey(getUUID(), BlockPos.of(entry.getLong("Position")));
+            var state = states.get(key);
+            if (state == null) continue;
+            var normal = CreateCabDisplaySource.read(owner, key, state, base);
+            entry.put("Display", CabDisplayStateNbt.writeProjection(normal));
+            if (state.simple()) {
+                var simple = CreateCabDisplaySource.readSimple(owner, key, normal);
+                if (simple != normal) entry.put("SimpleDisplay", CabDisplayStateNbt.writeProjection(simple));
+            }
+        }
+        return frame;
+    }
+
+    private void readCabDisplayFrames(CompoundTag controls) {
+        var displays = new HashMap<BlockPos, CabDisplayViews>();
+        for (var value : controls.getList("Modules", Tag.TAG_COMPOUND)) {
+            var entry = (CompoundTag) value;
+            var position = BlockPos.of(entry.getLong("Position"));
+            if (!cabControlStates.containsKey(position) || !entry.contains("Display", Tag.TAG_COMPOUND)) continue;
+            var normal = CabDisplayStateNbt.readProjection(cabDisplayState, entry.getCompound("Display"));
+            var simple = entry.contains("SimpleDisplay", Tag.TAG_COMPOUND)
+                    ? CabDisplayStateNbt.readProjection(cabDisplayState, entry.getCompound("SimpleDisplay")) : normal;
+            displays.put(position, new CabDisplayViews(normal, simple));
+        }
+        // A cab without its own projection must not inherit another cab's timetable route.
+        cabControlStates.forEach((position, state) -> displays.computeIfAbsent(position, ignored -> {
+            var route = willow.train.hexie.vehicle.control.TrainDisplayReadings.Route.unavailable();
+            var mode = state.automatic() ? willow.train.hexie.api.cab.DmiState.Mode.AUTOMATIC
+                    : willow.train.hexie.api.cab.DmiState.Mode.MANUAL;
+            var normal = willow.train.hexie.vehicle.control.TrainDisplayReadings.withRoute(cabDisplayState, mode, route, "");
+            var simple = state.automatic() ? willow.train.hexie.vehicle.control.TrainDisplayReadings.withRoute(
+                    normal, willow.train.hexie.api.cab.DmiState.Mode.MANUAL, route) : normal;
+            return new CabDisplayViews(normal, simple);
+        }));
+        cabDisplayStates = Map.copyOf(displays);
+    }
+
     private void applyClientMotionFrame(CompoundTag frame) {
         readBogeySettings(frame.getList("BogeySettings", Tag.TAG_COMPOUND));
             cabDisplayState = frame.contains("CabDisplay", net.minecraft.nbt.Tag.TAG_COMPOUND)
                     ? CabDisplayStateNbt.read(frame.getCompound("CabDisplay"))
                     : CabDisplayState.speedOnly(frame.getDouble("DisplaySpeedKmh"));
-            cabControlStates = willow.train.hexie.vehicle.control.CabModule.readFrames(
-                    frame.getCompound(frame.contains("CabControls") ? "CabControls" : "TestCab"));
+            var controls = frame.getCompound(frame.contains("CabControls") ? "CabControls" : "TestCab");
+            cabControlStates = willow.train.hexie.vehicle.control.CabModule.readFrames(controls);
+            readCabDisplayFrames(controls);
+            simpleCabDisplayState = frame.contains("SimpleCabDisplay", Tag.TAG_COMPOUND)
+                    ? CabDisplayStateNbt.read(frame.getCompound("SimpleCabDisplay")) : cabDisplayState;
             setCoordinateBasis(Direction.byName(frame.getString("Forward")));
             boolean initial = !poseInterpolation.initialized();
             int steps = initial ? 0 : getType().updateInterval();
@@ -696,10 +756,13 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
 
     private StructureBlockInfo withCabControls(StructureBlockInfo info) {
         var owner = motion();
-        if (owner == null || info.nbt() == null) return info;
+        if (owner == null) return compatibilityCarriage == null ? info
+                : CreateConsoleTimetable.withProgress(info, compatibilityCarriage.train, getUUID());
+        var execution = owner.cabTimetable(new AssembledVehicleMotion.ControlKey(getUUID(), info.pos()));
+        if (execution != null) info = execution.withBlockData(info, registryAccess());
         var controls = owner.cabControlsForSave(getUUID(), info.pos());
         if (controls == null) return info;
-        var data = info.nbt().copy();
+        var data = info.nbt() == null ? new CompoundTag() : info.nbt().copy();
         data.put("CabControls", controls);
         return new StructureBlockInfo(info.pos(), info.state(), data);
     }
@@ -1502,7 +1565,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
                     // ClientContraption's constructor creates BEs without calling resetRenderLevel.
                     // Bind at creation so the first render and every rebuild read live state.
                     if (be instanceof willow.train.hexie.api.cab.CabDisplayHost console)
-                        console.displaySource(() -> ((SnapshotCarriageEntity) SnapshotView.this.entity).cabDisplayState());
+                        console.displaySource(() -> ((SnapshotCarriageEntity) SnapshotView.this.entity).cabDisplayState(info.pos()));
                     if (be instanceof willow.train.hexie.api.cab.CabControlsHost console)
                         console.controlsSource(() -> ((SnapshotCarriageEntity) SnapshotView.this.entity).cabControls(info.pos()));
                     return be;
@@ -1666,6 +1729,16 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
     private static final class SnapshotCargoManager extends TrainCargoManager {
         private ImmutableMap<BlockPos, MountedItemStorage> disassemblyItems;
         private MountedFluidStorageWrapper disassemblyFluids;
+        private long timetableTick = Long.MIN_VALUE;
+        private long lastCargoTick = Long.MIN_VALUE;
+
+        @Override public void tickIdleCargoTracker() {
+            if (timetableTick != Long.MIN_VALUE) {
+                if (lastCargoTick == timetableTick) return;
+                lastCargoTick = timetableTick;
+            }
+            super.tickIdleCargoTracker();
+        }
 
         void prepareDisassemblyView(Map<BlockPos, List<BlockPos>> groups, Map<BlockPos, BlockPos> moved) {
             disassemblyItems = relocateControllers(super.getAllItemStorages(), groups, moved);

@@ -20,6 +20,10 @@ public record DrivingConsoleContext(SeatAccess seatAccess, BlockPos console) {
         Entity vehicle();
         BlockPos seat();
         BlockState blockState(BlockPos position);
+        /** Read-only surface state used to select the cab's currently defined input bindings. */
+        default willow.train.hexie.vehicle.control.CabModule.State cabControls(BlockPos position) {
+            return willow.train.hexie.vehicle.control.CabModule.State.NEUTRAL;
+        }
         /** World coordinates to the coordinate system containing seat and console. */
         Vec3 toLocal(Vec3 world, float partialTick);
     }

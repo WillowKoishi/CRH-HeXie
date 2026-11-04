@@ -11,7 +11,10 @@ public final class CreateNavigationState {
         train.navigation.cancelNavigation();
         if (reason == Reason.TIMETABLE_REPLACED || reason == Reason.MANUAL_APPROACH_CANCELLED
                 || reason == Reason.MODE_CHANGED) clearSignalWait(train);
-        if (train instanceof CompatibilityTrain own) own.automaticTarget = null;
+        if (train instanceof CompatibilityTrain own) {
+            own.automaticRouteAvailable = false;
+            if (reason == Reason.TIMETABLE_REPLACED || reason == Reason.SCHEDULE_REMOVED) own.clearStationStop();
+        }
     }
 
     public static void clearSignalWait(Train train) {

@@ -33,8 +33,16 @@ public final class TrainControl {
         if (source == null || !Double.isFinite(signedPower) || Math.abs(signedPower) > 1
                 || !Double.isFinite(serviceBrake) || serviceBrake < 0 || serviceBrake > 1)
             throw new IllegalArgumentException("Invalid train control input");
-        return new VehicleRuntime.Control(serviceBrake > 0 ? 0 : signedPower * source.powerLimit,
-                serviceBrake * source.serviceBrakeLimit);
+        return CabController.manual(new CabController.Input(Math.abs(signedPower) * source.powerLimit,
+                serviceBrake * source.serviceBrakeLimit, (int) Math.signum(signedPower)));
+    }
+
+    /** Existing reservation horizon, independent of the replaceable automatic running curve. */
+    public static double reservationDistance(double speedMps, double serviceDeceleration) {
+        double speed = Math.abs(speedMps);
+        double referenceDeceleration = Math.min(.6, serviceDeceleration * .5);
+        double brakingDistance = referenceDeceleration > 0 ? speed * speed / (2 * referenceDeceleration) : 0;
+        return Math.max(32, brakingDistance + speed * .75 + 8);
     }
 
     /** Schedule/approach adapters supply targets, not velocities to assign directly. */

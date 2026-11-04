@@ -6,7 +6,24 @@ import java.util.Objects;
 public record DmiState(Mode mode, Target target, double lineLimitKmh, double serviceDeceleration,
                        double traction, double brake, String compatibilityStatus,
                        String stationName, String trainNumber, String time, String kilometerMarker,
-                       willow.train.hexie.vehicle.control.CtcsControl.Profile ctcs) {
+                       willow.train.hexie.vehicle.control.CtcsControl.Profile ctcs, DmiSpeedReadings speedReadings,
+                       willow.train.hexie.vehicle.control.TrainControlLimits limits) {
+    /** Compatibility entry for display providers which do not supply a consist capability snapshot. */
+    public DmiState(Mode mode, Target target, double lineLimitKmh, double serviceDeceleration,
+                    double traction, double brake, String compatibilityStatus,
+                    String stationName, String trainNumber, String time, String kilometerMarker,
+                    willow.train.hexie.vehicle.control.CtcsControl.Profile ctcs, DmiSpeedReadings speedReadings) {
+        this(mode, target, lineLimitKmh, serviceDeceleration, traction, brake, compatibilityStatus,
+                stationName, trainNumber, time, kilometerMarker, ctcs, speedReadings, null);
+    }
+    /** A null speed readout retains the shared advisory envelope; explicit NONE suppresses its markers. */
+    public DmiState(Mode mode, Target target, double lineLimitKmh, double serviceDeceleration,
+                    double traction, double brake, String compatibilityStatus,
+                    String stationName, String trainNumber, String time, String kilometerMarker,
+                    willow.train.hexie.vehicle.control.CtcsControl.Profile ctcs) {
+        this(mode, target, lineLimitKmh, serviceDeceleration, traction, brake, compatibilityStatus,
+                stationName, trainNumber, time, kilometerMarker, ctcs, null);
+    }
     public DmiState(Mode mode, Target target, double lineLimitKmh, double serviceDeceleration,
                     double traction, double brake, String compatibilityStatus,
                     String stationName, String trainNumber, String time, String kilometerMarker) {

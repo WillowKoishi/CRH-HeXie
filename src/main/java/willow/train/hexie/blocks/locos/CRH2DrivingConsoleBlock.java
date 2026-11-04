@@ -20,9 +20,24 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.loot.LootParams;
 import java.util.List;
 
-/** Static cab furniture. Controls will be added separately. */
+/** CRH2 cab surface: declares its own input bindings and hosts shared controls and displays. */
 public class CRH2DrivingConsoleBlock extends Block implements net.minecraft.world.level.block.EntityBlock, willow.train.hexie.api.cab.CabControlHost {
     @Override public Direction cabFacing(BlockState state) { return state.getValue(FACING); }
+    private static final List<KeyboardBinding> DETAILED_KEYS = List.of(
+            new KeyboardBinding('Q', KeyboardAction.TOGGLE_SIMPLE), new KeyboardBinding('E', KeyboardAction.EXIT),
+            new KeyboardBinding(' ', KeyboardAction.APPROACH));
+    private static final List<KeyboardBinding> SIMPLE_KEYS = List.of(
+            new KeyboardBinding('Q', KeyboardAction.TOGGLE_SIMPLE), new KeyboardBinding('E', KeyboardAction.EXIT),
+            new KeyboardBinding('W', KeyboardAction.FORWARD), new KeyboardBinding('S', KeyboardAction.BACKWARD),
+            new KeyboardBinding('A', KeyboardAction.LEFT), new KeyboardBinding('D', KeyboardAction.RIGHT),
+            new KeyboardBinding(' ', KeyboardAction.APPROACH));
+    @Override public List<KeyboardBinding> keyboardBindings(BlockState state, boolean simple) {
+        return simple ? SIMPLE_KEYS : DETAILED_KEYS;
+    }
+    private static final List<MouseBinding> MOUSE_BINDINGS = List.of(
+            new MouseBinding(0, MouseAction.INTERACT), new MouseBinding(1, MouseAction.POINTER));
+    @Override public List<MouseBinding> mouseBindings(BlockState state, boolean simple) { return MOUSE_BINDINGS; }
+    @Override public boolean scrollControlsZoom(BlockState state, boolean simple) { return true; }
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     private static final Map<Direction, VoxelShape> SHAPES = createShapes();
     public CRH2DrivingConsoleBlock(Properties properties) {

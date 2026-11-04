@@ -37,6 +37,18 @@ public final class CtcsControl {
             }
             return speed;
         }
+        /** Shared safety envelope. Automatic running-plan parameters never enter this calculation. */
+        public double speedAt(double aheadM, TrainControlLimits limits, double lineLimitKmh) {
+            Objects.requireNonNull(limits);
+            double speed = lineLimitKmh;
+            for (var target : targets) {
+                double ceiling = speed < 0 ? TrainControl.LINE_SPEED_LIMIT_MPS : speed / 3.6;
+                double allowed = limits.permittedSpeed(target.speedKmh() / 3.6,
+                        target.distanceM() - aheadM, ceiling) * 3.6;
+                speed = speed < 0 ? allowed : Math.min(speed, allowed);
+            }
+            return speed;
+        }
     }
 
     public static Profile decode(List<Section> sections, List<SpeedTarget> restrictions) {

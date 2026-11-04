@@ -39,6 +39,20 @@ public final class DrivingConsoleEntity extends BlockEntity implements CabDispla
         setChanged();
         if (level != null) level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
     }
+    public void benchKeyboard(boolean toggleSimple, int mask) {
+        boolean updateApproach = getBlockState().getBlock() instanceof willow.train.hexie.api.cab.CabControlHost host
+                && host.keyboardActions(getBlockState(), benchControls.state().simple())
+                        .contains(willow.train.hexie.api.cab.CabControlHost.KeyboardAction.APPROACH);
+        benchKeyboard(toggleSimple, mask, updateApproach);
+    }
+    public void benchKeyboard(boolean toggleSimple, int mask, boolean updateApproach) {
+        var next = willow.train.hexie.vehicle.control.SimpleCabControls.apply(
+                benchControls.state(), toggleSimple, mask, 0, updateApproach);
+        benchControls.keyboard(mask);
+        benchControls.submit(next);
+        setChanged();
+        if (level != null) level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+    }
     @Override protected void saveAdditional(net.minecraft.nbt.CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         if (!pendingTimetable.isEmpty()) tag.put(PENDING_TIMETABLE, pendingTimetable.copy());
@@ -74,7 +88,7 @@ public final class DrivingConsoleEntity extends BlockEntity implements CabDispla
     public CabDisplayState displayState() {
         if (!vehicleSource && getBlockState().getBlock() instanceof willow.train.hexie.blocks.locos.TestDrivingConsoleBlock) {
             var state = benchControls.state();
-            var command = benchControls.update(state.mode(), 1, 0, null, 0);
+            var command = benchControls.update(benchControls.mode(), 1, 0, null, 0);
             return new CabDisplayState(0, java.util.Map.of(), new willow.train.hexie.api.cab.DmiState(
                     state.automatic() ? willow.train.hexie.api.cab.DmiState.Mode.AUTOMATIC : willow.train.hexie.api.cab.DmiState.Mode.MANUAL,
                     null, willow.train.hexie.vehicle.control.TrainControl.LINE_SPEED_LIMIT_KMH, 0,
