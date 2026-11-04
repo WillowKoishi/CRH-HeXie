@@ -775,7 +775,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     public void setScheduleSlot(ItemStack stack) {
         this.scheduleSlot = stack == null ? ItemStack.EMPTY : stack.copyWithCount(1);
         refreshStopNames();
-        syncTrainPresence();
+        // 建/拆由 serverTick 的定期校验统一触发，这里只存数据
         setChanged();
         sendDataThrottled();
     }
@@ -808,6 +808,24 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
      * 单一入口：根据当前状态决定"虚拟列车应当存在还是不存在"。
      * 放入时刻表 / 切回自动 → 建车；取出时刻表 / 切手动 / 玩家给红石 → 注销并归零。
      */
+    /** 真正建车的私有动作，只被 syncTrainPresence 调用。 */
+    private void bindTrainNow() {
+        if (!(level instanceof ServerLevel serverLevel)) return;
+        try {
+            TrainBinder.Result result = TrainBinder.bind(serverLevel, worldPosition, scheduleSlot, owner);
+            lastBindMessage = result.message();
+            HexieTrain.LOGGER.info("[HexieTrain][presence] 建车 ok={} msg={}", result.ok(), result.message());
+            if (result.ok()) {
+                bindTrain(result.trainId());
+                if (SubLevelSuspend.resume(serverLevel, worldPosition)) {
+                    TrainBinder.PERSISTENT_LOADS.add(result.trainId());
+                }
+            }
+        } catch (Throwable t) {
+            HexieTrain.LOGGER.error("[HexieTrain][presence] 建车异常 @{}", worldPosition, t);
+        }
+    }
+
     private void syncTrainPresence() {
         if (level == null || level.isClientSide) return;
         boolean shouldExist = !manualMode
@@ -824,7 +842,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         }
         if (boundTrain == null) {
             HexieTrain.LOGGER.info("[HexieTrain][presence] 重建虚拟列车（自动 + 有时刻表）");
-            setScheduleSlot(scheduleSlot);
+            bindTrainNow();   // 私有动作，绝不回调 setScheduleSlot
         }
     }
 
