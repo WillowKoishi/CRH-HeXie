@@ -436,16 +436,14 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
                     lastDestName = dn;
                 }
                 if (diagTicks++ % 20 == 0) {
-                    HexieTrain.LOGGER.info("[HexieTrain][diag] st={} entry={} dest={} dDest={} behind={} cPath={} spd={} vphys={} vtrack={} leg={} dir={} derail={} wsig={} tSig={}",
+                    HexieTrain.LOGGER.info("[HexieTrain][diag] st={} entry={} dest={} dDest={} behind={} spd={} vphys={} vtrack={} leg={} dir={} vpos={} spos={} vdist={}",
                             train.runtime.state, train.runtime.currentEntry, dn,
                             String.format("%.1f", nv.distanceToDestination), nv.destinationBehindTrain,
-                            -1,   // currentPath 包级私有，走反射太脆，先用 -1
                             String.format("%.3f", train.speed),
                             String.format("%.2f", measuredSpeedMps()),
                             String.format("%.2f", bodySpeedAlongTrackBps()),
-                            String.format("%.1f", legRemaining), autoDirection, train.derailed,
-                            nv.waitingForSignal == null ? "-" : "Y",
-                            String.format("%.1f", nv.distanceToSignal));
+                            String.format("%.1f", legRemaining), autoDirection,
+                            virtPos(train), statPos(nv.destination), virtDist(train, nv.destination));
                 }
             } catch (Throwable t) { HexieTrain.LOGGER.warn("[HexieTrain][diag] {}", t.toString()); }
 
@@ -939,6 +937,39 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
 
     /** 把虚拟车头点对齐到车站（一次性，仅到站时）。 */
     /** 物理车当前位置到车站方块的水平距离（格）。 */
+    /** 虚拟车头点的世界坐标。 */
+    private String virtPos(Train train) {
+        try {
+            var lp = train.carriages.get(0).getLeadingPoint();
+            var p = lp.getPosition(train.graph);
+            return String.format("(%.1f,%.1f,%.1f)", p.x, p.y, p.z);
+        } catch (Throwable t) { return "?"; }
+    }
+
+    /** 车站的世界坐标（边两端中点）。 */
+    private String statPos(GlobalStation st) {
+        if (st == null) return "?";
+        try {
+            var a = st.edgeLocation.getFirst().getLocation();
+            var b = st.edgeLocation.getSecond().getLocation();
+            return String.format("(%.1f,%.1f,%.1f)", (a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2);
+        } catch (Throwable t) { return "?"; }
+    }
+
+    /** 虚拟车头点到车站的距离。 */
+    private double virtDist(Train train, GlobalStation st) {
+        if (st == null) return -1;
+        try {
+            var lp = train.carriages.get(0).getLeadingPoint();
+            var p = lp.getPosition(train.graph);
+            var a = st.edgeLocation.getFirst().getLocation();
+            var b = st.edgeLocation.getSecond().getLocation();
+            double mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, mz = (a.z + b.z) / 2;
+            double dx = p.x - mx, dy = p.y - my, dz = p.z - mz;
+            return Math.sqrt(dx * dx + dy * dy + dz * dz);
+        } catch (Throwable t) { return -1; }
+    }
+
     private double physicalDistanceTo(GlobalStation st) {
         try {
             var sl = (net.minecraft.server.level.ServerLevel) level;
