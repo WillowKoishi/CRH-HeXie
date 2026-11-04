@@ -167,6 +167,8 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     private int stallTicks = 0;
     private int rebindCooldown = 0;
     private int missingTicks = 0;
+    private int diagTicks = 0;
+    private String lastDestName = "";
     private boolean leakSwept = false;
 
     /** true = 玩家操控中（暂停自动寻路）；false = 自动驾驶中。 */
@@ -423,6 +425,28 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
             Train train = Create.RAILWAYS.trains.get(boundTrain);
             if (train == null) return;
             ensureConductors(train);
+
+            // ── 飞行记录仪：一次测试收集全部状态 ──
+            try {
+                var nv = train.navigation;
+                String dn = nv.destination == null ? "null" : nv.destination.name;
+                if (!dn.equals(lastDestName)) {
+                    HexieTrain.LOGGER.info("[HexieTrain][evt] dest {} → {}", lastDestName, dn);
+                    lastDestName = dn;
+                }
+                if (diagTicks++ % 20 == 0) {
+                    HexieTrain.LOGGER.info("[HexieTrain][diag] st={} entry={} dest={} dDest={} behind={} cPath={} spd={} vphys={} vtrack={} leg={} dir={} derail={} wsig={} tSig={}",
+                            train.runtime.state, train.runtime.currentEntry, dn,
+                            String.format("%.1f", nv.distanceToDestination), nv.destinationBehindTrain,
+                            -1,   // currentPath 包级私有，走反射太脆，先用 -1
+                            String.format("%.3f", train.speed),
+                            String.format("%.2f", measuredSpeedMps()),
+                            String.format("%.2f", bodySpeedAlongTrackBps()),
+                            String.format("%.1f", legRemaining), autoDirection, train.derailed,
+                            nv.waitingForSignal == null ? "-" : "Y",
+                            String.format("%.1f", nv.distanceToSignal));
+                }
+            } catch (Throwable t) { HexieTrain.LOGGER.warn("[HexieTrain][diag] {}", t.toString()); }
 
             int left = leftSignal(), right = rightSignal();
             boolean redstonePresent = left > 0 || right > 0;
