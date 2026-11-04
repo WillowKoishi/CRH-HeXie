@@ -168,6 +168,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     private int stallTicks = 0;
     private int rebindCooldown = 0;
     private int missingTicks = 0;
+    private int presenceTicks = 0;
     private int diagTicks = 0;
     private GlobalStation dwellingStation = null;   // 停站锁：物理车没走就不再判到站
     private String lastDestName = "";
@@ -384,6 +385,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         // 模式变了，传动比也变了：必须强制重建网络，否则 Create 仍用旧缓存
         refreshKinetics();
         sendData();
+        syncTrainPresence();   // 模式变化 → 同步虚拟列车的有无
     }
 
 
@@ -413,13 +415,8 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
                 if (missingTicks++ > 100) { boundTrain = null; missingTicks = 0; }   // 5 秒仍无 → 允许重绑
                 return;
             }
-            if (boundTrain == null && !scheduleSlot.isEmpty() && rebindCooldown-- <= 0 && level instanceof ServerLevel
-                    && (rebindCooldown = 200) > 0
-                    && scheduleSlot.getItem() instanceof com.simibubi.create.content.trains.schedule.ScheduleItem) {
-                HexieTrain.LOGGER.info("[HexieTrain][rebind] 槽内有时刻表但未绑定，重建中");
-                setScheduleSlot(scheduleSlot);
-            }
         } catch (Throwable t) { HexieTrain.LOGGER.warn("[HexieTrain][run] 自检异常 {}", t.toString()); }
+        if (presenceTicks++ % 20 == 0) syncTrainPresence();   // 每 20 tick 校验一次
         if (boundTrain != null) tickAutomated(); else tickManual();
     }
 
@@ -462,7 +459,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
 
             // 玩家给红石 → 单向切手动（要恢复请点 UI 或重设列车）
             if (redstonePresent) {
-                if (!manualMode) setManualMode(true);
+                if (!manualMode) setManualMode(true);   // 内部会调 syncTrainPresence：注销虚拟列车、通道归零
                 double dir = left > 0 ? 1.0 : -1.0;
                 double mag = Math.max(left, right) / 15.0;
                 train.manualTick = true;
@@ -818,6 +815,49 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         boundTrain = null;
         lastDestination = null;
     }
+
+    /**
+     * 单一入口：根据当前状态决定"虚拟列车应当存在还是不存在"。
+     * 放入时刻表 / 切回自动 → 建车；取出时刻表 / 切手动 / 玩家给红石 → 注销并归零。
+     */
+    private void syncTrainPresence() {
+        if (level == null || level.isClientSide) return;
+        boolean shouldExist = !manualMode
+                && !scheduleSlot.isEmpty()
+                && scheduleSlot.getItem() instanceof com.simibubi.create.content.trains.schedule.ScheduleItem;
+
+        if (!shouldExist) {
+            if (boundTrain != null) {
+                HexieTrain.LOGGER.info("[HexieTrain][presence] 注销虚拟列车（手动/无时刻表）");
+                dissolve();
+            }
+            resetRuntimeState();
+            return;
+        }
+        if (boundTrain == null) {
+            HexieTrain.LOGGER.info("[HexieTrain][presence] 重建虚拟列车（自动 + 有时刻表）");
+            setScheduleSlot(scheduleSlot);
+        }
+    }
+
+    /** 把本调度器的运行时状态全部归零（换挡、通道、距离、到站锁）。 */
+    private void resetRuntimeState() {
+        legRemaining = -1;
+        lastLegDest = null;
+        lastLegEntry = -1;
+        dwellingStation = null;
+        lastDestName = "";
+        lastEntryLogged = -1;
+        autoDirection = 0f;
+        leftIsForward = null;
+        try {
+            setOutput(SignalChannel.BRAKE, 0);
+            setOutput(SignalChannel.LEFT, 0);
+            setOutput(SignalChannel.RIGHT, 0);
+            refreshWireless();
+        } catch (Throwable ignored) {}
+    }
+
 
     // ══════════════════════ 对外接口 ══════════════════════
 
