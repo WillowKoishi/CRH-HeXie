@@ -443,7 +443,8 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
                             String.format("%.2f", measuredSpeedMps()),
                             String.format("%.2f", bodySpeedAlongTrackBps()),
                             String.format("%.1f", legRemaining), autoDirection,
-                            virtPos(train), statPos(nv.destination), virtDist(train, nv.destination));
+                            virtPos(train), statPos(nv.destination), virtDist(train, nv.destination)
+                                    + " tid=" + (train.id.toString().substring(0,8)) + " edgeLen=" + String.format("%.1f", edgeLen(train)) + " edgePos=" + String.format("%.1f", edgePos(train)) + " bound=" + (boundTrain==null?"null":boundTrain.toString().substring(0,8)));
                 }
             } catch (Throwable t) { HexieTrain.LOGGER.warn("[HexieTrain][diag] {}", t.toString()); }
 
@@ -938,6 +939,14 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     /** 把虚拟车头点对齐到车站（一次性，仅到站时）。 */
     /** 物理车当前位置到车站方块的水平距离（格）。 */
     /** 虚拟车头点的世界坐标。 */
+    private double edgeLen(Train train) {
+        try { return train.carriages.get(0).getLeadingPoint().edge.getLength(); } catch (Throwable t) { return -1; }
+    }
+
+    private double edgePos(Train train) {
+        try { return train.carriages.get(0).getLeadingPoint().position; } catch (Throwable t) { return -1; }
+    }
+
     private String virtPos(Train train) {
         try {
             var lp = train.carriages.get(0).getLeadingPoint();
