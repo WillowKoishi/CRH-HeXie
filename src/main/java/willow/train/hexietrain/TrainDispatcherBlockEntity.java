@@ -109,6 +109,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
 
     /** 蠕行速度：保证车头点能跨过站点，否则永远触发不了到站。 */
     private static final double CREEP_SPEED_MPS = 0.3;
+    private static final double STOP_ZONE = 3.0;   // 格：进入此距离切断扭矩
 
     /** 期望制动减速度（m/s²），用于估算"还要滑多远"。先给常量，实测后调。 */
     private static final double EXPECTED_BRAKE_DECEL = 1.0;
@@ -576,7 +577,8 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
             }
 
             // ② 物理位移核减（带符号）
-            double moved = bodySpeedAlongTrackBps() / 20.0;
+            double vNow = Math.abs(measuredSpeedMps());
+            double moved = (nav.destinationBehindTrain ? -1.0 : 1.0) * vNow / 20.0;   // 用驾驶意图定符号，不用不可靠的切线投影
             legRemaining = Math.max(0.0, legRemaining - moved);
             nav.distanceToDestination = legRemaining;
             double v = Math.abs(measuredSpeedMps());
@@ -591,7 +593,11 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
             }
 
             // ③b 传动方向：驱动本方块自己的左右红石通道（自动模式的唯一动力来源）
-            setAutoDirection((float) (nav.destinationBehindTrain ? -1.0 : 1.0));
+            if (legRemaining <= STOP_ZONE) {
+                setAutoDirection(0f);                 // 切断扭矩：modifier=0，车滑行停下
+            } else {
+                setAutoDirection((float) (nav.destinationBehindTrain ? -1.0 : 1.0));
+            }
 
             // ④ 刹车
             double targetV = legRemaining > SLOW_ZONE_BLOCKS ? Double.MAX_VALUE
