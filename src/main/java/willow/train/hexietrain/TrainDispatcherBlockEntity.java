@@ -593,7 +593,8 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
             }
 
             // ③b 传动方向：驱动本方块自己的左右红石通道（自动模式的唯一动力来源）
-            if (legRemaining <= STOP_ZONE) {
+            double stopZone = Math.max(STOP_ZONE, Math.abs(measuredSpeedMps()) * 1.2);   // 按速度动态：6.7m/s → 8 格
+            if (legRemaining <= stopZone) {
                 if (Math.abs(measuredSpeedMps()) > 0.4)
                     setAutoDirection((float) -(nav.destinationBehindTrain ? -1.0 : 1.0));   // 反转扭矩制动
                 else
@@ -610,7 +611,17 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
             // ⑤ 到站：四步（snap → arriveAt → 清 destination → 清 path）
             if (legRemaining <= 0.05 && v < 0.5) {
                 snapVirtualTo(train, st);
-                try { train.arriveAt(st); } catch (Throwable t) { HexieTrain.LOGGER.warn("[HexieTrain][arrive] {}", t.toString()); }
+                try {
+                    var rt = train.runtime;
+                    if (rt.state != com.simibubi.create.content.trains.schedule.ScheduleRuntime.State.IN_TRANSIT)
+                        rt.state = com.simibubi.create.content.trains.schedule.ScheduleRuntime.State.IN_TRANSIT;
+                    // 条件列为空会导致 tickConditions 永不推进：补一个空列
+                    if (rt.schedule != null && rt.currentEntry >= 0 && rt.currentEntry < rt.schedule.entries.size()) {
+                        var conds = rt.schedule.entries.get(rt.currentEntry).conditions;
+                        if (conds.isEmpty()) conds.add(new java.util.ArrayList<>());
+                    }
+                    train.arriveAt(st);
+                } catch (Throwable t) { HexieTrain.LOGGER.warn("[HexieTrain][arrive] {}", t.toString()); }
                 try { var f2 = nav.getClass().getDeclaredField("currentPath"); f2.setAccessible(true); ((java.util.List<?>) f2.get(nav)).clear(); } catch (Throwable ignored) {}
                 nav.destination = null;
                 dwellingStation = st;
