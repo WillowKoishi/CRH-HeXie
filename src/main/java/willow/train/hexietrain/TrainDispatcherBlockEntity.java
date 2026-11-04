@@ -594,7 +594,10 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
 
             // ③b 传动方向：驱动本方块自己的左右红石通道（自动模式的唯一动力来源）
             if (legRemaining <= STOP_ZONE) {
-                setAutoDirection(0f);                 // 切断扭矩：modifier=0，车滑行停下
+                if (Math.abs(measuredSpeedMps()) > 0.4)
+                    setAutoDirection((float) -(nav.destinationBehindTrain ? -1.0 : 1.0));   // 反转扭矩制动
+                else
+                    setAutoDirection(0f);                                                    // 停稳后切断
             } else {
                 setAutoDirection((float) (nav.destinationBehindTrain ? -1.0 : 1.0));
             }
@@ -1037,7 +1040,9 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
 
 
     private void SetOutputBrake(int value) {
+        int before = output(SignalChannel.BRAKE);
         setOutput(SignalChannel.BRAKE, Math.max(0, Math.min(15, value)));
+        if (output(SignalChannel.BRAKE) != before) refreshWireless();   // 值变了才重新广播
     }
 
 
