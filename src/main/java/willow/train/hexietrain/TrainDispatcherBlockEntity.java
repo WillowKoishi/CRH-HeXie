@@ -168,6 +168,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     private int rebindCooldown = 0;
     private int missingTicks = 0;
     private int diagTicks = 0;
+    private GlobalStation dwellingStation = null;   // 停站锁：物理车没走就不再判到站
     private String lastDestName = "";
     private boolean leakSwept = false;
 
@@ -537,43 +538,62 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     private Object lastLegDest = null;
     private int lastLegEntry = -1;
 
+    /**
+     * 虚拟列车不自走（speed 恒 0）：位置只由 TP 决定，到站由我们按物理车位置触发。
+     * 这样它永远不可能跑在物理车前面，也就不会抢物理车前方的闭塞区间。
+     */
     private void driveToStation(Train train) {
         try {
-            if (train.derailed || train.invalid || !isPrimaryDispatcher()) { setAutoDirection(0f); return; }
-            var nav = train.navigation;
-            if (nav == null || nav.destination == null) { setAutoDirection(0f); SetOutputBrake(0); return; }
+            train.speed = 0;        // ★ 不自走
+            train.targetSpeed = 0;
+            if (train.derailed || train.invalid || !isPrimaryDispatcher()) return;
 
-            if (nav.destination != lastLegDest || train.runtime.currentEntry != lastLegEntry || legRemaining < 0) {
+            var nav = train.navigation;
+            if (nav == null || nav.destination == null) return;
+            GlobalStation st = nav.destination;
+
+            // ① 开始新段：记录沿轨长度
+            if (st != lastLegDest || train.runtime.currentEntry != lastLegEntry || legRemaining < 0) {
                 legRemaining = Math.max(0.0, nav.distanceToDestination);
-                lastLegDest = nav.destination;
+                lastLegDest = st;
                 lastLegEntry = train.runtime.currentEntry;
-                leftIsForward = null;
-                HexieTrain.LOGGER.info("[HexieTrain][leg] → {} 沿轨长度={}", nav.destination.name, String.format("%.1f", legRemaining));
+                HexieTrain.LOGGER.info("[HexieTrain][leg] → {} 沿轨长度={}", st.name, String.format("%.1f", legRemaining));
             }
 
+            // ② 物理位移核减（带符号）
             double moved = bodySpeedAlongTrackBps() / 20.0;
             legRemaining = Math.max(0.0, legRemaining - moved);
             nav.distanceToDestination = legRemaining;
-
             double v = Math.abs(measuredSpeedMps());
-            double sign = nav.destinationBehindTrain ? -1.0 : 1.0;
+
+            // ③ 停站锁：物理车没离开就不重复判到站
+            if (dwellingStation != null) {
+                SetOutputBrake(15);
+                double dd = 0;
+                try { dd = physicalDistanceTo(st); } catch (Throwable ignored) {}
+                if (dd > 8.0) { dwellingStation = null; HexieTrain.LOGGER.info("[HexieTrain][depart] 物理车已离开 {}", st.name); }
+                return;
+            }
+
+            // ④ 刹车
             double targetV = legRemaining > SLOW_ZONE_BLOCKS ? Double.MAX_VALUE
                     : Math.max(CREEP_SPEED_MPS, SLOW_ZONE_SPEED_MPS * (legRemaining / SLOW_ZONE_BLOCKS));
-            int brake = SignalChannel.brakeStrength(legRemaining, v / 20.0, linearizeBrake);
+            SetOutputBrake(v > targetV + 0.25 ? SignalChannel.brakeStrength(legRemaining, v / 20.0, linearizeBrake) : 0);
 
-            setAutoDirection((float) sign);
-            SetOutputBrake(v > targetV + 0.25 ? brake : 0);
-            if (legRemaining < 1.0 && v < 0.2) SetOutputBrake(0);
-
+            // ⑤ 到站：四步（snap → arriveAt → 清 destination → 清 path）
             if (legRemaining <= 0.05 && v < 0.5) {
-                GlobalStation st = nav.destination;
                 snapVirtualTo(train, st);
-                try { train.arriveAt(st); } catch (Throwable ignored) {}
-                HexieTrain.LOGGER.info("[HexieTrain][arrive] {} → arriveAt()", st.name);
-                legRemaining = -1; lastLegDest = null;
+                try { train.arriveAt(st); } catch (Throwable t) { HexieTrain.LOGGER.warn("[HexieTrain][arrive] {}", t.toString()); }
+                try { var f2 = nav.getClass().getDeclaredField("currentPath"); f2.setAccessible(true); ((java.util.List<?>) f2.get(nav)).clear(); } catch (Throwable ignored) {}
+                nav.destination = null;
+                dwellingStation = st;
+                HexieTrain.LOGGER.info("[HexieTrain][arrive] {} 到站（物理车位置触发）", st.name);
+                legRemaining = -1;
+                lastLegDest = null;
             }
         } catch (Throwable t) { HexieTrain.LOGGER.warn("[HexieTrain][auto] {}", t.toString()); }
     }
+
 
     public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
         return new TrainDispatcherMenu(containerId, playerInventory, this);
@@ -918,6 +938,21 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
 
 
     /** 把虚拟车头点对齐到车站（一次性，仅到站时）。 */
+    /** 物理车当前位置到车站方块的水平距离（格）。 */
+    private double physicalDistanceTo(GlobalStation st) {
+        try {
+            var sl = (net.minecraft.server.level.ServerLevel) level;
+            var body = SubLevelSuspend.containing(sl, worldPosition);
+            if (body == null) return 0;
+            var p = body.logicalPose().position();
+            var n1 = st.edgeLocation.getFirst().getLocation();
+            var n2 = st.edgeLocation.getSecond().getLocation();
+            var mid = n1.add(n2).scale(0.5);
+            double dx = p.x() - mid.x, dz = p.z() - mid.z;
+            return Math.sqrt(dx * dx + dz * dz);
+        } catch (Throwable t) { return 0; }
+    }
+
     private void snapVirtualTo(Train train, GlobalStation st) {
         try {
             var graph = train.graph;
