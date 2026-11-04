@@ -166,6 +166,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     /** 时刻表卡在 PRE_TRANSIT 的计时。 */
     private int stallTicks = 0;
     private int rebindCooldown = 0;
+    private int missingTicks = 0;
     private boolean leakSwept = false;
 
     /** true = 玩家操控中（暂停自动寻路）；false = 自动驾驶中。 */
@@ -398,20 +399,12 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
 
     /** 由 DispatcherTicker 每 tick 调用。 */
     public void serverTick() {
-        if (!leakSwept) {
-            leakSwept = true;
-            try {
-                java.util.List<UUID> stale = new java.util.ArrayList<>(TrainBinder.OUR_TRAINS);
-                stale.removeAll(TrainBinder.SUBLEVEL_TRAINS.values());
-                stale.remove(boundTrain);
-                for (UUID id : stale) TrainBinder.unregister(id);
-                if (!stale.isEmpty()) HexieTrain.LOGGER.info("[HexieTrain][clean] 清理泄露列车 {} 辆", stale.size());
-            } catch (Throwable ignored) {}
-        }
         updateMeasuredSpeed();
         try {
             if (boundTrain != null && !Create.RAILWAYS.trains.containsKey(boundTrain)) {
-                HexieTrain.LOGGER.warn("[HexieTrain][run] RAILWAYS 找不到列车 {}，保留绑定等待", boundTrain);
+                if (missingTicks % 200 == 0)
+                    HexieTrain.LOGGER.warn("[HexieTrain][run] RAILWAYS 缺列车 {}（{} tick）", boundTrain, missingTicks);
+                if (missingTicks++ > 100) { boundTrain = null; missingTicks = 0; }   // 5 秒仍无 → 允许重绑
                 return;
             }
             if (boundTrain == null && !scheduleSlot.isEmpty() && rebindCooldown-- <= 0 && level instanceof ServerLevel
