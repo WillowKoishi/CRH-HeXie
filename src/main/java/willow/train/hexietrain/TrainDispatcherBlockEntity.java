@@ -135,6 +135,8 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
 
     /** 自动模式下传动要输出的方向：+1 正传、-1 反传、0 断开。 */
     private float autoDirection = 0f;
+    /** true = 物理传动方向与 Create 的轨道前进方向相反（硬件接线决定，一次校准后持久）。 */
+    private boolean driveReversed = false;
 
     /** 输出传动比 0~1：视距内按加速度渐变到 1，视距外直接用二进制。 */
     private float outputRatio = 0f;
@@ -288,6 +290,80 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
      * 传动比由 getRotationSpeedModifier 按左右红石直接决定，
      * 转速则由上游传动轴提供。
      */
+    // ══════════ 【重写】调度器运行逻辑 ══════════
+
+    /** 自动模式：一切由 Create 的导航决定方向与距离，我们只负责输出传动与刹车。 */
+    /** 保证列车有"列车员"标志：DestinationInstruction.start 的第一道门槛。 */
+    private void ensureConductors(Train train) {
+        try {
+            if (train == null) return;
+            for (var c : train.carriages) {
+                if (c.presentConductors == null) continue;
+                c.presentConductors.replace(v -> Boolean.TRUE);
+            }
+        } catch (Throwable ignored) {}
+    }
+
+    private void tickAutomated() {
+        try {
+            Train train = Create.RAILWAYS.trains.get(boundTrain);
+            if (train == null) { boundTrain = null; return; }
+            ensureConductors(train);
+
+            int left = leftSignal(), right = rightSignal();
+            boolean redstonePresent = left > 0 || right > 0;
+
+            // 玩家给红石 → 单向切到手动，此后不再自动驱动（要恢复请点 UI 或重设列车）
+            if (redstonePresent) {
+                if (!manualMode) setManualMode(true);
+                double dir = left > 0 ? 1.0 : -1.0;
+                double mag = Math.max(left, right) / 15.0;
+                train.manualTick = true;
+                train.targetSpeed = dir * mag * MANUAL_MAX_SPEED;
+                train.approachTargetSpeed(1.0f);
+                return;
+            }
+
+            // 手动模式但红石撤掉：停车等待，不自动接管
+            if (manualMode) {
+                setAutoDirection(0f);
+                SetOutputBrake(15);
+                return;
+            }
+
+            driveToStation(train);
+        } catch (Throwable t) {
+            HexieTrain.LOGGER.warn("[HexieTrain][auto] 异常: {}", t.toString());
+        }
+    }
+
+    /**
+     * 设定传动方向（自动模式）。
+     *
+     * <p>本方块是定向换向器：必须先写 blockstate 的 LEFT/RIGHT_POWERED，
+     * 再 detach+attach 重建动力学网络，getRotationSpeedModifier 才会生效。
+     * 只调用 blockUpdated 是无效的（旧实现的错误）。
+     */
+    private void setAutoDirection(float dir) {
+        if (Math.abs(dir - autoDirection) < 1.0E-4f) return;
+        autoDirection = dir;
+        if (!(level instanceof ServerLevel sl)) return;
+        try {
+            BlockState st = getBlockState();
+            if (!(st.getBlock() instanceof TrainDispatcherBlock block)) return;
+            float eff = dir * (driveReversed ? -1.0f : 1.0f);
+            boolean left = eff > 0.001f;
+            boolean right = eff < -0.001f;
+            if (st.getValue(TrainDispatcherBlock.LEFT_POWERED) == left
+                    && st.getValue(TrainDispatcherBlock.RIGHT_POWERED) == right) return;
+            sl.setBlock(worldPosition, st.setValue(TrainDispatcherBlock.LEFT_POWERED, left)
+                    .setValue(TrainDispatcherBlock.RIGHT_POWERED, right), 3);
+            block.detachKinetics(sl, worldPosition, true);
+        } catch (Throwable t) {
+            HexieTrain.LOGGER.warn("[HexieTrain][kinetics] 写输出失败: {}", t.toString());
+        }
+    }
+
     private void tickManual() {
         boolean manual = leftSignal() > 0 || rightSignal() > 0;
         if (manual != manualMode) {
@@ -297,153 +373,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         }
     }
 
-    /** 自动：读列车状态 → 制动曲线 → 三通道输出 + 反向传动。 */
-    private void tickAutomated() {
-        Train train = Create.RAILWAYS.trains.get(boundTrain);
-        if (train == null) {
-            HexieTrain.LOGGER.warn("[HexieTrain][run] RAILWAYS 里找不到列车 {}，解除绑定", boundTrain);
-            boundTrain = null;
-            return;
-        }
-
-        // 目的地是否刚变（用对象身份比较，避免依赖字段名）
-        Object destination = train.navigation == null ? null : train.navigation.destination;
-        boolean destinationNew = destination != lastDestination;
-        lastDestination = destination;
-
-        TrainStateReader.State st = TrainStateReader.read(train);
-        lastDistance = st.hasTarget() ? st.distance() : 0;
-        String targetName = "";
-        if (train.navigation != null && train.navigation.destination != null) {
-            try {
-                targetName = String.valueOf(train.navigation.destination.name);
-            } catch (Throwable ignored) {
-                targetName = "";
-            }
-        } else if (st.targetIsSignal()) {
-            targetName = "前方信号";
-        }
-        if (!targetName.equals(nextTargetName)) {
-            nextTargetName = targetName;
-            sendData();
-        }
-
-        // ① 刹车通道（做了平方根补偿）
-        // ① 刹车通道：由 driveToStation 计算并写入，这里不再覆盖
-        // （旧 BrakeController 已删除）
-
-        // ③ 反向传动逼停：反推强度 → 负转速；但没红石就不输出
-        int left = leftSignal();
-        int right = rightSignal();
-        boolean redstonePresent = left > 0 || right > 0;
-
-        // 红石一介入 → 自动切到"玩家操控"，并暂停自动寻路
-        if (redstonePresent && !manualMode) {
-            setManualMode(true);
-        }
-
-        // ③b 手动接管：左右红石直接给影子车速度（位置由 TravellingPoint 推进，
-        if (redstonePresent) {
-            double dir = left > 0 ? 1.0 : -1.0;
-            double mag = Math.max(left, right) / 15.0;
-            // 用 Create 自己的手动驾驶通道，别硬写 speed（会被 tickPassiveSlowdown 吃掉）
-            train.manualTick = true;
-            train.targetSpeed = dir * mag * MANUAL_MAX_SPEED;
-            // 关键：approachTargetSpeed 平时由车厢实体调用，我们没有实体，必须自己调
-            train.approachTargetSpeed(1.0f);
-        } else if (train.manualTick) {
-            train.manualTick = false;
-            train.targetSpeed = 0;
-            train.approachTargetSpeed(1.0f);
-        }
-
-        // 玩家操控模式：只按红石直驱，不跑自动制动曲线
-        if (manualMode && redstonePresent) {
-            // 手动：物理体由转速驱动，影子车跟着它的真实速度走（速度以物理体为准）
-            train.speed = bodySpeedAlongTrackBps() / 20.0;
-            double dir = left > 0 ? 1.0 : -1.0;
-            double mag = Math.max(left, right) / 15.0;
-            train.manualTick = true;
-            train.targetSpeed = dir * mag * MANUAL_MAX_SPEED;
-            // 直接赋速度：Create 的 acceleration() 只有 ~0.0013 格/tick²，
-            // 靠 approachTargetSpeed 爬升要 20 秒才看得出动，手动操控必须立刻响应
-            train.speed = train.targetSpeed;
-            // 左转/右转是"给转向架的输出通道"，不是输入的回显
-            setOutput(SignalChannel.BRAKE, 0);
-            // ★ 手动模式也要输出动力：方向+强度直接换算成转速
-
-        }
-
-        // ── 到站补齐 ──
-        // Create 自己的到站是靠 TravellingPoint 的边点监听触发的。
-        // 影子车的轨道点是复制来的，压过车站边点时监听不一定被触发，
-        // 结果就是"滑进站了但站牌不立、时刻表也以为没到"。
-        // 这里在距离足够近时主动补一次 arriveAt。
-        // ── 到站判定：用车站的精确坐标做"穿越检测"，不猜距离 ──
-        //
-        // GlobalStation 继承 SingleBlockEntityEdgePoint，暴露了 blockEntityPos，
-        // 所以我们能拿到车站的确切坐标；再用"车头这一 tick 是否跨过该点"来判定到站，
-        // 而不是设一个"距离足够近"的阈值。
-        if (train.navigation.destination != null) {
-            GlobalStation arriveTarget = train.navigation.destination;
-            try {
-                net.minecraft.world.phys.Vec3 cur =
-                        train.carriages.get(0).getLeadingPoint().getPosition(train.graph);
-                if (cur != null) {
-                    net.minecraft.world.phys.Vec3 stationPos =
-                            net.minecraft.world.phys.Vec3.atCenterOf(arriveTarget.getBlockEntityPos());
-
-                    if (lastLeadPos != null && train.getCurrentStation() != arriveTarget) {
-                        net.minecraft.world.phys.Vec3 move = cur.subtract(lastLeadPos);
-                        if (move.lengthSqr() > 1.0E-9) {
-                            double before = stationPos.subtract(lastLeadPos).dot(move);
-                            double after = stationPos.subtract(cur).dot(move);
-                            // 车站点在"上一位置→当前位置"这段位移的两侧 = 本 tick 跨过了它
-                            if (before >= 0 && after <= 0) {
-                                train.arriveAt(arriveTarget);
-                                HexieTrain.LOGGER.info(
-                                        arriveTarget.name, arriveTarget.getBlockEntityPos(),
-                                        String.format("%.2f,%.2f,%.2f", cur.x, cur.y, cur.z));
-                            }
-                        }
-                    }
-                    lastLeadPos = cur;
-
-                }
-            } catch (Throwable t9) {
-            }
-        } else {
-            lastLeadPos = null;
-        }
-
-        // ③c 诊断：每 2 秒打一次列车状态
-        // 卡滞检测：时刻表在 PRE_TRANSIT 且没有目的地 = 目标车站不存在/无可行路径
-        if (train.navigation.destination == null && !redstonePresent
-                && train.runtime.state == com.simibubi.create.content.trains.schedule.ScheduleRuntime.State.PRE_TRANSIT) {
-            if (++stallTicks % 200 == 1) {
-                String wanted = stopNames.isEmpty() ? "（空）"
-                        : stopNames.get(Math.min(train.runtime.currentEntry, stopNames.size() - 1));
-                HexieTrain.LOGGER.warn("[HexieTrain] 卡住：目标={} state={} dest={} fwd={} bwd={} entry={}/{}",
-                        wanted, train.runtime.state, train.navigation.destination,
-                        train.hasForwardConductor(), train.hasBackwardConductor(),
-                        train.runtime.currentEntry,
-                        train.runtime.schedule == null ? -1 : train.runtime.schedule.entries.size());
-            }
-        } else {
-            stallTicks = 0;
-        }
-
-
-        // 简化自动驾驶：有时刻表就直接朝车站开
-        // 兜底：只要不是"行驶中/滑车/急刹"，一律回到待命
-        setDispatcherState(DispatcherState.IDLE);
-
-        if (train.runtime.schedule != null && !manualMode) {
-            tickOutputRamp();
-            driveToStation(train);
-        }
-
-    }
 
     /** 红石状态变化回调：手动模式下立刻重算转速，不用等下一 tick 的轮询。 */
     public void onRedstoneChanged() {
@@ -967,15 +896,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         setOutput(SignalChannel.BRAKE, Math.max(0, Math.min(15, value)));
     }
 
-    /** 设置自动模式下的传动方向（会重建动力网络，让新传动比立刻生效）。 */
-    private void setAutoDirection(float dir) {
-        if (Math.abs(dir - autoDirection) < 1.0E-4f) return;
-        autoDirection = dir;
-        if (level != null && !level.isClientSide
-                && getBlockState().getBlock() instanceof TrainDispatcherBlock block) {
-            level.blockUpdated(worldPosition, block);   // 安全刷新，不再摘网络
-        }
-    }
 
     /** 强制让 Create 重新评估本方的传动比。 */
     private void refreshKinetics() {
@@ -998,35 +918,6 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     }
 
 
-    /**
-     * 输出转速渐变：0→满值按加速度决定，a=1 时 1 秒（20 tick）走完 0~100%。
-     *
-     * <p>Create 的动力网络是缓存的，所以只在比例跨过 5% 台阶时才重建一次，
-     * 避免每 tick detachKinetics 造成网络抖动。</p>
-     */
-    private void tickOutputRamp() {
-        float targetRatio = (!manualMode && boundTrain != null && autoDirection != 0f) ? 1f : 0f;
-        // 起步顺序固定：先松刹车 → 再给传动
-        if (targetRatio > 0f && output(SignalChannel.BRAKE) != 0) {
-            setOutput(SignalChannel.BRAKE, 0);
-        }
-        float step = 1.0f;    // 不再做转速渐变：一步到位
-
-        float next = outputRatio;
-        if (Math.abs(targetRatio - outputRatio) <= step) {
-            next = targetRatio;
-        } else {
-            next = outputRatio + Math.signum(targetRatio - outputRatio) * step;
-        }
-        if (Math.abs(next - outputRatio) < 1.0E-4f) return;
-        outputRatio = next;
-
-        int quantum = (int) (outputRatio * 20f);
-        if (quantum != lastRatioQuantum) {
-            lastRatioQuantum = quantum;
-            refreshKinetics();
-        }
-    }
 
     /** 本方块是否是这列车的主调度器（一列车只允许一个输出传动）。 */
     private boolean isPrimaryDispatcher() {
