@@ -338,38 +338,55 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     }
 
     /**
-     * 设定传动方向（自动模式）。
+     * 一次判定：方块的"左"是否就是虚拟列车定义的前进方向。
      *
-     * <p>本方块是定向换向器：必须先写 blockstate 的 LEFT/RIGHT_POWERED，
-     * 再 detach+attach 重建动力学网络，getRotationSpeedModifier 才会生效。
-     * 只调用 blockUpdated 是无效的（旧实现的错误）。
-     */
-    /**
-     * 方块的"左"是否就是虚拟列车定义的前进方向。
-     *
-     * <p>依据：LEFT_POWERED 对应 getLeftDirection(state) = FACING，
-     * 而虚拟车的前进方向是车头点所在边的 node1→node2 切线。
-     * 两者点积 > 0 表示方块左边就是前进方向。只算一次。
+     * <p>依据 Simurail 的 PhysicsBogeyBlockEntity：
+     * <ul>
+     *   <li>{@code getMovementSpeed()} —— 整条传动链累乘后的行驶速度（带符号）</li>
+     *   <li>{@code getDirection()} —— 转向架的世界朝向</li>
+     * </ul>
+     * 两者相乘再投影到轨道切线，就是"这组输出让车沿轨道往哪走"。
+     * 只在时刻表切换导航/绑定时调用一次，结果锁定。
      */
     private boolean leftPolarity() {
         if (leftIsForward != null) return leftIsForward;
         leftIsForward = true;
         try {
-            BlockState st = getBlockState();
-            if (!(st.getBlock() instanceof TrainDispatcherBlock block)) return leftIsForward;
             Train train = Create.RAILWAYS.trains.get(boundTrain);
-            if (train == null || train.carriages.isEmpty()) return leftIsForward;
+            if (train == null || train.carriages.isEmpty() || !(level instanceof ServerLevel sl)) return leftIsForward;
             var lp = train.carriages.get(0).getLeadingPoint();
             if (lp == null || lp.edge == null) return leftIsForward;
-            net.minecraft.core.Direction leftDir = block.getLeftDirection(st);
             var tan = lp.edge.getDirection(true);
-            double dot = leftDir.getStepX() * tan.x + leftDir.getStepY() * tan.y + leftDir.getStepZ() * tan.z;
-            leftIsForward = dot > 0;
-            HexieTrain.LOGGER.info("[HexieTrain][dir] 左=%s 轨道切线=(%.2f,%.2f,%.2f) dot=%.2f → 左是前进=%s",
-                    leftDir, tan.x, tan.y, tan.z, dot, leftIsForward);
-        } catch (Throwable ignored) {}
+
+            double bestDot = 0;
+            boolean found = false;
+            for (net.minecraft.core.BlockPos bp : net.minecraft.core.BlockPos.betweenClosed(
+                    worldPosition.offset(-24, -8, -24), worldPosition.offset(24, 8, 24))) {
+                var be = sl.getBlockEntity(bp);
+                if (be == null) continue;
+                if (!be.getClass().getName().contains("PhysicsBogeyBlockEntity")) continue;
+                double ms;
+                org.joml.Vector3dc dir;
+                try {
+                    ms = (double) be.getClass().getMethod("getMovementSpeed").invoke(be);
+                    dir = (org.joml.Vector3dc) be.getClass().getMethod("getDirection").invoke(be);
+                } catch (Throwable t) { continue; }
+                double dot = ms * (dir.x() * tan.x + dir.y() * tan.y + dir.z() * tan.z);
+                if (Math.abs(dot) > Math.abs(bestDot)) { bestDot = dot; found = true; }
+            }
+            if (found && Math.abs(bestDot) > 1.0E-4) {
+                leftIsForward = bestDot > 0;
+                HexieTrain.LOGGER.info("[HexieTrain][dir] 转向架检测 dot={} → 左是前进={}",
+                        String.format("%.3f", bestDot), leftIsForward);
+            } else {
+                HexieTrain.LOGGER.info("[HexieTrain][dir] 转向架无速度，保留默认 左是前进=true");
+            }
+        } catch (Throwable t) {
+            HexieTrain.LOGGER.warn("[HexieTrain][dir] 判定失败: {}", t.toString());
+        }
         return leftIsForward;
     }
+
 
     private void setAutoDirection(float dir) {
         if (Math.abs(dir - autoDirection) < 1.0E-4f) return;
@@ -868,6 +885,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
             // ① 新的一段：取 Create 的沿轨长度当基准
             if (nav.destination != lastLegDest || train.runtime.currentEntry != lastLegEntry || legRemaining < 0) {
                 legRemaining = Math.max(0.0, nav.distanceToDestination);
+                leftIsForward = null;   // 换段：重新判定一次朝向
                 lastLegDest = nav.destination;
                 lastLegEntry = train.runtime.currentEntry;
                 HexieTrain.LOGGER.info("[HexieTrain][leg] 新段 → {} 沿轨长度={}", nav.destination.name,
