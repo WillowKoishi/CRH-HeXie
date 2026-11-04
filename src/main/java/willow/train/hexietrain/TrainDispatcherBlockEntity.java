@@ -444,7 +444,8 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
                 train.approachTargetSpeed(1.0f);
                 return;
             }
-            if (manualMode) { setAutoDirection(0f); SetOutputBrake(15); return; }
+            // 手动模式：blockstate 由 Block.neighborChanged 独占，我们绝不写（否则会抹掉红石状态）
+            if (manualMode) { SetOutputBrake(15); return; }
 
             driveToStation(train);
         } catch (Throwable t) {
