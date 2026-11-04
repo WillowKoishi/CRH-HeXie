@@ -135,8 +135,8 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
 
     /** 自动模式下传动要输出的方向：+1 正传、-1 反传、0 断开。 */
     private float autoDirection = 0f;
-    /** true = 物理传动方向与 Create 的轨道前进方向相反（硬件接线决定，一次校准后持久）。 */
-    private boolean driveReversed = false;
+    /** 方块的"左"是否就是虚拟列车定义的前进方向（绑定/放置时一次判定，之后不变）。 */
+    private Boolean leftIsForward = null;
 
     /** 输出传动比 0~1：视距内按加速度渐变到 1，视距外直接用二进制。 */
     private float outputRatio = 0f;
@@ -344,6 +344,33 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
      * 再 detach+attach 重建动力学网络，getRotationSpeedModifier 才会生效。
      * 只调用 blockUpdated 是无效的（旧实现的错误）。
      */
+    /**
+     * 方块的"左"是否就是虚拟列车定义的前进方向。
+     *
+     * <p>依据：LEFT_POWERED 对应 getLeftDirection(state) = FACING，
+     * 而虚拟车的前进方向是车头点所在边的 node1→node2 切线。
+     * 两者点积 > 0 表示方块左边就是前进方向。只算一次。
+     */
+    private boolean leftPolarity() {
+        if (leftIsForward != null) return leftIsForward;
+        leftIsForward = true;
+        try {
+            BlockState st = getBlockState();
+            if (!(st.getBlock() instanceof TrainDispatcherBlock block)) return leftIsForward;
+            Train train = Create.RAILWAYS.trains.get(boundTrain);
+            if (train == null || train.carriages.isEmpty()) return leftIsForward;
+            var lp = train.carriages.get(0).getLeadingPoint();
+            if (lp == null || lp.edge == null) return leftIsForward;
+            net.minecraft.core.Direction leftDir = block.getLeftDirection(st);
+            var tan = lp.edge.getDirection(true);
+            double dot = leftDir.getStepX() * tan.x + leftDir.getStepY() * tan.y + leftDir.getStepZ() * tan.z;
+            leftIsForward = dot > 0;
+            HexieTrain.LOGGER.info("[HexieTrain][dir] 左=%s 轨道切线=(%.2f,%.2f,%.2f) dot=%.2f → 左是前进=%s",
+                    leftDir, tan.x, tan.y, tan.z, dot, leftIsForward);
+        } catch (Throwable ignored) {}
+        return leftIsForward;
+    }
+
     private void setAutoDirection(float dir) {
         if (Math.abs(dir - autoDirection) < 1.0E-4f) return;
         autoDirection = dir;
@@ -351,9 +378,11 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         try {
             BlockState st = getBlockState();
             if (!(st.getBlock() instanceof TrainDispatcherBlock block)) return;
-            float eff = dir * (driveReversed ? -1.0f : 1.0f);
-            boolean left = eff > 0.001f;
-            boolean right = eff < -0.001f;
+            boolean wantForward = dir > 0.001f;
+            boolean wantReverse = dir < -0.001f;
+            // 方向 = "前进" 映射到方块自己那个朝向的极性，绝不靠反转传动凑
+            boolean left = wantForward ? leftPolarity() : (wantReverse ? !leftPolarity() : false);
+            boolean right = wantForward ? !leftPolarity() : (wantReverse ? leftPolarity() : false);
             if (st.getValue(TrainDispatcherBlock.LEFT_POWERED) == left
                     && st.getValue(TrainDispatcherBlock.RIGHT_POWERED) == right) return;
             sl.setBlock(worldPosition, st.setValue(TrainDispatcherBlock.LEFT_POWERED, left)
@@ -672,6 +701,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     }
 
     public void bindTrain(UUID id) {
+        leftIsForward = null;   // 重新判定朝向
         boundTrain = id;
         lastDestination = null;
         setChanged();
