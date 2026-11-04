@@ -513,11 +513,14 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     }
 
     /**
-     * 设定自动模式的方向：只驱动本方块自己的左右红石通道。
+     * 自动模式的传动输出。只在 !manualMode 时调用，因此 blockstate 所有权是互斥的：
+     * 手动模式由 Block.neighborChanged 独占，自动模式由这里独占。
      *
-     * <p>传输链：setOutput(LEFT/RIGHT) → 无线发射 → 方块旁的接收器 →
-     * 方块自身的红石输入 → Block.neighborChanged 写 LEFT/RIGHT_POWERED → 传动。
-     * 绝不直接写 blockstate（那是红石输入的唯一主人）。
+     * <p>同时做两件事：
+     * <ol>
+     *   <li>写 blockstate 的 LEFT/RIGHT_POWERED 并重建动力学网络 —— 这是扭矩来源</li>
+     *   <li>驱动无线通道 —— 给远程接收器（刹车/岔道）用</li>
+     * </ol>
      */
     private void setAutoDirection(float dir) {
         if (Math.abs(dir - autoDirection) < 1.0E-4f) return;
@@ -526,10 +529,23 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
         boolean forward = dir > 0.001f, reverse = dir < -0.001f;
         boolean left  = forward ? pol : (reverse ? !pol : false);
         boolean right = forward ? !pol : (reverse ? pol : false);
+
         setOutput(SignalChannel.LEFT,  left  ? 15 : 0);
         setOutput(SignalChannel.RIGHT, right ? 15 : 0);
         refreshWireless();
+
+        if (!(level instanceof ServerLevel sl)) return;
+        try {
+            BlockState st = getBlockState();
+            if (!(st.getBlock() instanceof TrainDispatcherBlock block)) return;
+            if (st.getValue(TrainDispatcherBlock.LEFT_POWERED) == left
+                    && st.getValue(TrainDispatcherBlock.RIGHT_POWERED) == right) return;
+            sl.setBlock(worldPosition, st.setValue(TrainDispatcherBlock.LEFT_POWERED, left)
+                    .setValue(TrainDispatcherBlock.RIGHT_POWERED, right), 3);
+            block.detachKinetics(sl, worldPosition, true);
+        } catch (Throwable t) { HexieTrain.LOGGER.warn("[HexieTrain][kinetics] {}", t.toString()); }
     }
+
 
 
     /** 沿轨距离核减 + 物理到站。 */
