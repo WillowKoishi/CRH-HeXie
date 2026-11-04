@@ -126,7 +126,7 @@ final class CreateAssemblyWorld implements AssemblyTraversal.Source<BlockPos> {
                 frontier.add(member);
             }
         } else if(state.getBlock() instanceof willow.train.hexie.blocks.parts.PartMemberBlock
-                ||state.getBlock() instanceof willow.train.hexie.blocks.locos.head.HeadFloorBlock
+                ||state.getBlock() instanceof willow.train.hexie.blocks.emu.head.HeadFloorBlock
                 ||state.getBlock() instanceof HexieBogeyBlock<?> && state.getValue(HexieBogeyBlock.HEAD_MOUNTED)) {
             throw new IllegalStateException("车辆部件缺少所属根: "+pos);
         }

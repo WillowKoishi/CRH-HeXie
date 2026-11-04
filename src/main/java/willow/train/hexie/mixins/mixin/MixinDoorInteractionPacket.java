@@ -9,7 +9,7 @@ import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import willow.train.hexie.blocks.locos.crh2a.CRH2DoorInteraction;
+import willow.train.hexie.blocks.emu.crh2a.CRH2DoorInteraction;
 import willow.train.hexie.blocks.coupler.CouplerInteraction;
 
 /** Keep vanilla handling, permitting only validated model surfaces outside their source cells. */

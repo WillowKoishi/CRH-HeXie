@@ -2,8 +2,8 @@ package willow.train.hexie.network.c2s;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import willow.train.hexie.blocks.locos.DrivingConsoleContext;
-import willow.train.hexie.blocks.locos.TestDrivingConsoleBlock;
+import willow.train.hexie.blocks.emu.DrivingConsoleContext;
+import willow.train.hexie.blocks.emu.TestDrivingConsoleBlock;
 import willow.train.hexie.compat.create.SnapshotCarriageEntity;
 
 /** Action only: the server derives the seat, console and owning train. */

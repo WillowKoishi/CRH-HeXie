@@ -1,5 +1,6 @@
 package willow.train.hexie.compat.create;
 
+import willow.train.hexie.blocks.emu.DrivingConsoleContext;
 import willow.train.hexie.vehicle.control.TrainControl;
 import willow.train.hexie.vehicle.control.CabControlArbitration;
 import willow.train.hexie.vehicle.control.CabController;
@@ -858,7 +859,7 @@ public final class AssembledVehicleMotion {
     public boolean updateCabKeyboard(Player player, SnapshotCarriageEntity car, BlockPos position,
                                      boolean toggleSimple, int mask) {
         if (!SimpleCabControls.validMask(mask)) return false;
-        var cab = willow.train.hexie.blocks.locos.DrivingConsoleContext.find(player);
+        var cab = DrivingConsoleContext.find(player);
         if (cab == null || !cab.console().equals(position)) return false;
         var state = cab.seatAccess().blockState(position);
         if (state == null || !(state.getBlock() instanceof willow.train.hexie.api.cab.CabControlHost host)) return false;
@@ -873,13 +874,13 @@ public final class AssembledVehicleMotion {
         }, mask);
     }
 
-    public boolean updateCabControls(SnapshotCarriageEntity car, willow.train.hexie.blocks.locos.DrivingConsoleContext cab,
+    public boolean updateCabControls(SnapshotCarriageEntity car, DrivingConsoleContext cab,
             Player player, java.util.function.BiFunction<willow.train.hexie.vehicle.control.CabModule.State, Double,
                     willow.train.hexie.vehicle.control.CabModule.State> input) {
         return updateCabControls(car, cab, player, input, -1);
     }
 
-    private boolean updateCabControls(SnapshotCarriageEntity car, willow.train.hexie.blocks.locos.DrivingConsoleContext cab,
+    private boolean updateCabControls(SnapshotCarriageEntity car, DrivingConsoleContext cab,
             Player player, java.util.function.BiFunction<CabModule.State, Double, CabModule.State> input, int keyboardMask) {
         var state = cab.seatAccess().blockState(cab.console());
         if (!owns(car.getUUID()) || !player.isAlive() || player.isSpectator() || player.level() != level
@@ -1002,7 +1003,7 @@ public final class AssembledVehicleMotion {
                 var driver = e.getValue();
                 var input = driver.cabControls;
                 var player = level.getPlayerByUUID(driver.player);
-                var cab = willow.train.hexie.blocks.locos.DrivingConsoleContext.find(player);
+                var cab = DrivingConsoleContext.find(player);
                 boolean acceptsHeldKeys = driver.attended && cab != null && cab.console().equals(driver.pos)
                         && cab.seatAccess().vehicle().getUUID().equals(carriage)
                         && level.getGameTime() - driver.lastKeyboardInput <= 20;
@@ -1296,7 +1297,7 @@ public final class AssembledVehicleMotion {
             var player = level.getPlayerByUUID(driver.player);
             boolean expired = player == null || player.isSpectator();
             if (driver.cabControls != null) {
-                var cab = willow.train.hexie.blocks.locos.DrivingConsoleContext.find(player);
+                var cab = DrivingConsoleContext.find(player);
                 expired |= cab == null || !cab.seatAccess().vehicle().getUUID().equals(member)
                         || !cab.console().equals(driver.pos);
                 driver.attended = !expired;

@@ -3,9 +3,7 @@ package willow.train.hexie.item;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.context.UseOnContext;
-import willow.train.hexie.blockentity.CRH2PartEntity;
-import willow.train.hexie.blocks.locos.crh2a.CRH2PanelBlock;
-import willow.train.hexie.blocks.locos.crh2a.HarmonyMarking;
+import willow.train.hexie.blocks.emu.crh2a.HarmonyMarking;
 
 public final class HarmonyLogoItem extends Item {
     public HarmonyLogoItem(Properties properties) { super(properties); }

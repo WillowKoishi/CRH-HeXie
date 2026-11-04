@@ -11,8 +11,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import willow.train.hexie.blocks.parts.*;
-import willow.train.hexie.blocks.locos.crh2a.CRH2PartBlock;
-import willow.train.hexie.blocks.locos.head.*;
+import willow.train.hexie.blocks.emu.crh2a.CRH2PartBlock;
+import willow.train.hexie.blocks.emu.head.*;
 
 /** Create's printer supplies target states; all member writes belong to the same item transaction. */
 public final class PartSchematicPlacement {

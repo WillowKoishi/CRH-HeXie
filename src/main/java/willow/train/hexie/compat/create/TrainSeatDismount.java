@@ -3,6 +3,7 @@ package willow.train.hexie.compat.create;
 import com.simibubi.create.content.contraptions.AbstractContraptionEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
+import willow.train.hexie.blocks.emu.DrivingConsoleContext;
 
 /** Exit one block behind the operation point, away from its driving console. */
 public final class TrainSeatDismount {
@@ -18,7 +19,7 @@ public final class TrainSeatDismount {
 
     public static Vec3 localBehind(AbstractContraptionEntity entity, BlockPos seat) {
         var world = entity.getContraption().getContraptionWorld();
-        var facing = willow.train.hexie.blocks.locos.DrivingConsoleContext.consoleFacing(seat, world::getBlockState);
+        var facing = DrivingConsoleContext.consoleFacing(seat, world::getBlockState);
         return facing == null ? null : Vec3.atBottomCenterOf(seat.relative(facing.getOpposite()));
     }
 }

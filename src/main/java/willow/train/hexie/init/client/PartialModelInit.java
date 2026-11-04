@@ -3,7 +3,7 @@ package willow.train.hexie.init.client;
 import dev.engine_room.flywheel.lib.model.baked.PartialModel;
 
 import willow.train.hexie.Main;
-import willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock;
+import willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock;
 
 
 

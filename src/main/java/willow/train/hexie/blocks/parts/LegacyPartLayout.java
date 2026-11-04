@@ -17,7 +17,7 @@ public final class LegacyPartLayout {
         return supports(state)?state.setValue(OCCUPIED,true):state;
     }
     public static boolean supports(BlockState state) {
-        return !(state.getBlock() instanceof willow.train.hexie.blocks.locos.crh2a.CRH2PartBlock)
+        return !(state.getBlock() instanceof willow.train.hexie.blocks.emu.crh2a.CRH2PartBlock)
                 &&state.hasProperty(OCCUPIED)&&PartDefinitions.get(state).extension()==PartDefinitions.Extension.SIDE;
     }
     public static Map<BlockPos,BlockState> cells(BlockGetter level,BlockPos root,BlockState state) {

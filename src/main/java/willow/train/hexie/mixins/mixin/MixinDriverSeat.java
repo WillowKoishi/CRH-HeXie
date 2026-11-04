@@ -6,7 +6,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import willow.train.hexie.blocks.locos.CRH2DriverSeatBlock;
+import willow.train.hexie.blocks.emu.CRH2DriverSeatBlock;
 
 /** Keep the native seat entity and lifecycle; only this cab has a different riding position. */
 @Mixin(SeatEntity.class)

@@ -34,6 +34,6 @@ public final class TestCabControls {
                 view.brake() == 11 && brake != 11, powerAmount, reverser, speed);
         return new CabModule.State(new CabController.Input(powerAmount, converted.brake(), reverser),
                 automatic ? CabController.Mode.AUTOMATIC : CabController.Mode.MANUAL,
-                converted.state(), previous.approachHeld(), reverser != 0, previous.simple());
+                converted.state(), previous.approachHeld(), reverser != 0, previous.simple(), previous.handlePositions());
     }
 }

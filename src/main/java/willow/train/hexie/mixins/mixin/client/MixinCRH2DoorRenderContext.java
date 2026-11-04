@@ -15,7 +15,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock;
+import willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock;
 import willow.train.hexie.client.render.CRH2DoorRenderContext;
 
 /** Keep Create's renderer dispatch, exposing its authoritative light transform only while drawing a CRH2 door. */

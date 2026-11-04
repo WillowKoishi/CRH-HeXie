@@ -5,11 +5,9 @@ import com.mojang.math.Axis;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
-import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.AABB;
 import willow.train.hexie.blockentity.CRH2PartEntity;
-import willow.train.hexie.blocks.locos.crh2a.CRH2PanelBlock;
 import willow.train.hexie.client.sign.SignLettering;
 import willow.train.hexie.client.sign.SignTextRenderer;
 
@@ -35,7 +33,7 @@ public final class CarriageMarkingRenderer implements BlockEntityRenderer<CRH2Pa
         for(int slot=0;slot<block.markingSlots(state);slot++) {
             if(entity.harmony(slot)==0)continue;
             boolean right=entity.harmony(slot)==2;
-            var layout=willow.train.hexie.blocks.locos.crh2a.HarmonyMarking.layout(localBounds.minX+slot,localBounds.maxY,right);
+            var layout= willow.train.hexie.blocks.emu.crh2a.HarmonyMarking.layout(localBounds.minX+slot,localBounds.maxY,right);
             SignTextRenderer.drawDecal(ResourceLocation.fromNamespaceAndPath("hexie",
                     "textures/logo/crh-chinarailwayhighspeed"+(right ? "_r" : "")+".png"),pose,buffers,
                     layout.left(),layout.top(),layout.width(),layout.height(),light,

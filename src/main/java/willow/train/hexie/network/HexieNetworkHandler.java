@@ -32,7 +32,8 @@ public final class HexieNetworkHandler {
         register(HeadNumberUpdatePacket.class, HeadNumberUpdatePacket::new);
         register(CarriageMarkingUpdatePacket.class, CarriageMarkingUpdatePacket::new);
         register(CabKeyboardPacket.class, CabKeyboardPacket::new);
-        var registrar = event.registrar("4");
+        register(Crh2CabHandlePacket.class, Crh2CabHandlePacket::new);
+        var registrar = event.registrar("5");
         registrar.playToClient(willow.train.hexie.network.s2c.CouplerDefinitionsPacket.TYPE,
                 willow.train.hexie.network.s2c.CouplerDefinitionsPacket.CODEC, (packet, context) -> packet.handle(context));
         registrar.playToServer(CarriagePlayerMovePacket.TYPE, CarriagePlayerMovePacket.CODEC,

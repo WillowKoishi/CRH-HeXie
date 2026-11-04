@@ -11,7 +11,8 @@ import net.neoforged.neoforge.client.event.ViewportEvent;
 import org.joml.Matrix3f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import willow.train.hexie.blocks.locos.DrivingConsoleContext;
+import willow.train.hexie.blocks.emu.CRH2DriverSeatBlock;
+import willow.train.hexie.blocks.emu.DrivingConsoleContext;
 import willow.train.hexie.client.cab.CabViewRotation;
 
 /** Relative eye position and mouse look for captured seats; no dependency on a particular vehicle backend. */
@@ -34,7 +35,11 @@ public final class DrivingConsoleCamera {
         if (!context.equals(active) || rider != player) {
             active = context; rider = player;
             var frame = frame(1);
-            localEye = active.seatAccess().toLocal(player.getEyePosition(1), 1);
+            var seat = context.seatAccess();
+            var seatState = seat.blockState(seat.seat());
+            localEye = seatState != null && seatState.getBlock() instanceof CRH2DriverSeatBlock
+                    ? Vec3.atLowerCornerOf(seat.seat()).add(CRH2DriverSeatBlock.driverEyePosition(seatState))
+                    : seat.toLocal(player.getEyePosition(1), 1);
             var direction = new Vector3f((float) player.getLookAngle().x, (float) player.getLookAngle().y,
                     (float) player.getLookAngle().z);
             look.start(frame.rotation.transformInverse(direction));
@@ -44,7 +49,7 @@ public final class DrivingConsoleCamera {
 
     public static boolean turn(Entity entity, double horizontal, double vertical) {
         if (entity != Minecraft.getInstance().player || !DrivingConsoleClient.capturesInput() || !update()) return false;
-        look.turn(horizontal, vertical);
+        if (!DrivingConsoleClient.draggingHandle()) look.turn(horizontal, vertical);
         return true;
     }
 

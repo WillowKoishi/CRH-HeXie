@@ -20,6 +20,7 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 import org.jetbrains.annotations.NotNull;
+import willow.train.hexie.blocks.emu.ConsoleSeatPlacement;
 
 
 public class RZSeatBlock extends SeatBlock implements IWrenchable {
@@ -65,7 +66,7 @@ public class RZSeatBlock extends SeatBlock implements IWrenchable {
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext ctx) {
         return this.defaultBlockState()
-                .setValue(FACING, willow.train.hexie.blocks.locos.ConsoleSeatPlacement.facing(ctx))
+                .setValue(FACING, ConsoleSeatPlacement.facing(ctx))
                 .setValue(WATERLOGGED, false);
     }
 

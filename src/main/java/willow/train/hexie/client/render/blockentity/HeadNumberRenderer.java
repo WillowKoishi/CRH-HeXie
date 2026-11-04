@@ -8,8 +8,8 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.AABB;
 import willow.train.hexie.blockentity.CRH2HeadEntity;
-import willow.train.hexie.blocks.locos.head.CRH2HeadBlock;
-import willow.train.hexie.blocks.locos.head.HeadGeometry;
+import willow.train.hexie.blocks.emu.head.CRH2HeadBlock;
+import willow.train.hexie.blocks.emu.head.HeadGeometry;
 import willow.train.hexie.client.sign.SignTextRenderer;
 
 /** Decals on the authored lower side panels, below the blue stripe and ahead of the cab doors. */

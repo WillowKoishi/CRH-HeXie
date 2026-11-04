@@ -14,7 +14,7 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.client.event.*;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import org.lwjgl.glfw.GLFW;
-import willow.train.hexie.blocks.locos.DrivingConsoleContext;
+import willow.train.hexie.blocks.emu.DrivingConsoleContext;
 import willow.train.hexie.api.cab.CabControlHost;
 import willow.train.hexie.api.cab.CabControlHost.KeyboardAction;
 import willow.train.hexie.api.cab.CabControlHost.KeyboardBinding;
@@ -22,21 +22,36 @@ import willow.train.hexie.api.cab.CabControlHost.MouseAction;
 import willow.train.hexie.api.cab.CabControlHost.MouseBinding;
 import willow.train.hexie.network.HexieNetworkHandler;
 import willow.train.hexie.network.c2s.CabKeyboardPacket;
+import willow.train.hexie.client.cab.Crh2CabPresentation;
+import willow.train.hexie.init.block.BlockInit;
+import willow.train.hexie.vehicle.control.Crh2CabHandle;
 
 @EventBusSubscriber(modid = "hexie", value = Dist.CLIENT)
 public final class DrivingConsoleClient {
     private static DrivingConsoleContext context;
     private static boolean pointer;
+    private static Crh2CabDrag drag;
     private static final Set<InputConstants.Key> capturedKeys = new HashSet<>();
     private static final Set<InputConstants.Key> suppressedMappings = new HashSet<>();
     private static int lastMask = -1, inputTicks;
     private static double zoom = 1, renderedFov = 70;
 
     public static DrivingConsoleContext context() { return context; }
+    static boolean draggingHandle() { return drag != null; }
 
     public static boolean capturesInput() {
         var mc = Minecraft.getInstance();
         return context != null && mc.screen == null && mc.getOverlay() == null && mc.isWindowActive();
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void renderArm(RenderArmEvent event) {
+        var mc = Minecraft.getInstance();
+        if (context == null || event.getPlayer() != mc.player || mc.getCameraEntity() != mc.player
+                || !mc.options.getCameraType().isFirstPerson()) return;
+        var seat = context.seatAccess();
+        if (mc.player.getVehicle() == seat.vehicle() && !seat.cabControls(context.console()).simple())
+            event.setCanceled(true);
     }
 
     @SubscribeEvent
@@ -45,6 +60,8 @@ public final class DrivingConsoleClient {
         var next = DrivingConsoleContext.find(mc.player);
         if (!java.util.Objects.equals(context, next)) {
             boolean wasActive = context != null;
+            if (drag != null && capturesInput()) mc.mouseHandler.handleAccumulatedMovement();
+            drag = null;
             releaseInput();
             releaseMappings();
             context = next; pointer = false; zoom = 1;
@@ -69,9 +86,17 @@ public final class DrivingConsoleClient {
             }
             for (var key : claimed) KeyMapping.set(key, false);
             suppressedMappings.clear(); suppressedMappings.addAll(claimed);
-            if (pointer && mc.mouseHandler.isMouseGrabbed()) mc.mouseHandler.releaseMouse();
-            if (!pointer && !mc.mouseHandler.isMouseGrabbed()) mc.mouseHandler.grabMouse();
+            if (drag != null) {
+                if (!isNonstandardConsole() || !drag.fits(mc.getWindow())
+                        || GLFW.glfwGetMouseButton(mc.getWindow().getWindow(), drag.button) != GLFW.GLFW_PRESS)
+                    endDrag(mc);
+                else drag.update(mc.getWindow());
+            }
+            boolean showCursor = pointer || drag != null;
+            if (showCursor && mc.mouseHandler.isMouseGrabbed()) mc.mouseHandler.releaseMouse();
+            if (!showCursor && !mc.mouseHandler.isMouseGrabbed()) mc.mouseHandler.grabMouse();
         } else {
+            drag = null;
             releaseInput();
             releaseMappings();
         }
@@ -126,7 +151,7 @@ public final class DrivingConsoleClient {
     }
 
     private static void sendKeyboard(boolean toggleSimple, int mask) {
-        if (context == null) return;
+        if (context == null || Minecraft.getInstance().getConnection() == null) return;
         HexieNetworkHandler.sendToServer(new CabKeyboardPacket(context.seatAccess().vehicle().getId(), toggleSimple, mask));
         lastMask = mask;
     }
@@ -178,22 +203,62 @@ public final class DrivingConsoleClient {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void mouse(InputEvent.MouseButton.Pre event) {
         if (!capturesInput()) return;
+        if (drag != null && event.getButton() == drag.button) {
+            event.setCanceled(true);
+            if (event.getAction() == GLFW.GLFW_RELEASE) {
+                var mc = Minecraft.getInstance();
+                if (isNonstandardConsole() && drag.fits(mc.getWindow())) drag.update(mc.getWindow());
+                endDrag(mc);
+            }
+            return;
+        }
         var binding = mouseBindings().stream().filter(candidate -> candidate.button() == event.getButton()).findFirst().orElse(null);
         if (binding == null) return;
         event.setCanceled(true);
-        if (event.getAction() != GLFW.GLFW_PRESS) return;
+        if (event.getAction() != GLFW.GLFW_PRESS || drag != null) return;
         if (binding.action() == MouseAction.POINTER) {
             pointer = !pointer;
             if (pointer) Minecraft.getInstance().mouseHandler.releaseMouse();
             else Minecraft.getInstance().mouseHandler.grabMouse();
-        } else if (binding.action() == MouseAction.INTERACT) click();
+        } else if (binding.action() == MouseAction.INTERACT) {
+            var ray = consoleRay();
+            var handle = isNonstandardConsole() ? hitHandle(ray) : null;
+            if (handle == null) NeoForge.EVENT_BUS.post(ray);
+            else drag = new Crh2CabDrag(Minecraft.getInstance(), context, handle, event.getButton(), pointer);
+        }
+    }
+
+    private static boolean isNonstandardConsole() {
+        var mc = Minecraft.getInstance();
+        if (context == null || mc.player == null || mc.player.getVehicle() != context.seatAccess().vehicle()) return false;
+        var state = context.seatAccess().blockState(context.console());
+        return state != null && state.is(BlockInit.CRH2A_NONSTANDARD_DRIVING_CONSOLE.get());
+    }
+
+    private static Crh2CabHandle hitHandle(DrivingConsoleClickEvent ray) {
+        return Crh2CabPresentation.hit(context, ray.origin, ray.direction);
+    }
+
+    private static void endDrag(Minecraft mc) {
+        if (pointer) drag.restorePointer(mc.getWindow());
+        else {
+            // Flush the ungrabbed cursor movement before Minecraft resumes mouse look.
+            mc.mouseHandler.handleAccumulatedMovement();
+            mc.mouseHandler.grabMouse();
+        }
+        drag = null;
+    }
+
+    @SubscribeEvent
+    public static void openingScreen(ScreenEvent.Opening event) {
+        drag = null;
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void scroll(InputEvent.MouseScrollingEvent event) {
         if (!capturesInput() || !scrollControlsZoom()) return;
         event.setCanceled(true);
-        zoom = Math.clamp(zoom * Math.pow(1.12, event.getScrollDeltaY()), .5, 4);
+        if (drag == null) zoom = Math.clamp(zoom * Math.pow(1.12, event.getScrollDeltaY()), .5, 4);
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
@@ -208,10 +273,22 @@ public final class DrivingConsoleClient {
         if (context == null) return;
         if (event.getName().equals(VanillaGuiLayers.HOTBAR)
                 || event.getName().equals(VanillaGuiLayers.SELECTED_ITEM_NAME)
-                || pointer && event.getName().equals(VanillaGuiLayers.CROSSHAIR)) event.setCanceled(true);
+                || (pointer || drag != null) && event.getName().equals(VanillaGuiLayers.CROSSHAIR)) event.setCanceled(true);
     }
 
-    private static void click() {
+    @SubscribeEvent
+    public static void handleHud(RenderGuiEvent.Post event) {
+        var mc = Minecraft.getInstance();
+        if (!capturesInput() || mc.options.hideGui || !isNonstandardConsole()) return;
+        if (drag != null) {
+            if (drag.fits(mc.getWindow())) drag.render(mc, event.getGuiGraphics());
+        } else {
+            var handle = hitHandle(consoleRay());
+            if (handle != null) Crh2CabDrag.tooltip(mc, event.getGuiGraphics(), context, handle, pointer);
+        }
+    }
+
+    private static DrivingConsoleClickEvent consoleRay() {
         var mc = Minecraft.getInstance();
         var camera = mc.gameRenderer.getMainCamera();
         var window = mc.getWindow();
@@ -223,7 +300,6 @@ public final class DrivingConsoleClient {
         Vec3 origin = camera.getPosition(), end = origin.add(ray.x, ray.y, ray.z);
         origin = context.toConsoleLocal(origin, camera.getPartialTickTime());
         end = context.toConsoleLocal(end, camera.getPartialTickTime());
-        NeoForge.EVENT_BUS.post(new DrivingConsoleClickEvent(context,
-                origin, end.subtract(origin).normalize()));
+        return new DrivingConsoleClickEvent(context, origin, end.subtract(origin).normalize());
     }
 }

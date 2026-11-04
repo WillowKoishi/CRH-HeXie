@@ -7,8 +7,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import willow.train.hexie.blockentity.CRH2HeadEntity;
-import willow.train.hexie.blocks.locos.head.HeadGeometry;
-import willow.train.hexie.blocks.locos.head.CRH2HeadBlock;
+import willow.train.hexie.blocks.emu.head.HeadGeometry;
+import willow.train.hexie.blocks.emu.head.CRH2HeadBlock;
 import willow.train.hexie.init.client.MenuInit;
 import willow.train.hexie.item.editable_panels.ColoredBrush;
 

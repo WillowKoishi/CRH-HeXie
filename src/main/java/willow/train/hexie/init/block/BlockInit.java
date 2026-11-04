@@ -15,11 +15,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import willow.train.hexie.Main;
 import willow.train.hexie.blocks.MegaphoneBlock;
+import willow.train.hexie.blocks.emu.CRH2DriverSeatBlock;
+import willow.train.hexie.blocks.emu.CRH2DrivingConsoleBlock;
+import willow.train.hexie.blocks.emu.TestDrivingConsoleBlock;
 import willow.train.hexie.blocks.locos.hxd3d.HXD3DCabDoorBlock;
 import willow.train.hexie.blocks.locos.hxd3d.HXD3DPanelBlocks;
 import willow.train.hexie.blocks.locos.PantographBlock;
-import willow.train.hexie.blocks.locos.crh2a.CRH2PanelBlock;
-import willow.train.hexie.blocks.locos.crh2a.CRH2PartBlock;
+import willow.train.hexie.blocks.emu.crh2a.CRH2PanelBlock;
+import willow.train.hexie.blocks.emu.crh2a.CRH2PartBlock;
 import willow.train.hexie.blocks.locos.cr200j.CR200jPanelBlocks;
 import willow.train.hexie.blocks.locos.df11g.*;
 import willow.train.hexie.blocks.seats.RZSeatBlock;
@@ -67,21 +70,21 @@ public class BlockInit {
     public static final DeferredHolder<Block, CRH2PartBlock> CRH2A_SKIRT_FORBOGEY = crh2Part("crh2a_skirt_forbogey");
     public static final DeferredHolder<Block, CRH2PartBlock> CRH2A_SKIRT_NORMAL = crh2Part("crh2a_skirt_normal");
     public static final DeferredHolder<Block, CRH2PartBlock> CRH2A_FLOOR = crh2Part("crh2a_floor");
-    public static final DeferredHolder<Block, willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock> CRH2A_PASSENGER_DOOR =
-            register("crh2a_passenger_door", () -> new willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock(
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock> CRH2A_PASSENGER_DOOR =
+            register("crh2a_passenger_door", () -> new willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock(
                     BlockBehaviour.Properties.of().strength(2).sound(SoundType.METAL).noOcclusion().dynamicShape(), true),
                     block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
-    public static final DeferredHolder<Block, willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock> CRH2A_PASSENGER_DOOR_WIDE =
-            register("crh2a_passenger_door_wide", () -> new willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock(
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock> CRH2A_PASSENGER_DOOR_WIDE =
+            register("crh2a_passenger_door_wide", () -> new willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock(
                     BlockBehaviour.Properties.of().strength(2).sound(SoundType.METAL).noOcclusion().dynamicShape(),
-                    willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock.Type.WIDE_PASSENGER),
+                    willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock.Type.WIDE_PASSENGER),
                     block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
-    public static final DeferredHolder<Block, willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock> CRH2A_CAB_DOOR =
-            register("crh2a_cab_door", () -> new willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock(
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock> CRH2A_CAB_DOOR =
+            register("crh2a_cab_door", () -> new willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock(
                     BlockBehaviour.Properties.of().strength(2).sound(SoundType.METAL).noOcclusion().dynamicShape(), false),
                     block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
-    public static final DeferredHolder<Block, willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock> CRH2A_END_FACE =
-            register("crh2a_endface", () -> new willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock(
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock> CRH2A_END_FACE =
+            register("crh2a_endface", () -> new willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock(
                     BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
                             .sound(SoundType.METAL).noOcclusion()),
                     block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
@@ -104,26 +107,37 @@ public class BlockInit {
                 block -> () -> new willow.train.hexie.item.CRH2PartItem(block.get(), new Item.Properties()));
     }
 
-    public static final DeferredHolder<Block, willow.train.hexie.blocks.locos.head.CRH2HeadBlock> CRH2A_HEAD = register("crh2a_head",
-            () -> new willow.train.hexie.blocks.locos.head.CRH2HeadBlock(BlockBehaviour.Properties.of()
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.head.CRH2HeadBlock> CRH2A_HEAD = register("crh2a_head",
+            () -> new willow.train.hexie.blocks.emu.head.CRH2HeadBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.METAL).strength(2).sound(SoundType.METAL).noOcclusion()),
             object -> () -> new willow.train.hexie.item.CRH2HeadItem(object.get(), new Item.Properties()));
-    public static final DeferredHolder<Block, willow.train.hexie.blocks.locos.head.HeadFloorBlock> CRH2A_HEAD_FLOOR =
-            BLOCKS.register("crh2a_head_floor", () -> new willow.train.hexie.blocks.locos.head.HeadFloorBlock(BlockBehaviour.Properties.of()
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.head.HeadFloorBlock> CRH2A_HEAD_FLOOR =
+            BLOCKS.register("crh2a_head_floor", () -> new willow.train.hexie.blocks.emu.head.HeadFloorBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.METAL).strength(2).sound(SoundType.METAL).noOcclusion().noLootTable()));
 
-    public static final DeferredHolder<Block, willow.train.hexie.blocks.locos.CRH2DriverSeatBlock> CRH2A_DRIVER_SEAT = register("crh2a_driver_seat",
-            () -> new willow.train.hexie.blocks.locos.CRH2DriverSeatBlock(BlockBehaviour.Properties.of()
+    public static final DeferredHolder<Block, CRH2DriverSeatBlock> CRH2A_DRIVER_SEAT = register("crh2a_driver_seat",
+            () -> new CRH2DriverSeatBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_GRAY).strength(1.5f).sound(SoundType.WOOL).noOcclusion()),
             object -> () -> new willow.train.hexie.item.PartBlockItem(object.get(), new Item.Properties()));
 
-    public static final DeferredHolder<Block, willow.train.hexie.blocks.locos.CRH2DrivingConsoleBlock> CRH2A_DRIVING_CONSOLE = register("crh2a_driving_console",
-            () -> new willow.train.hexie.blocks.locos.CRH2DrivingConsoleBlock(BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.METAL).strength(2.0f).sound(SoundType.METAL).noOcclusion()),
+    public static final DeferredHolder<Block, CRH2DriverSeatBlock> CRH2A_CAB_SEAT = register("crh2a_cab_seat",
+            () -> CRH2DriverSeatBlock.cabSeat(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_GRAY).strength(1.5f).sound(SoundType.WOOL).noOcclusion()),
             object -> () -> new willow.train.hexie.item.PartBlockItem(object.get(), new Item.Properties()));
 
-    public static final DeferredHolder<Block, willow.train.hexie.blocks.locos.TestDrivingConsoleBlock> TEST_DRIVING_CONSOLE = register("test_driving_console",
-            () -> new willow.train.hexie.blocks.locos.TestDrivingConsoleBlock(BlockBehaviour.Properties.of()
+    public static final DeferredHolder<Block, CRH2DrivingConsoleBlock> CRH2A_DRIVING_CONSOLE =
+            crh2DrivingConsole("crh2a_driving_console");
+    public static final DeferredHolder<Block, CRH2DrivingConsoleBlock> CRH2A_NONSTANDARD_DRIVING_CONSOLE =
+            crh2DrivingConsole("crh2a_nonstandard_driving_console");
+
+    private static DeferredHolder<Block, CRH2DrivingConsoleBlock> crh2DrivingConsole(String name) {
+        return register(name, () -> new CRH2DrivingConsoleBlock(BlockBehaviour.Properties.of()
+                        .mapColor(MapColor.METAL).strength(2.0f).sound(SoundType.METAL).noOcclusion()),
+                block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
+    }
+
+    public static final DeferredHolder<Block, TestDrivingConsoleBlock> TEST_DRIVING_CONSOLE = register("test_driving_console",
+            () -> new TestDrivingConsoleBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.METAL).strength(2).sound(SoundType.METAL).noOcclusion()),
             object -> () -> new willow.train.hexie.item.PartBlockItem(object.get(), new Item.Properties()));
 

@@ -62,6 +62,7 @@ public class Main {
                     return super.makeIcon();
                 }
             };
+    public static final EMUTab HEXIE_EMU = new EMUTab();
     public static final LocosTab HEXIE_LOCOS =
             new LocosTab(MOD_ID) {
                 @Override

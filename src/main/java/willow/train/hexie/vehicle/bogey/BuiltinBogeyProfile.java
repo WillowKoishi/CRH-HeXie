@@ -11,16 +11,16 @@ public enum BuiltinBogeyProfile {
     // Geometry (wheel radius, axle positions), mass, traction, brake, power (W), ratio, mount, lateral travel.
     // Game full-brake target: 160 km/h -> 650 m.
     CW2(new BogeyGeometry(.915 / 2, List.of(-1.2, 1.2)),
-            24000, 0, 35785.99, 0, 1, BOLSTERLESS, .06),
+            24000, 20000, 35785.99, 300000, 1, BOLSTERLESS, .06),
     // Game full-brake target: 160 km/h -> 700 m.
     PK209P(new BogeyGeometry(.915 / 2, List.of(-1.2, 1.2)),
-            24000, 0, 33189.88, 0, 1, BOLSTERED, 0),
+            24000, 20000, 33189.88, 300000, 1, BOLSTERED, 0),
     // Game full-brake target: 160 km/h -> 600 m.
     SW220K(new BogeyGeometry(.915 / 2, List.of(-1.25, 1.25)),
-            24000, 0, 38814.02, 0, 1, BOLSTERLESS, .06),
+            24000, 20000, 38814.02, 300000, 1, BOLSTERLESS, .06),
     // Game full-brake target: 160 km/h -> 650 m.
     SW160(new BogeyGeometry(.915 / 2, List.of(-1.28, 1.28)),
-            24000, 0, 35785.99, 0, 1, BOLSTERLESS, .06),
+            24000, 20000, 35785.99, 300000, 1, BOLSTERLESS, .06),
     // Game full-brake target: 160 km/h -> 850 m.
     DF11G(new BogeyGeometry(1.05 / 2, List.of(-2.0, 0.0, 2.0)),
             69000, 120000, 78291.28, 1520000, 4, BOLSTERLESS, .06),

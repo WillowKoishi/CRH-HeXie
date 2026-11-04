@@ -2,7 +2,7 @@ package willow.train.hexie.network.c2s;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import willow.train.hexie.blocks.locos.DrivingConsoleContext;
+import willow.train.hexie.blocks.emu.DrivingConsoleContext;
 
 /** Dismount through the server's normal seat/contraption passenger lifecycle. */
 public record DrivingConsoleExitPacket(int vehicleId) implements HexiePacket {

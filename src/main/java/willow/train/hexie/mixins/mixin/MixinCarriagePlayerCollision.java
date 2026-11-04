@@ -26,8 +26,8 @@ public abstract class MixinCarriagePlayerCollision {
             Operation<com.simibubi.create.foundation.collision.CollisionList> original,
             @Local(name = "entity") Entity entity) {
         if (entity instanceof Player && contraption.getBlocks().values().stream().anyMatch(info ->
-                info.state().getBlock() instanceof willow.train.hexie.blocks.locos.head.CRH2HeadBlock
-                        || info.state().getBlock() instanceof willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock)) return null;
+                info.state().getBlock() instanceof willow.train.hexie.blocks.emu.head.CRH2HeadBlock
+                        || info.state().getBlock() instanceof willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock)) return null;
         return original.call(contraption);
     }
 
@@ -40,11 +40,11 @@ public abstract class MixinCarriagePlayerCollision {
         original.call(world, contraption, query, out);
         if (!(entity instanceof Player)) return;
         for (var info : contraption.getBlocks().values()) {
-            boolean endFace = info.state().getBlock() instanceof willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock;
-            if (!endFace && !(info.state().getBlock() instanceof willow.train.hexie.blocks.locos.head.CRH2HeadBlock)) continue;
-            var facing = info.state().getValue(willow.train.hexie.blocks.locos.head.CRH2HeadBlock.FACING);
-            var boxes = endFace ? willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock.playerBoxes(facing)
-                    : willow.train.hexie.blocks.locos.head.HeadGeometry.boxes(facing);
+            boolean endFace = info.state().getBlock() instanceof willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock;
+            if (!endFace && !(info.state().getBlock() instanceof willow.train.hexie.blocks.emu.head.CRH2HeadBlock)) continue;
+            var facing = info.state().getValue(willow.train.hexie.blocks.emu.head.CRH2HeadBlock.FACING);
+            var boxes = endFace ? willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock.playerBoxes(facing)
+                    : willow.train.hexie.blocks.emu.head.HeadGeometry.boxes(facing);
             for (var box : boxes) {
                 var b = box.move(info.pos());
                 if (b.intersects(query)) out.consume(b.minX, b.minY, b.minZ, b.maxX, b.maxY, b.maxZ);

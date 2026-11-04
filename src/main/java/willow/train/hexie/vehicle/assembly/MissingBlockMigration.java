@@ -57,7 +57,7 @@ public final class MissingBlockMigration {
         var name = ResourceLocation.tryParse(state.getString("Name"));
         var registry = level.registryAccess().registryOrThrow(Registries.BLOCK);
         if (name == null || !registry.containsKey(name)
-                || !(registry.get(name) instanceof willow.train.hexie.blocks.locos.crh2a.CRH2PanelBlock)
+                || !(registry.get(name) instanceof willow.train.hexie.blocks.emu.crh2a.CRH2PanelBlock)
                 || !state.contains("Properties", Tag.TAG_COMPOUND)) return false;
         var properties = state.getCompound("Properties");
         if (properties.contains("hinge")) return false;
@@ -85,9 +85,9 @@ public final class MissingBlockMigration {
         if (name == null || !registry.containsKey(name)) return false;
         var block = registry.get(name);
         String entityId = entry.getCompound("BlockEntity").getString("id");
-        boolean retired = block instanceof willow.train.hexie.blocks.locos.crh2a.CRH2PartBlock
+        boolean retired = block instanceof willow.train.hexie.blocks.emu.crh2a.CRH2PartBlock
                 && entityId.equals("hexie:crh2a_part")
-                || block instanceof willow.train.hexie.blocks.locos.head.CRH2HeadBlock
+                || block instanceof willow.train.hexie.blocks.emu.head.CRH2HeadBlock
                 && entityId.equals("hexie:crh2a_head");
         if (!retired || block.defaultBlockState().hasBlockEntity()) return false;
         entry.remove("BlockEntity");

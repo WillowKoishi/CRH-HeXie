@@ -532,9 +532,9 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             }
             view.addDisplayActor(level(), info);
             var box = new AABB(block.position());
-            if (block.state().getBlock() instanceof willow.train.hexie.blocks.locos.head.CRH2HeadBlock)
-                box = box.minmax(willow.train.hexie.blocks.locos.head.HeadGeometry.bounds(
-                        block.state().getValue(willow.train.hexie.blocks.locos.head.CRH2HeadBlock.FACING)).move(block.position()));
+            if (block.state().getBlock() instanceof willow.train.hexie.blocks.emu.head.CRH2HeadBlock)
+                box = box.minmax(willow.train.hexie.blocks.emu.head.HeadGeometry.bounds(
+                        block.state().getValue(willow.train.hexie.blocks.emu.head.CRH2HeadBlock.FACING)).move(block.position()));
             var hook = willow.train.hexie.blocks.coupler.CouplerBlock.of(block.state());
             if (hook != null && hook.geometry() != null)
                 box = box.minmax(hook.geometry().bounds(hook.facing(block.state())).move(block.position()));

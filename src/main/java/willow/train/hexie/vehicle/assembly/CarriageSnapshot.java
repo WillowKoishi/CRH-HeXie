@@ -37,8 +37,8 @@ public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos o
         var upgradedBlocks = new ArrayList<Block>(blocks.size());
         for (Block block : blocks) {
             if ((block.state().getBlock() instanceof AbstractCouplerBlock
-                    || block.state().getBlock() instanceof willow.train.hexie.blocks.locos.head.CRH2HeadBlock
-                    || block.state().getBlock() instanceof willow.train.hexie.blocks.locos.crh2a.CRH2PanelBlock) && block.entityData == null) {
+                    || block.state().getBlock() instanceof willow.train.hexie.blocks.emu.head.CRH2HeadBlock
+                    || block.state().getBlock() instanceof willow.train.hexie.blocks.emu.crh2a.CRH2PanelBlock) && block.entityData == null) {
                 BlockPos world = absolute(origin, block.position());
                 var data = new CompoundTag();
                 var entity = ((net.minecraft.world.level.block.EntityBlock) block.state().getBlock()).newBlockEntity(world, block.state());
@@ -87,8 +87,8 @@ public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos o
             // Air may retain a removed block's local position during saved-data migration.
             if (state.hasBlockEntity() != (entityData != null)
                     && !((state.getBlock() instanceof AbstractCouplerBlock
-                        || state.getBlock() instanceof willow.train.hexie.blocks.locos.head.CRH2HeadBlock
-                        || state.getBlock() instanceof willow.train.hexie.blocks.locos.crh2a.CRH2PanelBlock) && entityData == null))
+                        || state.getBlock() instanceof willow.train.hexie.blocks.emu.head.CRH2HeadBlock
+                        || state.getBlock() instanceof willow.train.hexie.blocks.emu.crh2a.CRH2PanelBlock) && entityData == null))
                 throw new IllegalArgumentException("Block entity data does not match block state");
             if (entityData != null) {
                 require(entityData, "id", Tag.TAG_STRING);

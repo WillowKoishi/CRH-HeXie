@@ -10,23 +10,30 @@ import net.minecraft.nbt.Tag;
 /** Vehicle-owned converted state. Occupancy authorizes operations, never continued execution. */
 public final class CabModule {
     public record State(CabController.Input input, CabController.Mode mode, CabBrakeConversion.State brakes,
-                        boolean approachHeld, boolean enabled, boolean simple) {
+                        boolean approachHeld, boolean enabled, boolean simple, Map<String, Integer> handlePositions) {
         public static final State NEUTRAL = new State(new CabController.Input(0, 0, 0),
                 CabController.Mode.MANUAL, CabBrakeConversion.State.NORMAL, false, false);
         public State(CabController.Input input, CabController.Mode mode, CabBrakeConversion.State brakes,
                      boolean approachHeld, boolean enabled) {
             this(input, mode, brakes, approachHeld, enabled, false);
         }
-        public State { Objects.requireNonNull(input); Objects.requireNonNull(mode); Objects.requireNonNull(brakes); }
+        public State(CabController.Input input, CabController.Mode mode, CabBrakeConversion.State brakes,
+                     boolean approachHeld, boolean enabled, boolean simple) {
+            this(input, mode, brakes, approachHeld, enabled, simple, Map.of());
+        }
+        public State {
+            Objects.requireNonNull(input); Objects.requireNonNull(mode); Objects.requireNonNull(brakes);
+            handlePositions = Map.copyOf(handlePositions);
+        }
         public boolean automatic() { return mode == CabController.Mode.AUTOMATIC; }
-        public State withApproach(boolean held) { return new State(input, mode, brakes, held, enabled, simple); }
+        public State withApproach(boolean held) { return new State(input, mode, brakes, held, enabled, simple, handlePositions); }
         public State withEnabled(boolean value) {
-            return new State(input, mode, brakes, approachHeld, value, simple);
+            return new State(input, mode, brakes, approachHeld, value, simple, handlePositions);
         }
         /** Input style changes neither the enable input nor the driving mode and stored handles. */
         public State withSimple(boolean value) {
             if (simple == value) return this;
-            return new State(input, mode, brakes, approachHeld, enabled, value);
+            return new State(input, mode, brakes, approachHeld, enabled, value, handlePositions);
         }
     }
     private State state = State.NEUTRAL;
@@ -65,6 +72,11 @@ public final class CabModule {
         tag.putDouble("ServiceBrake", state.brakes().serviceBrake());
         tag.putBoolean("Parking", state.brakes().parking()); tag.putBoolean("EmergencyHandle", state.brakes().emergencyHandle());
         tag.putBoolean("Emergency", state.brakes().emergencyLatched()); tag.putBoolean("Released", state.brakes().released());
+        if (!state.handlePositions().isEmpty()) {
+            var positions = new CompoundTag();
+            state.handlePositions().forEach(positions::putInt);
+            tag.put("HandlePositions", positions);
+        }
         return tag;
     }
     public static CabModule read(CompoundTag tag) {
@@ -104,9 +116,18 @@ public final class CabModule {
         // Version 4 incorrectly enabled a cab on entering simple input. Undo that promotion,
         // retaining an explicitly disabled cab instead of restoring a former enabled value.
         if (version == 4 && simple) enabled &= tag.getBoolean("DetailedEnabled");
+        var positions = new LinkedHashMap<String, Integer>();
+        if (tag.contains("HandlePositions")) {
+            required(tag, "HandlePositions", Tag.TAG_COMPOUND);
+            var savedPositions = tag.getCompound("HandlePositions");
+            for (String key : savedPositions.getAllKeys()) {
+                required(savedPositions, key, Tag.TAG_INT);
+                positions.put(key, savedPositions.getInt(key));
+            }
+        }
         module.submit(new State(new CabController.Input(power, brake, reverser),
                 tag.getBoolean("Automatic") ? CabController.Mode.AUTOMATIC : CabController.Mode.MANUAL, brakes, false, enabled,
-                simple));
+                simple, positions));
         return module;
     }
     private static void required(CompoundTag tag, String key, int type) {

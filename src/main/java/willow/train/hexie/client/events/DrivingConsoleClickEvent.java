@@ -2,7 +2,7 @@ package willow.train.hexie.client.events;
 
 import net.neoforged.bus.api.Event;
 import net.minecraft.world.phys.Vec3;
-import willow.train.hexie.blocks.locos.DrivingConsoleContext;
+import willow.train.hexie.blocks.emu.DrivingConsoleContext;
 
 /** Client input only. Future buttons can hit-test this ray in the console block's coordinates. */
 public final class DrivingConsoleClickEvent extends Event {

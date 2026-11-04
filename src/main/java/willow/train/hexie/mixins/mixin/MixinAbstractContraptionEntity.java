@@ -24,6 +24,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
+import willow.train.hexie.blocks.emu.CRH2DriverSeatBlock;
 import willow.train.hexie.blocks.seats.HardSeatPositionRequest;
 import willow.train.hexie.blocks.seats.SeatYZBlock;
 import willow.train.hexie.network.c2s.SeatYZContraptionInteractionPacket;
@@ -233,9 +234,9 @@ public abstract class MixinAbstractContraptionEntity extends Entity {
             return original.call(passenger, partialTicks);
 
         BlockState state = contraption.getBlocks().get(seatPos).state();
-        if (state.getBlock() instanceof willow.train.hexie.blocks.locos.CRH2DriverSeatBlock) {
+        if (state.getBlock() instanceof CRH2DriverSeatBlock) {
             Vec3 eye = Vec3.atLowerCornerOf(seatPos).add(
-                    willow.train.hexie.blocks.locos.CRH2DriverSeatBlock.driverEyePosition(state));
+                    CRH2DriverSeatBlock.driverEyePosition(state));
             // Native positionRider adds the custom seat offset minus 1/8 block.
             return ((AbstractContraptionEntity) (Object) this).toGlobalVector(eye, partialTicks)
                     .add(0, .125 - SeatEntity.getCustomEntitySeatOffset(passenger) - passenger.getEyeHeight(), 0);

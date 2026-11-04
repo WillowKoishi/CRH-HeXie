@@ -19,7 +19,6 @@ import willow.train.hexie.init.BlockEntitiesInit;
 import willow.train.hexie.init.EntityInit;
 import willow.train.hexie.init.track.TrackBlockInit;
 import willow.train.hexie.init.bogeys.BogeyEntityInit;
-import willow.train.hexie.init.client.PartialModelInit;
 import willow.train.hexie.init.semaphore.SemaphoreEntityInit;
 import willow.train.hexie.client.render.blockentity.ThroughSignalRenderer;
 import willow.train.hexie.client.render.blockentity.*;
@@ -40,6 +39,7 @@ public class HeXieClientInit {
         willow.train.hexie.client.carriage.browser.CarriageBrowserClient.register(Main.bus);
         Main.bus.addListener(HeXieClientInit::registerBlockExtensions);
         Main.bus.addListener(HeXieClientInit::registerMenus);
+        Main.bus.addListener(willow.train.hexie.client.events.Crh2CabCaption::register);
         Main.bus.addListener(HeXieClientInit::registerRenderers);
         Main.bus.addListener(HeXieClientInit::registerEntityVisuals);
         PartialModelInit.init();
@@ -75,7 +75,7 @@ public class HeXieClientInit {
         event.registerBlockEntityRenderer(BlockEntitiesInit.CRH2A_PART.get(), CarriageMarkingRenderer::new);
         event.registerBlockEntityRenderer(BlockEntitiesInit.CRH2A_HEAD.get(), HeadNumberRenderer::new);
         event.registerBlockEntityRenderer(BlockEntitiesInit.DRIVING_CONSOLE.get(),
-                willow.train.hexie.client.render.blockentity.TestDrivingConsoleRenderer::new);
+                willow.train.hexie.client.render.blockentity.DrivingConsoleRenderer::new);
         // Entity builders run before Registrate is attached to our bus. Bind directly so the
         // renderer is present when the client dispatcher is created, including without Flywheel.
         event.registerEntityRenderer(EntityInit.ASSEMBLED_CARRIAGE.get(), SnapshotCarriageRenderer::new);
@@ -123,9 +123,9 @@ public class HeXieClientInit {
                             willow.train.hexie.init.block.BlockInit.CRH2A_AUTO_COUPLER.get().geometry()));
             var endCoupler = willow.train.hexie.init.block.BlockInit.CRH2A_END_FACE.get();
             var pivot = endCoupler.axis().atHeight(endCoupler.complete().y());
-            double back = willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock.BELLOWS_BASE_Z;
-            double front = willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock.BELLOWS_FRONT_Z;
-            double maximum = willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock.MAX_BELLOWS_THICKNESS;
+            double back = willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock.BELLOWS_BASE_Z;
+            double front = willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock.BELLOWS_FRONT_Z;
+            double maximum = willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock.MAX_BELLOWS_THICKNESS;
             var bellows = java.util.stream.Stream.of(PartialModelInit.CRH2_END_BELLOWS_LEFT,
                     PartialModelInit.CRH2_END_BELLOWS_RIGHT, PartialModelInit.CRH2_END_BELLOWS_TOP,
                     PartialModelInit.CRH2_END_BELLOWS_BOTTOM)
@@ -135,8 +135,8 @@ public class HeXieClientInit {
                     willow.train.hexie.init.block.BlockInit.CRH2A_END_FACE.get(),
                     new willow.train.hexie.client.render.PartialCouplerRenderer(PartialModelInit.CRH2_END_COUPLER,
                             new net.minecraft.world.phys.Vec3(pivot.x() + .5, pivot.y() + .5, pivot.z() + .5),
-                            null, bellows, .5, state -> willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock.bounds(
-                                    state.getValue(willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock.FACING)),
+                            null, bellows, .5, state -> willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock.bounds(
+                                    state.getValue(willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock.FACING)),
                             new willow.train.hexie.client.render.PartialCouplerRenderer.ContactSpan(14 / 16d, 51 / 16d)));
         });
         event.enqueueWork(() -> SimpleEntityVisualizer.builder(EntityInit.ASSEMBLED_CARRIAGE.get())

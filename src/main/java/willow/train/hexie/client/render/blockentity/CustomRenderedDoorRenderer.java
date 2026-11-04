@@ -30,7 +30,7 @@ public class CustomRenderedDoorRenderer implements BlockEntityRenderer<CustomRen
             int overlay) {
         BlockState state = entity.getBlockState();
         if(!entity.isLowerSide(state)) return;
-        if (state.getBlock() instanceof willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock door) {
+        if (state.getBlock() instanceof willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock door) {
             renderCRH2(entity, door, partial, pose, buffer, light, overlay);
             return;
         }
@@ -77,11 +77,11 @@ public class CustomRenderedDoorRenderer implements BlockEntityRenderer<CustomRen
     }
 
     private void renderCRH2(CustomRenderedDoorEntity entity,
-            willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock door, float partial,
-            PoseStack pose, MultiBufferSource buffer, int light, int overlay) {
+                            willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock door, float partial,
+                            PoseStack pose, MultiBufferSource buffer, int light, int overlay) {
         var state = entity.getBlockState();
         boolean mirrored = !entity.isLeftSide(state);
-        float value = willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock.animationCurve(entity.crh2Progress(partial));
+        float value = willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock.animationCurve(entity.crh2Progress(partial));
         MultiBufferSource shellBuffers = buffer;
         var lighting = willow.train.hexie.client.render.CRH2DoorRenderContext.current();
         if (lighting != null) {

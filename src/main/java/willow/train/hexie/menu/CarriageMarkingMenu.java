@@ -4,10 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
-import willow.train.hexie.blockentity.CRH2PartEntity;
-import willow.train.hexie.blocks.locos.crh2a.CRH2PanelBlock;
 import willow.train.hexie.init.client.MenuInit;
 import willow.train.hexie.item.editable_panels.ColoredBrush;
 

@@ -7,7 +7,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import willow.train.hexie.blocks.locos.DrivingConsoleContext;
+import willow.train.hexie.blocks.emu.DrivingConsoleContext;
 
 /** Seat discovery and coordinate adaptation only; owns no cab display or control state. */
 public final class CreateDrivingConsoleSeats {

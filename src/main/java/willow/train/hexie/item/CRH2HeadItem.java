@@ -6,7 +6,7 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import willow.train.hexie.blocks.locos.head.*;
+import willow.train.hexie.blocks.emu.head.*;
 import willow.train.hexie.init.block.BlockInit;
 
 public final class CRH2HeadItem extends BlockItem {

@@ -1,0 +1,11 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "flip_v": true,
+  "automatic_culling": false,
+  "model": "hexie:models/block/crh2a/nonstandard_driving_console/driving_console.obj",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "particle": "hexie:block/crh2a/nonstandard_driving_console/crh2a_unstandardized_control_panel"
+  }
+}

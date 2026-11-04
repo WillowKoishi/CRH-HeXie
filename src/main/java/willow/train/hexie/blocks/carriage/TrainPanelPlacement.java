@@ -1,26 +1,18 @@
 package willow.train.hexie.blocks.carriage;
 
 import java.util.function.Predicate;
-import willow.train.hexie.blocks.locos.crh2a.CRH2PanelBlock;
-import willow.train.hexie.blocks.locos.crh2a.CRH2PartBlock;
-import willow.train.hexie.item.CRH2PartItem;
+import willow.train.hexie.blocks.emu.crh2a.CRH2PanelBlock;
+import willow.train.hexie.blocks.emu.crh2a.CRH2PartBlock;
 import net.createmod.catnip.placement.IPlacementHelper;
 import net.createmod.catnip.placement.PlacementHelpers;
 import net.createmod.catnip.placement.PlacementOffset;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.level.EmptyBlockGetter;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DoorHingeSide;
 import net.minecraft.world.level.block.state.properties.Half;
 import net.minecraft.world.phys.Vec3;
-import willow.train.hexie.blocks.locos.cr200j.CR200jPanelBlocks;
-import willow.train.hexie.blocks.locos.hxd3d.HXD3DPanelBlocks;
-import willow.train.hexie.blocks.locos.df11g.DF11GPanel3Wide;
-import willow.train.hexie.blocks.structure.PanelBlock2;
-import willow.train.hexie.blocks.structure.PanelBlock4;
-import willow.train.hexie.blocks.structure.PanelBlockHalf;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -31,9 +23,6 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import willow.train.hexie.blocks.base.SideMirrorBlockBase;
-import willow.train.hexie.blocks.signs.LacqueredBoardBlock;
-import willow.train.hexie.blocks.signs.TrainNoBlock;
-import willow.train.hexie.blocks.signs.TrainPanelBlock;
 
 /** Copycat-panel placement: extend within the existing panel's plane. */
 public final class TrainPanelPlacement implements IPlacementHelper {

@@ -12,7 +12,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import willow.train.hexie.blockentity.CustomRenderedDoorEntity;
-import willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock;
+import willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock;
 import willow.train.hexie.compat.create.CarriagePlayerSupport;
 import willow.train.hexie.compat.create.SnapshotCarriageEntity;
 

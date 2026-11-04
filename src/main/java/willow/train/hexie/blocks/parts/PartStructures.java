@@ -4,7 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import willow.train.hexie.blocks.locos.head.*;
+import willow.train.hexie.blocks.emu.head.*;
 
 /** Resolve the owner before dispatching installation, editing or assembly. */
 public final class PartStructures {

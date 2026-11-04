@@ -11,7 +11,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.BlockHitResult;
-import willow.train.hexie.blocks.locos.crh2a.CRH2PartBlock;
+import willow.train.hexie.blocks.emu.crh2a.CRH2PartBlock;
 import willow.train.hexie.item.FloorSwitcherItem;
 
 /** Two appearances share one item, occupied structure and placement geometry. */

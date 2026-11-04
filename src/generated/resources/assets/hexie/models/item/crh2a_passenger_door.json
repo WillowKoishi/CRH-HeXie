@@ -1,3 +1,24 @@
 {
-  "parent": "hexie:block/crh2a/doors/crh2a_passenger_door_left"
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:composite",
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "hexie:block/crh2a/doors/crh2a_passenger_door"
+  },
+  "children": {
+    "frame": {
+      "parent": "hexie:block/crh2a/doors/crh2a_psg_door_frame_left"
+    },
+    "body": {
+      "parent": "hexie:block/crh2a/doors/crh2a_passenger_door_left_body"
+    },
+    "glass": {
+      "parent": "hexie:block/crh2a/doors/crh2a_passenger_door_left_glass"
+    }
+  },
+  "item_render_order": [
+    "frame",
+    "body",
+    "glass"
+  ]
 }

@@ -1,0 +1,12 @@
+newmtl crh2a_unstandardized_control_panel
+map_Kd hexie:block/crh2a/nonstandard_driving_console/crh2a_unstandardized_control_panel
+Kd 1 1 1
+newmtl right_monitor
+map_Kd hexie:block/crh2a/nonstandard_driving_console/right_monitor
+Kd 1 1 1
+newmtl crh2a_control_handle
+map_Kd hexie:block/crh2a/nonstandard_driving_console/crh2a_control_handle
+Kd 1 1 1
+newmtl dmi
+map_Kd hexie:component/dmi/dmi_palette
+Kd 1 1 1

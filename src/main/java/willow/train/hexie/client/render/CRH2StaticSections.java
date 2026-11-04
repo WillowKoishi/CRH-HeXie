@@ -24,8 +24,8 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import willow.train.hexie.Main;
-import willow.train.hexie.blocks.locos.head.CRH2HeadBlock;
-import willow.train.hexie.blocks.locos.crh2a.CRH2PartBlock;
+import willow.train.hexie.blocks.emu.head.CRH2HeadBlock;
+import willow.train.hexie.blocks.emu.crh2a.CRH2PartBlock;
 
 /** Shared world-shell index: Flywheel instances with vanilla/Sodium section meshes as fallback. */
 public final class CRH2StaticSections {
@@ -56,7 +56,7 @@ public final class CRH2StaticSections {
 
     private static boolean owner(BlockState state) {
         return state.getBlock() instanceof CRH2HeadBlock
-                || state.getBlock() instanceof willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock
+                || state.getBlock() instanceof willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock
                 || state.getBlock() instanceof CRH2PartBlock && state.getValue(CRH2PartBlock.PART) == 0;
     }
 
@@ -64,7 +64,7 @@ public final class CRH2StaticSections {
         var meshes = new HashMap<BlockState, CRH2StaticMesh>();
         for (var block : BuiltInRegistries.BLOCK) {
             if (!(block instanceof CRH2HeadBlock) && !(block instanceof CRH2PartBlock)
-                    && !(block instanceof willow.train.hexie.blocks.locos.crh2a.CRH2EndFaceBlock)) continue;
+                    && !(block instanceof willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock)) continue;
             for (var state : block.getStateDefinition().getPossibleStates()) {
                 if (!owner(state)) continue;
                 var key = BlockModelShaper.stateToModelLocation(state);

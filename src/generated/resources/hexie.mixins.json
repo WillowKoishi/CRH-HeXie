@@ -37,6 +37,7 @@
     "client.MixinDoorPicking",
     "client.MixinCRH2DoorRenderContext",
     "client.MixinBallastModelData",
+    "client.MixinCurveBedLight",
     "client.MixinRailxTrackRenderer",
     "client.MixinRailxTrackVisual",
     "client.MixinTrackGraphVisualizer",

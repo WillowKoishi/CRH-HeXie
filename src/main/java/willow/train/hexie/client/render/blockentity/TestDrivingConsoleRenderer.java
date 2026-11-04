@@ -12,8 +12,8 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
 import willow.train.hexie.blockentity.DrivingConsoleEntity;
-import willow.train.hexie.blocks.locos.CRH2DrivingConsoleBlock;
-import willow.train.hexie.blocks.locos.TestDrivingConsoleBlock;
+import willow.train.hexie.blocks.emu.CRH2DrivingConsoleBlock;
+import willow.train.hexie.blocks.emu.TestDrivingConsoleBlock;
 import willow.train.hexie.client.cab.Ctcs2DmiDisplay;
 
 /** Temporary mounting fixture: authored DMI at 1:1 scale, simple movable cube handles. */

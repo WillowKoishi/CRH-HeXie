@@ -28,8 +28,8 @@ public final class PartLayoutMigration {
                 if(state.getBlock() instanceof PartMemberBlock) {pending.add(pos);continue;}
                 if(!(state.getBlock() instanceof PartStructure part))continue;
                 if(!part.partRoot(level,pos,state).equals(pos))continue;
-                if(LegacyPartLayout.supports(state)||state.getBlock() instanceof willow.train.hexie.blocks.locos.crh2a.CRH2PartBlock
-                        ||state.getBlock() instanceof willow.train.hexie.blocks.locos.head.CRH2HeadBlock)pending.add(pos);
+                if(LegacyPartLayout.supports(state)||state.getBlock() instanceof willow.train.hexie.blocks.emu.crh2a.CRH2PartBlock
+                        ||state.getBlock() instanceof willow.train.hexie.blocks.emu.head.CRH2HeadBlock)pending.add(pos);
             }
         }
     }

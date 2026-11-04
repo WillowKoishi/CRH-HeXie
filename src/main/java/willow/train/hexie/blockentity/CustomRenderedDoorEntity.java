@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import willow.train.hexie.blocks.carriage.CustomRenderedDoorBlock;
+import willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock;
 import willow.train.hexie.init.BlockEntitiesInit;
 import willow.train.hexie.blocks.base.IContraptionMovementBlockEntity;
 
@@ -49,6 +50,7 @@ public class CustomRenderedDoorEntity extends SmartBlockEntity implements IContr
 
     public CustomRenderedDoorEntity(BlockPos pPos, BlockState pBlockState) {
         super(BlockEntitiesInit.CUSTOM_RENDERED_DOOR_ENTITY.get(), pPos, pBlockState);
+        passengerFrame = supportsPassengerFrame();
         open = pBlockState.getValue(DoorBlock.OPEN);
         if(pBlockState.getBlock() instanceof CustomRenderedDoorBlock block)
             this.isSlideDoor = block.isSlideDoor();
@@ -62,14 +64,16 @@ public class CustomRenderedDoorEntity extends SmartBlockEntity implements IContr
     @Override public void writeSafe(CompoundTag tag,HolderLookup.Provider registries) {
         super.writeSafe(tag,registries);writeAppearance(tag);
     }
+    private boolean supportsPassengerFrame() {
+        return getBlockState().getBlock() instanceof CRH2DoorBlock door && door.supportsPassengerFrame();
+    }
     private void writeAppearance(CompoundTag tag) {
-        if (passengerFrame) tag.putBoolean("PassengerFrame", true);
-        else tag.remove("PassengerFrame");
+        if (supportsPassengerFrame()) tag.putBoolean("PassengerFrame", passengerFrame);
     }
 
     @Override protected void read(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
         super.read(tag, registries, clientPacket);
-        passengerFrame = tag.getBoolean("PassengerFrame");
+        passengerFrame = supportsPassengerFrame() && (!tag.contains("PassengerFrame") || tag.getBoolean("PassengerFrame"));
     }
 
     public boolean isLeftSide(BlockState state) {
@@ -93,8 +97,8 @@ public class CustomRenderedDoorEntity extends SmartBlockEntity implements IContr
 
     private void advanceCRH2Animation() {
         crh2Animation.chase(open ? 1 : 0,
-                    getBlockState().getBlock() instanceof willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock
-                            ? willow.train.hexie.blocks.locos.crh2a.CRH2DoorBlock.ANIMATION_SPEED : isSlideDoor ? .075 : .15,
+                    getBlockState().getBlock() instanceof willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock
+                            ? willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock.ANIMATION_SPEED : isSlideDoor ? .075 : .15,
                     net.createmod.catnip.animation.LerpedFloat.Chaser.LINEAR);
         crh2Animation.tickChaser();
         animation_controller=crh2Animation.getValue();
