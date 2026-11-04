@@ -38,7 +38,17 @@ public final class HeadFloorBlock extends Block implements com.simibubi.create.a
         return root==null?List.of():List.of(b.getLevel().getBlockState(root).getBlock().asItem().getDefaultInstance());
     }
     @Override protected void onRemove(BlockState state,Level level,BlockPos pos,BlockState next,boolean moving) {
-        if(!moving&&!state.is(next.getBlock())&&!willow.train.hexie.blocks.parts.PartInstallation.mutating()) {
+        boolean installingBogeySupport = false;
+        if (state.getValue(PART) == HeadGeometry.BOGEY_PART
+                && next.getBlock() instanceof willow.train.hexie.blocks.bogeys.HexieBogeyBlock<?> bogey
+                && next.getValue(willow.train.hexie.blocks.bogeys.HexieBogeyBlock.HEAD_MOUNTED)) {
+            var root = pos.subtract(HeadGeometry.offset(state.getValue(PART), state.getValue(CRH2HeadBlock.FACING)));
+            var rootState = level.getBlockState(root);
+            installingBogeySupport = rootState.getBlock() instanceof CRH2HeadBlock
+                    && rootState.getValue(CRH2HeadBlock.FACING) == state.getValue(CRH2HeadBlock.FACING);
+        }
+        if(!moving&&!state.is(next.getBlock())&&!installingBogeySupport
+                && !willow.train.hexie.blocks.parts.PartInstallation.mutating()) {
             var root=pos.subtract(HeadGeometry.offset(state.getValue(PART),state.getValue(CRH2HeadBlock.FACING)));
             if(level.hasChunkAt(root) && level.getBlockState(root).getBlock() instanceof CRH2HeadBlock head)
                 willow.train.hexie.blocks.parts.PartInstallation.removeOtherCells(level,pos,head.partCells(level,root,level.getBlockState(root)));
