@@ -171,6 +171,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
     private int diagTicks = 0;
     private GlobalStation dwellingStation = null;   // 停站锁：物理车没走就不再判到站
     private String lastDestName = "";
+    private int lastEntryLogged = -1;
     private boolean leakSwept = false;
 
     /** true = 玩家操控中（暂停自动寻路）；false = 自动驾驶中。 */
@@ -432,6 +433,10 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
             try {
                 var nv = train.navigation;
                 String dn = nv.destination == null ? "null" : nv.destination.name;
+                if (train.runtime.currentEntry != lastEntryLogged) {
+                    HexieTrain.LOGGER.info("[HexieTrain][evt] entry {} → {}", lastEntryLogged, train.runtime.currentEntry);
+                    lastEntryLogged = train.runtime.currentEntry;
+                }
                 if (!dn.equals(lastDestName)) {
                     HexieTrain.LOGGER.info("[HexieTrain][evt] dest {} → {}", lastDestName, dn);
                     lastDestName = dn;
@@ -593,7 +598,11 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
             }
 
             // ③b 传动方向：驱动本方块自己的左右红石通道（自动模式的唯一动力来源）
-            double stopZone = Math.max(STOP_ZONE, Math.abs(measuredSpeedMps()) * 1.2);   // 按速度动态：6.7m/s → 8 格
+            double stopZone = Math.max(STOP_ZONE, Math.abs(measuredSpeedMps()) * 1.2);   // 按速度动态
+            double dLeft = Math.max(0.0, legRemaining);
+            double brakeFrac = dLeft >= stopZone ? 0.0 : 1.0 - dLeft / stopZone;   // 0→1，越近越强
+            int brakeVal = (int) Math.round(15.0 * brakeFrac);
+            if (dLeft < 1.0) brakeVal = 15;                                        // 1 格内最强刹
             if (legRemaining <= stopZone) {
                 if (Math.abs(measuredSpeedMps()) > 0.4)
                     setAutoDirection((float) -(nav.destinationBehindTrain ? -1.0 : 1.0));   // 反转扭矩制动
@@ -606,7 +615,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
             // ④ 刹车
             double targetV = legRemaining > SLOW_ZONE_BLOCKS ? Double.MAX_VALUE
                     : Math.max(CREEP_SPEED_MPS, SLOW_ZONE_SPEED_MPS * (legRemaining / SLOW_ZONE_BLOCKS));
-            SetOutputBrake(v > targetV + 0.25 ? SignalChannel.brakeStrength(legRemaining, v / 20.0, linearizeBrake) : 0);
+            SetOutputBrake(Math.max(brakeVal, v > targetV + 0.25 ? SignalChannel.brakeStrength(legRemaining, v / 20.0, linearizeBrake) : 0));
 
             // ⑤ 到站：四步（snap → arriveAt → 清 destination → 清 path）
             if (legRemaining <= 0.05 && v < 0.5) {
