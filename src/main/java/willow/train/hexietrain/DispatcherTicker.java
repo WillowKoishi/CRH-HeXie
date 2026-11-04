@@ -34,7 +34,7 @@ public final class DispatcherTicker {
         for (TrainDispatcherBlockEntity be : snapshot) {
             try {
                 // ① 剔除失效实例
-                if (be.isRemoved() || be.getLevel() == null || !be.getLevel().isLoaded(be.getBlockPos())) {
+                if (be.isRemoved() || be.getLevel() == null) {   // 不再用 isLoaded：方块位于 Sable 绘图区坐标，isLoaded 恒为 false
                     active.remove(be);
                     continue;
                 }
