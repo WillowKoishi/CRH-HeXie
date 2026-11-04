@@ -574,6 +574,9 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
                 return;
             }
 
+            // ③b 传动方向：驱动本方块自己的左右红石通道（自动模式的唯一动力来源）
+            setAutoDirection((float) (nav.destinationBehindTrain ? -1.0 : 1.0));
+
             // ④ 刹车
             double targetV = legRemaining > SLOW_ZONE_BLOCKS ? Double.MAX_VALUE
                     : Math.max(CREEP_SPEED_MPS, SLOW_ZONE_SPEED_MPS * (legRemaining / SLOW_ZONE_BLOCKS));
