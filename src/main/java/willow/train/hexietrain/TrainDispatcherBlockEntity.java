@@ -425,8 +425,11 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
             if (++stallTicks % 200 == 1) {
                 String wanted = stopNames.isEmpty() ? "（空）"
                         : stopNames.get(Math.min(train.runtime.currentEntry, stopNames.size() - 1));
-                HexieTrain.LOGGER.warn("[HexieTrain] 时刻表卡住：目标 \"{}\" 找不到（已 {} tick）",
-                        wanted, stallTicks);
+                HexieTrain.LOGGER.warn("[HexieTrain] 卡住：目标={} state={} dest={} fwd={} bwd={} entry={}/{}",
+                        wanted, train.runtime.state, train.navigation.destination,
+                        train.hasForwardConductor(), train.hasBackwardConductor(),
+                        train.runtime.currentEntry,
+                        train.runtime.schedule == null ? -1 : train.runtime.schedule.entries.size());
             }
         } else {
             stallTicks = 0;
