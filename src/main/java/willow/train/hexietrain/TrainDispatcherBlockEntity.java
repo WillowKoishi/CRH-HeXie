@@ -431,6 +431,7 @@ public class TrainDispatcherBlockEntity extends SplitShaftBlockEntity implements
             ensureConductors(train);
 
             // ── 飞行记录仪：一次测试收集全部状态 ──
+            if (!isPrimaryDispatcher()) return;   // 只让主调度器打日志，副本不刷屏
             try {
                 var nv = train.navigation;
                 String dn = nv.destination == null ? "null" : nv.destination.name;
