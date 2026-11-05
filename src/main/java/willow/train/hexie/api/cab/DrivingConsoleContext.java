@@ -1,4 +1,4 @@
-package willow.train.hexie.blocks.emu;
+package willow.train.hexie.api.cab;
 
 import java.util.List;
 import java.util.Objects;
@@ -20,10 +20,14 @@ public record DrivingConsoleContext(SeatAccess seatAccess, BlockPos console) {
         Entity vehicle();
         BlockPos seat();
         BlockState blockState(BlockPos position);
-        /** Read-only surface state used to select the cab's currently defined input bindings. */
-        default willow.train.hexie.vehicle.control.CabModule.State cabControls(BlockPos position) {
-            return willow.train.hexie.vehicle.control.CabModule.State.NEUTRAL;
-        }
+        /** Let another provider take this seat when its surface needs a different backend. */
+        default boolean supportsSurface(BlockPos position) { return true; }
+        default CabSurfaceState surfaceState(BlockPos position) { return CabSurfaceState.EMPTY; }
+        /** Client-side interpolation source for the same physical surface that is being rendered. */
+        default CabSurfaceGeometry.AnimationSource animationSource(BlockPos position) { return null; }
+        default boolean simple(BlockPos position) { return false; }
+        /** The server has checked occupancy, control membership and the requested detent. */
+        default void operateControl(DrivingConsoleContext cab, Player player, CabControl control, int value) {}
         /** World coordinates to the coordinate system containing seat and console. */
         Vec3 toLocal(Vec3 world, float partialTick);
     }
@@ -34,6 +38,8 @@ public record DrivingConsoleContext(SeatAccess seatAccess, BlockPos console) {
     }
 
     public BlockPos seat() { return seatAccess.seat(); }
+    public boolean simple() { return seatAccess.simple(console); }
+    public CabSurfaceState surfaceState() { return seatAccess.surfaceState(console); }
 
     public Vec3 toConsoleLocal(Vec3 world, float partialTick) {
         return seatAccess.toLocal(world, partialTick).subtract(Vec3.atLowerCornerOf(console));
@@ -43,7 +49,7 @@ public record DrivingConsoleContext(SeatAccess seatAccess, BlockPos console) {
     public static Direction consoleFacing(BlockPos seat, Function<BlockPos, BlockState> states) {
         for (Direction facing : Direction.Plane.HORIZONTAL) {
             var state = states.apply(seat.relative(facing));
-            if (state != null && state.getBlock() instanceof willow.train.hexie.api.cab.CabControlHost host
+            if (state != null && state.getBlock() instanceof CabSurfaceHost host
                     && host.cabFacing(state) == facing) return facing;
         }
         return null;
@@ -55,7 +61,9 @@ public record DrivingConsoleContext(SeatAccess seatAccess, BlockPos console) {
             var access = provider.apply(player);
             if (access == null) continue;
             var facing = consoleFacing(access.seat(), access::blockState);
-            if (facing != null) return new DrivingConsoleContext(access, access.seat().relative(facing));
+            if (facing == null) continue;
+            var console = access.seat().relative(facing);
+            if (access.supportsSurface(console)) return new DrivingConsoleContext(access, console);
         }
         return null;
     }

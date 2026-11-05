@@ -1,5 +1,7 @@
 package willow.train.hexie.blocks.emu;
 
+import willow.train.hexie.api.cab.DrivingConsoleContext;
+
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
 

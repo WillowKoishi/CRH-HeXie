@@ -1,14 +1,22 @@
 package willow.train.hexie.vehicle.control;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.world.level.block.state.BlockState;
+import willow.train.hexie.api.cab.CabControl;
+import willow.train.hexie.api.cab.CabControlHost;
+import willow.train.hexie.api.cab.CabSurfaceState;
+import willow.train.hexie.api.traincontrol.CabTrainControl;
+import willow.train.hexie.api.traincontrol.CabTrainInput;
+import willow.train.hexie.api.traincontrol.CabTrainRequest;
 
 /** Vehicle-owned converted state. Occupancy authorizes operations, never continued execution. */
-public final class CabModule {
+public final class CabModule implements CabTrainInput {
     public record State(CabController.Input input, CabController.Mode mode, CabBrakeConversion.State brakes,
                         boolean approachHeld, boolean enabled, boolean simple, Map<String, Integer> handlePositions) {
         public static final State NEUTRAL = new State(new CabController.Input(0, 0, 0),
@@ -30,6 +38,13 @@ public final class CabModule {
         public State withEnabled(boolean value) {
             return new State(input, mode, brakes, approachHeld, value, simple, handlePositions);
         }
+        public CabTrainRequest request() {
+            return new CabTrainRequest(input.power(), brakes.serviceBrake(), input.reverser(), enabled, automatic(),
+                    brakes.parking(), brakes.emergencyHandle(), false, approachHeld);
+        }
+        public CabSurfaceState surface(CabTrainControl desk) {
+            return desk.restore(new CabSurfaceState(handlePositions), request());
+        }
         /** Input style changes neither the enable input nor the driving mode and stored handles. */
         public State withSimple(boolean value) {
             if (simple == value) return this;
@@ -41,11 +56,43 @@ public final class CabModule {
     public State state() { return state; }
     public CabController.Mode mode() { return state.mode(); }
     public void submit(State input) { state = Objects.requireNonNull(input); }
+    @Override public void submit(CabTrainRequest request, double speed) {
+        state = accept(state, request, state.handlePositions(), speed);
+    }
     /** Held keys are transient and never saved as physical handle positions. */
     public void keyboard(int mask) { SimpleCabControls.requireValidMask(mask); keyboardMask = mask; }
     public int keyboardMask() { return keyboardMask; }
     public CabController.Input effectiveInput(double cabSpeed) { return SimpleCabControls.effectiveInput(state, keyboardMask, cabSpeed); }
     public void releaseApproach() { state = state.withApproach(false); }
+
+    /** A rejected request returns null before touching the saved positions or train commands. */
+    public static State operateControls(List<? extends CabControl> declared, CabTrainControl desk,
+                                        String id, int value, State previous, double speed) {
+        return operateControls(declared, desk, id, value, previous.surface(desk), previous, speed);
+    }
+
+    public static State operateControls(CabControlHost host, BlockState block, String id, int value, State previous, double speed) {
+        var module = host.surfaceGeometry(block).owner(id);
+        var owner = module == null ? host.trainControl(block)
+                : module instanceof CabTrainControl mounted ? mounted : CabTrainControl.NONE;
+        return operateControls(host.controls(block), owner, id, value, host.surfaceState(block, previous), previous, speed);
+    }
+
+    private static State operateControls(List<? extends CabControl> declared, CabTrainControl owner,
+                                         String id, int value, CabSurfaceState before, State previous, double speed) {
+        var target = declared.stream().filter(control -> control.id().equals(id)).findFirst().orElse(null);
+        if (target == null || !target.accepts(value)) return null;
+        var after = before.after(target, value);
+        var result = owner.operate(target, value, before, after, previous.request());
+        return accept(previous, result.request(), result.surface().positions(), speed);
+    }
+
+    private static State accept(State previous, CabTrainRequest request, Map<String, Integer> positions, double speed) {
+        var brakes = CabBrakeConversion.operate(previous.brakes(), request, speed);
+        var mode = request.automatic() ? CabController.Mode.AUTOMATIC : CabController.Mode.MANUAL;
+        return new State(new CabController.Input(request.power(), brakes.brake(), request.reverser()), mode,
+                brakes.state(), request.approach(), request.enabled(), previous.simple(), positions);
+    }
     public willow.train.hexie.vehicle.runtime.VehicleRuntime.Control update(CabController.Mode mode, int direction,
             double speed, AutomaticTrainControl.Target target, double serviceDeceleration) {
         return update(mode, direction, speed, target, serviceDeceleration, StationStopControl.State.RUNNING);

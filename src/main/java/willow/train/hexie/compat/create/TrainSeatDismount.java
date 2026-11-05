@@ -3,7 +3,7 @@ package willow.train.hexie.compat.create;
 import com.simibubi.create.content.contraptions.AbstractContraptionEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
-import willow.train.hexie.blocks.emu.DrivingConsoleContext;
+import willow.train.hexie.api.cab.DrivingConsoleContext;
 
 /** Exit one block behind the operation point, away from its driving console. */
 public final class TrainSeatDismount {

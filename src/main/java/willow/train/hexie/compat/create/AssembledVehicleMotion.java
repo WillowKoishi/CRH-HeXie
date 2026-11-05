@@ -1,6 +1,6 @@
 package willow.train.hexie.compat.create;
 
-import willow.train.hexie.blocks.emu.DrivingConsoleContext;
+import willow.train.hexie.api.cab.DrivingConsoleContext;
 import willow.train.hexie.vehicle.control.TrainControl;
 import willow.train.hexie.vehicle.control.CabControlArbitration;
 import willow.train.hexie.vehicle.control.CabController;
@@ -863,15 +863,17 @@ public final class AssembledVehicleMotion {
         if (cab == null || !cab.console().equals(position)) return false;
         var state = cab.seatAccess().blockState(position);
         if (state == null || !(state.getBlock() instanceof willow.train.hexie.api.cab.CabControlHost host)) return false;
-        return updateCabControls(car, cab, player, (previous, speed) -> {
-            var actions = host.keyboardActions(state, previous.simple());
-            if (toggleSimple && !actions.contains(willow.train.hexie.api.cab.CabControlHost.KeyboardAction.TOGGLE_SIMPLE)) return null;
-            int permitted = actions.stream().mapToInt(willow.train.hexie.api.cab.CabControlHost.KeyboardAction::inputMask)
-                    .reduce(0, (a, b) -> a | b);
-            if ((mask & ~permitted) != 0) return null;
-            return SimpleCabControls.apply(previous, toggleSimple, mask, speed,
-                    actions.contains(willow.train.hexie.api.cab.CabControlHost.KeyboardAction.APPROACH));
-        }, mask);
+        return updateCabControls(car, cab, player,
+                (previous, speed) -> SimpleCabControls.applyBindings(host, state, previous, toggleSimple, mask, speed), mask);
+    }
+
+    /** Resolve a physical gesture against the mounted desk and convert its declared parameters at train speed. */
+    public boolean operateCabControl(SnapshotCarriageEntity car, DrivingConsoleContext cab,
+                                     Player player, String controlId, int value) {
+        var block = cab.seatAccess().blockState(cab.console());
+        if (block == null || !(block.getBlock() instanceof willow.train.hexie.api.cab.CabControlHost host)) return false;
+        return updateCabControls(car, cab, player, (previous, speed) ->
+                CabModule.operateControls(host, block, controlId, value, previous, speed));
     }
 
     public boolean updateCabControls(SnapshotCarriageEntity car, DrivingConsoleContext cab,
@@ -924,6 +926,7 @@ public final class AssembledVehicleMotion {
         } else releaseCabApproach(car.getUUID(), driver);
         var train = compatibility == null ? null : compatibility.train(car.getUUID());
         if (train != null) {
+            if (converted.simple()) syncTrainHud(train, driver, player);
             if (wasSimple && (!converted.simple() || !converted.enabled())) train.manualSteer = SteerDirection.NONE;
             if (!hadEnabledCab && converted.enabled()) {
                 train.manualSteer = SteerDirection.NONE;
@@ -1188,10 +1191,7 @@ public final class AssembledVehicleMotion {
         if (train != null) {
             train.manualSteer = steering < 0 ? SteerDirection.RIGHT : steering > 0 ? SteerDirection.LEFT : SteerDirection.NONE;
             train.manualTick = true;
-            if (player instanceof ServerPlayer serverPlayer && level.getGameTime() >= driver.nextHud) {
-                CatnipServices.NETWORK.sendToClient(serverPlayer, new TrainHUDUpdatePacket.Clientbound(train));
-                driver.nextHud = level.getGameTime() + 6;
-            }
+            syncTrainHud(train, driver, player);
             if (controlStationApproach(train, driver, player, keys.contains(4), direction, speed, !inverted))
                 return true;
         }
@@ -1201,6 +1201,14 @@ public final class AssembledVehicleMotion {
         runtime.controlsForConsist(entity.getUUID(), TrainControl.service(TrainControl.Source.CREATE_MANUAL,
                 power * direction, brake));
         return true;
+    }
+
+    private void syncTrainHud(CompatibilityTrain train, Controller driver, Player player) {
+        long now = level.getGameTime();
+        if (player instanceof ServerPlayer serverPlayer && now >= driver.nextHud) {
+            CatnipServices.NETWORK.sendToClient(serverPlayer, new TrainHUDUpdatePacket.Clientbound(train));
+            driver.nextHud = now + 6;
+        }
     }
 
     /** Preserve Create's station search, navigation and prompts without using its motion integrator. */

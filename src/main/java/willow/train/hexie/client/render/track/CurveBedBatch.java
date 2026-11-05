@@ -5,31 +5,29 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.resources.ResourceLocation;
 import org.lwjgl.system.MemoryUtil;
 
+import java.nio.ByteOrder;
 import java.util.*;
 import static willow.train.hexie.client.render.track.BallastMesh.*;
 
 /** One buffer per material and region. Pieces belong to individual curves so edits can remove just their share. */
 final class CurveBedBatch implements AutoCloseable {
-    private static final VertexFormat FORMAT = DefaultVertexFormat.BLOCK;
     private static final VertexFormat.Mode MODE = VertexFormat.Mode.QUADS;
-    private static final int STRIDE = FORMAT.getVertexSize() / Integer.BYTES;
-    private static final int LIGHT = FORMAT.getOffset(VertexFormatElement.UV2) / Integer.BYTES;
-    private final BallastModels.Material material;
-    private final boolean repeating;
+    private final int tint;
+    final ResourceLocation texture;
     private final List<Piece> pieces = new ArrayList<>();
     private VertexBuffer buffer;
     private boolean dirty;
 
-    CurveBedBatch(BlockState state, boolean repeating) {
-        this.material = BallastModels.material(state);
-        this.repeating = repeating;
+    CurveBedBatch(int tint, ResourceLocation texture) {
+        this.tint = tint;
+        this.texture = texture;
     }
 
     Piece add(ClientLevel level, long region, int lightBit, BlockPos owner, BlockPos regionOrigin, List<Quad> faces) {
-        var piece = new Piece(level, region, lightBit, material.color(), owner, regionOrigin, faces);
+        var piece = new Piece(level, region, lightBit, tint, owner, regionOrigin, faces);
         pieces.add(piece);
         dirty = true;
         return piece;
@@ -46,7 +44,6 @@ final class CurveBedBatch implements AutoCloseable {
             if ((changedLightSections & piece.lightBit) != 0 && piece.relight(level)) dirty = true;
         }
         if (dirty) upload();
-        CurveBedShader.shader(material, repeating).apply();
         buffer.bind();
         buffer.draw();
     }
@@ -57,8 +54,9 @@ final class CurveBedBatch implements AutoCloseable {
         try (var memory = new ByteBufferBuilder(words * Integer.BYTES)) {
             var packed = MemoryUtil.memIntBuffer(memory.reserve(words * Integer.BYTES), words);
             for (var piece : pieces) packed.put(piece.vertices);
-            int count = words / STRIDE;
-            var state = new MeshData.DrawState(FORMAT, count, MODE.indexCount(count), MODE, VertexFormat.IndexType.least(count));
+            var format = pieces.getFirst().format;
+            int count = words / (format.getVertexSize() / Integer.BYTES);
+            var state = new MeshData.DrawState(format, count, MODE.indexCount(count), MODE, VertexFormat.IndexType.least(count));
             if (buffer == null) buffer = new VertexBuffer(VertexBuffer.Usage.STATIC);
             buffer.bind();
             buffer.upload(new MeshData(Objects.requireNonNull(memory.build()), state));
@@ -79,6 +77,7 @@ final class CurveBedBatch implements AutoCloseable {
         final long region;
         final int lightBit;
         final int[] vertices;
+        private final VertexFormat format;
         private final BlockPos[] probes;
         private final int[] probeLights, faceProbe;
 
@@ -89,9 +88,9 @@ final class CurveBedBatch implements AutoCloseable {
             faceProbe = new int[size];
             var unique = new LinkedHashMap<BlockPos,Integer>();
             var delta = origin.subtract(regionOrigin);
-            int bytes = size * 4 * FORMAT.getVertexSize();
+            int bytes = size * 4 * DefaultVertexFormat.BLOCK.getVertexSize();
             try (var memory = new ByteBufferBuilder(bytes)) {
-                var builder = new BufferBuilder(memory, MODE, FORMAT);
+                var builder = new BufferBuilder(memory, MODE, DefaultVertexFormat.BLOCK);
                 for (int i = 0; i < size; i++) {
                     var q = faces.get(i);
                     faceProbe[i] = unique.computeIfAbsent(lightProbe(origin, q), pos -> unique.size());
@@ -104,8 +103,11 @@ final class CurveBedBatch implements AutoCloseable {
                     vertex(builder, delta, q.d(), n, red, green, blue);
                 }
                 try (var mesh = builder.buildOrThrow()) {
-                    vertices = new int[bytes / Integer.BYTES];
-                    mesh.vertexBuffer().order(java.nio.ByteOrder.nativeOrder()).asIntBuffer().get(vertices);
+                    // Shader packs can extend BLOCK with tangent, mid-UV and block attributes.
+                    format = mesh.drawState().format();
+                    var packed = mesh.vertexBuffer().order(ByteOrder.nativeOrder()).asIntBuffer();
+                    vertices = new int[packed.remaining()];
+                    packed.get(vertices);
                 }
             }
             probes = unique.keySet().toArray(BlockPos[]::new);
@@ -127,9 +129,13 @@ final class CurveBedBatch implements AutoCloseable {
                 int light = LevelRenderer.getLightColor(level, probes[i]);
                 if (probeLights[i] != light) { probeLights[i] = light; changed = true; }
             }
-            if (changed) for (int face = 0; face < faceProbe.length; face++) {
-                int light = probeLights[faceProbe[face]];
-                for (int corner = 0; corner < 4; corner++) vertices[(4*face+corner)*STRIDE+LIGHT] = light;
+            if (changed) {
+                int stride = format.getVertexSize() / Integer.BYTES;
+                int lightOffset = format.getOffset(VertexFormatElement.UV2) / Integer.BYTES;
+                for (int face = 0; face < faceProbe.length; face++) {
+                    int light = probeLights[faceProbe[face]];
+                    for (int corner = 0; corner < 4; corner++) vertices[(4*face+corner)*stride+lightOffset] = light;
+                }
             }
             return changed;
         }

@@ -13,6 +13,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import willow.train.hexie.blockentity.CustomRenderedDoorEntity;
 import willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock;
+import willow.train.hexie.compat.create.CRH2DoorMovement;
 import willow.train.hexie.compat.create.CarriagePlayerSupport;
 import willow.train.hexie.compat.create.SnapshotCarriageEntity;
 
@@ -36,9 +37,11 @@ public final class DoorInteractionPicking {
             BlockState state = viewer.level().getBlockState(candidate);
             if (!(state.getBlock() instanceof CRH2DoorBlock door)
                     || state.getValue(DoorBlock.HALF) != DoubleBlockHalf.LOWER) continue;
-            float progress = viewer.level().getBlockEntity(candidate) instanceof CustomRenderedDoorEntity entity
+            var be = viewer.level().getBlockEntity(candidate);
+            float progress = be instanceof CustomRenderedDoorEntity entity
                     ? entity.crh2InteractionProgress() : (state.getValue(DoorBlock.OPEN) ? 1 : 0);
-            BlockHitResult hit = door.interactionShape(state, progress).clip(origin, target, candidate);
+            boolean reverse = be instanceof CustomRenderedDoorEntity entity && entity.hasReverseSlide();
+            BlockHitResult hit = door.interactionShape(state, progress, reverse).clip(origin, target, candidate);
             if (hit == null) continue;
             double distance = hit.getLocation().distanceToSqr(origin);
             if (distance >= closest) continue;
@@ -109,9 +112,9 @@ public final class DoorInteractionPicking {
         if (!(state.getBlock() instanceof CRH2DoorBlock door))
             return state.getShape(contraption.getContraptionWorld(), BlockPos.ZERO.below()).clip(from, to, position);
         if (state.getValue(DoorBlock.HALF) != DoubleBlockHalf.LOWER) return null;
-        float progress = contraption.getBlockEntityClientSide(position) instanceof CustomRenderedDoorEntity entity
-                ? entity.crh2InteractionProgress() : (state.getValue(DoorBlock.OPEN) ? 1 : 0);
-        var hit = door.interactionShape(state, progress).clip(from, to, position);
+        float progress = CRH2DoorMovement.fullyOpen(contraption, position, door) ? 1 : 0;
+        boolean reverse = info.nbt() != null && info.nbt().getBoolean(CustomRenderedDoorEntity.REVERSE_SLIDE_TAG);
+        var hit = door.interactionShape(state, progress, reverse).clip(from, to, position);
         return hit == null ? null : hit.withPosition(position.above(hit.getLocation().y - position.getY() >= 1 ? 1 : 0));
     }
 }

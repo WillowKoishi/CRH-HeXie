@@ -1,5 +1,8 @@
 package willow.train.hexie.vehicle.control;
 
+import net.minecraft.world.level.block.state.BlockState;
+import willow.train.hexie.api.cab.CabControlHost;
+
 /** Converts a console's declared directional actions, independently of its physical key bindings. */
 public final class SimpleCabControls {
     public static final int FORWARD = 1, BACKWARD = 2, LEFT = 4, RIGHT = 8, APPROACH = 16;
@@ -9,6 +12,17 @@ public final class SimpleCabControls {
     public static boolean validMask(int mask) { return (mask & ~ALL) == 0; }
     public static void requireValidMask(int mask) {
         if (!validMask(mask)) throw new IllegalArgumentException("Invalid cab keyboard actions");
+    }
+
+    /** Returns null when the occupied surface does not accept this gesture in its current mode. */
+    public static CabModule.State applyBindings(CabControlHost host, BlockState block, CabModule.State previous,
+                                                boolean toggleSimple, int mask, double speed) {
+        var actions = host.keyboardActions(block, previous.simple());
+        if (toggleSimple && !actions.contains(CabControlHost.KeyboardAction.TOGGLE_SIMPLE)) return null;
+        int permitted = 0;
+        for (var action : actions) permitted |= action.inputMask();
+        if ((mask & ~permitted) != 0) return null;
+        return apply(previous, toggleSimple, mask, speed, actions.contains(CabControlHost.KeyboardAction.APPROACH));
     }
 
     /** Only explicit toggles change input style; heartbeat packets never change stored handles. */

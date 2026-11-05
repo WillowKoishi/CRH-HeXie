@@ -81,7 +81,6 @@ public class CustomRenderedDoorRenderer implements BlockEntityRenderer<CustomRen
                             PoseStack pose, MultiBufferSource buffer, int light, int overlay) {
         var state = entity.getBlockState();
         boolean mirrored = !entity.isLeftSide(state);
-        float value = willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock.animationCurve(entity.crh2Progress(partial));
         MultiBufferSource shellBuffers = buffer;
         var lighting = willow.train.hexie.client.render.CRH2DoorRenderContext.current();
         if (lighting != null) {
@@ -104,7 +103,7 @@ public class CustomRenderedDoorRenderer implements BlockEntityRenderer<CustomRen
         if (door.isSlideDoor()) {
             CachedBuffers.partial(PartialModelInit.crh2PassengerDoorFrame(door.doorType(), entity.hasPassengerFrame(), mirrored), state)
                     .disableDiffuse().light(light).overlay(overlay).renderInto(pose,consumer);
-            pose.translate((mirrored ? -1 : 1)*door.slideTravel()*value,0,0);
+            pose.translate(door.slideOffset(mirrored, entity.hasReverseSlide(), entity.crh2Progress(partial)),0,0);
         } else {
             double x = door.cabHingeX(mirrored);
             double z = door.cabHingeZ();

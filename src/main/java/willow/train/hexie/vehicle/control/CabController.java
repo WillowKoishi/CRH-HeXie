@@ -3,7 +3,7 @@ package willow.train.hexie.vehicle.control;
 import java.util.Objects;
 import willow.train.hexie.vehicle.runtime.VehicleRuntime;
 
-/** Consumes converted actuator amounts. Handle gestures and brake latches belong to the cab adapter. */
+/** Computes train commands from the cab module's converted power, brake and direction inputs. */
 public final class CabController {
     public enum Mode { MANUAL, AUTOMATIC }
     /** Actual brake command, not a fraction of service handle travel. */

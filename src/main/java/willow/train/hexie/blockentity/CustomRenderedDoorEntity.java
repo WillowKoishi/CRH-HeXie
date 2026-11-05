@@ -24,9 +24,17 @@ import java.util.List;
 
 public class CustomRenderedDoorEntity extends SmartBlockEntity implements IContraptionMovementBlockEntity, willow.train.hexie.blocks.base.BlockEntityAnimation {
 
+    public static final String REVERSE_SLIDE_TAG = "ReverseSlide";
     boolean isSlideDoor = false, open = false;
     public float animation_controller;
     private boolean passengerFrame;
+    private boolean reverseSlide;
+    public boolean hasReverseSlide() { return reverseSlide; }
+    public void setReverseSlide(boolean reverse) {
+        if (!supportsPassengerFrame() || !isLowerSide(getBlockState()) || reverseSlide == reverse) return;
+        reverseSlide = reverse;
+        notifyUpdate();
+    }
     public boolean hasPassengerFrame() { return passengerFrame; }
     public void togglePassengerFrame() {
         passengerFrame = !passengerFrame;
@@ -43,6 +51,11 @@ public class CustomRenderedDoorEntity extends SmartBlockEntity implements IContr
     public void copyAnimationFrom(CustomRenderedDoorEntity source) {
         animation_controller = source.animation_controller;
         crh2Animation.startWithValue(source.crh2Progress());
+    }
+    public void setCarriageAnimation(boolean open, float previous, float current) {
+        this.open = open;
+        crh2Animation.startWithValue(previous).setValue(current);
+        animation_controller = current;
     }
     @Override public void restoreAnimation(BlockEntity previous) {
         if(previous instanceof CustomRenderedDoorEntity source)copyAnimationFrom(source);
@@ -68,12 +81,16 @@ public class CustomRenderedDoorEntity extends SmartBlockEntity implements IContr
         return getBlockState().getBlock() instanceof CRH2DoorBlock door && door.supportsPassengerFrame();
     }
     private void writeAppearance(CompoundTag tag) {
-        if (supportsPassengerFrame()) tag.putBoolean("PassengerFrame", passengerFrame);
+        if (supportsPassengerFrame()) {
+            tag.putBoolean("PassengerFrame", passengerFrame);
+            if (isLowerSide(getBlockState())) tag.putBoolean(REVERSE_SLIDE_TAG, reverseSlide);
+        }
     }
 
     @Override protected void read(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
         super.read(tag, registries, clientPacket);
         passengerFrame = supportsPassengerFrame() && (!tag.contains("PassengerFrame") || tag.getBoolean("PassengerFrame"));
+        reverseSlide = supportsPassengerFrame() && isLowerSide(getBlockState()) && tag.getBoolean(REVERSE_SLIDE_TAG);
     }
 
     public boolean isLeftSide(BlockState state) {

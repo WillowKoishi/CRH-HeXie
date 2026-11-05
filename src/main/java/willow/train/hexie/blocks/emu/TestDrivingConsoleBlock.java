@@ -5,10 +5,14 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import willow.train.hexie.blocks.DrivingConsoleBlock;
+import willow.train.hexie.vehicle.control.TestCabControls;
 
 /** Temporary one-block fixture; the production cab model is deliberately separate. */
-public final class TestDrivingConsoleBlock extends CRH2DrivingConsoleBlock {
-    public TestDrivingConsoleBlock(Properties properties) { super(properties); }
+public final class TestDrivingConsoleBlock extends DrivingConsoleBlock {
+    public TestDrivingConsoleBlock(Properties properties) {
+        super(properties, TestCabInteraction::surface, TestCabControls.INSTANCE);
+    }
     @Override public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         var panel = switch (state.getValue(FACING)) {
             case EAST -> box(1.12, 16, .32, 5.76, 27.52, 15.68);

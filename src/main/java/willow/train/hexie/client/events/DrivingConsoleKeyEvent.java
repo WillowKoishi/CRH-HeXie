@@ -1,7 +1,7 @@
 package willow.train.hexie.client.events;
 
 import net.neoforged.bus.api.Event;
-import willow.train.hexie.blocks.emu.DrivingConsoleContext;
+import willow.train.hexie.api.cab.DrivingConsoleContext;
 
 /** Raw key input in the active cab; each surface adapter defines its meaning. */
 public final class DrivingConsoleKeyEvent extends Event {

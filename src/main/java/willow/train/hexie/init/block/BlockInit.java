@@ -126,12 +126,13 @@ public class BlockInit {
             object -> () -> new willow.train.hexie.item.PartBlockItem(object.get(), new Item.Properties()));
 
     public static final DeferredHolder<Block, CRH2DrivingConsoleBlock> CRH2A_DRIVING_CONSOLE =
-            crh2DrivingConsole("crh2a_driving_console");
+            crh2DrivingConsole("crh2a_driving_console", CRH2DrivingConsoleBlock::new);
     public static final DeferredHolder<Block, CRH2DrivingConsoleBlock> CRH2A_NONSTANDARD_DRIVING_CONSOLE =
-            crh2DrivingConsole("crh2a_nonstandard_driving_console");
+            crh2DrivingConsole("crh2a_nonstandard_driving_console", CRH2DrivingConsoleBlock::nonstandard);
 
-    private static DeferredHolder<Block, CRH2DrivingConsoleBlock> crh2DrivingConsole(String name) {
-        return register(name, () -> new CRH2DrivingConsoleBlock(BlockBehaviour.Properties.of()
+    private static DeferredHolder<Block, CRH2DrivingConsoleBlock> crh2DrivingConsole(
+            String name, Function<BlockBehaviour.Properties, CRH2DrivingConsoleBlock> factory) {
+        return register(name, () -> factory.apply(BlockBehaviour.Properties.of()
                         .mapColor(MapColor.METAL).strength(2.0f).sound(SoundType.METAL).noOcclusion()),
                 block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
     }

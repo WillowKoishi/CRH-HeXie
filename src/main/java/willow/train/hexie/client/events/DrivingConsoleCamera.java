@@ -12,7 +12,7 @@ import org.joml.Matrix3f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import willow.train.hexie.blocks.emu.CRH2DriverSeatBlock;
-import willow.train.hexie.blocks.emu.DrivingConsoleContext;
+import willow.train.hexie.api.cab.DrivingConsoleContext;
 import willow.train.hexie.client.cab.CabViewRotation;
 
 /** Relative eye position and mouse look for captured seats; no dependency on a particular vehicle backend. */

@@ -39,7 +39,7 @@ public class HeXieClientInit {
         willow.train.hexie.client.carriage.browser.CarriageBrowserClient.register(Main.bus);
         Main.bus.addListener(HeXieClientInit::registerBlockExtensions);
         Main.bus.addListener(HeXieClientInit::registerMenus);
-        Main.bus.addListener(willow.train.hexie.client.events.Crh2CabCaption::register);
+        Main.bus.addListener(willow.train.hexie.client.events.CabControlCaption::register);
         Main.bus.addListener(HeXieClientInit::registerRenderers);
         Main.bus.addListener(HeXieClientInit::registerEntityVisuals);
         PartialModelInit.init();

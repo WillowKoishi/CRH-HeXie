@@ -27,9 +27,7 @@ public class HexieClientSetupEvent {
     @SubscribeEvent
     public static void onRegisterAdditionalModels(ModelEvent.RegisterAdditional event) {
         for (var shell : willow.train.hexie.client.cab.Ctcs2DmiModule.Shell.values()) event.register(shell.model());
-        for (var handle : willow.train.hexie.client.render.blockentity.DrivingConsoleRenderer.MODELS.values())
-            event.register(handle);
-        event.register(willow.train.hexie.client.render.blockentity.DrivingConsoleRenderer.BRAKE_DOME);
+        willow.train.hexie.client.render.blockentity.DrivingConsoleRenderer.registerModels(event);
         for(ResourceLocation location : ModelInit.UNBAKED) {
             event.register(net.minecraft.client.resources.model.ModelResourceLocation.standalone(location));
         }

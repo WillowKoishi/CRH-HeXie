@@ -1572,11 +1572,12 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
                 }
 
                 @Override public void resetRenderLevel() {
-                    // Create recreates every display BE after any block changes. Preserve the
-                    // door's current progress, including a transition still in flight.
+                    // CRH2 doors read their actor's progress when the display BE is created.
+                    // Other animated blocks carry their progress across rebuilds in the display BE.
                     var previousDoors = new java.util.HashMap<BlockPos, BlockEntity>();
                     for (var be : renderedBlockEntityView)
-                        if (be instanceof willow.train.hexie.blocks.base.BlockEntityAnimation)
+                        if (be instanceof willow.train.hexie.blocks.base.BlockEntityAnimation
+                                && !(be.getBlockState().getBlock() instanceof willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock))
                             previousDoors.put(be.getBlockPos(), be);
                     super.resetRenderLevel();
                     for (var entry : previousDoors.entrySet()) {

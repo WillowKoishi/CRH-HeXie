@@ -6,13 +6,13 @@ import dev.engine_room.flywheel.api.visual.Effect;
 import dev.engine_room.flywheel.api.visual.EffectVisual;
 import dev.engine_room.flywheel.api.visual.ShaderLightVisual;
 import dev.engine_room.flywheel.api.visualization.VisualizationContext;
+import dev.engine_room.flywheel.lib.instance.InstanceTypes;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 
 /** Immutable geometry; Flywheel owns its draw, visibility and section lighting. */
-record CurveBedEffect(ClientLevel level, BlockPos pos, Model model, BallastModels.Material texture,
-                      boolean repeating, LongSet lightSections) implements Effect {
+record CurveBedEffect(ClientLevel level, BlockPos pos, Model model, int tint, LongSet lightSections) implements Effect {
     @Override public EffectVisual<?> visualize(VisualizationContext context, float partialTick) {
         return new Visual(context, this);
     }
@@ -24,8 +24,10 @@ record CurveBedEffect(ClientLevel level, BlockPos pos, Model model, BallastModel
         Visual(VisualizationContext context, CurveBedEffect effect) {
             var pos = effect.pos.subtract(context.renderOrigin());
             sections = effect.lightSections;
-            instance = CurveBedInstance.create(context, effect.model, pos.getX(), pos.getY(), pos.getZ(),
-                    effect.texture, effect.repeating);
+            var bed = context.instancerProvider().instancer(InstanceTypes.TRANSFORMED, effect.model).createInstance();
+            bed.translate(pos.getX(), pos.getY(), pos.getZ());
+            bed.colorRgb(effect.tint).setChanged();
+            instance = bed;
         }
 
         @Override public void setSectionCollector(SectionCollector collector) { collector.sections(sections); }

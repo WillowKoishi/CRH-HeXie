@@ -9,6 +9,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.DeferredHolder;
 
 import willow.train.hexie.Main;
+import willow.train.hexie.blocks.DrivingConsoleBlock;
 import willow.train.hexie.init.block.BlockInit;
 import willow.train.hexie.init.block.CustomRenderedDoorBlockInit;
 import willow.train.hexie.blockentity.*;
@@ -30,8 +31,8 @@ public class BlockEntitiesInit {
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DrivingConsoleEntity>> DRIVING_CONSOLE =
             BLOCK_ENTITIES.register("driving_console", () -> BlockEntityType.Builder.of(
-                    DrivingConsoleEntity::new, BlockInit.CRH2A_DRIVING_CONSOLE.get(),
-                    BlockInit.CRH2A_NONSTANDARD_DRIVING_CONSOLE.get(), BlockInit.TEST_DRIVING_CONSOLE.get()).build(null));
+                    DrivingConsoleEntity::new, BuiltInRegistries.BLOCK.stream()
+                            .filter(DrivingConsoleBlock.class::isInstance).toArray(Block[]::new)).build(null));
 
     /** Blocks are registered before entity types; add-on CouplerBlocks may reuse this entity. */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CouplerBlockEntity>> COUPLER =

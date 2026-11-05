@@ -22,7 +22,9 @@ import willow.train.hexie.Main;
 import willow.train.hexie.blocks.carriage.CustomRenderedDoorBlock;
 import willow.train.hexie.blocks.emu.head.HeadGeometry;
 import willow.train.hexie.blockentity.CustomRenderedDoorEntity;
+import willow.train.hexie.compat.create.CRH2DoorMovement;
 import willow.train.hexie.item.FloorSwitcherItem;
+import willow.train.hexie.mixins.mixin.ContraptionWorldAccessor;
 
 /** Door placement uses the authored reference cube as the supporting neighbour. */
 public class CRH2DoorBlock extends CustomRenderedDoorBlock {
@@ -54,8 +56,9 @@ public class CRH2DoorBlock extends CustomRenderedDoorBlock {
     public static final double PASSENGER_OPEN_TRIGGER_EXTENSION = 1 / 16d;
     private static final double PASSENGER_HEIGHT = 29.8 / 16d;
     private final Type doorType;
-    private final VoxelShape[] interactionShapes = new VoxelShape[16];
-    private final VoxelShape[] halfInteractionShapes = new VoxelShape[32];
+    // Four facings, two hinges and three poses (closed, open forward, open in reverse).
+    private final VoxelShape[] interactionShapes = new VoxelShape[24];
+    private final VoxelShape[] halfInteractionShapes = new VoxelShape[48];
 
     public static double cabHingeX(boolean mirrored) {
         double x = CAB_EDGE_X + CAB_HINGE_OUTWARD;
@@ -76,6 +79,10 @@ public class CRH2DoorBlock extends CustomRenderedDoorBlock {
     }
     public Type doorType() { return doorType; }
     public double slideTravel() { return doorType.slideTravel; }
+    public double slideOffset(boolean mirrored, boolean reverse, float progress) {
+        double offset = slideTravel() * animationCurve(progress);
+        return mirrored ^ (doorType == Type.PASSENGER && reverse) ? -offset : offset;
+    }
     public boolean supportsPassengerFrame() { return doorType == Type.PASSENGER; }
     private static Couple<net.minecraft.resources.ResourceLocation> models(Type doorType, String side) {
         var location = Main.asResource("crh2a/doors/"+doorType.model+"_"+side);
@@ -89,7 +96,7 @@ public class CRH2DoorBlock extends CustomRenderedDoorBlock {
             if (!level.getBlockState(lower).is(this)
                     || !(level.getBlockEntity(lower) instanceof CustomRenderedDoorEntity door))
                 return ItemInteractionResult.FAIL;
-            if (!level.isClientSide) door.togglePassengerFrame();
+            FloorSwitcherItem.beginUsingDoor(player, hand, door);
             return ItemInteractionResult.sidedSuccess(level.isClientSide);
         }
         return super.useItemOn(stack, state, level, pos, player, hand, hit);
@@ -111,9 +118,11 @@ public class CRH2DoorBlock extends CustomRenderedDoorBlock {
         return Shapes.create(HeadGeometry.rotate(box, state.getValue(FACING)));
     }
     private boolean fullyOpen(BlockState state, BlockGetter level, BlockPos pos) {
-        if (!state.getValue(OPEN)) return false;
         BlockPos lower = state.getValue(HALF)==DoubleBlockHalf.UPPER ? pos.below() : pos;
-        return level.getBlockEntity(lower) instanceof CustomRenderedDoorEntity door && door.crh2Progress() >= 1;
+        if (level instanceof ContraptionWorldAccessor view)
+            return CRH2DoorMovement.fullyOpen(view.hexie$getContraption(), lower, this) && state.getValue(OPEN);
+        return state.getValue(OPEN) && level.getBlockEntity(lower) instanceof CustomRenderedDoorEntity door
+                && door.crh2Progress() >= 1;
     }
     @Override public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return fullyOpen(state, level, pos) ? Shapes.empty() : rotated(state, new AABB(0,0,13/16d,1,1,17/16d));
@@ -121,11 +130,13 @@ public class CRH2DoorBlock extends CustomRenderedDoorBlock {
     @Override public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         boolean upper = state.getValue(HALF)==DoubleBlockHalf.UPPER;
         BlockPos root = upper ? pos.below() : pos;
-        float progress = level.getBlockEntity(root) instanceof CustomRenderedDoorEntity door
+        var entity = level.getBlockEntity(root);
+        float progress = entity instanceof CustomRenderedDoorEntity door
                 ? door.crh2InteractionProgress() : state.getValue(OPEN) ? 1 : 0;
-        int key = interactionKey(state, progress)*2+(upper ? 1 : 0);
+        boolean reverse = entity instanceof CustomRenderedDoorEntity door && door.hasReverseSlide();
+        int key = interactionKey(state, progress, reverse)*2+(upper ? 1 : 0);
         if (halfInteractionShapes[key]==null) {
-            VoxelShape shape = interactionShape(state, progress);
+            VoxelShape shape = interactionShape(state, progress, reverse);
             // Split only vertically: an open cab leaf extends into the neighbouring cell.
             double y = upper ? 1 : 0;
             halfInteractionShapes[key] = Shapes.joinUnoptimized(shape,
@@ -136,17 +147,23 @@ public class CRH2DoorBlock extends CustomRenderedDoorBlock {
 
     /** Cached completed pose in the lower block's coordinates, also used by cross-cell picking. */
     public VoxelShape interactionShape(BlockState state, float endpoint) {
-        int key = interactionKey(state, endpoint);
-        if (interactionShapes[key]==null) interactionShapes[key]=buildInteractionShape(state,endpoint>=1 ? 1 : 0);
+        return interactionShape(state, endpoint, false);
+    }
+
+    public VoxelShape interactionShape(BlockState state, float endpoint, boolean reverse) {
+        reverse = reverse && doorType == Type.PASSENGER;
+        int key = interactionKey(state, endpoint, reverse);
+        if (interactionShapes[key]==null) interactionShapes[key]=buildInteractionShape(state,endpoint>=1 ? 1 : 0, reverse);
         return interactionShapes[key];
     }
 
-    private int interactionKey(BlockState state, float endpoint) {
-        return state.getValue(FACING).get2DDataValue()*4
-                +(state.getValue(HINGE)==DoorHingeSide.RIGHT ? 2 : 0)+(endpoint>=1 ? 1 : 0);
+    private int interactionKey(BlockState state, float endpoint, boolean reverse) {
+        int pose = endpoint < 1 ? 0 : reverse ? 2 : 1;
+        return state.getValue(FACING).get2DDataValue()*6
+                +(state.getValue(HINGE)==DoorHingeSide.RIGHT ? 3 : 0)+pose;
     }
 
-    private VoxelShape buildInteractionShape(BlockState state, float endpoint) {
+    private VoxelShape buildInteractionShape(BlockState state, float endpoint, boolean reverse) {
         boolean mirrored = state.getValue(HINGE)==DoorHingeSide.RIGHT;
         if (!isSlideDoor()) return cabLeafShape(state, mirrored, endpoint);
         // Both passenger variants share the narrow frame's interaction geometry.
@@ -157,7 +174,7 @@ public class CRH2DoorBlock extends CustomRenderedDoorBlock {
         if (endpoint >= 1) {
             double edge = Math.min(slideTravel(), width) - PASSENGER_OPEN_TRIGGER_EXTENSION;
             return Shapes.or(frame, shapeBox(state, mirrored,
-                    new AABB(edge,0,13.3/16d,width,PASSENGER_HEIGHT,14.7/16d)));
+                    new AABB(reverse ? 0 : edge, 0, 13.3/16d, reverse ? width-edge : width, PASSENGER_HEIGHT, 14.7/16d)));
         }
         return Shapes.or(frame,
                 shapeBox(state, mirrored, new AABB(0,0,13.3/16d,width,1,14.3/16d)),

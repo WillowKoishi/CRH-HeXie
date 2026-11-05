@@ -12,30 +12,48 @@ import willow.train.hexie.item.FloorSwitcherItem;
 import willow.train.hexie.blocks.bogeys.BogeyFloorData;
 import willow.train.hexie.network.c2s.FloorHeightPacket;
 
-/** The same held-use brass slider as signal settings; its value belongs to the held tool. */
+/** Brass slider for the setting selected by the held wrench. */
 public final class FloorHeightSettingsScreen extends CenteredSemaphoreValueSettingsScreen {
     private final InteractionHand hand;
     private final int hotbarSlot;
-    private final int initialHeight;
+    private final FloorSwitcherItem.Slider slider;
     private boolean confirmed;
-    private final boolean longitudinal;
 
     public FloorHeightSettingsScreen(InteractionHand hand, int hotbarSlot, int height) {
         this(hand, hotbarSlot, height, false);
     }
     public FloorHeightSettingsScreen(InteractionHand hand, int hotbarSlot, int height, boolean longitudinal) {
-        super(BlockPos.ZERO, new ValueSettingsBoard(Component.translatable(longitudinal ? "gui.hexie.bogey_offset.title" : "gui.hexie.floor_height.title"),
+        this(hand, hotbarSlot, new FloorSwitcherItem.Slider(
+                longitudinal ? FloorSwitcherItem.Mode.LONGITUDINAL : FloorSwitcherItem.Mode.HEIGHT, height));
+    }
+
+    public FloorHeightSettingsScreen(InteractionHand hand, int hotbarSlot, FloorSwitcherItem.Slider slider) {
+        super(BlockPos.ZERO, board(slider.mode()), new ValueSettings(0, coordinate(slider)), ignored -> {}, 0);
+        this.hand = hand;
+        this.hotbarSlot = hotbarSlot;
+        this.slider = slider;
+    }
+
+    private static ValueSettingsBoard board(FloorSwitcherItem.Mode mode) {
+        if (mode == FloorSwitcherItem.Mode.DOOR_DIRECTION)
+            return new ValueSettingsBoard(Component.translatable("gui.hexie.door_direction.title"), 1, 1,
+                    List.of(Component.translatable("gui.hexie.door_direction.axis")),
+                    new ValueSettingsFormatter(settings -> Component.translatable(settings.value() == 0
+                            ? "gui.hexie.door_direction.forward" : "gui.hexie.door_direction.reverse")));
+        boolean longitudinal = mode == FloorSwitcherItem.Mode.LONGITUDINAL;
+        return new ValueSettingsBoard(Component.translatable(longitudinal ? "gui.hexie.bogey_offset.title" : "gui.hexie.floor_height.title"),
                         setting(longitudinal).range(), setting(longitudinal).majorTick(), List.of(Component.translatable(longitudinal ? "gui.hexie.bogey_offset.axis" : "gui.hexie.floor_height.height")),
                         new ValueSettingsFormatter(settings -> {
                             if (longitudinal) return Component.literal(Integer.toString(setting(true).value(settings.value())));
                             int value = setting(false).value(settings.value());
                             return value == 24 ? Component.translatable("gui.hexie.floor_height.original")
                                     : Component.literal(value / 10 + "." + value % 10);
-                        })), new ValueSettings(0, setting(longitudinal).coordinate(height)), ignored -> {}, 0);
-        this.hand = hand;
-        this.hotbarSlot = hotbarSlot;
-        this.initialHeight = height;
-        this.longitudinal = longitudinal;
+                        }));
+    }
+
+    private static int coordinate(FloorSwitcherItem.Slider slider) {
+        return slider.mode() == FloorSwitcherItem.Mode.DOOR_DIRECTION ? slider.value()
+                : setting(slider.mode() == FloorSwitcherItem.Mode.LONGITUDINAL).coordinate(slider.value());
     }
 
     private static BogeyFloorData.Setting setting(boolean longitudinal) {
@@ -44,16 +62,18 @@ public final class FloorHeightSettingsScreen extends CenteredSemaphoreValueSetti
 
     @Override protected void saveAndClose(double mouseX, double mouseY) {
         int coordinate = getClosestCoordinate((int) mouseX, (int) mouseY).value();
-        int height = setting(longitudinal).value(coordinate);
         // Never call ValueSettingsScreen's block-entity packet path for a portable tool.
-        PacketDistributor.sendToServer(new FloorHeightPacket(hand, hotbarSlot, height));
+        boolean door = slider.mode() == FloorSwitcherItem.Mode.DOOR_DIRECTION;
+        int value = door ? coordinate : setting(slider.mode() == FloorSwitcherItem.Mode.LONGITUDINAL).value(coordinate);
+        PacketDistributor.sendToServer(new FloorHeightPacket(hand, hotbarSlot, value,
+                door ? FloorHeightPacket.Action.CONFIRM_DOOR_DIRECTION : FloorHeightPacket.Action.CONFIRM));
         confirmed = true;
         onClose();
     }
 
     @Override public void onClose() {
         if (!confirmed)
-            PacketDistributor.sendToServer(new FloorHeightPacket(hand, hotbarSlot, initialHeight, FloorHeightPacket.Action.CANCEL));
+            PacketDistributor.sendToServer(new FloorHeightPacket(hand, hotbarSlot, slider.value(), FloorHeightPacket.Action.CANCEL));
         if (minecraft != null && minecraft.player != null && minecraft.gameMode != null
                 && minecraft.player.isUsingItem() && minecraft.player.getUseItem().getItem() instanceof FloorSwitcherItem)
             minecraft.gameMode.releaseUsingItem(minecraft.player);

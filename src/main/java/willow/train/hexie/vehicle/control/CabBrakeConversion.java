@@ -1,6 +1,8 @@
 package willow.train.hexie.vehicle.control;
 
-/** Reusable handle conversion, called by a cab surface on an operation, never by the train controller. */
+import willow.train.hexie.api.traincontrol.CabTrainRequest;
+
+/** Resolves the train's brake request and latch state from the parameters of a cab operation. */
 public final class CabBrakeConversion {
     private CabBrakeConversion() {}
     /** Saved gesture history and display status, not additional train commands. */
@@ -13,15 +15,13 @@ public final class CabBrakeConversion {
         }
     }
     public record Result(double brake, State state) {}
-    /** The surface supplies a release edge: handle return OR a separate button, never a held command. */
-    public static Result operate(State previous, double serviceBrake, boolean emergencyHandle, boolean parking,
-                                 boolean releaseEdge, double power, int reverser, double speed) {
-        new CabController.Input(power, serviceBrake, reverser);
+    /** The desk supplies the release pulse. Train control checks the interlock at the time it arrives. */
+    public static Result operate(State previous, CabTrainRequest request, double speed) {
         if (!Double.isFinite(speed)) throw new IllegalArgumentException("Non-finite cab speed");
-        boolean latched = previous.emergencyLatched() || emergencyHandle;
-        boolean released = !emergencyHandle && releaseEdge && Math.abs(speed) < 1e-4 && power == 0 && reverser == 0;
-        if (released) latched = false;
-        return new Result(latched || parking ? 1 : serviceBrake,
-                new State(serviceBrake, emergencyHandle, latched, parking, released));
+        boolean released = request.releaseEmergency() && !request.emergencyDemand() && Math.abs(speed) < 1e-4
+                && request.power() == 0 && request.reverser() == 0;
+        boolean latched = request.emergencyDemand() || (previous.emergencyLatched() && !released);
+        return new Result(latched || request.parking() ? 1 : request.serviceBrake(),
+                new State(request.serviceBrake(), request.emergencyDemand(), latched, request.parking(), released));
     }
 }

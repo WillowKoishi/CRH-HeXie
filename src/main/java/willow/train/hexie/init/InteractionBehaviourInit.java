@@ -4,6 +4,8 @@ import com.simibubi.create.api.behaviour.interaction.MovingInteractionBehaviour;
 import com.simibubi.create.foundation.block.IBE;
 import willow.train.hexie.interaction.compatible.BlockEntitySynchronizeBehaviour;
 import willow.train.hexie.blocks.base.IContraptionMovementBlockEntity;
+import willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock;
+import willow.train.hexie.compat.create.CRH2DoorMovement;
 
 
 public class InteractionBehaviourInit {
@@ -19,8 +21,10 @@ public class InteractionBehaviourInit {
         MovingInteractionBehaviour.REGISTRY.registerProvider(block ->
                 block instanceof willow.train.hexie.blocks.parts.VariantPartBlock ? variants : null);
         BlockEntitySynchronizeBehaviour besb = new BlockEntitySynchronizeBehaviour();
+        var crh2Doors = new CRH2DoorMovement();
         com.simibubi.create.api.behaviour.movement.MovementBehaviour.REGISTRY.registerProvider(
                 block -> {
+                    if (block instanceof CRH2DoorBlock) return crh2Doors;
                     if (block instanceof willow.train.hexie.blocks.coupler.CouplerBlock hook && hook.geometry() != null) return besb;
                     if(block instanceof IBE<?> ibe &&
                             IContraptionMovementBlockEntity.class.isAssignableFrom(ibe.getBlockEntityClass())) {
