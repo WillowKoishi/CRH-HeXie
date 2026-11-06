@@ -11,7 +11,7 @@ import willow.train.hexie.vehicle.control.TestCabControls;
 /** Temporary one-block fixture; the production cab model is deliberately separate. */
 public final class TestDrivingConsoleBlock extends DrivingConsoleBlock {
     public TestDrivingConsoleBlock(Properties properties) {
-        super(properties, TestCabInteraction::surface, TestCabControls.INSTANCE);
+        super(properties, TestCabInteraction::surface, TestCabControls.INSTANCE, TestCabControls.NEUTRAL_POSITIONS);
     }
     @Override public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         var panel = switch (state.getValue(FACING)) {

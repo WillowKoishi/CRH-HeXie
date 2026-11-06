@@ -1,0 +1,10 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "flip_v": true,
+  "model": "hexie:models/block/bogey/sktb200/wheel.obj",
+  "textures": {
+    "particle": "hexie:block/bogey/sktb200/wheel"
+  },
+  "automatic_culling": false
+}

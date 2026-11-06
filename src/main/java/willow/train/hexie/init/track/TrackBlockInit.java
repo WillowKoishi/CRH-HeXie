@@ -226,8 +226,16 @@ public class TrackBlockInit {
             REGISTRATE
                     .block("dt206_bogey", p -> new CRHBogeyBlock(p, BogeySizesInit.DT206))
                     .properties(p -> p.mapColor(MapColor.METAL))
-                    .transform(bogeyModel("hexie:block/bogey/hx_standard/cw2_top"))
+                    .transform(bogeyModel("hexie:block/bogey/crh2/top"))
                     .lang("DT-206 Bogey")
+                    .register();
+
+    public static final BlockEntry<CRHBogeyBlock> SKTB200_BOGEY =
+            REGISTRATE
+                    .block("sktb200_bogey", p -> new CRHBogeyBlock(p, BogeySizesInit.SKTB200))
+                    .properties(p -> p.mapColor(MapColor.METAL))
+                    .transform(bogeyModel("hexie:block/bogey/crh2/top"))
+                    .lang("SKTB-200 Bogey")
                     .register();
 
     private static final CreateRegistrate locoREGISTRATE =

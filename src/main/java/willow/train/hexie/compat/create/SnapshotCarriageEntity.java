@@ -19,6 +19,8 @@ import com.google.common.collect.ImmutableMap;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.simibubi.create.Create;
 import com.simibubi.create.AllEntityDataSerializers;
+import com.simibubi.create.AllItems;
+import com.simibubi.create.AllTags.AllContraptionTypeTags;
 import com.simibubi.create.api.behaviour.interaction.ConductorBlockInteractionBehavior;
 import com.simibubi.create.api.behaviour.interaction.MovingInteractionBehaviour;
 import com.simibubi.create.api.behaviour.movement.MovementBehaviour;
@@ -32,6 +34,8 @@ import com.simibubi.create.content.contraptions.StructureTransform;
 import com.simibubi.create.content.contraptions.actors.seat.SeatBlock;
 import com.simibubi.create.content.contraptions.actors.seat.SeatEntity;
 import com.simibubi.create.content.contraptions.actors.trainControls.ControlsBlock;
+import com.simibubi.create.content.contraptions.actors.trainControls.ControlsServerHandler;
+import com.simibubi.create.content.contraptions.actors.trainControls.ControlsInteractionBehaviour;
 import com.simibubi.create.content.contraptions.behaviour.MovementContext;
 import com.simibubi.create.content.contraptions.glue.SuperGlueEntity;
 import com.simibubi.create.content.contraptions.actors.psi.PortableStorageInterfaceMovement;
@@ -63,6 +67,7 @@ import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Entity;
@@ -72,6 +77,9 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.network.PacketDistributor;
+import willow.train.hexie.client.SnapshotControlsClient;
+import willow.train.hexie.network.s2c.NativeControlsStartedPacket;
 import willow.train.hexie.init.EntityInit;
 import willow.train.hexie.blockentity.CouplerBlockEntity;
 import willow.train.hexie.blocks.coupler.CouplerBlock;
@@ -139,6 +147,9 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
     private Vec3 motionSamplePosition, previousMotionPosition, olderMotionPosition, motionVelocity = Vec3.ZERO;
     private long motionSampleTick = Long.MIN_VALUE;
     private long motionFrameTick = Long.MIN_VALUE;
+    final CarriageBoardingHistory boardingHistory = new CarriageBoardingHistory();
+
+    long motionFrameTick() { return motionFrameTick; }
     private boolean continuousMotionSamples;
     private Carriage compatibilityCarriage;
     private boolean compatibilitySyncPending;
@@ -176,6 +187,18 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
     }
 
     public SnapshotCarriageEntity(EntityType<?> type, Level level) { super(type, level); }
+
+    static void syncTrackAnchors(Carriage carriage, Level level, BodyPose body) {
+        if (carriage.train.graph != null) carriage.updateContraptionAnchors();
+        var dimensional = carriage.getDimensional(level);
+        Vec3 position = new Vec3(body.position().x(), body.position().y() - .5, body.position().z());
+        // Native alignEntity decodes its entity yaw as atan2(z, x) + 180 degrees.
+        double horizontal = Math.cos(body.pitch());
+        Vec3 heading = new Vec3(-Math.cos(body.yaw()) * horizontal, -Math.sin(body.pitch()),
+                -Math.sin(body.yaw()) * horizontal);
+        ((SnapshotBodyAnchor) dimensional).hexie$setBodyAnchor(position, heading);
+        CreateTrackCompatibility.synchronizePose(dimensional, body.roll());
+    }
 
     public static SnapshotCarriageEntity create(ServerLevel level, UUID assembly, CarriageSnapshot snapshot) {
         var entity = new SnapshotCarriageEntity(EntityInit.ASSEMBLED_CARRIAGE.get(), level);
@@ -266,6 +289,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             var owner = motion();
             if (owner != null) owner.applyCurrent(this);
             var frame = new CompoundTag();
+            frame.putLong("PoseTick", boardingHistory.record(now, CarriagePlayerSupport.frame(this, 1)));
             var normalDisplay = CreateCabDisplaySource.read(owner, getUUID(), false);
             frame.put("CabDisplay", CabDisplayStateNbt.write(normalDisplay));
             if (owner != null) frame.put("CabControls", cabDisplayFrame(owner, normalDisplay));
@@ -280,6 +304,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
                 var entry = new CompoundTag(); entry.putLong("Pos", info.pos().asLong());
                 entry.putInt("Height", willow.train.hexie.blocks.bogeys.BogeyFloorData.value(info.nbt()));
                 entry.putInt("Longitudinal", willow.train.hexie.blocks.bogeys.BogeyFloorData.longitudinalFromEntity(info.nbt()));
+                entry.putBoolean("Reversed", willow.train.hexie.blocks.bogeys.BogeyFloorData.reversedFromEntity(info.nbt()));
                 settings.add(entry);
             }
             frame.put("BogeySettings", settings);
@@ -339,7 +364,10 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         dimensional.pointsInitialised = false;
         CreateTrackCompatibility.prepareClientSync(data, graph);
         data.apply(this, carriage);
-        if (data.fallbackLocations == null) CreateTrackCompatibility.clientPointsApplied(carriage, graph);
+        if (data.fallbackLocations == null) {
+            CreateTrackCompatibility.clientPointsApplied(carriage, graph);
+            carriage.updateContraptionAnchors();
+        }
         if (data.fallbackLocations != null) {
             dimensional.positionAnchor = data.fallbackLocations.getFirst();
             dimensional.rotationAnchors = Couple.create(data.fallbackLocations.getSecond().getFirst(),
@@ -443,6 +471,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
     }
 
     private void applyClientMotionFrame(CompoundTag frame) {
+        motionFrameTick = frame.getLong("PoseTick");
         readBogeySettings(frame.getList("BogeySettings", Tag.TAG_COMPOUND));
             cabDisplayState = frame.contains("CabDisplay", net.minecraft.nbt.Tag.TAG_COMPOUND)
                     ? CabDisplayStateNbt.read(frame.getCompound("CabDisplay"))
@@ -1106,8 +1135,10 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             if (!willow.train.hexie.blocks.bogeys.BogeyFloorData.valid(height)
                     || !willow.train.hexie.blocks.bogeys.BogeyFloorData.validLongitudinal(offset)) continue;
             if (height == willow.train.hexie.blocks.bogeys.BogeyFloorData.value(info.nbt())
-                    && offset == willow.train.hexie.blocks.bogeys.BogeyFloorData.longitudinalFromEntity(info.nbt())) continue;
+                    && offset == willow.train.hexie.blocks.bogeys.BogeyFloorData.longitudinalFromEntity(info.nbt())
+                    && entry.getBoolean("Reversed") == willow.train.hexie.blocks.bogeys.BogeyFloorData.reversedFromEntity(info.nbt())) continue;
             var data = info.nbt() == null ? new CompoundTag() : info.nbt().copy();
+            willow.train.hexie.blocks.bogeys.BogeyFloorData.writeReversed(data, entry.getBoolean("Reversed"));
             willow.train.hexie.blocks.bogeys.BogeyFloorData.write(data, height);
             willow.train.hexie.blocks.bogeys.BogeyFloorData.writeLongitudinal(data, offset);
             setBlock(pos, new StructureBlockInfo(pos, info.state(), data));
@@ -1230,11 +1261,20 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
 
     @Override public void tickActors() {
         if (!canRunBehaviours()) return;
+        var train = !level().isClientSide && compatibilityCarriage != null
+                && compatibilityCarriage.train instanceof CompatibilityTrain current ? current : null;
+        double speedBeforeActors = train == null ? 0 : train.speed;
         usingWorkPose = workPose != null;
         try { super.tickActors(); }
         finally { usingWorkPose = false; }
-        var owner = motion();
-        if (!level().isClientSide && owner != null) owner.reportActorStall(getUUID(), contraption.stalled);
+        var owner = level().isClientSide ? null : motion();
+        if (owner != null) {
+            owner.reportActorStall(getUUID(), contraption.stalled);
+            // Only an actor's write belongs to this callback. The ordinary mirrored speed is an observation.
+            if (train != null && train.speed != speedBeforeActors && Double.isFinite(train.speed)
+                    && train.speedBeforeStall == null && train.bridge != null && train.bridge.motion() == owner)
+                owner.runtime().speedForConsist(getUUID(), CreateTrainBridge.routeSpeed(train.speed));
+        }
         // Actor callbacks may retain rotation beyond this tick, so use the working transform then too.
         if (workPose != null) {
             BodyPose pose = workPose;
@@ -1289,7 +1329,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         return new Vec3(result.x(), result.y(), result.z());
     }
 
-    private org.joml.Quaternionf rotation(float partialTicks) {
+    public org.joml.Quaternionf bodyRotation(float partialTicks) {
         return new org.joml.Quaternionf().rotationY((float) Math.toRadians(AngleHelper.angleLerp(partialTicks, prevYaw, yaw)))
                 .rotateX((float) Math.toRadians(AngleHelper.angleLerp(partialTicks, prevPitch, pitch)))
                 .rotateZ((float) Math.toRadians(AngleHelper.angleLerp(partialTicks, prevRoll, roll)))
@@ -1298,7 +1338,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
 
     @Override public Vec3 applyRotation(Vec3 local, float partialTicks) {
         if (usingWorkPose) return rotateAt(workPose, local);
-        var result = rotation(partialTicks).transform(new org.joml.Vector3f((float) local.x, (float) local.y, (float) local.z));
+        var result = bodyRotation(partialTicks).transform(new org.joml.Vector3f((float) local.x, (float) local.y, (float) local.z));
         return new Vec3(result.x, result.y, result.z);
     }
 
@@ -1306,7 +1346,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         org.joml.Quaternionf rotation = usingWorkPose
                 ? new org.joml.Quaternionf().rotationY((float) workPose.yaw()).rotateX((float) workPose.pitch())
                     .rotateZ((float) workPose.roll()).rotateY((float) sourceYaw())
-                : rotation(partialTicks);
+                : bodyRotation(partialTicks);
         var result = rotation.conjugate().transform(new org.joml.Vector3f((float) world.x, (float) world.y, (float) world.z));
         return new Vec3(result.x, result.y, result.z);
     }
@@ -1331,7 +1371,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
     private void updateRotatedBounds() {
         if (contraption == null || contraption.bounds == null) return;
         AABB b = localFloorBounds();
-        var rotation = rotation(1);
+        var rotation = bodyRotation(1);
         var point = new org.joml.Vector3f();
         double minX = Double.POSITIVE_INFINITY, minY = minX, minZ = minX;
         double maxX = Double.NEGATIVE_INFINITY, maxY = maxX, maxZ = maxX;
@@ -1371,7 +1411,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             stack.translate(correction.x, correction.y, correction.z);
         }
         stack.translate(0, .5, 0);
-        stack.mulPose(rotation(partialTicks));
+        stack.mulPose(bodyRotation(partialTicks));
         stack.translate(-.5, -.5, -.5);
     }
 
@@ -1415,9 +1455,19 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
 
     @Override
     public boolean handlePlayerInteraction(Player player, BlockPos localPos, Direction side, InteractionHand hand) {
-        return behavioursActive && (SnapshotFloorInteraction.handle(this, player, localPos, hand)
-                || SnapshotCouplerInteraction.handle(this, player, localPos, hand)
-                || super.handlePlayerInteraction(player, localPos, side, hand));
+        if (!behavioursActive) return false;
+        if (SnapshotFloorInteraction.handle(this, player, localPos, hand)
+                || SnapshotCouplerInteraction.handle(this, player, localPos, hand)) return true;
+        boolean nativeControls = contraption.getInteractors().get(localPos) instanceof ControlsInteractionBehaviour
+                && !AllItems.WRENCH.isIn(player.getItemInHand(hand));
+        if (nativeControls && level().isClientSide)
+            return SnapshotControlsClient.click(this, localPos, player);
+
+        boolean handled = super.handlePlayerInteraction(player, localPos, side, hand);
+        if (nativeControls && handled && player instanceof ServerPlayer driver
+                && getControllingPlayer().filter(player.getUUID()::equals).isPresent())
+            PacketDistributor.sendToPlayer(driver, new NativeControlsStartedPacket(getId(), localPos));
+        return handled;
     }
 
     @Override public boolean startControlling(BlockPos controls, Player player) {
@@ -1429,6 +1479,18 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
 
     @Override public boolean control(BlockPos controls, Collection<Integer> keys, Player player) {
         return motion() != null && motion().control(this, controls, keys, player);
+    }
+
+    /** The driver already left these controls locally. A delayed exit must match the live desk and driver. */
+    public void releaseControls(Player player, BlockPos controls) {
+        if (level().isClientSide || player.level() != level()
+                || !player.getUUID().equals(getControllingPlayer().orElse(null))) return;
+        var owner = motion();
+        if (owner == null || !owner.ownsNativeControls(getUUID(), controls, player.getUUID())) return;
+        owner.stopControl(this, controls);
+        ControlsServerHandler.receivedInputs.get(level()).remove(player.getUUID());
+        CreateTrackCompatibility.clearManualInput(this, controls, player.getUUID());
+        setControllingPlayer(null);
     }
 
     @Override public void stopControlling(BlockPos controls) {
@@ -1590,11 +1652,13 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
                 }
 
                 @Override public RenderedBlocks getRenderedBlocks() {
-                    // Change only the rendered state. Saved blocks, collision and native
-                    // disassembly keep the original complete coupler and its facing.
+                    // Snapshots store the ground state; Create opens the controls when capturing a carriage.
+                    boolean openControls = AllContraptionTypeTags.OPENS_CONTROLS.matches(SnapshotView.this.getType());
                     return new RenderedBlocks(pos -> {
                         var info = SnapshotView.this.getBlocks().get(pos);
                         if (info == null) return net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
+                        if (openControls && info.state().getBlock() instanceof ControlsBlock)
+                            return info.state().setValue(ControlsBlock.OPEN, true);
                         var animation = ((SnapshotCarriageEntity) entity).couplerAnimation();
                         var visual = animation.visual(pos);
                         if (visual != null) return willow.train.hexie.vehicle.assembly.CouplerDataRegistry.renderState(

@@ -110,6 +110,7 @@ public final class VehicleRuntime {
     public enum DriveMode { TRACTION, BRAKING, COASTING }
     public enum ConstraintFailurePolicy { STOP_ALL, RETRY_CONSIST }
 
+    /** Actuator commands. The vehicle may command traction and braking at the same time. */
     public record Control(double throttle, double brake) {
         public static final Control NEUTRAL = new Control(0, 0);
         public Control {
@@ -266,8 +267,8 @@ public final class VehicleRuntime {
         for (Car member : group.cars) {
             for (BogeyDefinition bogey : member.definition.bogeys()) {
                 var control = member.controls.get(bogey.id());
-                if (control.brake > 0) brake = Math.max(brake, control.brake);
-                else if (bogey.parameters().availableTractionN(group.speed()) > 0)
+                brake = Math.max(brake, control.brake);
+                if (bogey.parameters().availableTractionN(group.speed()) > 0)
                     traction = Math.max(traction, Math.abs(control.throttle));
             }
         }
@@ -288,9 +289,10 @@ public final class VehicleRuntime {
     /** Direction requested by the connected bogeys before a stopped train has advanced. */
     public double tractionDirection(UUID carriage) {
         double traction = 0;
-        for (Car member : group(carriage).cars) for (BogeyDefinition bogey : member.definition.bogeys()) {
+        var group = group(carriage);
+        for (Car member : group.cars) for (BogeyDefinition bogey : member.definition.bogeys()) {
             Control control = member.controls.get(bogey.id());
-            if (control.brake == 0) traction += control.throttle * bogey.parameters().availableTractionN(group(carriage).speed());
+            traction += control.throttle * bogey.parameters().availableTractionN(group.speed());
         }
         return Math.signum(traction);
     }
@@ -1306,7 +1308,7 @@ public final class VehicleRuntime {
         for (Car car : group.cars) for (BogeyDefinition bogey : car.definition.bogeys()) {
             Control control = car.controls.get(bogey.id());
             braking |= control.brake > 0;
-            traction += control.brake > 0 ? 0 : control.throttle * bogey.parameters().availableTractionN(group.speed());
+            traction += control.throttle * bogey.parameters().availableTractionN(group.speed());
             opposition += control.brake * bogey.parameters().brakeForceN() + bogey.parameters().runningResistanceN(group.speed());
         }
         double direction = Math.signum(group.speed() == 0 ? traction : group.speed());
@@ -1317,7 +1319,7 @@ public final class VehicleRuntime {
         for (Car car : group.cars) for (BogeyDefinition bogey : car.definition.bogeys()) {
             BogeyParameters parameters = bogey.parameters();
             Control control = car.controls.get(bogey.id());
-            double drive = control.brake > 0 ? 0 : control.throttle * parameters.availableTractionN(group.speed());
+            double drive = control.throttle * parameters.availableTractionN(group.speed());
             double brake = -direction * control.brake * parameters.brakeForceN() * scale;
             double resistance = -direction * parameters.runningResistanceN(group.speed()) * scale;
             DriveMode mode = control.brake > 0 ? DriveMode.BRAKING

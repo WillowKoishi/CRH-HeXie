@@ -6,6 +6,18 @@ import willow.train.hexie.init.track.TrackMaterialInit;
 
 /** Floor height in tenths of a block, persisted in the bogey's existing synchronized data. */
 public final class BogeyFloorData {
+    public static final String REVERSED = "HexieBogeyReversed";
+
+    public static boolean reversedFromEntity(CompoundTag entityData) {
+        return entityData != null && entityData.getCompound(BOGEY_DATA).getBoolean(REVERSED);
+    }
+
+    public static void writeReversed(CompoundTag entityData, boolean reversed) {
+        var data = entityData.getCompound(BOGEY_DATA);
+        data.putBoolean(REVERSED, reversed);
+        entityData.put(BOGEY_DATA, data);
+    }
+
     public static final String KEY = "HexieFloorHeight";
     public static final String LONGITUDINAL_KEY = "HexieBogeyLongitudinal";
     /** Integer slider units; physical displacement and UI positions use the same descriptor. */

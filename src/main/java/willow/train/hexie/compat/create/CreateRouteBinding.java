@@ -39,7 +39,7 @@ public final class CreateRouteBinding {
     }
 
     private static final int MAX_EDGES = 4096;
-    private static final int GEOMETRY_VERSION = 4;
+    private static final int GEOMETRY_VERSION = 5;
     private final ServerLevel level;
     private final TrackGraph graph;
     private final List<TrackNode> nodes;
@@ -125,10 +125,7 @@ public final class CreateRouteBinding {
     public static CreateRouteBinding fromPoint(ServerLevel level, TrackGraph graph, TravellingPoint anchor,
                                                boolean forward, RouteChoice choice) {
         graph = CreateTrackCompatibility.routeGraph(graph);
-        Objects.requireNonNull(anchor);
-        if (anchor.node1 == null || anchor.node2 == null || anchor.edge == null
-                || graph.getConnectionsFrom(anchor.node1).get(anchor.node2) != anchor.edge)
-            throw new IllegalArgumentException("Anchor point is not on this graph");
+        anchor = CreateTrackCompatibility.onGraph(graph, anchor);
         parameterOf(anchor);
         TrackNode first = CreateTrackCompatibility.canonical(graph, anchor.node1);
         TrackNode second = CreateTrackCompatibility.canonical(graph, anchor.node2);
@@ -144,10 +141,19 @@ public final class CreateRouteBinding {
     /** Reconstruct the occupied native corridor without making another steering decision. */
     public static CreateRouteBinding fromPoints(ServerLevel level, TrackGraph graph, TravellingPoint anchor,
                                                 List<TravellingPoint> occupied) {
+        return fromPoints(level, graph, anchor, occupied, true);
+    }
+
+    static CreateRouteBinding fromPoints(ServerLevel level, TrackGraph graph, TravellingPoint anchor,
+                                         List<TravellingPoint> occupied, boolean alongPoints) {
         try {
-            var selected = new CreateRouteBinding(level, graph, List.of(anchor.node1, anchor.node2), 0, null);
+            graph = CreateTrackCompatibility.routeGraph(graph);
+            anchor = CreateTrackCompatibility.onGraph(graph, anchor);
+            var selected = new CreateRouteBinding(level, graph,
+                    alongPoints ? List.of(anchor.node1, anchor.node2) : List.of(anchor.node2, anchor.node1), 0, null);
             selected.distanceOf(anchor);
-            for (var point : occupied) {
+            for (var nativePoint : occupied) {
+                var point = CreateTrackCompatibility.onGraph(graph, nativePoint);
                 if (!selected.edgePositions.containsKey(point.edge)) {
                     var segment = new CreateRouteBinding(level, graph, List.of(point.node1, point.node2), 0, null);
                     segment.distanceOf(point);
@@ -550,6 +556,8 @@ public final class CreateRouteBinding {
      */
     public TravellingPoint boundedPointAt(double distance) { return pointAt(boundDistance(distance)); }
 
+    TravellingPoint boundedPointAt(double distance, boolean forward) { return pointAt(boundDistance(distance), forward); }
+
     private double boundDistance(double distance) {
         if (!Double.isFinite(distance)) throw new IllegalArgumentException("Distance must be finite");
         return Math.clamp(distance, route.minimumDistance(), route.maximumDistance());
@@ -571,8 +579,9 @@ public final class CreateRouteBinding {
     public double distanceOf(TravellingPoint point) {
         Objects.requireNonNull(point);
         EdgePosition selected = edgePositions.get(point.edge);
-        if (selected == null || graph.getConnectionsFrom(point.node1).get(point.node2) != point.edge)
+        if (selected == null)
             throw new IllegalArgumentException("Point is not on the selected route");
+        point = CreateTrackCompatibility.onGraph(graph, point);
         BoundGeometry segment = segments.get(selected.segment);
         if (!segment.valid()) throw new RouteInvalidException();
         double parameter = parameterOf(point);
@@ -828,6 +837,8 @@ public final class CreateRouteBinding {
         private final TrackEdge canonicalEdge;
         private final boolean reversed;
         private final CreateTrackGeometry geometry;
+        private final TrackRailSurface surface;
+        private final TrackRailSurface.Section straightFrom, straightTo;
         private final Map<TrackNode, TrackEdge> fromSmoothingEdges;
         private final Map<TrackNode, TrackEdge> toSmoothingEdges;
 
@@ -848,17 +859,24 @@ public final class CreateRouteBinding {
             canonicalEdge = useOpposite ? opposite : edge;
             reversed = useOpposite;
             geometry = new CreateTrackGeometry(graph, canonicalEdge, geometryVersion >= 3, geometryVersion >= 4);
+            surface = geometryVersion >= 5 && canonicalEdge.isTurn() ? new TrackRailSurface(canonicalEdge.getTurn()) : null;
+            if (geometryVersion >= 5 && !canonicalEdge.isTurn()) {
+                var joints = geometry.straightSections();
+                straightFrom = joints.getFirst();
+                straightTo = joints.getSecond();
+            } else {
+                straightFrom = straightTo = null;
+            }
             boolean smoothed = !edge.isTurn()
                     && (from.getLocation().yOffsetPixels != 0 || to.getLocation().yOffsetPixels != 0
-                    || geometryVersion >= 4 && CreateTrackCompatibility.straightUsesAdjacentCurves());
+                    || geometryVersion >= 5 || geometryVersion >= 4 && CreateTrackCompatibility.straightUsesAdjacentCurves());
             fromSmoothingEdges = smoothed ? Map.copyOf(graph.getConnectionsFrom(from)) : null;
             toSmoothingEdges = smoothed ? Map.copyOf(graph.getConnectionsFrom(to)) : null;
         }
 
         private boolean valid() {
             return Create.RAILWAYS.trackNetworks.get(owner.id) == owner
-                    && owner.locateNode(edge.node1.getLocation()) == edge.node1
-                    && owner.locateNode(edge.node2.getLocation()) == edge.node2
+                    && CreateTrackCompatibility.containsDirectedEdge(owner, edge)
                     && graph.getConnectionsFrom(from).get(to) == edge
                     && (!reversed || graph.getConnectionsFrom(to).get(from) == canonicalEdge)
                     // Raised Create straights and RailX straights depend on adjacent curve endpoints.
@@ -881,11 +899,20 @@ public final class CreateRouteBinding {
             return sample(reversed ? 1 - parameter : parameter);
         }
 
+        @Override public int linearSpanCount() { return surface == null ? 0 : surface.count(); }
+        @Override public double linearSpanEnd(int index) { return surface.parameter(index + 1); }
+
         @Override public Sample sample(double parameter) {
             if (!valid()) throw new RouteInvalidException();
+            if (surface != null) return surface.contact(parameter);
+            if (straightFrom != null) {
+                Vec3 tangent = straightTo.center().subtract(straightFrom.center());
+                Vec3 normal = straightFrom.heightAxis().lerp(straightTo.heightAxis(), parameter);
+                return TrackRailSurface.contact(straightFrom.center().lerp(straightTo.center(), parameter), tangent, normal);
+            }
             Sample sample = geometry.sample(parameter);
             var p = sample.position();
-            // Our current track models/overlays are raised vertically, not along a cant normal.
+            // Versions 1-4 reproduce the saved frames before migrating.
             return Sample.restoreNormalized(new Vector(p.x(), p.y() + TrackMaterialInit.RAIL_SURFACE_HEIGHT, p.z()),
                     sample.tangent(), sample.normal(), sample.cantRadians());
         }

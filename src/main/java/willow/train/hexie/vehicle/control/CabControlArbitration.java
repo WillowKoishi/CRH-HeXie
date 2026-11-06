@@ -1,6 +1,7 @@
 package willow.train.hexie.vehicle.control;
 
 import java.util.Objects;
+import willow.train.hexie.api.traincontrol.CabTrainControl;
 import willow.train.hexie.vehicle.runtime.VehicleRuntime;
 
 /** Aggregates explicit enable inputs and converted commands without choosing between active cabs. */
@@ -19,8 +20,9 @@ public final class CabControlArbitration {
     }
 
     /** The caller computes each cab's command in the common train coordinate system first. */
-    public record Command(boolean enabled, VehicleRuntime.Control control) {
-        public Command { Objects.requireNonNull(control); }
+    public record Command(boolean enabled, VehicleRuntime.Control control, CabTrainControl converter) {
+        public Command(boolean enabled, VehicleRuntime.Control control) { this(enabled, control, CabTrainControl.NONE); }
+        public Command { Objects.requireNonNull(control); Objects.requireNonNull(converter); }
     }
 
     public static Selection select(Iterable<CabModule.State> cabs) {
@@ -36,19 +38,26 @@ public final class CabControlArbitration {
         return new Selection(enabled, mode);
     }
 
-    /** No enabled cab leaves the backend free; conflicting cabs contribute braking only. */
+    /** All desks supply brake. Only a single enabled desk can supply traction. */
     public static VehicleRuntime.Control aggregate(Iterable<Command> commands) {
+        return aggregate(commands, VehicleRuntime.Control.NEUTRAL);
+    }
+
+    /** The backend supplies traction when the consist has no enabled desk. */
+    public static VehicleRuntime.Control aggregate(Iterable<Command> commands, VehicleRuntime.Control backend) {
         Objects.requireNonNull(commands);
         int enabled = 0;
-        double brake = 0;
-        VehicleRuntime.Control single = VehicleRuntime.Control.NEUTRAL;
+        double brake = backend.brake();
+        double power = backend.throttle();
+        CabTrainControl converter = CabTrainControl.NONE;
         for (var command : commands) {
             Objects.requireNonNull(command);
+            brake = Math.max(brake, command.control().brake());
             if (!command.enabled()) continue;
             enabled++;
-            single = command.control();
-            brake = Math.max(brake, command.control().brake());
+            power = command.control().throttle();
+            converter = command.converter();
         }
-        return enabled > 1 ? new VehicleRuntime.Control(0, brake) : single;
+        return new VehicleRuntime.Control(enabled > 1 ? 0 : converter.tractionOutput(power, brake), brake);
     }
 }

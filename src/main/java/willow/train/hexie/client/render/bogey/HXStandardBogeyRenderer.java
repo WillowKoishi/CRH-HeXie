@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.simibubi.create.content.trains.bogey.BogeySizes;
 import net.createmod.catnip.data.Iterate;
 import net.createmod.catnip.nbt.NBTHelper;
+import dev.engine_room.flywheel.lib.model.baked.PartialModel;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import willow.train.hexie.datafix.Constants;
@@ -364,17 +365,28 @@ public class HXStandardBogeyRenderer {
             }
         }
     }
-    public static class DT206BogeyRenderer extends SimpleBogeyRenderer {
+    public static class CrhTwoAxleRenderer extends SimpleBogeyRenderer {
+        private final BogeySizes.BogeySize size;
+        private final PartialModel frame;
+        private final PartialModel wheel;
+        private final double frameOffset;
+
+        public CrhTwoAxleRenderer(BogeySizes.BogeySize size, PartialModel frame, PartialModel wheel, double frameOffset) {
+            this.size = size;
+            this.frame = frame;
+            this.wheel = wheel;
+            this.frameOffset = frameOffset;
+        }
         // Exported wheel tread radius: 6.88/16; axle centres: Z = +/-20/16.
         // Original model-space alignment; SimpleBogeyRenderer applies the height increase once.
         private static final double AXLE_HEIGHT = 0.7726;
-        @Override public BogeySizes.BogeySize getSize() { return BogeySizesInit.DT206; }
+        @Override public BogeySizes.BogeySize getSize() { return size; }
         @Override public void render(CompoundTag data, float wheelAngle, PoseStack pose,
                 int light, VertexConsumer buffer, boolean inContraption) {
             boolean instanced = buffer == null;
-            getTransform(DT206_FRAME, pose, instanced)
-                    .translate(0, AXLE_HEIGHT + 4.9 / 16.0, 0).render(pose, light, buffer);
-            BogeyModelData[] wheels = getTransform(DT206_WHEEL, pose, instanced, 2);
+            getTransform(frame, pose, instanced)
+                    .translate(0, AXLE_HEIGHT + frameOffset, 0).render(pose, light, buffer);
+            BogeyModelData[] wheels = getTransform(wheel, pose, instanced, 2);
             for (int side : Iterate.positiveAndNegative) {
                 if (!instanced) pose.pushPose();
                 wheels[(side + 1) / 2].translate(0, AXLE_HEIGHT, side * 1.25)

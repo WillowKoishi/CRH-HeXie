@@ -1,0 +1,24 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:composite",
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "hexie:block/crh2a/parts/crh2a_slab_side_skirt"
+  },
+  "children": {
+    "bolster": {
+      "parent": "hexie:block/bogey/sktb200/top"
+    },
+    "floor": {
+      "parent": "hexie:block/crh2a/parts/crh2a_floor",
+      "transform": {
+        "rotation": [
+          0,
+          -90,
+          0
+        ],
+        "origin": "corner"
+      }
+    }
+  }
+}

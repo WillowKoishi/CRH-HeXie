@@ -1,5 +1,6 @@
 package willow.train.hexie.init.bogeys;
 
+import willow.train.hexie.init.client.PartialModelInit;
 import com.simibubi.create.AllSoundEvents;
 import com.simibubi.create.content.trains.bogey.BogeySizes;
 import com.simibubi.create.content.trains.bogey.BogeyStyle;
@@ -44,7 +45,8 @@ public class BogeyStylesInit {
     public static final BogeyStyle CRHBOGEY =
             create("crhbogey", HEXIE_CYCLE_GROUP)
                     .displayName(Component.translatable("hexie.bogeys.styles.crhbogey"))
-                    .size(BogeySizesInit.DT206, TrackBlockInit.DT206_BOGEY, () -> () -> { var renderer = new HXStandardBogeyRenderer.DT206BogeyRenderer(); return new BogeyStyle.SizeRenderer(renderer, renderer::createVisual); })
+                    .size(BogeySizesInit.DT206, TrackBlockInit.DT206_BOGEY, () -> () -> { var renderer = new HXStandardBogeyRenderer.CrhTwoAxleRenderer(BogeySizesInit.DT206, PartialModelInit.DT206_FRAME, PartialModelInit.DT206_WHEEL, 5.0 / 16); return new BogeyStyle.SizeRenderer(renderer, renderer::createVisual); })
+                    .size(BogeySizesInit.SKTB200, TrackBlockInit.SKTB200_BOGEY, () -> () -> { var renderer = new HXStandardBogeyRenderer.CrhTwoAxleRenderer(BogeySizesInit.SKTB200, PartialModelInit.SKTB200_FRAME, PartialModelInit.SKTB200_WHEEL, 5.0 / 16); return new BogeyStyle.SizeRenderer(renderer, renderer::createVisual); })
                     .build();
 
     public static BogeyStyle.Builder create(

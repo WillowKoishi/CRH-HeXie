@@ -147,6 +147,7 @@ public class HeXieClientInit {
     }
 
     public static void registerMenus(final RegisterMenuScreensEvent event) {
+        event.register(MenuInit.PANEL_TEXT_MENU.get(), PanelTextScreen::new);
         event.register(MenuInit.CARRIAGE_MARKING_MENU.get(), CarriageMarkingScreen::new);
         event.register(MenuInit.HEAD_NUMBER_MENU.get(), HeadNumberScreen::new);
         event.register(MenuInit.GROUND_STATION_SIGN_MENU.get(), GroundStationSignScreen::new);

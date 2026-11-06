@@ -29,24 +29,35 @@ import willow.train.hexie.compat.create.SnapshotFloorInteraction;
 
 /** Keeps short-release and slider actions bound to the target where the wrench press began. */
 public final class FloorSwitcherItem extends Item {
-    public enum Mode { HEIGHT, LONGITUDINAL, DOOR_DIRECTION }
+    public enum Mode { HEIGHT, LONGITUDINAL, DOOR_DIRECTION, REVERSE }
     public record Slider(Mode mode, int value) {}
     public static Mode mode(ItemStack stack) {
-        return stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().getBoolean("LongitudinalMode")
+        var data = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        if (data.getBoolean("ReverseMode")) return Mode.REVERSE;
+        return data.getBoolean("LongitudinalMode")
                 ? Mode.LONGITUDINAL : Mode.HEIGHT;
     }
     public static boolean valid(ItemStack stack, int value) {
-        return mode(stack) == Mode.HEIGHT ? BogeyFloorData.valid(value) : BogeyFloorData.validLongitudinal(value);
+        return switch (mode(stack)) {
+            case HEIGHT -> BogeyFloorData.valid(value);
+            case LONGITUDINAL -> BogeyFloorData.validLongitudinal(value);
+            default -> false;
+        };
     }
     public static void switchMode(Player player, InteractionHand hand) {
         cancelPending(player);
         if (player.level().isClientSide) return;
         var stack = player.getItemInHand(hand);
         var data = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        data.putBoolean("LongitudinalMode", mode(stack) == Mode.HEIGHT);
+        var previous = mode(stack);
+        data.putBoolean("LongitudinalMode", previous == Mode.HEIGHT);
+        data.putBoolean("ReverseMode", previous == Mode.LONGITUDINAL);
         stack.set(DataComponents.CUSTOM_DATA, CustomData.of(data));
-        player.displayClientMessage(Component.translatable(mode(stack) == Mode.HEIGHT
-                ? "gui.hexie.floor_height.title" : "gui.hexie.bogey_offset.title"), true);
+        player.displayClientMessage(Component.translatable(switch (mode(stack)) {
+            case LONGITUDINAL -> "gui.hexie.bogey_offset.title";
+            case REVERSE -> "gui.hexie.bogey_reverse.title";
+            default -> "gui.hexie.floor_height.title";
+        }), true);
         if (player instanceof net.minecraft.server.level.ServerPlayer server)
             willow.train.hexie.network.ServerHeldItemSync.afterInteraction(server, hand);
     }
@@ -170,9 +181,18 @@ public final class FloorSwitcherItem extends Item {
         var level = context.getLevel();
         var pos = context.getClickedPos();
         if (!(level.getBlockState(pos).getBlock() instanceof HexieBogeyBlock<?>)
-                || !(level.getBlockEntity(pos) instanceof HexieBogeyBlockEntity)) return InteractionResult.PASS;
+                || !(level.getBlockEntity(pos) instanceof HexieBogeyBlockEntity bogey)) return InteractionResult.PASS;
         var player = context.getPlayer();
         if (player == null || player.isSpectator() || !player.mayBuild()) return InteractionResult.FAIL;
+        if (mode(context.getItemInHand()) == Mode.REVERSE) {
+            if (!level.isClientSide && level.mayInteract(player, pos)) {
+                var data = bogey.getBogeyData();
+                data.putBoolean(BogeyFloorData.REVERSED, !data.getBoolean(BogeyFloorData.REVERSED));
+                bogey.setChanged();
+                bogey.sendData();
+            }
+            return InteractionResult.sidedSuccess(level.isClientSide);
+        }
         beginUsing(player, context.getHand(), null, pos);
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
@@ -183,6 +203,7 @@ public final class FloorSwitcherItem extends Item {
             switchMode(player, hand);
             return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand), level.isClientSide);
         }
+        if (mode(player.getItemInHand(hand)) == Mode.REVERSE) return InteractionResultHolder.pass(player.getItemInHand(hand));
         beginUsing(player, hand);
         return InteractionResultHolder.consume(player.getItemInHand(hand));
     }

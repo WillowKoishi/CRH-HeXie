@@ -23,7 +23,7 @@ public record CabKeyboardPacket(int vehicleId, boolean toggleSimple, int mask) i
                 car.motion().updateCabKeyboard(player, car, cab.console(), toggleSimple, mask);
             else if (!(cab.seatAccess().vehicle() instanceof com.simibubi.create.content.contraptions.AbstractContraptionEntity)
                     && player.level().getBlockEntity(cab.console()) instanceof willow.train.hexie.blockentity.DrivingConsoleEntity bench)
-                bench.benchKeyboard(toggleSimple, mask);
+                bench.benchKeyboard(player, toggleSimple, mask);
         });
         return true;
     }

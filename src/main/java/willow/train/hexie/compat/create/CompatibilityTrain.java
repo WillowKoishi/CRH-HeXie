@@ -40,6 +40,8 @@ public final class CompatibilityTrain extends Train {
     private static final java.util.Map<MinecraftServer, java.util.LinkedHashSet<CompatibilityTrain>> PENDING_REMOVALS
             = new java.util.WeakHashMap<>();
     public static final String ASSEMBLY_KEY = "HeXieAssembly";
+    static final String NATIVE_WHEEL_ORDER = "HeXieNativeWheelOrder";
+    boolean nativeWheelOrder = true;
     public final UUID assemblyId;
     public final List<UUID> carriageIds;
     CreateTrainBridge bridge;
@@ -63,6 +65,7 @@ public final class CompatibilityTrain extends Train {
     boolean controlStopRequested;
     boolean waypointTransitionActive;
     boolean automaticControlActive;
+    willow.train.hexie.vehicle.runtime.VehicleRuntime.Control backendAutomaticRequest;
     willow.train.hexie.vehicle.control.TrainDisplayReadings.Route displayRoute =
             willow.train.hexie.vehicle.control.TrainDisplayReadings.Route.unavailable();
     boolean hadSchedule;
@@ -394,6 +397,8 @@ public final class CompatibilityTrain extends Train {
         CompoundTag tag = super.write(dimensions, registries);
         if (graph == null && unresolvedGraphId != null) tag.putUUID("Graph", unresolvedGraphId);
         tag.putUUID(ASSEMBLY_KEY, assemblyId);
+        // A pending legacy carriage may still have old wheels after its controls have been converted.
+        tag.putBoolean(NATIVE_WHEEL_ORDER, nativeWheelOrder);
         ListTag ids = new ListTag();
         for (UUID id : carriageIds) { var entry = new CompoundTag(); entry.putUUID("Id", id); ids.add(entry); }
         tag.put("HeXieCarriages", ids);
@@ -424,26 +429,42 @@ public final class CompatibilityTrain extends Train {
         var carriages = source.carriages;
         var result = new CompatibilityTrain(source.id, source.owner, tag.getUUID(ASSEMBLY_KEY), ids,
                 source.graph, carriages, source.carriageSpacing);
+        result.nativeWheelOrder = tag.getBoolean(NATIVE_WHEEL_ORDER);
+        boolean legacyDirection = !tag.contains(NATIVE_WHEEL_ORDER);
         CreateTrackCompatibility.synchronizeGraph(result);
         // A saved graph reference can be read before the railway graph itself is loaded.
         // This differs from Create deliberately detaching a live train from its tracks.
         if (source.graph == null && tag.hasUUID("Graph")) result.unresolvedGraphId = tag.getUUID("Graph");
         result.name = source.name; result.icon = source.icon; result.mapColorIndex = source.mapColorIndex;
-        result.speed = source.speed; result.targetSpeed = source.targetSpeed; result.throttle = source.throttle;
+        result.speed = legacyDirection ? -source.speed : source.speed;
+        result.targetSpeed = legacyDirection ? -source.targetSpeed : source.targetSpeed;
+        result.throttle = source.throttle;
         result.speedBeforeStall = source.speedBeforeStall;
+        if (legacyDirection && result.speedBeforeStall != null) result.speedBeforeStall = -result.speedBeforeStall;
         result.carriageWaitingForChunks = source.carriageWaitingForChunks;
         result.migrationCooldown = source.migrationCooldown;
         ((CreateTrainAccess) (Object) result).hexie$getMigratingPoints()
                 .addAll(((CreateTrainAccess) (Object) source).hexie$getMigratingPoints());
-        result.currentStation = source.currentStation; result.currentlyBackwards = source.currentlyBackwards;
+        result.currentStation = source.currentStation;
+        result.currentlyBackwards = source.currentlyBackwards;
         result.derailed = source.derailed; result.updateSignalBlocks = source.updateSignalBlocks;
         result.occupiedSignalBlocks.putAll(source.occupiedSignalBlocks);
         result.reservedSignalBlocks.addAll(source.reservedSignalBlocks);
         result.occupiedObservers.addAll(source.occupiedObservers);
-        result.runtime.read(registries, tag.getCompound("Runtime"));
-        result.navigation.read(tag.getCompound("Navigation"), result.graph, dimensions);
+        var runtimeData = tag.getCompound("Runtime");
+        var navigationData = tag.getCompound("Navigation");
+        if (legacyDirection) {
+            navigationData = navigationData.copy();
+            reverseSavedNavigation(navigationData);
+            // A stationary legacy train without a route starts with its corrected front.
+            result.currentlyBackwards = result.speed == 0 ? navigationData.getBoolean("BehindTrain") : result.speed < 0;
+            runtimeData = runtimeData.copy();
+            reverseSavedNavigation(runtimeData.getCompound("HeXieLegacyNavigation").getCompound("Navigation"));
+        }
+        result.runtime.read(registries, runtimeData);
+        result.navigation.read(navigationData, result.graph, dimensions);
         if (result.navigation.destination == null && result.runtime instanceof CreateConsoleTimetable.Runtime legacy)
-            legacy.keepUnresolvedNavigation(tag.getCompound("Navigation"), dimensions);
+            legacy.keepUnresolvedNavigation(navigationData, dimensions);
         if (tag.hasUUID("HeXieAwaitingDeparture")) result.stationStop.restore(
                 new willow.train.hexie.vehicle.control.StationStopControl.State(true,
                         tag.getUUID("HeXieAwaitingDeparture").toString(), tag.getString("HeXieWaitingStationName")));
@@ -460,6 +481,11 @@ public final class CompatibilityTrain extends Train {
         var station = result.getCurrentStation();
         if (station != null) { station.cancelReservation(source); station.reserveFor(result); }
         return result;
+    }
+
+    static void reverseSavedNavigation(CompoundTag navigation) {
+        if (navigation.hasUUID("Destination"))
+            navigation.putBoolean("BehindTrain", !navigation.getBoolean("BehindTrain"));
     }
 
     /** Native Carriage serialization owns entity, passenger and cargo lifecycle. */

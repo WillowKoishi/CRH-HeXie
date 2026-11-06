@@ -30,7 +30,7 @@ import willow.train.hexie.mixins.mixin.ContraptionWorldAccessor;
 public class CRH2DoorBlock extends CustomRenderedDoorBlock {
     public enum Type {
         PASSENGER("crh2a_passenger_door", CRH2DoorBlock.SLIDE_TRAVEL),
-        WIDE_PASSENGER("crh2a_passenger_door_wide", 16.1 / 16d),
+        WIDE_PASSENGER("crh2a_passenger_door_wide", 16.1 / 16d - 0.1),
         CAB("crh2a_cab_door", 0);
 
         private final String model;
@@ -81,7 +81,8 @@ public class CRH2DoorBlock extends CustomRenderedDoorBlock {
     public double slideTravel() { return doorType.slideTravel; }
     public double slideOffset(boolean mirrored, boolean reverse, float progress) {
         double offset = slideTravel() * animationCurve(progress);
-        return mirrored ^ (doorType == Type.PASSENGER && reverse) ? -offset : offset;
+        boolean negative = doorType == Type.WIDE_PASSENGER || (doorType == Type.PASSENGER && reverse);
+        return mirrored != negative ? -offset : offset;
     }
     public boolean supportsPassengerFrame() { return doorType == Type.PASSENGER; }
     private static Couple<net.minecraft.resources.ResourceLocation> models(Type doorType, String side) {
@@ -172,9 +173,12 @@ public class CRH2DoorBlock extends CustomRenderedDoorBlock {
                 shapeBox(state, mirrored, new AABB(width,0,13.3/16d,1,2,14.7/16d)),
                 shapeBox(state, mirrored, new AABB(0,PASSENGER_HEIGHT,13.3/16d,width,2,14.7/16d)));
         if (endpoint >= 1) {
-            double edge = Math.min(slideTravel(), width) - PASSENGER_OPEN_TRIGGER_EXTENSION;
+            double travel = slideOffset(false, reverse, 1);
+            double leafWidth = doorType == Type.WIDE_PASSENGER ? 16.1 / 16d : width;
+            double minX = Math.max(0, travel - PASSENGER_OPEN_TRIGGER_EXTENSION);
+            double maxX = Math.min(leafWidth, leafWidth + travel + PASSENGER_OPEN_TRIGGER_EXTENSION);
             return Shapes.or(frame, shapeBox(state, mirrored,
-                    new AABB(reverse ? 0 : edge, 0, 13.3/16d, reverse ? width-edge : width, PASSENGER_HEIGHT, 14.7/16d)));
+                    new AABB(minX, 0, 13.3/16d, maxX, PASSENGER_HEIGHT, 14.7/16d)));
         }
         return Shapes.or(frame,
                 shapeBox(state, mirrored, new AABB(0,0,13.3/16d,width,1,14.3/16d)),

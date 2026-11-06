@@ -4,6 +4,9 @@ import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.registries.DeferredHolder;
 
 public class LogoItemInit {
+    public static final DeferredHolder<Item, willow.train.hexie.item.PanelTextItem> PANEL_TEXT =
+            AllItemsInit.register("panel_text", () -> new willow.train.hexie.item.PanelTextItem(new Item.Properties()));
+
     public static final DeferredHolder<Item, willow.train.hexie.item.HarmonyLogoItem> HARMONY_LOGO =
             AllItemsInit.register("harmony_logo", () -> new willow.train.hexie.item.HarmonyLogoItem(new Item.Properties()));
 

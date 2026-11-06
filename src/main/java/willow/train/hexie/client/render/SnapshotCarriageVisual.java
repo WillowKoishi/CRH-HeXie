@@ -21,11 +21,13 @@ public final class SnapshotCarriageVisual extends ContraptionVisual<SnapshotCarr
     private record Entry(BlockPos position, AbstractBogeyBlockEntity blockEntity, BogeyStyle style, BogeyVisual visual) {}
     private final List<Entry> bogeys = new ArrayList<>();
     private final PoseStack pose = new PoseStack();
+    private final SnapshotCouplerVisual couplers;
     private final boolean compatibleTransparency = willow.train.hexie.client.render.carriage.CarriageTransparencyCompat.required();
     private int compatibleStructureVersion = Integer.MIN_VALUE;
 
     public SnapshotCarriageVisual(VisualizationContext context, SnapshotCarriageEntity entity, float partialTick) {
         super(context, entity, partialTick);
+        couplers = new SnapshotCouplerVisual(embedding);
         lightPaddingBlocks = DEFAULT_LIGHT_PADDING + 2;
         animate(partialTick);
         updateCompatibleTransparency();
@@ -58,6 +60,7 @@ public final class SnapshotCarriageVisual extends ContraptionVisual<SnapshotCarr
 
     private void animate(float partialTick) {
         if (entity.getContraption() == null) return;
+        couplers.update(entity, partialTick);
         var client = entity.getContraption().getOrCreateClientContraptionLazy();
         var animation = entity.bogeyAnimation();
         for (int i = 0; i < animation.frames().size(); i++) {
@@ -93,6 +96,7 @@ public final class SnapshotCarriageVisual extends ContraptionVisual<SnapshotCarr
     protected void _delete() {
         for (var entry : bogeys) if (entry.visual != null) entry.visual.delete();
         bogeys.clear();
+        couplers.delete();
         super._delete();
     }
 }

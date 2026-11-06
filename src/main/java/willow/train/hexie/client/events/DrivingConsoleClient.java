@@ -3,6 +3,7 @@ package willow.train.hexie.client.events;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.KeyMapping;
 import com.mojang.blaze3d.platform.InputConstants;
+import com.simibubi.create.content.contraptions.actors.trainControls.ControlsHandler;
 import java.util.HashSet;
 import java.util.Set;
 import net.minecraft.world.phys.Vec3;
@@ -36,20 +37,22 @@ public final class DrivingConsoleClient {
     private static int lastMask = -1, inputTicks;
     private static double zoom = 1, renderedFov = 70;
 
-    public static DrivingConsoleContext context() { return context; }
+    // Create can take control between client ticks. Yield input, camera and HUD immediately.
+    public static DrivingConsoleContext context() { return ControlsHandler.getContraption() == null ? context : null; }
     static boolean draggingHandle() { return drag != null; }
 
     static DrivingConsoleContext occupiedCab() {
         var player = Minecraft.getInstance().player;
-        return context != null && player != null && player.isAlive() && player.getVehicle() == context.seatAccess().vehicle()
-                ? context : null;
+        var cab = context();
+        return cab != null && player != null && player.isAlive() && player.getVehicle() == cab.seatAccess().vehicle()
+                ? cab : null;
     }
 
     static int cabKeyboardMask() { return Math.max(lastMask, 0); }
 
     public static boolean capturesInput() {
         var mc = Minecraft.getInstance();
-        return context != null && mc.screen == null && mc.getOverlay() == null && mc.isWindowActive();
+        return context() != null && mc.screen == null && mc.getOverlay() == null && mc.isWindowActive();
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -64,13 +67,14 @@ public final class DrivingConsoleClient {
     @SubscribeEvent
     public static void tick(ClientTickEvent.Pre event) {
         var mc = Minecraft.getInstance();
-        var next = DrivingConsoleContext.find(mc.player);
+        var next = ControlsHandler.getContraption() == null ? DrivingConsoleContext.find(mc.player) : null;
         if (!java.util.Objects.equals(context, next)) {
             boolean wasActive = context != null;
             if (drag != null && capturesInput()) mc.mouseHandler.handleAccumulatedMovement();
             drag = null;
             releaseInput();
             releaseMappings();
+            capturedKeys.clear();
             context = next; pointer = false; zoom = 1;
             lastMask = -1; inputTicks = 0;
             if (wasActive || next != null) {
@@ -188,7 +192,7 @@ public final class DrivingConsoleClient {
         var physical = InputConstants.getKey(key, scanCode);
         boolean previouslyCaptured = capturedKeys.contains(physical);
         if (action == GLFW.GLFW_RELEASE) capturedKeys.remove(physical);
-        if (!captureKey(key, scanCode)) return previouslyCaptured;
+        if (!captureKey(key, scanCode)) return previouslyCaptured && context() != null;
         if (action != GLFW.GLFW_RELEASE) capturedKeys.add(physical);
         var operation = new DrivingConsoleKeyEvent(context, key, scanCode, action);
         NeoForge.EVENT_BUS.post(operation);
@@ -265,7 +269,7 @@ public final class DrivingConsoleClient {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void fov(ViewportEvent.ComputeFov event) {
-        if (context == null || !event.usedConfiguredFov()) return;
+        if (context() == null || !event.usedConfiguredFov()) return;
         double activeZoom = scrollControlsZoom() ? zoom : 1;
         renderedFov = Math.toDegrees(2 * Math.atan(Math.tan(Math.toRadians(event.getFOV()) / 2) / activeZoom));
         event.setFOV(renderedFov);

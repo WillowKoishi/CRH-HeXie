@@ -17,16 +17,18 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock;
 import willow.train.hexie.client.render.CRH2DoorRenderContext;
+import willow.train.hexie.client.render.carriage.CarriageBlockVisual;
 
-/** Keep Create's renderer dispatch, exposing its authoritative light transform only while drawing a CRH2 door. */
+/** The carriage visual owns its instanced parts; immediate doors use Create's exact world-light transform. */
 @Mixin(BlockEntityRenderHelper.class)
 public abstract class MixinCRH2DoorRenderContext {
     @WrapOperation(method = "renderBlockEntities", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/renderer/blockentity/BlockEntityRenderer;render(Lnet/minecraft/world/level/block/entity/BlockEntity;FLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;II)V"), remap = false)
-    private static void hexie$doorWorldLight(BlockEntityRenderer<BlockEntity> renderer, BlockEntity entity,
+    private static void hexie$renderCarriagePart(BlockEntityRenderer<BlockEntity> renderer, BlockEntity entity,
             float partial, PoseStack pose, MultiBufferSource buffers, int light, int overlay, Operation<Void> original,
             List<BlockEntity> blockEntities, BitSet shouldRender, BitSet errors, VirtualRenderWorld renderLevel,
             Level realLevel, PoseStack outerPose, Matrix4f lightTransform, MultiBufferSource outerBuffers, float outerPartial) {
+        if (CarriageBlockVisual.replacesRenderer(entity)) return;
         if (!(entity.getBlockState().getBlock() instanceof CRH2DoorBlock) || !(realLevel instanceof ClientLevel client)) {
             original.call(renderer, entity, partial, pose, buffers, light, overlay);
             return;

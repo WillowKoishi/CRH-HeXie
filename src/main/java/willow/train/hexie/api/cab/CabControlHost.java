@@ -10,6 +10,9 @@ public interface CabControlHost extends CabSurfaceHost {
 
     default CabTrainControl trainControl(BlockState block) { return CabTrainControl.NONE; }
 
+    /** Physical detents for the common controller's power-zero and reverser-cut-out checks. */
+    default CabNeutralPositions neutralPositions(BlockState block) { return CabNeutralPositions.FROM_REQUEST; }
+
     default CabSurfaceState surfaceState(BlockState block, CabModule.State state) {
         var surface = state.surface(trainControl(block));
         for (var mount : surfaceGeometry(block).mounts())

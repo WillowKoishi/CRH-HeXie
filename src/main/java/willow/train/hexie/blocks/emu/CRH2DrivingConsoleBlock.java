@@ -10,6 +10,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import willow.train.hexie.api.cab.CabNeutralPositions;
 import willow.train.hexie.api.cab.CabSurfaceGeometry;
 import willow.train.hexie.api.traincontrol.CabTrainControl;
 import willow.train.hexie.blocks.DrivingConsoleBlock;
@@ -19,15 +20,17 @@ public class CRH2DrivingConsoleBlock extends DrivingConsoleBlock {
     private static final Map<Direction, VoxelShape> SHAPES = createShapes();
 
     public CRH2DrivingConsoleBlock(Properties properties) {
-        this(properties, () -> CabSurfaceGeometry.EMPTY, CabTrainControl.NONE);
+        super(properties, () -> CabSurfaceGeometry.EMPTY, CabTrainControl.NONE);
     }
 
     public static CRH2DrivingConsoleBlock nonstandard(Properties properties) {
-        return new CRH2DrivingConsoleBlock(properties, CRH2CabGeometry::surface, Crh2CabControls.INSTANCE);
+        return new CRH2DrivingConsoleBlock(properties, CRH2CabGeometry::surface, Crh2CabControls.INSTANCE,
+                Crh2CabControls.NEUTRAL_POSITIONS);
     }
 
-    private CRH2DrivingConsoleBlock(Properties properties, Supplier<CabSurfaceGeometry> geometry, CabTrainControl trainControl) {
-        super(properties, geometry, trainControl);
+    private CRH2DrivingConsoleBlock(Properties properties, Supplier<CabSurfaceGeometry> geometry, CabTrainControl trainControl,
+                                   CabNeutralPositions neutralPositions) {
+        super(properties, geometry, trainControl, neutralPositions);
     }
 
     private static Map<Direction, VoxelShape> createShapes() {

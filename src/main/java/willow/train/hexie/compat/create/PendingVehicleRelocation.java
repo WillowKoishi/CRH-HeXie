@@ -11,7 +11,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import net.createmod.catnip.data.Pair;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import willow.train.hexie.vehicle.assembly.VehicleRuntimeNbt;
@@ -79,17 +78,10 @@ final class PendingVehicleRelocation {
             var distances = new LinkedHashMap<UUID, Double>();
             try {
                 var first = train.carriages.getFirst().getLeadingPoint();
-                route = CreateRouteBinding.fromPoint(level, train.graph, first, true,
-                        (graph, preview, forward, choices) -> {
-                            var steer = train.manualSteer;
-                            if (!forward) steer = switch (steer) {
-                                case LEFT -> TravellingPoint.SteerDirection.RIGHT;
-                                case RIGHT -> TravellingPoint.SteerDirection.LEFT;
-                                case NONE -> TravellingPoint.SteerDirection.NONE;
-                            };
-                            return preview.steer(steer, preview.edge.getNormal(graph, .5))
-                                    .apply(graph, Pair.of(true, choices));
-                        });
+                // Legacy saved wheels point along increasing runtime mileage until their bridge rebuilds.
+                route = CreateRouteBinding.fromPoint(level, train.graph, first, !train.nativeWheelOrder,
+                        (graph, preview, increasing, choices) -> CreateRouteBinding.manualExit(
+                                graph, preview, !increasing, train.manualSteer, choices));
                 // Rebuilding a track can keep both its graph UUID and world geometry. A new
                 // native placement after the last observed points must still replace old edges.
                 boolean moved = changedSinceObserved
@@ -100,12 +92,11 @@ final class PendingVehicleRelocation {
                     UUID id = train.carriageIds.get(i);
                     var definition = checkpoint.carriages().stream().filter(car -> car.definition().id().equals(id))
                             .findFirst().orElseThrow().definition();
-                    var front = definition.bogeys().stream().max(java.util.Comparator.comparingDouble(BogeyDefinition::offset))
-                            .orElseThrow();
+                    var order = java.util.Comparator.comparingDouble(BogeyDefinition::offset);
+                    var front = definition.bogeys().stream().min(train.nativeWheelOrder ? order : order.reversed()).orElseThrow();
                     var nativeCar = train.carriages.get(i);
                     var nativeBogey = nativeCar.leadingBogey();
-                    double centre = (route.distanceOf(nativeBogey.leading())
-                            + route.distanceOf(nativeBogey.trailing())) / 2;
+                    double centre = CreateTrainBridge.wheelCentre(route, nativeBogey);
                     distances.put(id, centre - front.offset() - front.mount().trackPivot().z());
                     var previous = checkpoint.placement().bogeys().get(front.id()).track();
                     var next = route.path().sample(centre);

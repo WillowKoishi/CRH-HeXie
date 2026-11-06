@@ -58,8 +58,7 @@ public final class CarriagePlayerPersistence {
 
     static void save(ServerPlayer player) {
         if (PENDING.containsKey(player)) return;
-        var car = player.getVehicle() instanceof SnapshotCarriageEntity mounted
-                ? mounted : CarriagePlayerSupport.carriage(player);
+        var car = CarriagePlayerSupport.mountedOrStanding(player);
         if (car == null) { player.getPersistentData().remove(KEY); return; }
         BlockPos seat = player.getVehicle() == car
                 ? car.getContraption().getSeatOf(player.getUUID()) : null;
@@ -133,8 +132,9 @@ public final class CarriagePlayerPersistence {
                 if (index < 0) continue;
                 var nativeCar = train.carriages.get(index);
                 var dimensional = nativeCar.getDimensionalIfPresent(level.dimension());
-                if (dimensional == null || dimensional.positionAnchor == null) return;
-                var chunk = new ChunkPos(BlockPos.containing(dimensional.positionAnchor));
+                var bodyPosition = dimensional == null ? null : SnapshotBodyAnchor.position(dimensional);
+                if (bodyPosition == null) return;
+                var chunk = new ChunkPos(BlockPos.containing(bodyPosition));
                 keepTicket(player, level, chunk);
                 nativeCar.manageEntities(level);
                 car = level.getEntity(id) instanceof SnapshotCarriageEntity loaded ? loaded : null;

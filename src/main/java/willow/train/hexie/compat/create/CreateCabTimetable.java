@@ -54,6 +54,8 @@ final class CreateCabTimetable {
             stationStop.restore(new StationStopControl.State(true, stop.getString("Station"), stop.getString("Name")));
         if (execution.contains("Navigation")) {
             pendingNavigation = execution.getCompound("Navigation").copy();
+            if (!execution.contains(CompatibilityTrain.NATIVE_WHEEL_ORDER))
+                CompatibilityTrain.reverseSavedNavigation(pendingNavigation);
             pendingDimensions = DimensionPalette.read(execution);
         }
     }
@@ -111,6 +113,7 @@ final class CreateCabTimetable {
 
     CompoundTag write(HolderLookup.Provider registries) {
         var execution = new CompoundTag();
+        execution.putBoolean(CompatibilityTrain.NATIVE_WHEEL_ORDER, true);
         var run = runtime.write(registries);
         var stored = run.getCompound("Schedule");
         if (!stored.isEmpty()) stored.putInt("Progress", runtime.currentEntry);

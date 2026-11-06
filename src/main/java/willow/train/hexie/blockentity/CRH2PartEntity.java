@@ -14,6 +14,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import willow.train.hexie.init.BlockEntitiesInit;
 import willow.train.hexie.menu.CarriageMarkingMenu;
 import java.util.List;
+import willow.train.hexie.blocks.parts.PanelText;
 
 /** The panel root owns its lower-body markings; proxy cells resolve all editing to that root. */
 public final class CRH2PartEntity extends SmartBlockEntity implements MenuProvider, willow.train.hexie.blocks.parts.VehicleMarkings {
@@ -25,6 +26,13 @@ public final class CRH2PartEntity extends SmartBlockEntity implements MenuProvid
         int selected=Math.clamp(slot,0,1);
         if(markingSlot==selected)return;
         markingSlot=selected; setChanged(); sendData();
+    }
+    private final PanelText[] labels = {PanelText.EMPTY, PanelText.EMPTY};
+    public PanelText panelText(int slot) { return labels[slot]; }
+    public void setPanelText(int slot, PanelText text) {
+        labels[slot] = text;
+        setChanged();
+        sendData();
     }
     private final int[] harmony={0,0};
     public int harmony(int slot) { return harmony[slot]; }
@@ -52,12 +60,16 @@ public final class CRH2PartEntity extends SmartBlockEntity implements MenuProvid
         tag.putBoolean("DescriptionLeft", descriptionLeft);
         tag.putInt("CarriageMarkingSlot", markingSlot);
         tag.putIntArray("HarmonyLogos",harmony);
+        for (int i = 0; i < labels.length; i++)
+            if (!labels[i].text().isEmpty()) tag.put("PanelText" + i, labels[i].save());
     }
     @Override protected void read(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
         super.read(tag, registries, clientPacket);
         for (int i=0;i<fields.length;i++) fields[i]=GroundStationSignEntity.clean(tag.getString("CarriageMarking"+i));
         descriptionLeft=tag.getBoolean("DescriptionLeft");
         markingSlot=Math.clamp(tag.getInt("CarriageMarkingSlot"),0,1);
+        for (int i = 0; i < labels.length; i++)
+            labels[i] = tag.contains("PanelText" + i) ? PanelText.load(tag.getCompound("PanelText" + i)) : PanelText.EMPTY;
         var logos=tag.getIntArray("HarmonyLogos");
         for(int i=0;i<2;i++) harmony[i]=i<logos.length && logos[i]>=1 && logos[i]<=2 ? logos[i] : 0;
     }

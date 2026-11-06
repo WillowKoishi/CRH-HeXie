@@ -29,7 +29,9 @@ public enum BuiltinBogeyProfile {
             119390, 150000, 71753.16, 2191800, 1, BOLSTERED, 0),
     // Game full-brake target: 275 km/h -> 1600 m.
     DT206(new BogeyGeometry(.43, List.of(-1.25, 1.25)),
-            24000, 20000, 42531.79, 600000, 4, BOLSTERLESS, .06);
+            24000, 20000, 42531.79, 600000, 4, BOLSTERLESS, .06),
+    SKTB200(new BogeyGeometry(.43, List.of(-1.25, 1.25)),
+            24000, 0, 42531.79, 0, 1, BOLSTERLESS, .06);
 
     private final BogeyGeometry geometry;
     private final BogeyParameters operating;

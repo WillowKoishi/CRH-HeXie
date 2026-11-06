@@ -2,7 +2,8 @@ package willow.train.hexie.api.traincontrol;
 
 /**
  * Complete demand from one desk after it has combined its controls. Power and service brake range from 0 to 1,
- * and reverser is -1, 0 or 1 relative to the desk. Any physical control can contribute to any demand.
+ * and reverser is -1, 0 or 1 relative to the desk. Power and braking are independent requests.
+ * An inactive desk still supplies its brake demand. Any physical control can contribute to any demand.
  * emergencyDemand is the currently asserted emergency input. releaseEmergency is a pulse for this operation only.
  */
 public record CabTrainRequest(double power, double serviceBrake, int reverser, boolean enabled, boolean automatic,

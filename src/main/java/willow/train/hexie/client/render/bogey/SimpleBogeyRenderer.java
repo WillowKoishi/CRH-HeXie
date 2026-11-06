@@ -29,8 +29,10 @@ import willow.train.hexie.blocks.bogeys.BogeyFloorData;
 /** Shares each bogey's animation transforms between Create's renderer and Flywheel visual. */
 public abstract class SimpleBogeyRenderer implements BogeyRenderer {
     // Flywheel may update different visuals using the same renderer concurrently.
-    private final ThreadLocal<BiConsumer<PartialModel, Matrix4f>> instanceOutput = new ThreadLocal<>();
+    private final ThreadLocal<BiConsumer<Part, Matrix4f>> instanceOutput = new ThreadLocal<>();
     private final ThreadLocal<Matrix4f> instanceTransform = ThreadLocal.withInitial(Matrix4f::new);
+    private record Part(PartialModel model, boolean reversed) {}
+    private final ThreadLocal<Boolean> reversedPass = new ThreadLocal<>();
     private int overlay;
 
     public abstract BogeySizes.BogeySize getSize();
@@ -45,8 +47,7 @@ public abstract class SimpleBogeyRenderer implements BogeyRenderer {
         this.overlay = overlay;
         poseStack.pushPose();
         try {
-            applyFloorPreview(bogeyData, poseStack, inContraption);
-            render(bogeyData, wheelAngle, poseStack, light,
+            renderParts(bogeyData, wheelAngle, poseStack, light,
                     buffers.getBuffer(RenderType.cutoutMipped()), inContraption);
         } finally {
             poseStack.popPose();
@@ -62,6 +63,18 @@ public abstract class SimpleBogeyRenderer implements BogeyRenderer {
         // Wheels keep their rail height; the separate top model follows height and longitudinal settings.
         // Assembled vehicles already apply longitudinal displacement through the real support pivot.
         if (!inContraption) pose.translate(0, 0, BogeyFloorData.LONGITUDINAL_SETTING.blocks(BogeyFloorData.longitudinal(data)));
+    }
+
+    private void renderParts(CompoundTag data, float angle, PoseStack pose, int light, VertexConsumer buffer, boolean moving) {
+        applyFloorPreview(data, pose, moving);
+        boolean reversed = data.getBoolean(BogeyFloorData.REVERSED);
+        if (reversed) pose.scale(1, 1, -1);
+        reversedPass.set(reversed);
+        try {
+            render(data, reversed ? -angle : angle, pose, light, buffer, moving);
+        } finally {
+            reversedPass.remove();
+        }
     }
 
     protected final BogeyModelData getTransform(PartialModel model, PoseStack poseStack,
@@ -102,16 +115,19 @@ public abstract class SimpleBogeyRenderer implements BogeyRenderer {
         }
 
         public void render(PoseStack poseStack, int light, VertexConsumer buffer) {
-            BiConsumer<PartialModel, Matrix4f> output = instanceOutput.get();
+            boolean reversed = Boolean.TRUE.equals(reversedPass.get());
+            // The geometry is already reflected. Cancel its local reflection after the animated transform.
+            Matrix4f local = reversed ? new Matrix4f(transform).scale(1, 1, -1) : transform;
+            BiConsumer<Part, Matrix4f> output = instanceOutput.get();
             if (output != null) {
                 // The instance copies the transform immediately, so this thread-local scratch matrix is reusable.
-                output.accept(model, instanceTransform.get().set(poseStack.last().pose()).mul(transform));
+                output.accept(new Part(model, reversed), instanceTransform.get().set(poseStack.last().pose()).mul(local));
                 return;
             }
             poseStack.pushPose();
-            poseStack.last().pose().mul(transform);
-            poseStack.last().normal().mul(new Matrix3f(transform));
-            CachedBuffers.partial(model, Blocks.AIR.defaultBlockState())
+            poseStack.last().pose().mul(local);
+            poseStack.last().normal().mul(new Matrix3f(local));
+            (reversed ? BogeyMirror.BUFFERS.get(model) : CachedBuffers.partial(model, Blocks.AIR.defaultBlockState()))
                     .light(light).overlay(overlay).renderInto(poseStack, buffer);
             poseStack.popPose();
         }
@@ -125,8 +141,8 @@ public abstract class SimpleBogeyRenderer implements BogeyRenderer {
     private final class AnimatedVisual implements BogeyVisual {
         private final VisualizationContext context;
         private final boolean inContraption;
-        private final Map<PartialModel, ModelInstances> instances = new HashMap<>();
-        private final BiConsumer<PartialModel, Matrix4f> output = this::emit;
+        private final Map<Part, ModelInstances> instances = new HashMap<>();
+        private final BiConsumer<Part, Matrix4f> output = this::emit;
         private int packedLight;
 
         private AnimatedVisual(VisualizationContext context, boolean inContraption) {
@@ -137,12 +153,11 @@ public abstract class SimpleBogeyRenderer implements BogeyRenderer {
         @Override
         public void update(CompoundTag bogeyData, float wheelAngle, PoseStack poseStack) {
             instances.values().forEach(group -> group.used = 0);
-            BiConsumer<PartialModel, Matrix4f> previousOutput = instanceOutput.get();
+            BiConsumer<Part, Matrix4f> previousOutput = instanceOutput.get();
             instanceOutput.set(output);
             poseStack.pushPose();
             try {
-                applyFloorPreview(bogeyData, poseStack, inContraption);
-                SimpleBogeyRenderer.this.render(bogeyData, wheelAngle, poseStack,
+                renderParts(bogeyData, wheelAngle, poseStack,
                         packedLight, null, inContraption);
             } finally {
                 poseStack.popPose();
@@ -157,12 +172,12 @@ public abstract class SimpleBogeyRenderer implements BogeyRenderer {
             });
         }
 
-        private void emit(PartialModel model, Matrix4f transform) {
+        private void emit(Part model, Matrix4f transform) {
             ModelInstances group = instances.computeIfAbsent(model, ignored -> new ModelInstances());
             int index = group.used++;
             if (index == group.instances.size()) {
                 TransformedInstance instance = context.instancerProvider()
-                        .instancer(InstanceTypes.TRANSFORMED, SpecialModels.smoothLit(model))
+                        .instancer(InstanceTypes.TRANSFORMED, model.reversed() ? BogeyMirror.MODELS.get(model.model()) : SpecialModels.smoothLit(model.model()))
                         .createInstance();
                 instance.light(packedLight);
                 group.instances.add(instance);

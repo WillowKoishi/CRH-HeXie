@@ -10,6 +10,10 @@ public interface TrackGeometry {
 
     Sample sample(double parameter);
 
+    /** Exact linear spans, when the backend supplies a polyline. */
+    default int linearSpanCount() { return 0; }
+    default double linearSpanEnd(int index) { throw new IndexOutOfBoundsException(index); }
+
     /** Position is the backend track reference line, not a wheel/contact height. */
     final class Sample {
         private final Vector position;

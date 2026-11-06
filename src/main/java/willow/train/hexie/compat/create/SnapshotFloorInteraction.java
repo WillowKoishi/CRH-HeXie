@@ -22,6 +22,15 @@ public final class SnapshotFloorInteraction {
         if (info == null || !(info.state().getBlock() instanceof HexieBogeyBlock<?>)
                 || !entity.canInteractWithBlock(player, position, 4)) return false;
         if (player.isShiftKeyDown()) { FloorSwitcherItem.switchMode(player, hand); return true; }
+        if (FloorSwitcherItem.mode(player.getItemInHand(hand)) == FloorSwitcherItem.Mode.REVERSE) {
+            if (!entity.level().isClientSide) {
+                var data = info.nbt() == null ? new CompoundTag() : info.nbt().copy();
+                BogeyFloorData.writeReversed(data, !BogeyFloorData.reversedFromEntity(data));
+                entity.setBlock(position, new StructureBlockInfo(position, info.state(), data));
+                entity.syncCarriage();
+            }
+            return true;
+        }
         // Client block-entity tags can lag behind a moving carriage's synchronized floor pose.
         double offset = entity.couplerAnimation().floorOffset();
         int height = BogeyFloorData.heightFromOffset(offset);

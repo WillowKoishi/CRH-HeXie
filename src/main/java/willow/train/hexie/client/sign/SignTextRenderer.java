@@ -40,7 +40,7 @@ public final class SignTextRenderer {
                 .limit(128).collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString();
     }
     public enum Alignment { LEFT, CENTER, RIGHT }
-    private record Key(ResourceLocation profile, String text) {}
+    private record Key(ResourceLocation profile, String text, float tracking) {}
     private static final class Entry {
         final ResourceLocation texture;
         final int width, height, inkWidth, inkHeight;
@@ -160,18 +160,24 @@ public final class SignTextRenderer {
     public static void drawLine(ResourceLocation profile, String text, PoseStack pose, MultiBufferSource buffers,
                                 float x, float y, float height, float maxWidth, int color, int light,
                                 Alignment alignment, boolean smooth, Surface surface) {
+        drawLine(profile, text, pose, buffers, x, y, height, maxWidth, color, light, alignment, smooth, surface, 0);
+    }
+
+    public static void drawLine(ResourceLocation profile, String text, PoseStack pose, MultiBufferSource buffers,
+                                float x, float y, float height, float maxWidth, int color, int light,
+                                Alignment alignment, boolean smooth, Surface surface, float extraTracking) {
         if (text == null || text.isBlank() || !Float.isFinite(height) || !Float.isFinite(maxWidth) || height <= 0 || maxWidth <= 0) return;
         text = normalize(text);
         if (text.isBlank()) return;
         var loaded = SignFontProfiles.get(profile);
         // A missing profile must not make a sign unreadable after a resource-pack error.
         if (loaded == null || loaded.font().canDisplayUpTo(text) != -1) {
-            if (surface == null) fallback(text, pose, buffers, x, y, height, maxWidth, color, light, alignment);
+            if (surface == null) fallback(text, pose, buffers, x, y, height, maxWidth, color, light, alignment, extraTracking);
             else fallback(text, new PoseStack(), type -> surfaceConsumer(buffers.getBuffer(type), pose, surface),
-                    x, y, height, maxWidth, color, light, alignment);
+                    x, y, height, maxWidth, color, light, alignment, extraTracking);
             return;
         }
-        Entry entry = entry(profile, text, loaded);
+        Entry entry = entry(profile, text, loaded, extraTracking);
         if (entry == null) return;
         if (buffers instanceof TextureOwner owner) owner.retainSignTexture(entry.texture);
         float scale = Math.min(height / entry.inkHeight, maxWidth / entry.inkWidth);
@@ -255,10 +261,13 @@ public final class SignTextRenderer {
         return entry == null ? 0 : Math.min(maxWidth, height * entry.inkWidth / entry.inkHeight);
     }
     private static Entry entry(ResourceLocation profile, String text, SignFontProfiles.Loaded loaded) {
-        Key key = new Key(profile, text);
+        return entry(profile, text, loaded, 0);
+    }
+    private static Entry entry(ResourceLocation profile, String text, SignFontProfiles.Loaded loaded, float extraTracking) {
+        Key key = new Key(profile, text, extraTracking);
         Entry entry = CACHE.get(key);
         if (entry == null) {
-            var raster = SignTextRasterizer.rasterize(loaded.font(), text, loaded.profile().trackingEm(), loaded.profile().widthScale());
+            var raster = SignTextRasterizer.rasterize(loaded.font(), text, loaded.profile().trackingEm() + extraTracking, loaded.profile().widthScale());
             if (raster == null) return null;
             var image = raster.image(); NativeImage nativeImage = new NativeImage(image.getWidth(), image.getHeight(), false);
             for (int py = 0; py < image.getHeight(); py++) for (int px = 0; px < image.getWidth(); px++) {
@@ -274,12 +283,23 @@ public final class SignTextRenderer {
         return entry;
     }
     private static void fallback(String text, PoseStack pose, MultiBufferSource buffers, float x, float y,
-                                 float height, float maxWidth, int color, int light, Alignment alignment) {
+                                 float height, float maxWidth, int color, int light, Alignment alignment, float tracking) {
         Font font = Minecraft.getInstance().font;
-        float width = font.width(text), scale = Math.min(height / font.lineHeight, maxWidth / Math.max(1, width));
+        float gap = tracking * font.lineHeight;
+        float width = font.width(text) + gap * (text.codePointCount(0, text.length()) - 1), scale = Math.min(height / font.lineHeight, maxWidth / Math.max(1, width));
         pose.pushPose(); pose.translate(x, y, 0); pose.scale(scale, -scale, scale);
-        font.drawInBatch(text, alignment == Alignment.CENTER ? -width / 2 : alignment == Alignment.RIGHT ? -width : 0,
-                0, color, false, pose.last().pose(), buffers, Font.DisplayMode.NORMAL, 0, light); pose.popPose();
+        float cursor = alignment == Alignment.CENTER ? -width / 2 : alignment == Alignment.RIGHT ? -width : 0;
+        if (tracking == 0) {
+            font.drawInBatch(text, cursor, 0, color, false, pose.last().pose(), buffers, Font.DisplayMode.NORMAL, 0, light);
+        } else {
+            for (int i = 0; i < text.length();) {
+                String glyph = Character.toString(text.codePointAt(i));
+                font.drawInBatch(glyph, cursor, 0, color, false, pose.last().pose(), buffers, Font.DisplayMode.NORMAL, 0, light);
+                cursor += font.width(glyph) + gap;
+                i += glyph.length();
+            }
+        }
+        pose.popPose();
     }
     /** Called between frames, never while quads referencing these textures are pending in buffers. */
     public static void trim() {

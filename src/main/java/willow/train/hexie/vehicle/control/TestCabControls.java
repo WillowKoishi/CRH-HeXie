@@ -2,6 +2,8 @@ package willow.train.hexie.vehicle.control;
 
 import java.util.List;
 import willow.train.hexie.api.cab.CabControl;
+import willow.train.hexie.api.cab.CabNeutralPositions;
+import willow.train.hexie.api.cab.CabNeutralPositions.Detent;
 import willow.train.hexie.api.cab.CabSurfaceState;
 import willow.train.hexie.api.traincontrol.CabTrainControl;
 import willow.train.hexie.api.traincontrol.CabTrainRequest;
@@ -14,6 +16,8 @@ public enum TestCabControls implements CabTrainControl {
     private static final String POWER = "hexie:test_power", BRAKE = "hexie:test_brake", REVERSER = "hexie:test_reverser";
     private static final String MODE = "hexie:test_automatic", PARKING = "hexie:test_parking";
     private static final int SERVICE_NOTCHES = 10, EMERGENCY = 11;
+    public static final CabNeutralPositions NEUTRAL_POSITIONS = new CabNeutralPositions(
+            new Detent(POWER, 0), new Detent(REVERSER, 0));
 
     public record View(int power, int brake, int reverser, boolean automatic, boolean parking) {}
 

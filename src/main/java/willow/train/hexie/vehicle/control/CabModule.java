@@ -14,41 +14,45 @@ import willow.train.hexie.api.cab.CabSurfaceState;
 import willow.train.hexie.api.traincontrol.CabTrainControl;
 import willow.train.hexie.api.traincontrol.CabTrainInput;
 import willow.train.hexie.api.traincontrol.CabTrainRequest;
+import willow.train.hexie.vehicle.runtime.VehicleRuntime;
 
 /** Vehicle-owned converted state. Occupancy authorizes operations, never continued execution. */
 public final class CabModule implements CabTrainInput {
     public record State(CabController.Input input, CabController.Mode mode, CabBrakeConversion.State brakes,
-                        boolean approachHeld, boolean enabled, boolean simple, Map<String, Integer> handlePositions) {
+                        boolean approachHeld, boolean deskEnabled, boolean simple, Map<String, Integer> handlePositions) {
         public static final State NEUTRAL = new State(new CabController.Input(0, 0, 0),
                 CabController.Mode.MANUAL, CabBrakeConversion.State.NORMAL, false, false);
         public State(CabController.Input input, CabController.Mode mode, CabBrakeConversion.State brakes,
-                     boolean approachHeld, boolean enabled) {
-            this(input, mode, brakes, approachHeld, enabled, false);
+                     boolean approachHeld, boolean deskEnabled) {
+            this(input, mode, brakes, approachHeld, deskEnabled, false);
         }
         public State(CabController.Input input, CabController.Mode mode, CabBrakeConversion.State brakes,
-                     boolean approachHeld, boolean enabled, boolean simple) {
-            this(input, mode, brakes, approachHeld, enabled, simple, Map.of());
+                     boolean approachHeld, boolean deskEnabled, boolean simple) {
+            this(input, mode, brakes, approachHeld, deskEnabled, simple, Map.of());
         }
         public State {
             Objects.requireNonNull(input); Objects.requireNonNull(mode); Objects.requireNonNull(brakes);
             handlePositions = Map.copyOf(handlePositions);
         }
         public boolean automatic() { return mode == CabController.Mode.AUTOMATIC; }
-        public State withApproach(boolean held) { return new State(input, mode, brakes, held, enabled, simple, handlePositions); }
-        public State withEnabled(boolean value) {
-            return new State(input, mode, brakes, approachHeld, value, simple, handlePositions);
+        /** Shunting supplies its own enable input while the desk retains its physical setting. */
+        public boolean enabled() { return deskEnabled || simple; }
+        /** A cut-out desk still supplies its converted service, parking or latched emergency brake. */
+        public VehicleRuntime.Control brakingOnly() { return new VehicleRuntime.Control(0, input.brake()); }
+        public State withApproach(boolean held) { return new State(input, mode, brakes, held, deskEnabled, simple, handlePositions); }
+        public State withEnabled(boolean deskEnabled) {
+            return new State(input, mode, brakes, approachHeld, deskEnabled, simple, handlePositions);
         }
         public CabTrainRequest request() {
-            return new CabTrainRequest(input.power(), brakes.serviceBrake(), input.reverser(), enabled, automatic(),
+            return new CabTrainRequest(input.power(), brakes.serviceBrake(), input.reverser(), deskEnabled, automatic(),
                     brakes.parking(), brakes.emergencyHandle(), false, approachHeld);
         }
         public CabSurfaceState surface(CabTrainControl desk) {
             return desk.restore(new CabSurfaceState(handlePositions), request());
         }
-        /** Input style changes neither the enable input nor the driving mode and stored handles. */
         public State withSimple(boolean value) {
             if (simple == value) return this;
-            return new State(input, mode, brakes, approachHeld, enabled, value, handlePositions);
+            return new State(input, mode, brakes, approachHeld, deskEnabled, value, handlePositions);
         }
     }
     private State state = State.NEUTRAL;
@@ -93,26 +97,26 @@ public final class CabModule implements CabTrainInput {
         return new State(new CabController.Input(request.power(), brakes.brake(), request.reverser()), mode,
                 brakes.state(), request.approach(), request.enabled(), previous.simple(), positions);
     }
-    public willow.train.hexie.vehicle.runtime.VehicleRuntime.Control update(CabController.Mode mode, int direction,
+    public VehicleRuntime.Control update(CabController.Mode mode, int direction,
             double speed, AutomaticTrainControl.Target target, double serviceDeceleration) {
         return update(mode, direction, speed, target, serviceDeceleration, StationStopControl.State.RUNNING);
     }
-    public willow.train.hexie.vehicle.runtime.VehicleRuntime.Control update(CabController.Mode mode, int direction,
+    public VehicleRuntime.Control update(CabController.Mode mode, int direction,
             double speed, AutomaticTrainControl.Target target, double serviceDeceleration, StationStopControl.State stationStop) {
-        if (!state.enabled()) return willow.train.hexie.vehicle.runtime.VehicleRuntime.Control.NEUTRAL;
+        if (!state.enabled()) return state.brakingOnly();
         return CabController.update(mode, state.input().direction(direction), speed, target, serviceDeceleration, stationStop);
     }
     /** Select keyboard output using the existing manual controller or explicit station-approach controller. */
-    public willow.train.hexie.vehicle.runtime.VehicleRuntime.Control updateSimple(boolean approachingStation, int direction,
+    public VehicleRuntime.Control updateSimple(boolean approachingStation, int direction,
             double speed, AutomaticTrainControl.Target target, double serviceDeceleration, StationStopControl.State stationStop) {
-        if (!state.enabled()) return willow.train.hexie.vehicle.runtime.VehicleRuntime.Control.NEUTRAL;
+        if (!state.enabled()) return state.brakingOnly();
         var mode = approachingStation ? CabController.Mode.AUTOMATIC : CabController.Mode.MANUAL;
         return CabController.update(mode, effectiveInput(speed * direction).direction(direction), speed, target, serviceDeceleration, stationStop);
     }
     public CompoundTag write() {
         var tag = new CompoundTag();
         tag.putInt("CabVersion", 5);
-        tag.putBoolean("Enabled", state.enabled());
+        tag.putBoolean("Enabled", state.deskEnabled());
         tag.putBoolean("Simple", state.simple());
         tag.putDouble("Power", state.input().power()); tag.putDouble("Brake", state.input().brake());
         tag.putInt("Reverser", state.input().reverser()); tag.putBoolean("Automatic", state.mode() == CabController.Mode.AUTOMATIC);
@@ -160,8 +164,8 @@ public final class CabModule implements CabTrainInput {
         // at the format boundary; current modules accept an independent enable input verbatim.
         boolean enabled = version >= 3 ? tag.getBoolean("Enabled") : reverser != 0;
         boolean simple = version >= 4 && tag.getBoolean("Simple");
-        // Version 4 incorrectly enabled a cab on entering simple input. Undo that promotion,
-        // retaining an explicitly disabled cab instead of restoring a former enabled value.
+        // Version 4 stored both the promoted enable and the physical setting on entry to shunting.
+        // Recover the desk request, including a switch cleared after entry.
         if (version == 4 && simple) enabled &= tag.getBoolean("DetailedEnabled");
         var positions = new LinkedHashMap<String, Integer>();
         if (tag.contains("HandlePositions")) {

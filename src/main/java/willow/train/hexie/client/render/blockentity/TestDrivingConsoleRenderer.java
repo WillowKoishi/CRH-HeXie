@@ -14,23 +14,31 @@ import willow.train.hexie.vehicle.control.TestCabControls;
 final class TestDrivingConsoleRenderer {
     private static final ResourceLocation WHITE = ResourceLocation.fromNamespaceAndPath("hexie", "textures/misc/sign_white.png");
     private TestDrivingConsoleRenderer() {}
-    static void renderPanel(DrivingConsoleEntity cab, PoseStack pose, MultiBufferSource buffers, int light) {
-        var controls = TestCabControls.view(cab.controls());
+    interface Boxes {
+        void box(float x, float y, float z, float endX, float endY, float endZ, int color);
+    }
+
+    static void drawBoxes(TestCabControls.View controls, Boxes boxes) {
         // Keep the entire operating face above the plinth and inside this block column.
-        box(pose, buffers, .02f, 1f, .64f, .98f, 1.72f, .66f, 0xff555555, light);
-        box(pose, buffers, .14f, 1.20f, .82f, .21f, 1.62f, .85f, 0xff252525, light);
-        box(pose, buffers, .79f, 1.20f, .82f, .86f, 1.62f, .85f, 0xff252525, light);
+        boxes.box(.02f, 1f, .64f, .98f, 1.72f, .66f, 0xff555555);
+        boxes.box(.14f, 1.20f, .82f, .21f, 1.62f, .85f, 0xff252525);
+        boxes.box(.79f, 1.20f, .82f, .86f, 1.62f, .85f, 0xff252525);
         float py = 1.22f + controls.power() * .032f, by = 1.22f + controls.brake() * .029f;
-        box(pose, buffers, .08f, py, .85f, .27f, py + .06f, .915f, 0xff999999, light);
-        box(pose, buffers, .73f, by, .85f, .92f, by + .06f, .915f,
-                controls.brake() == 11 ? 0xffb03830 : 0xff777777, light);
+        boxes.box(.08f, py, .85f, .27f, py + .06f, .915f, 0xff999999);
+        boxes.box(.73f, by, .85f, .92f, by + .06f, .915f, controls.brake() == 11 ? 0xffb03830 : 0xff777777);
+        boxes.box(.06f, 1.02f, .85f, .32f, 1.16f, .90f, 0xff555555);
+        boxes.box(.37f, 1.02f, .85f, .63f, 1.16f, .90f, 0xff305c39);
+        boxes.box(.68f, 1.02f, .85f, .94f, 1.16f, .90f, controls.parking() ? 0xff8a602b : 0xff555555);
+    }
+
+    static void renderPanel(DrivingConsoleEntity cab, PoseStack pose, MultiBufferSource buffers, int light, boolean drawGeometry) {
+        var controls = TestCabControls.view(cab.controls());
+        if (drawGeometry) drawBoxes(controls, (x, y, z, endX, endY, endZ, color) ->
+                box(pose, buffers, x, y, z, endX, endY, endZ, color, light));
         text(pose, buffers, "功率 +", .065f, 1.675f, light);
         text(pose, buffers, "制动 + / 紧急", .69f, 1.675f, light);
         text(pose, buffers, "−  " + controls.power() + "/10", .065f, 1.19f, light);
         text(pose, buffers, "−  " + controls.brake() + "/11", .71f, 1.19f, light);
-        box(pose, buffers, .06f, 1.02f, .85f, .32f, 1.16f, .90f, 0xff555555, light);
-        box(pose, buffers, .37f, 1.02f, .85f, .63f, 1.16f, .90f, 0xff305c39, light);
-        box(pose, buffers, .68f, 1.02f, .85f, .94f, 1.16f, .90f, controls.parking() ? 0xff8a602b : 0xff555555, light);
         text(pose, buffers, controls.reverser() == 0 ? "反向器：中" : controls.reverser() > 0 ? "反向器：前" : "反向器：后", .065f, 1.11f, light);
         text(pose, buffers, controls.automatic() ? "机控" : "人控", .42f, 1.11f, light);
         text(pose, buffers, controls.parking() ? "驻车：开" : "驻车：关", .7f, 1.11f, light);

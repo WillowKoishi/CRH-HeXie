@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -42,6 +43,7 @@ import willow.train.hexie.vehicle.assembly.VehicleRuntimeNbt;
 import willow.train.hexie.vehicle.kinematics.VehicleConstraintSolver.BodyPose;
 import willow.train.hexie.vehicle.kinematics.VehicleConstraintSolver.ConstraintFailure;
 import willow.train.hexie.vehicle.runtime.VehicleRuntime;
+import willow.train.hexie.api.traincontrol.CabTrainControl;
 
 /** Shared route coordinates for independent carriages; coupler constraints alone define consists. */
 public final class AssembledVehicleMotion {
@@ -61,7 +63,9 @@ public final class AssembledVehicleMotion {
         ControlKey { position = position.immutable(); }
     }
     private final Map<ControlKey, Controller> controllers = new HashMap<>();
-    private final Set<UUID> cabOutputCarriages = new HashSet<>();
+    private final Set<UUID> controlledCarriages = new HashSet<>();
+    // Create's last submitted traction wins. A shared stamp stays unique when independent trains couple.
+    private static final AtomicLong NATIVE_INPUT_SEQUENCE = new AtomicLong();
     private long lastTick = Long.MIN_VALUE;
     private String lastMotionFailure;
     private CreateTrainBridge compatibility;
@@ -119,6 +123,7 @@ public final class AssembledVehicleMotion {
             var key = new ControlKey(snapshot.id(), block.position());
             if (controllers.containsKey(key)) {
                 var existing = controllers.get(key);
+                existing.cabConverter = host.trainControl(block.state());
                 if (existing.cabTimetable == null)
                     existing.cabTimetable = new CreateCabTimetable(key, level.registryAccess(),
                             CreateConsoleTimetable.storedBlockData(level, key, block.entityData()));
@@ -129,6 +134,7 @@ public final class AssembledVehicleMotion {
             var driver = new Controller(new UUID(0, 0), block.position(), level.getGameTime());
             driver.attended = false;
             driver.cabFacing = facing;
+            driver.cabConverter = host.trainControl(block.state());
             var data = block.entityData();
             driver.cabControls = data != null && (data.contains("CabControls") || data.contains("TestControls"))
                     ? CabModule.read(data.getCompound(data.contains("CabControls") ? "CabControls" : "TestControls"))
@@ -229,10 +235,11 @@ public final class AssembledVehicleMotion {
             // A wrench hand-off changes the real owner; a failed projection does not.
             if (bridgeForTick != null && compatibility == null) return;
             applyAutomaticControls();
-            applyCabModules();
+            applyAllControls();
             try {
                 runtime.tick(1.0 / 20, Set.of(), compatibility == null ? Set.of() : compatibility.motionPausedCarriages());
-                if (compatibility != null) compatibility.afterTick();
+                // Keep Create's migration points intact until the bridge has reconciled them.
+                if (compatibility != null && geometryFailure == null) compatibility.afterTick();
                 applyControlStopEvents();
             } catch (CreateRouteBinding.RouteInvalidException | ConstraintFailure failure) {
                 geometryFailure = failure.getMessage();
@@ -527,7 +534,7 @@ public final class AssembledVehicleMotion {
 
     private void copyMemberState(AssembledVehicleMotion target) {
         controllers.forEach((id, controller) -> { if (target.owns(id.carriage())) target.controllers.put(id, controller); });
-        cabOutputCarriages.stream().filter(target::owns).forEach(target.cabOutputCarriages::add);
+        controlledCarriages.stream().filter(target::owns).forEach(target.controlledCarriages::add);
         derailedCarriages.stream().filter(target::owns).forEach(target.derailedCarriages::add);
     }
 
@@ -620,6 +627,7 @@ public final class AssembledVehicleMotion {
                 carrier.installMotion(null);
             }
         }
+        recovered.clearBoardingHistory();
         recovered.installOwnerState(recovered);
         recovered.ensureCompatibility();
         return true;
@@ -729,13 +737,9 @@ public final class AssembledVehicleMotion {
                 && e.getValue().cabControls != null && e.getValue().cabControls.state().simple());
     }
 
-    private void backendOwnsOutput(UUID member) {
-        cabOutputCarriages.removeIf(id -> runtime.connected(member, id));
-    }
-
     public void derailFromCreate(UUID member) {
         for (UUID id : carriages) if (runtime.connected(member, id)) derailedCarriages.add(id);
-        runtime.controlsForConsist(member, VehicleRuntime.Control.NEUTRAL);
+        applyControls(member);
     }
 
     /** Both automatic operation and explicit space-to-approach use our route-based driving policy. */
@@ -744,9 +748,11 @@ public final class AssembledVehicleMotion {
         if (hasEnabledCabModule(member)) return; // Enabled modules are aggregated after route data is collected.
         // Manual drivers receive no automatic intervention unless they explicitly hold approach.
         if (!isAutomaticControlSelected(member)) return;
-        backendOwnsOutput(member);
-        runtime.controlsForConsist(member, willow.train.hexie.vehicle.control.AutomaticTrainControl.update(
-                controlSource(member), runtime.speed(member), target, serviceDeceleration, stationStopState(member)));
+        var train = compatibility == null ? null : compatibility.train(member);
+        if (train == null) return;
+        train.backendAutomaticRequest = willow.train.hexie.vehicle.control.AutomaticTrainControl.update(
+                controlSource(member), runtime.speed(member), target, serviceDeceleration, stationStopState(member));
+        applyControls(member);
     }
 
     private willow.train.hexie.vehicle.control.StationStopControl.State stationStopState(UUID member) {
@@ -758,7 +764,7 @@ public final class AssembledVehicleMotion {
     private willow.train.hexie.vehicle.control.AutomaticTrainControl.Target automaticTarget(UUID member) {
         var train = compatibility == null ? null : compatibility.train(member);
         if (train == null) return null;
-        int direction = train.navigation.destination != null ? train.navigation.destinationBehindTrain ? -1 : 1
+        int direction = train.navigation.destination != null ? train.navigation.destinationBehindTrain ? 1 : -1
                 : runtime.speed(member) < 0 ? -1 : 1;
         return willow.train.hexie.vehicle.control.AutomaticTrainControl.fromRoute(train.displayRoute, direction,
                 train.automaticRouteAvailable, train.waypointTransitionActive, runtime.speed(member),
@@ -767,7 +773,7 @@ public final class AssembledVehicleMotion {
 
     private willow.train.hexie.vehicle.control.AutomaticTrainControl.Target automaticTarget(CreateCabTimetable execution,
             double speed, willow.train.hexie.vehicle.control.TrainControlLimits limits) {
-        int direction = execution.navigation.destination != null ? execution.navigation.destinationBehindTrain ? -1 : 1
+        int direction = execution.navigation.destination != null ? execution.navigation.destinationBehindTrain ? 1 : -1
                 : speed < 0 ? -1 : 1;
         return willow.train.hexie.vehicle.control.AutomaticTrainControl.fromRoute(execution.displayRoute, direction,
                 execution.automaticRouteAvailable, execution.waypointTransitionActive, speed, limits);
@@ -781,9 +787,8 @@ public final class AssembledVehicleMotion {
             if (train == null || !visited.add(train.id)) continue;
             if (!train.controlObservationsReady) {
                 if (train.controlResetRequested && !hasEnabledCabModule(member)) {
-                    var command = CabController.automaticOutput(controlSource(member), false, false,
-                            isManuallyControlled(member), true, runtime.speed(member), null, 0, stationStopState(member));
-                    runtime.controlsForConsist(member, command);
+                    train.backendAutomaticRequest = null;
+                    controlledCarriages.add(member);
                 }
                 train.controlResetRequested = false;
                 continue;
@@ -795,10 +800,10 @@ public final class AssembledVehicleMotion {
                         runtime.speed(member), automaticTarget(member),
                         TrainControl.serviceDeceleration(runtime, member, controlSource(member)), stationStopState(member));
                 if (command != null) {
-                    backendOwnsOutput(member);
-                    runtime.controlsForConsist(member, command);
+                    train.backendAutomaticRequest = automatic ? command : null;
+                    controlledCarriages.add(member);
                 }
-            }
+            } else train.backendAutomaticRequest = null;
             train.controlResetRequested = false;
             train.automaticControlActive = automatic;
         }
@@ -864,7 +869,8 @@ public final class AssembledVehicleMotion {
         var state = cab.seatAccess().blockState(position);
         if (state == null || !(state.getBlock() instanceof willow.train.hexie.api.cab.CabControlHost host)) return false;
         return updateCabControls(car, cab, player,
-                (previous, speed) -> SimpleCabControls.applyBindings(host, state, previous, toggleSimple, mask, speed), mask);
+                (previous, speed) -> SimpleCabControls.applyBindings(host, state, previous, toggleSimple, mask, speed,
+                        blocked -> SimpleCabControls.notifyShuntingBlocked(player, blocked)), mask);
     }
 
     /** Resolve a physical gesture against the mounted desk and convert its declared parameters at train speed. */
@@ -910,9 +916,10 @@ public final class AssembledVehicleMotion {
         boolean wasSimple = driver.cabControls.state().simple();
         boolean hadEnabledCab = hasEnabledCabModule(car.getUUID());
         controllers.put(key, driver);
+        driver.cabConverter = host.trainControl(state);
         driver.player = player.getUUID(); driver.attended = true;
         driver.cabFacing = facing; driver.lastInput = level.getGameTime();
-        driver.cabControls.submit(converted);
+        SimpleCabControls.submitAndNotify(player, driver.cabControls, converted);
         if (wasAutomatic != converted.automatic()) releaseCabApproach(car.getUUID(), driver);
         if (wasAutomatic != converted.automatic() || wasSimple != converted.simple()) {
             driver.cabControls.keyboard(0);
@@ -925,18 +932,23 @@ public final class AssembledVehicleMotion {
             driver.approachHeld = true; driver.lastApproachInput = level.getGameTime();
         } else releaseCabApproach(car.getUUID(), driver);
         var train = compatibility == null ? null : compatibility.train(car.getUUID());
+        if (!hadEnabledCab && converted.enabled()) {
+            if (train != null) {
+                train.backendAutomaticRequest = null;
+                train.manualSteer = SteerDirection.NONE;
+            }
+            controllers.forEach((address, nativeDriver) -> {
+                if (nativeDriver.cabControls == null && runtime.connected(car.getUUID(), address.carriage())) {
+                    nativeDriver.approachingStation = false;
+                    nativeDriver.approachHeld = false;
+                    if (nativeDriver.nativeRequest != null)
+                        nativeDriver.nativeRequest = new VehicleRuntime.Control(0, nativeDriver.nativeRequest.brake());
+                }
+            });
+        }
         if (train != null) {
             if (converted.simple()) syncTrainHud(train, driver, player);
             if (wasSimple && (!converted.simple() || !converted.enabled())) train.manualSteer = SteerDirection.NONE;
-            if (!hadEnabledCab && converted.enabled()) {
-                train.manualSteer = SteerDirection.NONE;
-                controllers.forEach((address, nativeDriver) -> {
-                    if (nativeDriver.cabControls == null && runtime.connected(car.getUUID(), address.carriage())) {
-                        nativeDriver.approachingStation = false;
-                        nativeDriver.approachHeld = false;
-                    }
-                });
-            }
             if (converted.enabled() && !converted.automatic() && !driver.approachHeld) {
                 var execution = driver.cabTimetable;
                 execution.with(train, execution == selectedCabTimetable(car.getUUID()), () -> {
@@ -945,7 +957,7 @@ public final class AssembledVehicleMotion {
                 });
             }
         }
-        applyCabModules();
+        applyControls(car.getUUID());
         return true;
     }
 
@@ -987,61 +999,92 @@ public final class AssembledVehicleMotion {
         return tag;
     }
 
-    private void applyCabModules() {
+    private void applyAllControls() {
         var visited = new HashSet<UUID>();
-        var controlled = new HashSet<UUID>();
         for (UUID member : carriages) {
             if (visited.contains(member)) continue;
             var consist = java.util.Arrays.stream(carriages).filter(id -> runtime.connected(member, id)).toList();
             visited.addAll(consist);
-            var cabs = controllers.entrySet().stream().filter(e -> e.getValue().cabControls != null
-                    && runtime.connected(member, e.getKey().carriage())).toList();
-            var selection = CabControlArbitration.select(cabs.stream().map(e -> e.getValue().cabControls.state()).toList());
-            var limits = selection.hasEnabledCab() ? willow.train.hexie.vehicle.control.TrainControlLimits.capture(runtime, member) : null;
-            double deceleration = selection.hasEnabledCab()
-                    ? TrainControl.serviceDeceleration(runtime, member, TrainControl.Source.CAB_MANUAL) : 0;
-            var commands = new ArrayList<CabControlArbitration.Command>();
-            for (var e : cabs) {
-                UUID carriage = e.getKey().carriage();
-                var driver = e.getValue();
-                var input = driver.cabControls;
-                var player = level.getPlayerByUUID(driver.player);
-                var cab = DrivingConsoleContext.find(player);
-                boolean acceptsHeldKeys = driver.attended && cab != null && cab.console().equals(driver.pos)
-                        && cab.seatAccess().vehicle().getUUID().equals(carriage)
-                        && level.getGameTime() - driver.lastKeyboardInput <= 20;
-                if (!acceptsHeldKeys) input.keyboard(0);
-                // Occupancy only authorizes gestures. Enable inputs and stored handles persist unattended.
-                if (!input.state().enabled() || selection.conflicting() || !driver.attended || cab == null
-                        || !cab.console().equals(driver.pos) || !cab.seatAccess().vehicle().getUUID().equals(carriage)
-                        || driver.approachHeld && level.getGameTime() - driver.lastApproachInput > 20)
-                    releaseCabApproach(carriage, driver);
-                if (!input.state().enabled()) continue;
-                int direction = driver.cabFacing == forward(carriage) ? 1 : -1;
-                var train = compatibility == null ? null : compatibility.train(carriage);
-                if (driver.approachHeld && (input.state().simple() || !input.state().automatic()) && train != null)
-                    driver.cabTimetable.with(train, driver.cabTimetable == selectedCabTimetable(carriage), () ->
-                            controlStationApproach(train, driver, player, true,
-                                    input.effectiveInput(runtime.speed(carriage) * direction).reverser() * direction,
-                                    runtime.speed(carriage), direction > 0));
-                var target = automaticTarget(driver.cabTimetable, runtime.speed(carriage), limits);
-                boolean approaching = driver.approachingStation
-                        || driver.approachHeld && driver.cabTimetable.stationStop.state().waitingForDeparture();
-                var stop = driver.cabTimetable.stationStop.state();
-                var command = input.state().simple()
-                        ? input.updateSimple(approaching, direction, runtime.speed(carriage), target, deceleration, stop)
-                        : input.update(approaching ? CabController.Mode.AUTOMATIC : input.mode(), direction,
-                                runtime.speed(carriage), target, deceleration, stop);
-                commands.add(new CabControlArbitration.Command(true, command));
+            applyControls(member, consist);
+        }
+    }
+
+    private void applyControls(UUID member) {
+        applyControls(member, java.util.Arrays.stream(carriages).filter(id -> runtime.connected(member, id)).toList());
+    }
+
+    private void applyControls(UUID member, List<UUID> consist) {
+        var cabs = controllers.entrySet().stream().filter(e -> e.getValue().cabControls != null
+                && consist.contains(e.getKey().carriage())).toList();
+        var selection = CabControlArbitration.select(cabs.stream().map(e -> e.getValue().cabControls.state()).toList());
+        var limits = selection.hasEnabledCab() ? willow.train.hexie.vehicle.control.TrainControlLimits.capture(runtime, member) : null;
+        double deceleration = selection.hasEnabledCab()
+                ? TrainControl.serviceDeceleration(runtime, member, TrainControl.Source.CAB_MANUAL) : 0;
+        var commands = new ArrayList<CabControlArbitration.Command>();
+        for (var e : cabs) {
+            UUID carriage = e.getKey().carriage();
+            var driver = e.getValue();
+            var input = driver.cabControls;
+            var player = level.getPlayerByUUID(driver.player);
+            var cab = DrivingConsoleContext.find(player);
+            boolean acceptsHeldKeys = driver.attended && cab != null && cab.console().equals(driver.pos)
+                    && cab.seatAccess().vehicle().getUUID().equals(carriage)
+                    && level.getGameTime() - driver.lastKeyboardInput <= 20;
+            if (!acceptsHeldKeys) input.keyboard(0);
+            // Occupancy only authorizes gestures. Enable inputs and stored handles persist unattended.
+            if (!input.state().enabled() || selection.conflicting() || !driver.attended || cab == null
+                    || !cab.console().equals(driver.pos) || !cab.seatAccess().vehicle().getUUID().equals(carriage)
+                    || driver.approachHeld && level.getGameTime() - driver.lastApproachInput > 20)
+                releaseCabApproach(carriage, driver);
+            if (!input.state().enabled()) {
+                commands.add(new CabControlArbitration.Command(false, input.state().brakingOnly()));
+                continue;
             }
-            if (selection.hasEnabledCab()) {
-                runtime.controlsForConsist(member, CabControlArbitration.aggregate(commands));
-                controlled.addAll(consist);
+            int direction = driver.cabFacing == forward(carriage) ? 1 : -1;
+            var train = compatibility == null ? null : compatibility.train(carriage);
+            if (driver.approachHeld && (input.state().simple() || !input.state().automatic()) && train != null)
+                driver.cabTimetable.with(train, driver.cabTimetable == selectedCabTimetable(carriage), () ->
+                        controlStationApproach(train, driver, player, true,
+                                input.effectiveInput(runtime.speed(carriage) * direction).reverser() * direction,
+                                runtime.speed(carriage), direction > 0));
+            var target = automaticTarget(driver.cabTimetable, runtime.speed(carriage), limits);
+            boolean approaching = driver.approachingStation
+                    || driver.approachHeld && driver.cabTimetable.stationStop.state().waitingForDeparture();
+            var stop = driver.cabTimetable.stationStop.state();
+            var command = input.state().simple()
+                    ? input.updateSimple(approaching, direction, runtime.speed(carriage), target, deceleration, stop)
+                    : input.update(approaching ? CabController.Mode.AUTOMATIC : input.mode(), direction,
+                            runtime.speed(carriage), target, deceleration, stop);
+            commands.add(new CabControlArbitration.Command(true, command, driver.cabConverter));
+        }
+        var train = compatibility == null ? null : compatibility.train(member);
+        if (train != null && train.backendAutomaticRequest != null
+                && (selection.hasEnabledCab() || !isAutomaticControlSelected(member)))
+            train.backendAutomaticRequest = null;
+        var automatic = train == null ? null : train.backendAutomaticRequest;
+        long latestInput = -1;
+        double nativePower = 0;
+        double nativeBrake = 0;
+        for (var entry : controllers.entrySet()) {
+            var driver = entry.getValue();
+            if (driver.nativeRequest == null || !consist.contains(entry.getKey().carriage())) continue;
+            nativeBrake = Math.max(nativeBrake, driver.nativeRequest.brake());
+            if (driver.inputSequence > latestInput) {
+                latestInput = driver.inputSequence;
+                nativePower = driver.nativeRequest.throttle()
+                        * (driver.nativeBasis == forward(entry.getKey().carriage()) ? 1 : -1);
             }
         }
-        for (UUID id : cabOutputCarriages) if (!controlled.contains(id)) runtime.controls(id, VehicleRuntime.Control.NEUTRAL);
-        cabOutputCarriages.clear();
-        cabOutputCarriages.addAll(controlled);
+        var backend = automatic == null ? new VehicleRuntime.Control(nativePower, nativeBrake)
+                : new VehicleRuntime.Control(automatic.throttle(), Math.max(automatic.brake(), nativeBrake));
+        var output = CabControlArbitration.aggregate(commands, backend);
+        boolean derailed = consist.stream().anyMatch(derailedCarriages::contains) || isDerailed(member);
+        if (derailed) output = new VehicleRuntime.Control(0, output.brake());
+        boolean active = derailed || selection.hasEnabledCab() || automatic != null || latestInput >= 0 || output.brake() > 0;
+        if (active || consist.stream().anyMatch(controlledCarriages::contains))
+            runtime.controlsForConsist(member, output);
+        if (active) controlledCarriages.addAll(consist);
+        else controlledCarriages.removeAll(consist);
     }
 
     /** Commit a Create wrench result to the source state, rather than moving only its compatibility view. */
@@ -1056,6 +1099,7 @@ public final class AssembledVehicleMotion {
         if (selected.equals(all)) {
             VehicleRuntime relocated = runtime.rebase(replacementRoute.path(), distances, true);
             relocated.collisionEnabled(false);
+            clearBoardingHistory();
             runtime = relocated;
             route = replacementRoute;
             lastMotionFailure = null;
@@ -1098,18 +1142,25 @@ public final class AssembledVehicleMotion {
             else if (controller.cabControls != null) moved.controllers.put(id, controller);
         });
         moved.controllers.forEach((id, driver) -> releaseCabApproach(id.carriage(), driver));
-        cabOutputCarriages.stream().filter(left::owns).forEach(left.cabOutputCarriages::add);
-        cabOutputCarriages.stream().filter(moved::owns).forEach(moved.cabOutputCarriages::add);
+        controlledCarriages.stream().filter(left::owns).forEach(left.controlledCarriages::add);
+        controlledCarriages.stream().filter(moved::owns).forEach(moved.controlledCarriages::add);
         left.derailedCarriages.addAll(derailedCarriages);
         left.derailedCarriages.retainAll(remaining);
         var previousTrains = compatibility == null ? java.util.List.<CompatibilityTrain>of() : compatibility.trains();
         removeCompatibility();
         installOwnerState(left);
+        moved.clearBoardingHistory();
         installOwnerState(moved);
         left.ensureCompatibility(previousTrains);
         moved.ensureCompatibility(previousTrains);
         left.compatibility.inheritControl(previousTrains);
         moved.compatibility.inheritControl(previousTrains);
+    }
+
+    /** A relocation is instantaneous; a late landing may only inherit actual travel. */
+    private void clearBoardingHistory() {
+        for (UUID id : carriages)
+            if (level.getEntity(id) instanceof SnapshotCarriageEntity car) car.boardingHistory.clear();
     }
 
     private void installOwnerState(AssembledVehicleMotion owner) {
@@ -1161,16 +1212,22 @@ public final class AssembledVehicleMotion {
         var train = compatibility == null ? null : compatibility.train(entity.getUUID());
         // Taking the controls changes the actuator source, not the timetable or its selected route.
         if (train != null) CreateNavigationState.clearSignalWait(train);
+        applyControls(entity.getUUID());
         return true;
     }
 
     /** Uses Create's existing controls input packets and timeout handling, with our own forces. */
     public boolean control(SnapshotCarriageEntity entity, BlockPos pos, Collection<Integer> keys, Player player) {
+        if (player == null) return false;
+        Controller driver = controllers.get(new ControlKey(entity.getUUID(), pos));
+        if (driver == null || driver.cabControls != null || !driver.player.equals(player.getUUID())) {
+            // Returning false tells Create to stop the whole entity's current driver. Discard
+            // late input from a former driver or desk while the replacement remains in control.
+            return controllers.entrySet().stream().anyMatch(e ->
+                    e.getKey().carriage().equals(entity.getUUID()) && e.getValue().cabControls == null);
+        }
         if (!validControl(entity, pos, player) || isDerailed(entity.getUUID())
                 || hasEnabledCabModule(entity.getUUID()) || keys.contains(5)) return false;
-        Controller driver = controllers.get(new ControlKey(entity.getUUID(), pos));
-        if (driver == null || driver.cabControls != null || !driver.player.equals(player.getUUID())) return false;
-        backendOwnsOutput(entity.getUUID());
         driver.lastInput = level.getGameTime();
         driver.timedOut = false;
         int direction = (keys.contains(0) ? 1 : 0) - (keys.contains(1) ? 1 : 0);
@@ -1188,18 +1245,23 @@ public final class AssembledVehicleMotion {
         var train = compatibility == null ? null : compatibility.train(entity.getUUID());
         var backendInput = train == null ? null : CreateTrackCompatibility.manualInput(train);
         if (backendInput != null) direction = backendInput.reverser();
-        if (train != null) {
-            train.manualSteer = steering < 0 ? SteerDirection.RIGHT : steering > 0 ? SteerDirection.LEFT : SteerDirection.NONE;
-            train.manualTick = true;
-            syncTrainHud(train, driver, player);
-            if (controlStationApproach(train, driver, player, keys.contains(4), direction, speed, !inverted))
-                return true;
-        }
         double power = backendInput == null ? Math.abs(direction) : backendInput.power();
         double brake = backendInput == null ? 0 : backendInput.brake();
         if (power > 0 && direction * speed < -1e-5) brake = Math.max(brake, 1);
-        runtime.controlsForConsist(entity.getUUID(), TrainControl.service(TrainControl.Source.CREATE_MANUAL,
-                power * direction, brake));
+        driver.nativeRequest = TrainControl.service(TrainControl.Source.CREATE_MANUAL, power * direction, brake);
+        driver.nativeBasis = forward(entity.getUUID());
+        driver.inputSequence = NATIVE_INPUT_SEQUENCE.incrementAndGet();
+        if (train != null) {
+            train.manualSteer = steering < 0 ? SteerDirection.LEFT : steering > 0 ? SteerDirection.RIGHT : SteerDirection.NONE;
+            train.manualTick = true;
+            syncTrainHud(train, driver, player);
+            if (train.speedBeforeStall != null && power > 0 && direction != 0
+                    && Math.signum(train.speedBeforeStall) != -direction)
+                train.cancelStall();
+            if (controlStationApproach(train, driver, player, keys.contains(4), direction, speed, !inverted))
+                driver.nativeRequest = new VehicleRuntime.Control(0, driver.nativeRequest.brake());
+        }
+        applyControls(entity.getUUID());
         return true;
     }
 
@@ -1219,8 +1281,8 @@ public final class AssembledVehicleMotion {
         if (station != null) {
             driver.approachingStation = false;
             if (space) {
-                runtime.controlsForConsist(train.carriageIds.getFirst(),
-                        TrainControl.service(TrainControl.Source.CREATE_MANUAL, 0, 1));
+                if (driver.cabControls == null)
+                    driver.nativeRequest = TrainControl.service(TrainControl.Source.CREATE_MANUAL, 0, 1);
                 sendPrompt(player, CreateLang.translateDirect("train.arrived_at",
                         Component.literal(station.name).withStyle(s -> s.withColor(0x704630))), false);
                 return true;
@@ -1250,15 +1312,12 @@ public final class AssembledVehicleMotion {
         // A running timetable owns its route even between instructions. Space must not insert a different station.
         if (train.runtime.getSchedule() != null) return false;
         double directedSpeed = direction != 0 ? direction : speed;
-        var lookAhead = navigation.findNearestApproachable(directedSpeed != 0 ? directedSpeed > 0 : forwardCab);
+        var lookAhead = navigation.findNearestApproachable(directedSpeed != 0 ? directedSpeed < 0 : !forwardCab);
         if (lookAhead != null) {
             if (space) {
                 navigation.startNavigation(navigation.findPathTo(lookAhead, -1));
                 driver.approachingStation = navigation.destination != null;
-                if (driver.approachingStation) {
-                    runtime.controlsForConsist(train.carriageIds.getFirst(), VehicleRuntime.Control.NEUTRAL);
-                    return true;
-                }
+                if (driver.approachingStation) return true;
             }
             sendPrompt(player, CreateLang.translateDirect("contraption.controls.approach_station",
                     Component.keybind("key.jump"), lookAhead.name), false);
@@ -1275,14 +1334,18 @@ public final class AssembledVehicleMotion {
             CatnipServices.NETWORK.sendToClient(serverPlayer, new TrainPromptPacket(message, shadow));
     }
 
+    boolean ownsNativeControls(UUID carriage, BlockPos pos, UUID player) {
+        var driver = controllers.get(new ControlKey(carriage, pos));
+        return driver != null && driver.cabControls == null && driver.player.equals(player);
+    }
+
     public void stopControl(SnapshotCarriageEntity entity, BlockPos pos) {
         // Native handoff can supply the newly clicked position when stopping the previous controller.
         boolean removed = controllers.entrySet().removeIf(e -> e.getKey().carriage().equals(entity.getUUID())
                 && e.getValue().cabControls == null);
-        if (removed && !hasEnabledCabModule(entity.getUUID())) {
-            backendOwnsOutput(entity.getUUID());
-            runtime.controlsForConsist(entity.getUUID(), VehicleRuntime.Control.NEUTRAL);
+        if (removed) {
             releaseCompatibilityControl(entity.getUUID());
+            applyControls(entity.getUUID());
         }
     }
 
@@ -1313,33 +1376,22 @@ public final class AssembledVehicleMotion {
                 if (expired || now - driver.lastKeyboardInput > 20) driver.cabControls.keyboard(0);
                 return false; // Enable and handles belong to each module, independent of operator attendance.
             }
-            boolean backendAvailable = !hasEnabledCabModule(member);
-            if (expired) {
-                if (backendAvailable) {
-                    backendOwnsOutput(member);
-                    runtime.controlsForConsist(member, VehicleRuntime.Control.NEUTRAL);
-                    releaseCompatibilityControl(member);
-                }
-            }
-            else if (!driver.timedOut && now - driver.lastInput > 40) {
-                // Lost keepalives must release throttle/navigation without dropping the driver's
-                // session; a later packet can resume control after waiting at a station.
-                if (backendAvailable) {
-                    backendOwnsOutput(member);
-                    runtime.controlsForConsist(member, VehicleRuntime.Control.NEUTRAL);
-                    releaseCompatibilityControl(member);
-                }
+            if (expired || !driver.timedOut && now - driver.lastInput > 40) {
+                // A later keepalive may resume the session, but its old command has expired.
+                driver.nativeRequest = null;
                 driver.approachingStation = false;
                 driver.timedOut = true;
+                releaseCompatibilityControl(member);
             }
             return expired;
         });
     }
 
     private void releaseCompatibilityControl(UUID carriage) {
-        if (hasEnabledCabModule(carriage)) return;
+        if (hasEnabledCabModule(carriage) || hasNativeManualControl(carriage)) return;
         var train = compatibility == null ? null : compatibility.train(carriage);
         if (train == null) return;
+        train.backendAutomaticRequest = null;
         train.manualSteer = SteerDirection.NONE;
         train.manualTick = false;
         if (train.runtime.getSchedule() == null)
@@ -1360,6 +1412,11 @@ public final class AssembledVehicleMotion {
         boolean approachHeld;
         long lastApproachInput;
         boolean stationMessage;
+        // Native key requests are transient; physical desk inputs survive save/load in cabControls.
+        VehicleRuntime.Control nativeRequest;
+        Direction nativeBasis;
+        long inputSequence;
+        CabTrainControl cabConverter = CabTrainControl.NONE;
         willow.train.hexie.vehicle.control.CabModule cabControls;
         CreateCabTimetable cabTimetable;
         Controller(UUID player, BlockPos pos, long lastInput) {

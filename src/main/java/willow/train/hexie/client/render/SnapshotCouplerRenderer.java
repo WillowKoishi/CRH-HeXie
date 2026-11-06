@@ -3,16 +3,26 @@ package willow.train.hexie.client.render;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.core.BlockPos;
+import dev.engine_room.flywheel.api.visualization.VisualizationManager;
+import dev.engine_room.flywheel.lib.util.RendererReloadCache;
+import willow.train.hexie.vehicle.runtime.CouplingEndpoint;
+import willow.train.hexie.vehicle.assembly.CouplerDataRegistry;
+import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 import willow.train.hexie.compat.create.SnapshotCouplerAnimation;
 import willow.train.hexie.blocks.coupler.CouplerBlock;
 import willow.train.hexie.client.render.blockentity.CouplerBlockEntityRenderer;
 import willow.train.hexie.compat.create.SnapshotCarriageEntity;
 
-/** Draws the few independent arms with the existing baked-model buffer path, including under Flywheel. */
+/** Dispatches coupler parts in carriage space, preserving extension renderers that supply their own buffers. */
 public final class SnapshotCouplerRenderer {
     private static final java.util.Map<Block, Renderer> RENDERERS = new java.util.IdentityHashMap<>();
+
+    private static final RendererReloadCache<CouplingEndpoint.RenderState, BlockState> MOVING_STATES =
+            new RendererReloadCache<>(CouplerDataRegistry::renderState);
 
     /** Arm origin is the registered pivot; angles and extension are available for custom animation. */
     @FunctionalInterface
@@ -83,12 +93,37 @@ public final class SnapshotCouplerRenderer {
         stack.popPose();
     }
 
+    private static void mount(PoseStack stack, BlockPos position, double floorOffset, String facing) {
+        stack.translate(position.getX() + .5, position.getY() + .5 - floorOffset, position.getZ() + .5);
+        float yaw = switch (facing) {
+            case "EAST" -> -90; case "SOUTH" -> 180; case "WEST" -> 90; default -> 0;
+        };
+        stack.mulPose(Axis.YP.rotationDegrees(yaw));
+        stack.translate(-.5, -.5, -.5);
+    }
+
+    private static void alignMovingModel(PoseStack stack, CouplingEndpoint.Visual visual) {
+        var pivot = visual.origin();
+        var offset = visual.movingOffset();
+        stack.translate(-.5 - pivot.x() + offset.x(), -.5 - pivot.y() + offset.y(), -.5 - pivot.z() + offset.z());
+    }
+
     public static void render(SnapshotCarriageEntity entity, float partialTick, PoseStack stack,
                               MultiBufferSource buffers, int overlay) {
-        var animation = entity.couplerAnimation();
-        if (animation.frames().isEmpty()) return;
+        if (entity.couplerAnimation().frames().isEmpty()) return;
         stack.pushPose();
         entity.applyLocalTransforms(stack, partialTick);
+        renderParts(entity, partialTick, stack, buffers, overlay, null);
+        stack.popPose();
+    }
+
+    /** The visual passes a carriage-local stack; the ordinary renderer supplies the same stack in world space. */
+    static void renderParts(SnapshotCarriageEntity entity, float partialTick, PoseStack stack, MultiBufferSource buffers,
+                            int overlay, SnapshotCouplerVisual instances) {
+        var animation = entity.couplerAnimation();
+        if (animation.frames().isEmpty()) return;
+        var client = entity.getContraption().getOrCreateClientContraptionLazy();
+        boolean instanced = instances != null || VisualizationManager.supportsVisualization(entity.level());
         for (int i = 0; i < animation.frames().size(); i++) {
             var frame = animation.frame(i, partialTick);
             var block = entity.getContraption().getBlocks().get(frame.position());
@@ -99,66 +134,62 @@ public final class SnapshotCouplerRenderer {
             if (visual == null && hook == null) continue;
             String facing = visual != null ? visual.facing().name() : hook.facing(block.state()).name();
             var renderer = RENDERERS.get(block.state().getBlock());
+            var parts = renderer instanceof CouplerModelParts p ? p : null;
+            boolean drawRegistered = renderer != null && (instances != null ? parts != null : !instanced || parts == null);
+            boolean hasMoving = visual != null && visual.moving() != null;
+            var movingState = hasMoving ? MOVING_STATES.get(visual.moving()) : null;
+            boolean baked = hasMoving && movingState.getRenderShape() == RenderShape.MODEL;
+            boolean drawMoving = hasMoving && (instances != null ? baked : !instanced || !baked);
+            var attachment = parameters == null ? null : parameters.attachment();
+            if (!drawRegistered && !drawMoving && (instances != null || attachment == null)) continue;
             int light = SnapshotCarriageRenderer.light(entity, frame, partialTick);
-            if (renderer != null) {
+            if (instances != null) instances.light = light;
+            if (drawRegistered) {
                 stack.pushPose();
                 // Bellows remain attached to the body's floor. Unlike an independent coupler base,
                 // their mount must not subtract floorOffset when the body height is adjusted.
-                stack.translate(frame.position().getX() + .5, frame.position().getY() + .5,
-                        frame.position().getZ() + .5);
-                float yaw = switch (facing) {
-                    case "EAST" -> -90; case "SOUTH" -> 180; case "WEST" -> 90; default -> 0;
-                };
-                stack.mulPose(Axis.YP.rotationDegrees(yaw));
-                stack.translate(-.5, -.5, -.5);
-                var blockEntity = entity.getContraption().getOrCreateClientContraptionLazy()
-                        .getRenderLevel().getBlockEntity(frame.position());
-                renderer.renderAttachedParts(block.state(), blockEntity, parameters, partialTick,
+                mount(stack, frame.position(), 0, facing);
+                var blockEntity = client.getBlockEntity(frame.position());
+                if (instances != null) parts.attached(block.state(), blockEntity, parameters, partialTick, false, stack, instances);
+                else renderer.renderAttachedParts(block.state(), blockEntity, parameters, partialTick,
                         stack, buffers, light, overlay);
                 stack.popPose();
             }
-            if (renderer != null && animation.floorOffset() != 0) {
+            if (drawRegistered && animation.floorOffset() != 0) {
                 // The body mesh moved with the floor; this fixed base follows the body's heading at its old height.
                 stack.pushPose();
-                stack.translate(frame.position().getX() + .5, frame.position().getY() + .5 - animation.floorOffset(),
-                        frame.position().getZ() + .5);
-                float baseYaw = switch (facing) {
-                    case "EAST" -> -90; case "SOUTH" -> 180; case "WEST" -> 90; default -> 0;
-                };
-                stack.mulPose(Axis.YP.rotationDegrees(baseYaw));
-                stack.translate(-.5, -.5, -.5);
-                renderer.renderBase(block.state(), stack, buffers, light, overlay);
+                mount(stack, frame.position(), animation.floorOffset(), facing);
+                if (instances != null) parts.base(stack, instances);
+                else renderer.renderBase(block.state(), stack, buffers, light, overlay);
                 stack.popPose();
             }
             stack.pushPose();
             SnapshotCarriageRenderer.transform(stack, frame);
-            if (visual != null && visual.moving() != null) {
-                var pivot = visual.origin();
-                var offset = visual.movingOffset();
+            if (drawMoving) {
                 stack.pushPose();
-                stack.translate(-.5 - pivot.x() + offset.x(), -.5 - pivot.y() + offset.y(), -.5 - pivot.z() + offset.z());
-                var dispatcher = net.minecraft.client.Minecraft.getInstance().getBlockRenderer();
-                var movingState = willow.train.hexie.vehicle.assembly.CouplerDataRegistry.renderState(visual.moving());
-                var model = dispatcher.getBlockModel(movingState);
-                var world = entity.getContraption().getOrCreateClientContraptionLazy().getRenderLevel();
-                var modelData = model.getModelData(world, frame.position(), movingState,
-                        world.getModelData(frame.position()));
-                dispatcher.renderSingleBlock(movingState, stack, buffers, light, overlay, modelData, null);
-                stack.popPose();
-            } else if (renderer != null)
-                renderer.renderArm(block.state(), parameters, partialTick, stack, buffers, light, overlay);
-            if (i < animation.parameters().size()) {
-                var attachment = animation.parameters(i, partialTick).attachment();
-                if (attachment != null) {
-                    var complete = attachment.complete();
-                    var pivot = attachment.pivot();
-                    stack.translate(complete.x() - pivot.x(), complete.y() - pivot.y(), complete.z() - pivot.z());
-                    CouplerBlockEntityRenderer.renderAdapter(attachment.adapter(), attachment.reversed(), entity.level(),
-                            stack, buffers, light, overlay);
+                alignMovingModel(stack, visual);
+                if (instances != null) {
+                    instances.moving(client, frame.position(), movingState, stack);
+                } else {
+                    var dispatcher = Minecraft.getInstance().getBlockRenderer();
+                    var world = client.getRenderLevel();
+                    var model = dispatcher.getBlockModel(movingState);
+                    var data = model.getModelData(world, frame.position(), movingState, world.getModelData(frame.position()));
+                    dispatcher.renderSingleBlock(movingState, stack, buffers, light, overlay, data, null);
                 }
+                stack.popPose();
+            } else if (drawRegistered && !hasMoving) {
+                if (instances != null) parts.arm(stack, instances);
+                else renderer.renderArm(block.state(), parameters, partialTick, stack, buffers, light, overlay);
+            }
+            if (attachment != null && instances == null) {
+                var complete = attachment.complete();
+                var pivot = attachment.pivot();
+                stack.translate(complete.x() - pivot.x(), complete.y() - pivot.y(), complete.z() - pivot.z());
+                CouplerBlockEntityRenderer.renderAdapter(attachment.adapter(), attachment.reversed(), entity.level(),
+                        stack, buffers, light, overlay);
             }
             stack.popPose();
         }
-        stack.popPose();
     }
 }

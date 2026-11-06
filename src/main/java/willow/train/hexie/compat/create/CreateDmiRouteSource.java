@@ -78,7 +78,7 @@ final class CreateDmiRouteSource {
             return new TrainDisplayReadings.Route(null, stationLabel, -1, "Create / 路径待更新");
         double speed = motion.runtime().speed(train.carriageIds.getFirst());
         boolean forward = speed == 0 ? destination != null ? !train.navigation.destinationBehindTrain
-                : !train.currentlyBackwards : speed > 0;
+                : !train.currentlyBackwards : speed < 0;
         var point = forward ? train.carriages.getFirst().getLeadingPoint() : train.carriages.getLast().getTrailingPoint();
         var scan = new Scan(filter);
         try {
@@ -129,8 +129,8 @@ final class CreateDmiRouteSource {
                         * (forward ? 1 : -1), train.navigation.controlSignalScout(), listener, scout.ignoreTurns());
             } else {
                 double start = route.distanceOf(point);
-                double end = forward ? Math.min(start + 16000, route.path().maximumDistance())
-                        : Math.max(start - 16000, route.path().minimumDistance());
+                double end = forward ? Math.max(start - 16000, route.path().minimumDistance())
+                        : Math.min(start + 16000, route.path().maximumDistance());
                 route.traversePoints(start, end, listener);
             }
         } catch (CreateRouteBinding.RouteInvalidException | IllegalArgumentException unavailable) {

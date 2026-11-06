@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import willow.train.hexie.client.events.CarriageCamera;
 import willow.train.hexie.compat.create.CarriagePlayerSupport;
 
 @Mixin(Camera.class)
@@ -21,6 +22,6 @@ public abstract class MixinCarriageCamera {
             boolean reverse, float partial, CallbackInfo ci) {
         if (entity instanceof Player player)
             setPosition(getPosition().add(CarriagePlayerSupport.renderOffset(player, partial)));
-        setPosition(willow.train.hexie.client.events.DrivingConsoleCamera.position(entity, detached, partial, getPosition()));
+        setPosition(CarriageCamera.position(entity, detached, partial, getPosition()));
     }
 }

@@ -1,15 +1,20 @@
 package willow.train.hexie.vehicle.control;
 
 import willow.train.hexie.api.cab.CabControl;
+import willow.train.hexie.api.cab.CabNeutralPositions;
+import willow.train.hexie.api.cab.CabNeutralPositions.Detent;
 import willow.train.hexie.api.cab.CabSurfaceState;
 import willow.train.hexie.api.traincontrol.CabTrainControl;
 import willow.train.hexie.api.traincontrol.CabTrainRequest;
 
 import static willow.train.hexie.vehicle.control.Crh2CabHandle.*;
 
-/** Converts the three physical handles of the non-standard CRH2A desk together. */
+/** Converts the three CRH2A handles independently and uses the default brake-priority traction policy. */
 public enum Crh2CabControls implements CabTrainControl {
     INSTANCE;
+
+    public static final CabNeutralPositions NEUTRAL_POSITIONS = new CabNeutralPositions(
+            new Detent(POWER, 0), new Detent(REVERSER, 0));
 
     @Override public CabSurfaceState restore(CabSurfaceState saved, CabTrainRequest current) {
         for (var handle : Crh2CabHandle.values()) {

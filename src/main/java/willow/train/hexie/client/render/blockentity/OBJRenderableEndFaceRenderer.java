@@ -1,68 +1,57 @@
 package willow.train.hexie.client.render.blockentity;
 
-import dev.engine_room.flywheel.lib.model.baked.PartialModel;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import dev.engine_room.flywheel.lib.model.baked.PartialModel;
+import java.util.function.BiConsumer;
 import net.createmod.catnip.render.CachedBuffers;
-import net.createmod.catnip.render.SuperByteBuffer;
-import net.createmod.catnip.data.Couple;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
-import net.minecraft.world.level.block.state.BlockState;
-import willow.train.hexie.blocks.carriage.OBJRenderableEndFaceBlock;
 import willow.train.hexie.blockentity.OBJRenderableEndFaceEntity;
+import willow.train.hexie.blocks.carriage.OBJRenderableEndFaceBlock;
 
 public class OBJRenderableEndFaceRenderer implements BlockEntityRenderer<OBJRenderableEndFaceEntity> {
     public static float STEP = 0.025f;
 
-    public OBJRenderableEndFaceRenderer(BlockEntityRendererProvider.Context pContext) {}
+    public OBJRenderableEndFaceRenderer(BlockEntityRendererProvider.Context context) {}
 
     @Override
-    public void render(
-            OBJRenderableEndFaceEntity pBlockEntity,
-            float pPartialTick,
-            PoseStack pose,
-            MultiBufferSource pBufferSource,
-            int pPackedLight,
-            int pPackedOverlay) {
-        boolean is_rotate = pBlockEntity.isRotateDoor;
-        BlockState blockState = pBlockEntity.getBlockState();
-        boolean isOpened = pBlockEntity.isDoorOpen;
-        Couple<PartialModel> doorModels = pBlockEntity.getDoorModels();
-        if(doorModels == null) return;
-        PartialModel left = doorModels.get(true);
-        PartialModel right = doorModels.get(false);
+    public void render(OBJRenderableEndFaceEntity entity, float partialTick, PoseStack pose, MultiBufferSource buffers,
+                       int light, int overlay) {
+        var consumer = buffers.getBuffer(RenderType.cutout());
+        drawParts(entity, partialTick, pose, (model, transform) ->
+                CachedBuffers.partial(model, entity.getBlockState()).renderInto(transform, consumer));
+    }
 
-        float f = -blockState.getValue(OBJRenderableEndFaceBlock.FACING).getOpposite().toYRot() - 90;
-        SuperByteBuffer leftBuffer = CachedBuffers.partial(left, blockState);
-        SuperByteBuffer rightBuffer = CachedBuffers.partial(right, blockState);
+    static void drawParts(OBJRenderableEndFaceEntity entity, float partialTick, PoseStack pose,
+                          BiConsumer<PartialModel, PoseStack> draw) {
+        var models = entity.getDoorModels();
+        if (models == null) return;
+        var facing = entity.getBlockState().getValue(OBJRenderableEndFaceBlock.FACING);
+        float progress = entity.progress(partialTick);
         pose.pushPose();
-        pose.translate(0.5f, -1f, 0.5f);
-        pose.mulPose(Axis.YP.rotationDegrees(f));
-        leftBuffer.translate(-.6f, 0, .375f);
-        rightBuffer.translate(-.6f, 0, -.375f);
-        float level1 = .4f;
-        float counter=pBlockEntity.progress(pPartialTick);
-        if(!is_rotate) {
-            double distance_1 = .2;
-            if (counter < level1) {
-                double ctk = counter/level1;
-                leftBuffer.translate(ctk * distance_1, 0, 0);
-                rightBuffer.translate(ctk * distance_1, 0, 0);
-            } else {
-                double ctk = (counter - level1) / (1 - level1);
-                double level2 = .4;
-                leftBuffer.translate(distance_1, 0, ctk * level2);
-                rightBuffer.translate(distance_1, 0, -ctk * level2);
-            }
+        pose.translate(.5f, -1f, .5f);
+        pose.mulPose(Axis.YP.rotationDegrees(-facing.getOpposite().toYRot() - 90));
+        drawLeaf(entity.isRotateDoor, progress, true, models.get(true), pose, draw);
+        drawLeaf(entity.isRotateDoor, progress, false, models.get(false), pose, draw);
+        pose.popPose();
+    }
+
+    private static void drawLeaf(boolean hinged, float progress, boolean left, PartialModel model, PoseStack pose,
+                                 BiConsumer<PartialModel, PoseStack> draw) {
+        int side = left ? 1 : -1;
+        pose.pushPose();
+        pose.translate(-.6f, 0, side * .375f);
+        if (hinged) {
+            pose.mulPose(Axis.YP.rotationDegrees(side * progress * 90));
+        } else if (progress < .4f) {
+            pose.translate(.2 * (progress / .4f), 0, 0);
         } else {
-            leftBuffer.rotateYDegrees(counter * 90);
-            rightBuffer.rotateYDegrees(-counter * 90);
+            pose.translate(.2, 0, side * .4 * ((progress - .4f) / (1 - .4f)));
         }
-        leftBuffer.renderInto(pose, pBufferSource.getBuffer(RenderType.cutout()));
-        rightBuffer.renderInto(pose, pBufferSource.getBuffer(RenderType.cutout()));
+        draw.accept(model, pose);
         pose.popPose();
     }
 }

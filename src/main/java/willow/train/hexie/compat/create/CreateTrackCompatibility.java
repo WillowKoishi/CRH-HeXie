@@ -11,6 +11,7 @@ import com.simibubi.create.content.trains.entity.TravellingPoint;
 import com.simibubi.create.content.trains.graph.TrackEdge;
 import com.simibubi.create.content.trains.graph.TrackGraph;
 import com.simibubi.create.content.trains.graph.TrackNode;
+import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.ModList;
@@ -21,6 +22,12 @@ public final class CreateTrackCompatibility {
     private CreateTrackCompatibility() {}
 
     private static boolean railx() { return ModList.get().isLoaded("railx"); }
+
+    static boolean hasRailx() { return railx(); }
+
+    static TrackRailSurface.Section flexibleSection(Vec3 base, Vec3 tangent, Vec3 normal, double along) {
+        return RailxTrackCompatibility.flexibleSection(base, tangent, normal, along);
+    }
 
     public static TrackGraph routeGraph(TrackGraph graph) {
         return graph == null || !railx() ? graph : RailxTrackCompatibility.connected(Create.RAILWAYS, graph);
@@ -50,6 +57,26 @@ public final class CreateTrackCompatibility {
 
     static TrackGraph physicalGraph(TrackGraph graph, TrackEdge edge) {
         return railx() ? RailxTrackCompatibility.physicalGraph(graph, edge) : graph;
+    }
+
+    /** transferAll can register the original edge under the receiving graph's own nodes. */
+    public static boolean containsDirectedEdge(TrackGraph physical, TrackEdge edge) {
+        var from = physical.locateNode(edge.node1.getLocation());
+        var to = physical.locateNode(edge.node2.getLocation());
+        return from != null && to != null && physical.getConnectionsFrom(from).get(to) == edge;
+    }
+
+    /** Resolve a retained native point without modifying its wheel, or accepting a replacement edge. */
+    static TravellingPoint onGraph(TrackGraph graph, TravellingPoint source) {
+        if (source.edge == null || source.node1 == null || source.node2 == null)
+            throw new CreateRouteBinding.RouteInvalidException();
+        if (graph.getConnectionsFrom(source.node1).get(source.node2) == source.edge) return source;
+        var owner = physicalGraph(graph, source.edge);
+        var from = owner.locateNode(source.node1.getLocation());
+        var to = owner.locateNode(source.node2.getLocation());
+        if (from == null || to == null || owner.getConnectionsFrom(from).get(to) != source.edge)
+            throw new CreateRouteBinding.RouteInvalidException();
+        return point(owner, from, to, source.edge, source.position, source.upsideDown);
     }
 
     static Vec3 straightEndpoint(TrackGraph graph, TrackEdge edge, boolean first) {
@@ -113,6 +140,10 @@ public final class CreateTrackCompatibility {
 
     /** Absolute runtime route direction and normalized handle input; the cab converter applies its limits. */
     public record ManualInput(double power, double brake, int reverser) {}
+
+    static void clearManualInput(SnapshotCarriageEntity carriage, BlockPos pos, UUID player) {
+        if (railx()) RailxTrackCompatibility.clearManualInput(carriage, pos, player);
+    }
 
     public static ManualInput manualInput(Train train) {
         return railx() ? RailxTrackCompatibility.manualInput(train) : null;

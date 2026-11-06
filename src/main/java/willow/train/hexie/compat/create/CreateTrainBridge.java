@@ -26,7 +26,6 @@ import com.simibubi.create.content.trains.signal.SignalBoundary;
 import com.simibubi.create.content.trains.station.GlobalStation;
 import com.simibubi.create.content.trains.station.StationBlockEntity;
 import com.simibubi.create.foundation.advancement.AllAdvancements;
-import net.createmod.catnip.data.Couple;
 import net.createmod.catnip.platform.CatnipServices;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.phys.Vec3;
@@ -68,6 +67,11 @@ public final class CreateTrainBridge {
 
     public List<CompatibilityTrain> trains() { return List.copyOf(trains.values()); }
     AssembledVehicleMotion motion() { return motion; }
+
+    // Create's leading end faces the station. Runtime mileage increases away from it.
+    static double nativeSpeed(double routeSpeed) { return -routeSpeed / 20; }
+    static double routeSpeed(double nativeSpeed) { return -nativeSpeed * 20; }
+
     public CompatibilityTrain train(UUID carriage) {
         var record = carriages.get(carriage);
         return record == null ? null : (CompatibilityTrain) record.train;
@@ -109,7 +113,7 @@ public final class CreateTrainBridge {
             // Reloads and regrouping can retain native keyboard state; enabled cabs exclude that input too.
             var member = train.carriageIds.getFirst();
             if (motion.hasEnabledCabModule(member)) {
-                int input = motion.isSimpleControlSelected(member) ? motion.cabManualSteer(member) : 0;
+                int input = motion.isSimpleControlSelected(member) ? -motion.cabManualSteer(member) : 0;
                 train.manualSteer = input < 0 ? TravellingPoint.SteerDirection.LEFT
                         : input > 0 ? TravellingPoint.SteerDirection.RIGHT : TravellingPoint.SteerDirection.NONE;
             }
@@ -152,7 +156,7 @@ public final class CreateTrainBridge {
                 station.runMailTransfer();
                 train.mailTransferTicks = 0;
             }
-            train.speed = motion.runtime().speed(train.carriageIds.getFirst()) / 20;
+            train.speed = nativeSpeed(motion.runtime().speed(member));
             train.manualTick = motion.isManuallyControlled(train.carriageIds.getFirst());
             SnapshotCarriageEntity.prepareTimetableTick(train, motion.level().getGameTime());
             if (backend) updateTimetable(train, member, motion.isAutomaticControlSelected(member), motion.controlSource(member), true);
@@ -203,10 +207,10 @@ public final class CreateTrainBridge {
                 motionPausedCarriages.addAll(train.carriageIds);
                 continue;
             }
-            train.speed = motion.runtime().speed(train.carriageIds.getFirst()) / 20;
+            train.speed = nativeSpeed(motion.runtime().speed(train.carriageIds.getFirst()));
             if (train.derailed) {
                 ((CreateTrainAccess) (Object) train).hexie$tickDerailedSlowdown();
-                motion.runtime().speedForConsist(train.carriageIds.getFirst(), train.speed * 20);
+                motion.runtime().speedForConsist(train.carriageIds.getFirst(), routeSpeed(train.speed));
             }
             // Native chunk waiting pauses this frame's travel without erasing its speed.
             if (train.carriageWaitingForChunks != -1) motionPausedCarriages.addAll(train.carriageIds);
@@ -222,7 +226,7 @@ public final class CreateTrainBridge {
                 if (train.speed == 0) motionPausedCarriages.addAll(train.carriageIds);
                 train.speed = Math.clamp(train.speedBeforeStall, -1, 1);
                 train.speedBeforeStall = null;
-                motion.runtime().speedForConsist(train.carriageIds.getFirst(), train.speed * 20);
+                motion.runtime().speedForConsist(train.carriageIds.getFirst(), routeSpeed(train.speed));
             }
         }
     }
@@ -291,7 +295,7 @@ public final class CreateTrainBridge {
                 if (intercepted) distance = 0;
             }
             sync(train);
-            train.speed = motion.runtime().speed(train.carriageIds.getFirst()) / 20;
+            train.speed = nativeSpeed(motion.runtime().speed(member));
             if (train.speed != 0) train.currentlyBackwards = train.speed < 0;
             if (train.speed != 0 && train.getCurrentStation() != null) train.leaveStation();
             travelled.put(train, distance);
@@ -335,14 +339,14 @@ public final class CreateTrainBridge {
             }
             return false;
         }, (probe, exit) -> train.navigation.control(probe).apply(train.graph, net.createmod.catnip.data.Pair.of(travel > 0, exit)));
-        ((CreateTrainAccess) (Object) train).hexie$updateNavigationTarget(motion.level(), end - leading.distance);
+        ((CreateTrainAccess) (Object) train).hexie$updateNavigationTarget(motion.level(), leading.distance - end);
     }
 
     /** A topology change after integration must retain this frame's event traversal origins. */
     private void rebuildAfterMotion() {
         var origins = new HashMap<PointKey, PointOrigin>();
         for (var binding : pointLookup.values()) {
-            var point = CreateTrackCompatibility.copy(motion.route().graph(), binding.point);
+            var point = motion.route().boundedPointAt(binding.distance, false);
             origins.put(new PointKey(binding.bogey, binding.offset), new PointOrigin(binding.distance, point));
         }
         rebuild();
@@ -455,7 +459,7 @@ public final class CreateTrainBridge {
         while (!remaining.isEmpty()) {
             var first = remaining.getFirst();
             var group = remaining.stream().filter(c -> runtime.connected(first.id(), c.id()))
-                    .sorted(Comparator.comparingDouble((CarriageDefinition c) -> supportDistance(c.bogeys().getFirst())).reversed())
+                    .sorted(Comparator.comparingDouble(c -> supportDistance(c.referenceBogey())))
                     .toList();
             remaining.removeAll(group);
             var ids = group.stream().map(CarriageDefinition::id).toList();
@@ -464,11 +468,11 @@ public final class CreateTrainBridge {
             var cars = new ArrayList<Carriage>();
             var spacings = new ArrayList<Integer>();
             for (var definition : group) {
-                var ordered = definition.bogeys().stream().sorted(Comparator.comparingDouble(BogeyDefinition::offset).reversed()).toList();
+                var ordered = definition.bogeys().stream().sorted(Comparator.comparingDouble(BogeyDefinition::offset)).toList();
                 var front = ordered.getFirst(); var back = ordered.getLast();
                 var firstBogey = makeBogey(definition, front);
                 var lastBogey = front == back ? null : makeBogey(definition, back);
-                int spacing = (int) Math.round(front.offset() - back.offset());
+                int spacing = (int) Math.round(back.offset() - front.offset());
                 var geometry = new CompatibilityTrain.ReferenceCarriage(firstBogey, lastBogey, spacing);
                 var car = retainedCars.get(definition.id());
                 if (car == null) car = geometry;
@@ -482,14 +486,14 @@ public final class CreateTrainBridge {
                 }
                 if (!cars.isEmpty()) {
                     var previous = group.get(cars.size() - 1);
-                    double previousTail = previous.bogeys().stream().mapToDouble(this::supportDistance).min().orElseThrow();
-                    spacings.add(Math.max(0, (int) Math.round(previousTail - supportDistance(front))));
+                    double previousTail = previous.bogeys().stream().mapToDouble(this::supportDistance).max().orElseThrow();
+                    spacings.add(Math.max(0, (int) Math.round(supportDistance(front) - previousTail)));
                 }
                 cars.add(car); carriages.put(definition.id(), car);
             }
             var train = new CompatibilityTrain(id, owner, motion.assemblyId(), ids, motion.route().graph(), cars, spacings);
             train.bridge = this;
-            train.speed = runtime.speed(ids.getFirst()) / 20;
+            train.speed = nativeSpeed(runtime.speed(ids.getFirst()));
             train.currentlyBackwards = train.speed < 0;
             var stored = Create.RAILWAYS.trains.get(id);
             if (stored instanceof CompatibilityTrain previous && Set.copyOf(previous.carriageIds).equals(Set.copyOf(ids))) {
@@ -539,7 +543,11 @@ public final class CreateTrainBridge {
             var oldMigrations = ((CreateTrainAccess) (Object) previous).hexie$getMigratingPoints();
             var newMigrations = ((CreateTrainAccess) (Object) target).hexie$getMigratingPoints();
             newMigrations.clear();
-            if (!oldMigrations.isEmpty()) {
+            if (!previous.nativeWheelOrder && !oldMigrations.isEmpty()) {
+                // The restored runtime has already supplied this train's corrected directed points.
+                target.forEachTravellingPoint(point -> newMigrations.add(
+                        new com.simibubi.create.content.trains.entity.TrainMigration(point)));
+            } else if (!oldMigrations.isEmpty()) {
                 var byCarriage = new HashMap<UUID, List<com.simibubi.create.content.trains.entity.TrainMigration>>();
                 int offset = 0;
                 for (int index = 0; index < previous.carriageIds.size(); index++) {
@@ -603,13 +611,13 @@ public final class CreateTrainBridge {
         CompoundTag data = block.entityData() == null ? new CompoundTag() : block.entityData().getCompound("BogeyData").copy();
         double half = type.getWheelPointSpacing() / 2;
         double centre = supportDistance(definition);
-        var leading = motion.route().boundedPointAt(centre + half);
-        var trailing = motion.route().boundedPointAt(centre - half);
+        var leading = motion.route().boundedPointAt(centre - half, false);
+        var trailing = motion.route().boundedPointAt(centre + half, false);
         var bogey = new CarriageBogey(type, false, data, leading, trailing);
         // Constructor mixins (RailX) may replace the supplied points. Bind the
         // instances actually retained by the bogey, which all later readers use.
-        bindPoint(car.id(), definition, half, bogey.leading());
-        bindPoint(car.id(), definition, -half, bogey.trailing());
+        bindPoint(car.id(), definition, -half, bogey.leading());
+        bindPoint(car.id(), definition, half, bogey.trailing());
         return bogey;
     }
 
@@ -627,28 +635,21 @@ public final class CreateTrainBridge {
             var car = carriages.get(id);
             for (var binding : carriagePoints.get(id)) {
                 double distance = motion.runtime().placement().bogeys().get(binding.bogey).distance() + binding.offset;
-                CreateTrackCompatibility.copy(motion.route().boundedPointAt(distance), binding.point);
+                CreateTrackCompatibility.copy(motion.route().boundedPointAt(distance, false), binding.point);
                 binding.distance = distance; binding.remember();
             }
-            var dimensional = car.getDimensional(motion.level());
-            var pose = motion.runtime().placement().bodies().get(id);
-            dimensional.positionAnchor = new Vec3(pose.position().x(), pose.position().y() - .5, pose.position().z());
-            // Create decodes yaw from atan2(z, x) + 180, unlike our north-forward body frame.
-            // Keep that representation in saved/graphless fallback data as well as live alignment.
-            var heading = new Vec3(-Math.cos(pose.yaw()) * Math.cos(pose.pitch()),
-                    -Math.sin(pose.pitch()), -Math.sin(pose.yaw()) * Math.cos(pose.pitch()));
-            dimensional.rotationAnchors = Couple.create(dimensional.positionAnchor.add(heading), dimensional.positionAnchor);
-            CreateTrackCompatibility.synchronizePose(dimensional, pose.roll());
+            SnapshotCarriageEntity.syncTrackAnchors(car, motion.level(), motion.runtime().placement().bodies().get(id));
         }
         CreateTrackCompatibility.synchronizeGraph(train);
     }
 
+    /** Native navigation consumes signed travel at the end of the train which moved first. */
     private double actualTravel(CompatibilityTrain train) {
         var first = binding(train.carriages.getFirst().getLeadingPoint());
         double delta = currentDistance(first) - first.distance;
-        var point = delta < 0 ? train.carriages.getLast().getTrailingPoint() : first.point;
+        var point = delta > 0 ? train.carriages.getLast().getTrailingPoint() : first.point;
         var binding = binding(point);
-        return currentDistance(binding) - binding.distance;
+        return binding.distance - currentDistance(binding);
     }
 
     private double currentDistance(PointBinding point) {
@@ -658,8 +659,8 @@ public final class CreateTrainBridge {
     private double requestedTravel(CompatibilityTrain train) {
         var first = binding(train.carriages.getFirst().getLeadingPoint());
         double delta = motion.runtime().motionDistance(first.bogey) + first.offset - first.distance;
-        var leading = delta < 0 ? binding(train.carriages.getLast().getTrailingPoint()) : first;
-        return motion.runtime().motionDistance(leading.bogey) + leading.offset - leading.distance;
+        var leading = delta > 0 ? binding(train.carriages.getLast().getTrailingPoint()) : first;
+        return leading.distance - (motion.runtime().motionDistance(leading.bogey) + leading.offset);
     }
 
     private boolean advanceNativeEvents(CompatibilityTrain train, double requested) {
@@ -735,7 +736,7 @@ public final class CreateTrainBridge {
             train.controlStopRequested = true;
         motion.route().traversePoints(trailing.distance, currentDistance(trailing), train.backSignalListener());
         if (!conflict && train.navigation.destination != null) train.navigation.distanceToDestination -=
-                (train.navigation.destinationBehindTrain ? -1 : 1) * (allowed - leading.distance);
+                (train.navigation.destinationBehindTrain ? -1 : 1) * (leading.distance - allowed);
         return true;
     }
 
@@ -773,7 +774,7 @@ public final class CreateTrainBridge {
             double start = route.distanceOf(CreateTrackCompatibility.point(train.graph, first, second, edge, 0, false));
             double end = route.distanceOf(CreateTrackCompatibility.point(train.graph, first, second, edge, edge.getLength(), false));
             // Keep the same physical end when reversing away from the station.
-            boolean forward = station.canApproachFrom(end > start ? second : first);
+            boolean forward = station.canApproachFrom(end < start ? second : first);
             var front = forward ? train.carriages.getFirst().getLeadingPoint() : train.carriages.getLast().getTrailingPoint();
             distance = stationPosition - currentDistance(binding(front));
         } catch (CreateRouteBinding.RouteInvalidException | IllegalArgumentException unavailable) {
@@ -801,7 +802,7 @@ public final class CreateTrainBridge {
         boolean forward = selected != null ? !navigation.destinationBehindTrain : !train.currentlyBackwards;
         var front = forward ? train.carriages.getFirst().getLeadingPoint() : train.carriages.getLast().getTrailingPoint();
         double center = currentDistance(binding(front));
-        int direction = forward ? 1 : -1;
+        int direction = forward ? -1 : 1;
         double range = willow.train.hexie.vehicle.control.StationStopControl.ARRIVAL_DISTANCE_M;
         double start = center - direction * range;
         String stationFilter = filter;
@@ -842,13 +843,14 @@ public final class CreateTrainBridge {
     private Double nativeTrackEnd(CompatibilityTrain train, PointBinding leading, double target) {
         if (target >= motion.route().path().minimumDistance() && target <= motion.route().path().maximumDistance())
             return null;
-        var preview = CreateTrackCompatibility.copy(motion.route().graph(), leading.point);
+        // Probe from the last synchronized mileage on this route, including virtual wheels beyond its ends.
+        var preview = motion.route().boundedPointAt(leading.distance, false);
         boolean simpleManual = motion.isSimpleControlSelected(train.carriageIds.getFirst())
                 && !motion.isApproachingStation(train.carriageIds.getFirst());
         var selector = train.navigation.destination == null || simpleManual || motion.cabSelection(train.carriageIds.getFirst()).conflicting()
                 ? preview.steer(train.manualSteer, new Vec3(0, 1, 0))
                 : train.navigation.controlSignalScout();
-        preview.travel(train.graph, target - leading.distance, selector, preview.ignoreEdgePoints(), preview.ignoreTurns());
+        preview.travel(train.graph, leading.distance - target, selector, preview.ignoreEdgePoints(), preview.ignoreTurns());
         if (!preview.blocked) return null;
         try { return motion.route().distanceOf(preview); }
         catch (IllegalArgumentException unselectedEdge) {
@@ -874,7 +876,7 @@ public final class CreateTrainBridge {
                 // native point changes as an explicit wrench placement.
                 var occupied = train.carriageIds.stream().flatMap(carriage -> carriagePoints.get(carriage).stream())
                         .map(point -> point.point).toList();
-                var route = CreateRouteBinding.fromPoints(motion.level(), train.graph, binding.point, occupied);
+                var route = CreateRouteBinding.fromPoints(motion.level(), train.graph, binding.point, occupied, false);
                 double oldDistance = Math.clamp(binding.distance, motion.route().path().minimumDistance(),
                         motion.route().path().maximumDistance());
                 if (motion.rebindRoute(route, route.distanceOf(binding.point) - oldDistance)) {
@@ -886,17 +888,13 @@ public final class CreateTrainBridge {
                 var target = new LinkedHashMap<UUID, Double>();
                 for (UUID carriage : train.carriageIds) {
                     var car = definitions.get(carriage);
-                    var first = car.bogeys().getFirst();
-                    var represented = carriagePoints.get(carriage).stream().filter(p -> p.bogey.equals(first.id())).findFirst().orElse(null);
-                    if (represented == null) {
-                        var front = carriages.get(carriage).getLeadingPoint();
-                        var representation = binding(front);
-                        double centre = route.distanceOf(front) - representation.offset;
-                        var representedBogey = definitions.get(carriage).bogeys().stream()
-                                .filter(b -> b.id().equals(representation.bogey)).findFirst().orElseThrow();
-                        target.put(carriage, centre - representedBogey.offset() - representedBogey.mount().trackPivot().z());
-                    } else target.put(carriage, route.distanceOf(represented.point) - represented.offset
-                            - first.offset() - first.mount().trackPivot().z());
+                    var nativeCar = carriages.get(carriage);
+                    var bogey = nativeCar.leadingBogey();
+                    var rear = nativeCar.trailingBogey();
+                    if (binding(rear.leading()).bogey.equals(car.bogeys().getFirst().id())) bogey = rear;
+                    var representedId = binding(bogey.leading()).bogey;
+                    var represented = car.bogeys().stream().filter(b -> b.id().equals(representedId)).findFirst().orElseThrow();
+                    target.put(carriage, wheelCentre(route, bogey) - represented.offset() - represented.mount().trackPivot().z());
                 }
                 motion.relocate(route, target);
                 finishRelocation();
@@ -908,6 +906,19 @@ public final class CreateTrainBridge {
 
     private PointBinding binding(TravellingPoint point) {
         return java.util.Objects.requireNonNull(pointLookup.get(point), "Unmapped compatibility point");
+    }
+
+    /** A terminal wheel can be clamped to the track end. Its partner still gives the true centre. */
+    static double wheelCentre(CreateRouteBinding route, CarriageBogey bogey) {
+        double first = route.distanceOf(bogey.leading()), last = route.distanceOf(bogey.trailing());
+        double low = Math.min(first, last), high = Math.max(first, last);
+        var type = ((willow.train.hexie.mixins.mixin.CreateBogeyAccessor) bogey).hexie$bogeyType();
+        double half = type.getWheelPointSpacing() / 2;
+        boolean atStart = low <= route.path().minimumDistance() + 1e-7;
+        boolean atEnd = high >= route.path().maximumDistance() - 1e-7;
+        if (high - low < 2 * half - 1e-7 && atStart != atEnd)
+            return Math.clamp(atStart ? high - half : low + half, low, high);
+        return (low + high) / 2;
     }
 
     private void finishRelocation() {
@@ -926,18 +937,18 @@ public final class CreateTrainBridge {
         boolean simpleManual = motion.isSimpleControlSelected(member) && !motion.isApproachingStation(member);
         var destination = simpleManual || motion.cabSelection(member).conflicting() ? null : train.navigation.destination;
         double direction = speed != 0 ? speed : destination != null
-                ? (train.navigation.destinationBehindTrain ? -1 : 1)
+                ? (train.navigation.destinationBehindTrain ? 1 : -1)
                 : motion.runtime().tractionDirection(train.carriageIds.getFirst());
         // At a stopped route end, integration cannot produce velocity until the selected
         // route is extended. Use the requested drive direction, not an inactive navigation flag.
         if (direction == 0) return;
-        boolean forward = direction > 0;
-        var end = forward ? train.carriages.getFirst().getLeadingPoint() : train.carriages.getLast().getTrailingPoint();
+        boolean increasing = direction > 0;
+        var end = increasing ? train.carriages.getLast().getTrailingPoint() : train.carriages.getFirst().getLeadingPoint();
         double distance = binding(end).distance;
-        double remaining = forward ? motion.route().path().maximumDistance() - distance
+        double remaining = increasing ? motion.route().path().maximumDistance() - distance
                 : distance - motion.route().path().minimumDistance();
         if (remaining > Math.max(2, Math.abs(speed) / 20 + 2)) return;
-        var node = forward ? end.node2 : end.node1;
+        var node = increasing ? end.node1 : end.node2;
         int adjacent = motion.route().graph().getConnectionsFrom(node).hashCode();
         double minimumOccupied = Double.POSITIVE_INFINITY, maximumOccupied = Double.NEGATIVE_INFINITY;
         for (var point : pointLookup.values()) {
@@ -949,16 +960,16 @@ public final class CreateTrainBridge {
             minimumOccupied = Math.min(minimumOccupied, bogey.distance());
             maximumOccupied = Math.max(maximumOccupied, bogey.distance());
         }
-        var retainedEdge = motion.route().boundedPointAt(forward ? minimumOccupied : maximumOccupied).edge;
-        var attempt = new ExtensionAttempt(motion.route(), forward, adjacent, train.manualSteer,
+        var retainedEdge = motion.route().boundedPointAt(increasing ? minimumOccupied : maximumOccupied).edge;
+        var attempt = new ExtensionAttempt(motion.route(), increasing, adjacent, train.manualSteer,
                 destination, train.navigation.distanceStartedAt, retainedEdge);
         if (attempt.equals(extensionAttempts.get(train.id))) return;
         extensionAttempts.put(train.id, attempt);
         var navigation = destination == null ? null : train.navigation.controlSignalScout();
-        boolean extended = motion.extendRoute(forward, (graph, preview, extendingForward, choices) -> {
+        boolean extended = motion.extendRoute(increasing, (graph, preview, extendingForward, choices) -> {
             if (navigation != null)
-                return navigation.apply(graph, net.createmod.catnip.data.Pair.of(extendingForward, choices));
-            return CreateRouteBinding.manualExit(graph, preview, extendingForward, train.manualSteer, choices);
+                return navigation.apply(graph, net.createmod.catnip.data.Pair.of(!extendingForward, choices));
+            return CreateRouteBinding.manualExit(graph, preview, !extendingForward, train.manualSteer, choices);
         }, minimumOccupied, maximumOccupied);
         if (extended) {
             for (var compatible : trains.values()) {
@@ -982,7 +993,7 @@ public final class CreateTrainBridge {
     }
 
     void crashed(CompatibilityTrain train) {
-        motion.runtime().speedForConsist(train.carriageIds.getFirst(), train.speed * 20);
+        motion.runtime().speedForConsist(train.carriageIds.getFirst(), routeSpeed(train.speed));
         motion.derailFromCreate(train.carriageIds.getFirst());
     }
 
