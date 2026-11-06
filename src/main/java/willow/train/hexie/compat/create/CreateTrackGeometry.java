@@ -7,6 +7,8 @@ import willow.train.hexie.init.track.TrackMaterialInit;
 import willow.train.hexie.vehicle.track.TrackGeometry;
 
 import java.util.Objects;
+import net.createmod.catnip.data.Couple;
+import com.simibubi.create.content.trains.track.BezierConnection;
 
 /** Read on the owning game thread; resolve again after a graph edit. Never owns Create's graph. */
 public final class CreateTrackGeometry implements TrackGeometry {
@@ -36,6 +38,61 @@ public final class CreateTrackGeometry implements TrackGeometry {
                 ? CreateTrackCompatibility.straightEndpoint(graph, edge, true) : edge.getPosition(graph, 0);
         straightEnd = edge.isTurn() ? null : preciseStraightEndpoints
                 ? CreateTrackCompatibility.straightEndpoint(graph, edge, false) : edge.getPosition(graph, 1);
+    }
+
+    Couple<TrackRailSurface.Section> straightSections() {
+        Joint from = adjacent(true), to = adjacent(false);
+        return Couple.create(straightSection(true, from, to), straightSection(false, to, from));
+    }
+
+    private record Joint(BezierConnection curve, boolean first) {}
+
+    private Joint adjacent(boolean first) {
+        var owner = CreateTrackCompatibility.physicalGraph(graph, edge);
+        var node = owner.locateNode((first ? edge.node1 : edge.node2).getLocation());
+        Joint joint = null;
+        for (var entry : graph.getConnectionsFrom(node).entrySet()) {
+            var other = entry.getValue();
+            if (!other.isTurn()) continue;
+            var curve = other.getTurn();
+            var reverse = graph.getConnectionsFrom(entry.getKey()).get(node);
+            Joint candidate = !curve.primary && reverse != null && reverse.isTurn() && reverse.getTurn().primary
+                    ? new Joint(reverse.getTurn(), false) : new Joint(curve, true);
+            // RailX can collapse endpoints onto one node. Mirror its canonical endpoint selection.
+            Vec3 p = candidate.curve.starts.get(candidate.first);
+            Vec3 target = first ? straightStart : straightEnd;
+            if (joint == null || p.distanceToSqr(target) < joint.curve.starts.get(joint.first).distanceToSqr(target))
+                joint = candidate;
+        }
+        return joint;
+    }
+
+    private TrackRailSurface.Section straightSection(boolean first, Joint joint, Joint opposite) {
+        if (joint != null) return TrackRailSurface.endpoint(joint.curve, joint.first);
+        Vec3 p = first ? straightStart : straightEnd;
+        if (opposite != null && TrackRailSurface.flexibleEnd(opposite.curve, opposite.first)) {
+            // The other node is often the centre or the far end of this same one-block
+            // flexible straight. Recover its exact pose from the saved, unrounded axis.
+            var curve = opposite.curve;
+            Vec3 base = Vec3.atBottomCenterOf(curve.bePositions.get(opposite.first));
+            Vec3 axis = curve.axes.get(opposite.first);
+            double along = Math.rint(p.subtract(base).dot(axis) * 2) / 2;
+            if (Math.abs(along) <= .5 && p.distanceToSqr(base.add(axis.scale(along))) < .0002)
+                return CreateTrackCompatibility.flexibleSection(base, axis, curve.normals.get(opposite.first), along);
+        }
+
+        Vec3 tangent = straightEnd.subtract(straightStart).normalize();
+        Vec3 up = new Vec3(0, 1, 0);
+        // At the centre of a native ascending block y is a half-integer; at
+        // its ends y and exactly one horizontal coordinate are integers.
+        boolean blockSlope = Math.abs(tangent.horizontalDistance() - Math.abs(tangent.y)) < 1e-9
+                && Math.min(Math.abs(tangent.x), Math.abs(tangent.z)) < 1e-9
+                && (Math.abs(p.y - Math.floor(p.y) - .5) < 1e-9 || p.y == Math.rint(p.y)
+                && (p.x == Math.rint(p.x) || p.z == Math.rint(p.z)));
+        if (!blockSlope && CreateTrackCompatibility.hasRailx())
+            return CreateTrackCompatibility.flexibleSection(p, tangent, (first ? edge.node1 : edge.node2).getNormal(), 0);
+        return new TrackRailSurface.Section(p.add(0, TrackMaterialInit.RAIL_SURFACE_HEIGHT, 0),
+                up.cross(tangent).normalize(), up);
     }
 
     @Override

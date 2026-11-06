@@ -8,3 +8,5 @@ newmtl texture_3
 map_Kd hexie:block/ground_station_sign/3
 newmtl texture_4
 map_Kd hexie:block/ground_station_sign/4
+newmtl texture_5
+map_Kd hexie:block/ground_station_sign/5

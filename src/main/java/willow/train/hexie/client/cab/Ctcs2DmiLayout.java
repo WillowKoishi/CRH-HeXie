@@ -4,6 +4,7 @@ import willow.train.hexie.api.cab.CabDisplayState;
 import willow.train.hexie.api.cab.DmiGuidance;
 import willow.train.hexie.api.cab.DmiSpeedReadings;
 import willow.train.hexie.api.cab.DmiState;
+import willow.train.hexie.vehicle.control.Ctcs2Panel;
 
 /** 200H manual figures 2-3 through 2-8. Coordinates refer to the 800 x 600 LCD. */
 public final class Ctcs2DmiLayout {
@@ -96,8 +97,11 @@ public final class Ctcs2DmiLayout {
         arrow(d,385,466,false,DARK);arrow(d,385,552,true,WHITE);
         d.icon(range==16000?"zoom_in":"zoom_in_disabled",502,548,58,36);
         d.icon(range==8000?"zoom_out":"zoom_out_disabled",574,548,58,36);
-        String[] keys={"数据","模式","载频","等级","其它","启动","缓解","警惕"};
-        for(int i=0;i<8;i++){outline(d,720,i*75,80,75,BORDER);d.center(keys[i],760,i*75+27,2.3f,WHITE);}
+        var keys = Ctcs2Panel.SOFT_KEY_LABELS;
+        for (int i = 0; i < keys.size(); i++) {
+            outline(d,720,i*75,80,75,BORDER);
+            d.center(keys.get(i),760,i*75+27,2.3f,WHITE);
+        }
     }
     /** 200H figures 2-6/2-7 and table 2-4; LKC table 7.2 supplies the SBI/EBI band sequence. */
     private static void speedometer(Canvas d,double speed,DmiSpeedReadings data) {

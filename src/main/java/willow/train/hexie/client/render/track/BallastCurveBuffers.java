@@ -2,15 +2,19 @@ package willow.train.hexie.client.render.track;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexBuffer;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import com.simibubi.create.content.trains.track.BezierConnection;
 import com.simibubi.create.content.trains.track.TrackBlockEntity;
 import com.simibubi.create.content.trains.track.TrackBlockOutline;
 import dev.engine_room.flywheel.api.visualization.VisualizationManager;
+import dev.engine_room.flywheel.api.event.ReloadLevelRendererEvent;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
@@ -41,8 +45,11 @@ public final class BallastCurveBuffers {
     private static VisualizationManager visuals;
 
     public static void register() {
-        CurveBedShader.register();
         NeoForge.EVENT_BUS.addListener(BallastCurveBuffers::renderWorld);
+        NeoForge.EVENT_BUS.addListener((ReloadLevelRendererEvent event) -> {
+            // A shader-pack toggle can change the packed terrain vertex format even while Flywheel stays off.
+            if (visuals == null && event.level() == cachedLevel) clear();
+        });
         Main.bus.addListener((ModelEvent.BakingCompleted event) -> {
             BallastModels.clear();
             RenderSystem.recordRenderCall(BallastCurveBuffers::clear);
@@ -56,6 +63,7 @@ public final class BallastCurveBuffers {
                 visuals = manager;
             }
             if (level != null) synchronize(level);
+            CurveBedTexture.refreshAnimations();
         });
     }
 
@@ -68,6 +76,7 @@ public final class BallastCurveBuffers {
         CURVES.clear();
         pending.clear();
         ready.clear();
+        CurveBedTexture.clear();
     }
 
     private static void synchronize(ClientLevel level) {
@@ -108,6 +117,7 @@ public final class BallastCurveBuffers {
                 if (region.batches.isEmpty()) REGIONS.remove(piece.region);
             }
         }
+        if (entry.tile != null) CurveBedTexture.release(entry.tile);
     }
 
     private static long regionKey(int sx, int sy, int sz) { return SectionPos.asLong(sx >> 1, sy >> 1, sz >> 1); }
@@ -151,29 +161,50 @@ public final class BallastCurveBuffers {
             }
         }
         if (visuals != null || REGIONS.isEmpty()) return;
-        boolean drawing = false;
         var layer = RenderType.cutoutMipped();
-        var shader = CurveBedShader.instance();
-        if (shader == null) return;
+        int previousTexture = RenderSystem.getShaderTexture(0);
+        ResourceLocation boundTexture = null;
+        ShaderInstance shader = null;
+        boolean drawing = false;
         try {
             for (var region : REGIONS.values()) {
                 if (region.bounds.distanceToSqr(camera) > rangeSq || !event.getFrustum().isVisible(region.bounds)) continue;
                 if (!drawing) {
                     layer.setupRenderState();
                     drawing = true;
-                    shader.setDefaultUniforms(com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS,
-                            event.getModelViewMatrix(), event.getProjectionMatrix(), mc.getWindow());
+                    shader = Objects.requireNonNull(RenderSystem.getShader());
                 }
                 int lights = region.dirtyLights.getAndSet(0);
-                shader.CHUNK_OFFSET.set((float)(region.origin.getX() - camera.x), (float)(region.origin.getY() - camera.y),
-                        (float)(region.origin.getZ() - camera.z));
-                for (var batch : region.batches.values()) batch.draw(cachedLevel, lights);
+                float x = (float)(region.origin.getX() - camera.x);
+                float y = (float)(region.origin.getY() - camera.y);
+                float z = (float)(region.origin.getZ() - camera.z);
+                var view = event.getModelViewMatrix();
+                if (shader.CHUNK_OFFSET != null) shader.CHUNK_OFFSET.set(x, y, z);
+                else view = modelView(view, x, y, z);
+                boolean updateShader = true;
+                for (var batch : region.batches.values()) {
+                    if (!batch.texture.equals(boundTexture)) {
+                        boundTexture = batch.texture;
+                        RenderSystem.setShaderTexture(0, boundTexture);
+                        updateShader = true;
+                    }
+                    if (updateShader) {
+                        shader.setDefaultUniforms(VertexFormat.Mode.QUADS, view, event.getProjectionMatrix(), mc.getWindow());
+                        shader.apply();
+                        updateShader = false;
+                    }
+                    batch.draw(cachedLevel, lights);
+                }
             }
         } finally {
             if (drawing) {
-                shader.clear();
+                if (shader != null) {
+                    if (shader.CHUNK_OFFSET != null) shader.CHUNK_OFFSET.set(0f, 0f, 0f);
+                    shader.clear();
+                }
                 VertexBuffer.unbind();
                 layer.clearRenderState();
+                RenderSystem.setShaderTexture(0, previousTexture);
             }
         }
     }
@@ -215,6 +246,7 @@ public final class BallastCurveBuffers {
         final Vec3 start, end, axis1, axis2, normal1, normal2;
         final List<CurveBedBatch.Piece> pieces = new ArrayList<>();
         CurveBedEffect effect;
+        ResourceLocation tile;
         boolean seen;
         Entry(BezierConnection curve, TrackBlockEntity owner, BlockState texture, boolean slab) {
             this.curve = curve; this.owner = owner; material = new MaterialKey(texture, slab);
@@ -233,9 +265,10 @@ public final class BallastCurveBuffers {
             var mesh = material.slab ? SlabTrackModels.curve(curve) : BallastModels.curve(curve);
             var pos = owner.getBlockPos();
             if (mesh.isEmpty()) return;
+            var texture = BallastModels.material(material.texture);
+            tile = texture.curveTexture(!material.slab);
             if (visuals != null) {
-                var texture = BallastModels.material(material.texture);
-                effect = new CurveBedEffect(level, pos, CurveBedModel.of(mesh), texture, !material.slab,
+                effect = new CurveBedEffect(level, pos, CurveBedModel.of(mesh, tile), texture.color(),
                         CurveBedModel.lightSections(pos, mesh));
                 visuals.effects().queueAdd(effect);
                 return;
@@ -250,7 +283,7 @@ public final class BallastCurveBuffers {
                 int sx = SectionPos.x(section), sy = SectionPos.y(section), sz = SectionPos.z(section);
                 long key = regionKey(sx, sy, sz);
                 var region = REGIONS.computeIfAbsent(key, Region::new);
-                var batch = region.batches.computeIfAbsent(material, unused -> new CurveBedBatch(material.texture, !material.slab));
+                var batch = region.batches.computeIfAbsent(material, unused -> new CurveBedBatch(texture.color(), tile));
                 var piece = batch.add(level, key, lightBit(sx, sy, sz), pos, region.origin, part.getValue());
                 pieces.add(piece);
             }

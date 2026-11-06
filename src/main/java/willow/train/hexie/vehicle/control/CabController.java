@@ -3,7 +3,7 @@ package willow.train.hexie.vehicle.control;
 import java.util.Objects;
 import willow.train.hexie.vehicle.runtime.VehicleRuntime;
 
-/** Consumes converted actuator amounts. Handle gestures and brake latches belong to the cab adapter. */
+/** Computes train commands from the cab module's converted power, brake and direction inputs. */
 public final class CabController {
     public enum Mode { MANUAL, AUTOMATIC }
     /** Actual brake command, not a fraction of service handle travel. */
@@ -33,13 +33,13 @@ public final class CabController {
         if (mode == Mode.MANUAL) return manual(input);
         var automatic = AutomaticTrainControl.update(TrainControl.Source.CAB_AUTOMATIC, speed, target, serviceDeceleration, stationStop);
         double brake = Math.max(automatic.brake(), input.brake);
-        return new VehicleRuntime.Control(brake > 0 ? 0 : automatic.throttle(), brake);
+        return new VehicleRuntime.Control(automatic.throttle(), brake);
     }
 
-    /** Shared execution of converted manual inputs, including compatible control surfaces. */
+    /** Keep both demands for the vehicle's traction policy after all desks' brakes are known. */
     public static VehicleRuntime.Control manual(Input input) {
         Objects.requireNonNull(input);
-        return new VehicleRuntime.Control(input.brake > 0 ? 0 : input.power * input.reverser, input.brake);
+        return new VehicleRuntime.Control(input.power * input.reverser, input.brake);
     }
 
     /** Null means the existing manual output remains in charge; this does not mutate cab inputs. */

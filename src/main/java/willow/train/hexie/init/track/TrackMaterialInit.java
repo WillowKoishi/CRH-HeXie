@@ -19,8 +19,7 @@ public class TrackMaterialInit {
     public static final TrackMaterial.TrackType HEXIE_STANDARD =
             new TrackMaterial.TrackType(Main.asResource("standard"), StandardTrackBlock::new);
 
-    // Create places curved rail segments at 0.965 blocks. Both segment OBJ models
-    // retain their previous alignment compensation, plus RAIL_HEIGHT_INCREASE in the OBJ vertices.
+    // The curve partials are authored relative to the centre of each rail head.
     public static final TrackMaterial STANDARD = make(Main.asResource("standard"))
             .lang("Standard")
             .block(() -> TrackBlockInit.STANDARD_TRACK)

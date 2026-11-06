@@ -15,7 +15,8 @@ public enum BuiltinBogeyModel {
     DF11G_BACKWARD("df11g_backward", "df11gbogey", "hexie:backward", BuiltinBogeyProfile.DF11G),
     QJ("qj", "df11gbogey", "hexie:qj", BuiltinBogeyProfile.QJ),
     QJ_BACKWARD("qj_backward", "df11gbogey", "hexie:qj_backward", BuiltinBogeyProfile.QJ),
-    DT206("dt206", "crhbogey", "hexie:dt206", BuiltinBogeyProfile.DT206);
+    DT206("dt206", "crhbogey", "hexie:dt206", BuiltinBogeyProfile.DT206),
+    SKTB200("sktb200", "crhbogey", "hexie:sktb200", BuiltinBogeyProfile.SKTB200);
 
     private final ResourceLocation id, style, size;
     private final BuiltinBogeyProfile profile;

@@ -40,7 +40,7 @@ public class BogeyEntityInit {
             REGISTRATE
                     .blockEntity("crh_bogey", CRHBogeyBlockEntity::new)
                     .validBlocks(
-                            TrackBlockInit.DT206_BOGEY)
+                            TrackBlockInit.DT206_BOGEY, TrackBlockInit.SKTB200_BOGEY)
                     .register();
 
     public static void register() {}

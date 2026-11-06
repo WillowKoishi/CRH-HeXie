@@ -16,8 +16,11 @@ public record CarriageMarkingUpdatePacket(BlockPos pos, String number, String ch
         buf.writeBlockPos(pos); buf.writeUtf(number,128);buf.writeUtf(chinese,128);buf.writeUtf(english,128);buf.writeBoolean(left);
     }
     @Override public boolean handle(IPayloadContext context) {
-        context.enqueueWork(() -> SignEditSubmission.commit(context.player(), pos, willow.train.hexie.blocks.parts.VehicleMarkings.class,
-                panel -> panel.update(new String[]{number,chinese,english},left)));
+        context.enqueueWork(() -> {
+            if (!(context.player().containerMenu instanceof CarriageMarkingMenu)) return;
+            SignEditSubmission.commit(context.player(), pos, willow.train.hexie.blocks.parts.VehicleMarkings.class,
+                panel -> panel.update(new String[]{number,chinese,english},left));
+        });
         return true;
     }
 }

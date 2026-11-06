@@ -2,9 +2,9 @@ package willow.train.hexie.client.events;
 
 import net.neoforged.bus.api.Event;
 import net.minecraft.world.phys.Vec3;
-import willow.train.hexie.blocks.emu.DrivingConsoleContext;
+import willow.train.hexie.api.cab.DrivingConsoleContext;
 
-/** Client input only. Future buttons can hit-test this ray in the console block's coordinates. */
+/** Unclaimed client click in console block coordinates, after testing the cab's declared controls. */
 public final class DrivingConsoleClickEvent extends Event {
     public final DrivingConsoleContext context;
     public final Vec3 origin, direction;

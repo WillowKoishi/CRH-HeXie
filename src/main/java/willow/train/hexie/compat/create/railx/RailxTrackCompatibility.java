@@ -1,5 +1,6 @@
 package willow.train.hexie.compat.create.railx;
 
+import willow.train.hexie.compat.create.TrackRailSurface;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -29,10 +30,12 @@ import com.simibubi.create.content.trains.entity.TravellingPoint;
 import com.simibubi.create.content.trains.graph.TrackGraph;
 import com.simibubi.create.content.trains.graph.TrackEdge;
 import com.simibubi.create.content.trains.graph.TrackNode;
+import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.phys.Vec3;
 import willow.train.hexie.compat.create.CreateRouteBinding;
 import willow.train.hexie.compat.create.CreateTrackCompatibility;
+import willow.train.hexie.compat.create.SnapshotCarriageEntity;
 
 /** Loaded only after the RailX mod guard. Does not invoke either mod's train physics. */
 public final class RailxTrackCompatibility {
@@ -98,14 +101,26 @@ public final class RailxTrackCompatibility {
 
     public static TrackGraph physicalGraph(TrackGraph graph, TrackEdge edge) {
         for (var member : members(graph)) {
-            if (member.getConnectionsFrom(edge.node1).get(edge.node2) == edge) return member;
+            if (CreateTrackCompatibility.containsDirectedEdge(member, edge)) return member;
         }
-        throw new IllegalArgumentException("RailX travelling point has no physical graph owner");
+        throw new CreateRouteBinding.RouteInvalidException();
     }
+
+    public static TrackRailSurface.Section flexibleSection(Vec3 base, Vec3 tangent, Vec3 normal, double along) {
+        var direction = new com.lhwdev.minecraft.railx.flexiTrack.FlexiDirection.Two(tangent.normalize(), normal.normalize());
+        var rotation = com.lhwdev.minecraft.railx.flexiTrack.rotate.RotationUtils.rotationValue(direction);
+        Vec3 forward = vector(rotation.transform(new org.joml.Vector3d(1, 0, 0)));
+        Vec3 side = vector(rotation.transform(new org.joml.Vector3d(0, 0, -1)));
+        Vec3 up = vector(rotation.transform(new org.joml.Vector3d(0, 1, 0)));
+        return TrackRailSurface.rotatedSection(base, forward, side, up, along);
+    }
+
+    private static Vec3 vector(org.joml.Vector3d v) { return new Vec3(v.x, v.y, v.z); }
 
     /** Node locations identify topology at 1/128 precision; curve starts retain the real joint. */
     public static Vec3 straightEndpoint(TrackGraph graph, TrackEdge edge, boolean first) {
-        TrackNode node = first ? edge.node1 : edge.node2;
+        var owner = physicalGraph(graph, edge);
+        TrackNode node = owner.locateNode((first ? edge.node1 : edge.node2).getLocation());
         Vec3 endpoint = null;
         var candidates = new ArrayList<Vec3>();
         for (var adjacent : graph.getConnectionsFrom(node).entrySet()) {
@@ -207,6 +222,13 @@ public final class RailxTrackCompatibility {
         var displays = RealisticSpeedControl.INSTANCE.getControls().get(level);
         displays.getByPlayer().values().removeIf(control -> control.getTrain() == source);
         displays.getByTrain().values().removeIf(control -> control.getTrain() == source);
+    }
+
+    public static void clearManualInput(SnapshotCarriageEntity carriage, BlockPos pos, UUID player) {
+        var controls = ThrottlesServer.INSTANCE.getReceivedControls().get(carriage.level());
+        var input = controls.getByPlayer().get(player);
+        if (input != null && input.getEntity() == carriage && pos.equals(input.getControlsPos()))
+            controls.removeControl(input);
     }
 
     public static CreateTrackCompatibility.ManualInput manualInput(Train train) {

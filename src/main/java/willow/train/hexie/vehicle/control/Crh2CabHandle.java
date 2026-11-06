@@ -1,72 +1,59 @@
 package willow.train.hexie.vehicle.control;
 
-import java.util.HashMap;
+import net.minecraft.network.chat.Component;
+import willow.train.hexie.api.cab.CabControl;
 
-/** The CRH2A's physical handle positions and their conversion into shared cab inputs. */
-public enum Crh2CabHandle {
-    POWER(0, 10), BRAKE(0, 9), REVERSER(-1, 1);
+/** Physical detents, slider travel and labels of the non-standard CRH2A desk. */
+public enum Crh2CabHandle implements CabControl.Handle {
+    POWER("power", 0, 10),
+    BRAKE("brake", 0, 9),
+    REVERSER("reverser", -1, 1);
 
-    private static final int SERVICE_NOTCHES = 7;
-    private static final int RAPID = 8;
-    private static final String BRAKE_POSITION = "hexie:crh2a_brake";
-    private static final double SERVICE_LIMIT = TrainControl.Source.CAB_MANUAL.serviceBrakeLimit();
+    static final int SERVICE_NOTCHES = 7;
+    static final int RAPID = 8;
+    private final String id;
+    private final String positionKey;
     private final int minNotch;
     private final int maxNotch;
 
-    Crh2CabHandle(int minNotch, int maxNotch) {
+    Crh2CabHandle(String id, int minNotch, int maxNotch) {
+        this.id = id;
+        positionKey = "hexie:crh2a_" + id;
         this.minNotch = minNotch;
         this.maxNotch = maxNotch;
     }
 
-    public int minNotch() { return minNotch; }
-    public int maxNotch() { return maxNotch; }
+    @Override public String id() { return id; }
+    @Override public String positionKey() { return positionKey; }
+    @Override public int minNotch() { return minNotch; }
+    @Override public int maxNotch() { return maxNotch; }
+    @Override public Component nameText() { return Component.translatable("gui.hexie.cab." + id); }
 
-    public int notch(CabModule.State state) {
+    @Override public Component notchText(int notch) {
         return switch (this) {
-            case POWER -> (int) Math.round(state.input().power() * maxNotch);
-            case BRAKE -> {
-                var saved = state.handlePositions().get(BRAKE_POSITION);
-                if (saved != null && saved >= minNotch && saved <= maxNotch) yield saved;
-                // Earlier saves encoded only the requested brake amount and had rapid as their last notch.
-                double amount = state.brakes().serviceBrake();
-                yield amount > SERVICE_LIMIT ? RAPID : (int) Math.round(amount / SERVICE_LIMIT * SERVICE_NOTCHES);
-            }
-            case REVERSER -> state.input().reverser();
+            case POWER -> notch == 0 ? Component.translatable("gui.hexie.cab.cut")
+                    : Component.translatable("gui.hexie.cab.power_notch", notch);
+            case BRAKE -> switch (notch) {
+                case 0 -> Component.translatable("gui.hexie.cab.running");
+                case RAPID -> Component.translatable("gui.hexie.cab.rapid");
+                case 9 -> Component.translatable("gui.hexie.cab.remove");
+                default -> Component.translatable("gui.hexie.cab.brake_notch", notch);
+            };
+            case REVERSER -> Component.translatable(switch (notch) {
+                case -1 -> "gui.hexie.cab.reverse";
+                case 0 -> "gui.hexie.cab.off";
+                default -> "gui.hexie.cab.forward";
+            });
         };
     }
 
-    public void checkNotch(int notch) {
-        if (notch < minNotch || notch > maxNotch)
-            throw new IllegalArgumentException("Invalid " + this + " notch: " + notch);
+    @Override public double sliderPosition(int notch) {
+        return switch (this) {
+            case POWER -> CabControl.Handle.super.sliderPosition(notch);
+            case REVERSER -> 1 - CabControl.Handle.super.sliderPosition(notch);
+            // Leave two ordinary intervals between rapid and removal on the scale.
+            case BRAKE -> notch == maxNotch ? 0 : (maxNotch + 1 - notch) / (double) (maxNotch + 1);
+        };
     }
 
-    public CabModule.State apply(CabModule.State previous, int notch, double speed) {
-        checkNotch(notch);
-        var input = previous.input();
-        var brakes = previous.brakes();
-        var positions = previous.handlePositions();
-        double power = input.power();
-        double brake = input.brake();
-        int reverser = input.reverser();
-        boolean enabled = previous.enabled();
-        switch (this) {
-            case POWER -> power = (double) notch / maxNotch;
-            case BRAKE -> {
-                // Rapid and remove request the same full brake but are distinct physical positions.
-                positions = new HashMap<>(positions);
-                positions.put(BRAKE_POSITION, notch);
-                double amount = notch >= RAPID ? 1 : (double) notch / SERVICE_NOTCHES * SERVICE_LIMIT;
-                var converted = CabBrakeConversion.operate(brakes, amount, brakes.emergencyHandle(),
-                        brakes.parking(), false, power, reverser, speed);
-                brakes = converted.state();
-                brake = converted.brake();
-            }
-            case REVERSER -> {
-                reverser = notch;
-                enabled = reverser != 0;
-            }
-        }
-        return new CabModule.State(new CabController.Input(power, brake, reverser), previous.mode(),
-                brakes, previous.approachHeld(), enabled, previous.simple(), positions);
-    }
 }

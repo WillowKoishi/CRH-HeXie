@@ -36,7 +36,8 @@ public abstract class MixinCarriageLocalPlayer {
         PacketDistributor.sendToServer(new CarriagePlayerMovePacket(car == null ? -1 : car.getId(),
                 car == null ? new UUID(0, 0) : car.getUUID(), position,
                 movement.getYRot(player.getYRot()), movement.getXRot(player.getXRot()),
-                car != null ? player.onGround() && CarriagePlayerSupport.hasFloor(car, player.position(), player.getBbWidth()) : player.onGround()));
+                car != null ? player.onGround() && CarriagePlayerSupport.hasFloor(car, player.position(), player.getBbWidth()) : player.onGround(),
+                car == null ? -1 : CarriagePlayerSupport.takeContactTick(player)));
         hexie$sentSupport = car != null;
     }
 }

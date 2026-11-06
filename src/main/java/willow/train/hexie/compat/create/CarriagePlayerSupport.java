@@ -37,6 +37,10 @@ public final class CarriagePlayerSupport {
     }
 
     public static Vec3 dismount(Player player, SnapshotCarriageEntity car, Vec3 local) {
+        return placeStanding(player, car, local);
+    }
+
+    public static Vec3 placeStanding(Player player, SnapshotCarriageEntity car, Vec3 local) {
         Standing standing = new Standing(car, local);
         STANDING.get().put(player, standing);
         Vec3 world = standing.frame.world(local);
@@ -47,12 +51,14 @@ public final class CarriagePlayerSupport {
 
     private static final class Standing {
         final WeakReference<SnapshotCarriageEntity> carriage;
+        long contactTick;
         SupportFrame frame;
         Vec3 local, previousLocal, remoteTarget;
         boolean placingFromLocal;
         int remoteSteps;
         Standing(SnapshotCarriageEntity carriage, Vec3 local) {
             this.carriage = new WeakReference<>(carriage);
+            contactTick = carriage.motionFrameTick();
             this.frame = frame(carriage, 1);
             this.local = this.previousLocal = local;
         }
@@ -86,6 +92,10 @@ public final class CarriagePlayerSupport {
                 && !player.getAbilities().flying && !player.isFallFlying();
     }
 
+    public static SnapshotCarriageEntity mountedOrStanding(Player player) {
+        return player.getVehicle() instanceof SnapshotCarriageEntity mounted ? mounted : carriage(player);
+    }
+
     public static boolean supportedBy(Entity entity, SnapshotCarriageEntity car) {
         return entity instanceof Player player && carriage(player) == car;
     }
@@ -98,7 +108,7 @@ public final class CarriagePlayerSupport {
             if (candidate == null || candidate.carriage.get() != car || player.level() != car.level()) continue;
             if (carriage(player) != car) continue;
             if (player instanceof ServerPlayer server && server.connection instanceof CarriedPlayerConnection connection
-                    && !connection.hexie$canCarry()) {
+                    && !connection.hexie$canCarry() && !connection.hexie$isCorrectingOn(car.getUUID())) {
                 detach(player);
                 continue;
             }
@@ -165,9 +175,13 @@ public final class CarriagePlayerSupport {
     }
 
     public static boolean touchesCarriage(SnapshotCarriageEntity car, Player player) {
+        return touchesCarriage(car, player.getBoundingBox(), frame(car, 1));
+    }
+
+    private static boolean touchesCarriage(SnapshotCarriageEntity car, net.minecraft.world.phys.AABB bounds,
+                                          SupportFrame frame) {
         if (car.getContraption() == null) return false;
-        var box = player.getBoundingBox().inflate(.05);
-        var frame = frame(car, 1);
+        var box = bounds.inflate(.05);
         net.minecraft.world.phys.AABB local = null;
         for (double x : new double[] {box.minX, box.maxX})
             for (double y : new double[] {box.minY, box.maxY})
@@ -216,6 +230,45 @@ public final class CarriagePlayerSupport {
         STANDING.get().remove(player);
     }
 
+    public static long takeContactTick(Player player) {
+        Standing standing = STANDING.get().get(player);
+        if (standing == null) return -1;
+        long tick = standing.contactTick;
+        standing.contactTick = -1;
+        return tick;
+    }
+
+    public static Vec3 boardingContact(SnapshotCarriageEntity car, ServerPlayer player, long tick, Vec3 local) {
+        if (tick < 0 || !eligible(player) || carriage(player) != null) return null;
+        var current = frame(car, 1);
+        if (!hasBoardingContact(car, player, current.world(local), current)) return null;
+        return car.boardingHistory.contact(tick, local, player, car.getType().updateInterval());
+    }
+
+    public static boolean hasBoardingContact(SnapshotCarriageEntity car, ServerPlayer player, Vec3 feet, SupportFrame frame) {
+        // Create can register the upcoming floor contact while the feet are still slightly above it.
+        // Use the same actual floor probes that produced the client's grounded movement packet.
+        return touchesCarriage(car, player.getBoundingBox().move(feet.subtract(player.position())), frame)
+                || hasFloor(car, feet, player.getBbWidth());
+    }
+
+    public static boolean finishBoarding(SnapshotCarriageEntity car, ServerPlayer player, long tick, Vec3 local, Vec3 current) {
+        if (!car.boardingHistory.carryToPresent(player, tick, local, current)) {
+            player.connection.teleport(player.getX(), player.getY(), player.getZ(), player.getYRot(), player.getXRot());
+            return false;
+        }
+        return true;
+    }
+
+    static boolean carryBoardingPlayer(ServerPlayer player, Vec3 target) {
+        Vec3 movement = target.subtract(player.position());
+        if (movement.lengthSqr() < 1e-12) return true;
+        Vec3 allowed = Entity.collideBoundingBox(player, movement, player.getBoundingBox(), player.level(), java.util.List.of());
+        player.setPos(player.position().add(allowed));
+        if (player.connection instanceof CarriedPlayerConnection connection) connection.hexie$carry(allowed);
+        return movement.distanceToSqr(allowed) < 1e-12;
+    }
+
     public static Vec3 localPosition(Player player) {
         SnapshotCarriageEntity car = carriage(player);
         return car == null ? player.position() : STANDING.get().get(player).local;
@@ -258,7 +311,7 @@ public final class CarriagePlayerSupport {
                     && car.getUUID().equals(restore.uuid())) {
                 if (restore.dismount()) {
                     player.getPersistentData().remove("ContraptionDismountLocation");
-                    dismount(player, car, restore.local());
+                    placeStanding(player, car, restore.local());
                     player.setOnGround(false);
                 } else {
                     accept(player, car, restore.local());

@@ -42,12 +42,11 @@ public final class FloorSwitcherClient {
                 || player.getTicksUsingItem() < FloorSwitcherItem.HOLD_TICKS) return;
         var hand = player.getUsedItemHand();
         int slot = hand == InteractionHand.MAIN_HAND ? player.getInventory().selected : Inventory.SLOT_OFFHAND;
-        int height = FloorSwitcherItem.configurationHeight(player);
+        var slider = FloorSwitcherItem.configuration(player);
         waitingForRelease = true;
         // Keep the target for confirmation, while preventing a short-release application during screen opening.
-        PacketDistributor.sendToServer(new FloorHeightPacket(hand, slot, height, FloorHeightPacket.Action.OPEN));
-        minecraft.setScreen(new FloorHeightSettingsScreen(hand, slot, height,
-                FloorSwitcherItem.mode(player.getUseItem()) == FloorSwitcherItem.Mode.LONGITUDINAL));
+        PacketDistributor.sendToServer(new FloorHeightPacket(hand, slot, slider.value(), FloorHeightPacket.Action.OPEN));
+        minecraft.setScreen(new FloorHeightSettingsScreen(hand, slot, slider));
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)

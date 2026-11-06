@@ -203,7 +203,18 @@ public final class TrackRoute implements TrackPath {
             List<Knot> knots = new ArrayList<>();
             TrackGeometry.Vector first = geometry.sample(0).position();
             knots.add(new Knot(0, first));
-            subdivide(0, first, 1, geometry.sample(1).position(), 0, knots);
+            int spans = geometry.linearSpanCount();
+            if (spans == 0) {
+                subdivide(0, first, 1, geometry.sample(1).position(), 0, knots);
+            } else {
+                for (int i = 0; i < spans; i++) {
+                    double end = geometry.linearSpanEnd(i);
+                    if (!(end > knots.getLast().parameter && end <= 1))
+                        throw new IllegalArgumentException("Invalid linear span");
+                    knots.add(new Knot(end, geometry.sample(end).position()));
+                }
+                if (knots.getLast().parameter != 1) throw new IllegalArgumentException("Incomplete linear spans");
+            }
             parameters = new double[knots.size()];
             distances = new double[knots.size()];
             for (int i = 0; i < knots.size(); i++) {

@@ -8,13 +8,12 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Inventory;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import willow.train.hexie.Main;
-import willow.train.hexie.blocks.bogeys.BogeyFloorData;
 import willow.train.hexie.item.FloorSwitcherItem;
 import willow.train.hexie.network.ServerHeldItemSync;
 
 /** The slider retains its server-selected target until explicit confirmation or cancellation. */
 public record FloorHeightPacket(InteractionHand hand, int hotbarSlot, int height, Action action) implements CustomPacketPayload {
-    public enum Action { OPEN, CONFIRM, CANCEL }
+    public enum Action { OPEN, CONFIRM, CANCEL, CONFIRM_DOOR_DIRECTION }
     public FloorHeightPacket(InteractionHand hand, int hotbarSlot, int height) {
         this(hand, hotbarSlot, height, Action.CONFIRM);
     }
@@ -37,7 +36,11 @@ public record FloorHeightPacket(InteractionHand hand, int hotbarSlot, int height
         int selected = hand == InteractionHand.MAIN_HAND ? player.getInventory().selected : Inventory.SLOT_OFFHAND;
         if (hotbarSlot != selected || hand == InteractionHand.MAIN_HAND && (hotbarSlot < 0 || hotbarSlot > 8)
                 || !(player.getItemInHand(hand).getItem() instanceof FloorSwitcherItem)) return false;
-        if (!FloorSwitcherItem.valid(player.getItemInHand(hand), height)) return false;
+        if (action == Action.CONFIRM_DOOR_DIRECTION)
+            return FloorSwitcherItem.confirmDoorDirection(player, hand, height);
+        if (FloorSwitcherItem.configuration(player).mode() == FloorSwitcherItem.Mode.DOOR_DIRECTION) {
+            if (action == Action.CONFIRM || (height != 0 && height != 1)) return false;
+        } else if (!FloorSwitcherItem.valid(player.getItemInHand(hand), height)) return false;
         if (action == Action.OPEN) {
             // Retain the target, but remove it from the short-release path even under low server TPS.
             FloorSwitcherItem.beginConfiguration(player);

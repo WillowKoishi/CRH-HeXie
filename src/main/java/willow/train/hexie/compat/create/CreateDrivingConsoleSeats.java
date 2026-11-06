@@ -7,7 +7,14 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import willow.train.hexie.blocks.emu.DrivingConsoleContext;
+import willow.train.hexie.api.cab.CabControl;
+import willow.train.hexie.api.cab.CabControlHost;
+import willow.train.hexie.api.cab.CabControlsHost;
+import willow.train.hexie.api.cab.CabSurfaceGeometry;
+import willow.train.hexie.api.cab.CabSurfaceInstance;
+import willow.train.hexie.api.cab.CabSurfaceState;
+import willow.train.hexie.api.cab.DrivingConsoleContext;
+import willow.train.hexie.vehicle.control.CabModule;
 
 /** Seat discovery and coordinate adaptation only; owns no cab display or control state. */
 public final class CreateDrivingConsoleSeats {
@@ -34,9 +41,23 @@ public final class CreateDrivingConsoleSeats {
 
     private record StationarySeat(SeatEntity vehicle, BlockPos seat) implements DrivingConsoleContext.SeatAccess {
         @Override public BlockState blockState(BlockPos position) { return vehicle.level().getBlockState(position); }
-        @Override public willow.train.hexie.vehicle.control.CabModule.State cabControls(BlockPos position) {
-            return vehicle.level().getBlockEntity(position) instanceof willow.train.hexie.api.cab.CabControlsHost host
-                    ? host.controls() : willow.train.hexie.vehicle.control.CabModule.State.NEUTRAL;
+        @Override public boolean supportsSurface(BlockPos position) {
+            return vehicle.level().getBlockEntity(position) instanceof CabSurfaceInstance;
+        }
+        @Override public CabSurfaceState surfaceState(BlockPos position) {
+            if (vehicle.level().getBlockEntity(position) instanceof CabSurfaceInstance instance)
+                return instance.surfaceState();
+            return CabSurfaceState.EMPTY;
+        }
+        @Override public boolean simple(BlockPos position) {
+            return vehicle.level().getBlockEntity(position) instanceof CabControlsHost host && host.controls().simple();
+        }
+        @Override public void operateControl(DrivingConsoleContext cab, Player player, CabControl control, int value) {
+            if (vehicle.level().getBlockEntity(cab.console()) instanceof CabSurfaceInstance instance)
+                instance.operateControl(player, control, value);
+        }
+        @Override public CabSurfaceGeometry.AnimationSource animationSource(BlockPos position) {
+            return vehicle.level().getBlockEntity(position) instanceof CabSurfaceGeometry.AnimationSource source ? source : null;
         }
         @Override public Vec3 toLocal(Vec3 world, float partialTick) { return world; }
     }
@@ -46,12 +67,30 @@ public final class CreateDrivingConsoleSeats {
             var info = vehicle.getContraption().getBlocks().get(position);
             return info == null ? null : info.state();
         }
-        @Override public willow.train.hexie.vehicle.control.CabModule.State cabControls(BlockPos position) {
+        @Override public boolean supportsSurface(BlockPos position) {
+            var block = blockState(position);
+            return block != null && block.getBlock() instanceof CabControlHost;
+        }
+        @Override public CabSurfaceState surfaceState(BlockPos position) {
+            var block = blockState(position);
+            return block != null && block.getBlock() instanceof CabControlHost host
+                    ? host.surfaceState(block, cabControls(position)) : CabSurfaceState.EMPTY;
+        }
+        @Override public boolean simple(BlockPos position) { return cabControls(position).simple(); }
+        private CabModule.State cabControls(BlockPos position) {
             if (vehicle instanceof SnapshotCarriageEntity car) return car.cabControls(position);
             var info = vehicle.getContraption().getBlocks().get(position);
-            if (info == null || info.nbt() == null) return willow.train.hexie.vehicle.control.CabModule.State.NEUTRAL;
-            return willow.train.hexie.vehicle.control.CabModule.read(info.nbt().getCompound(
+            if (info == null || info.nbt() == null) return CabModule.State.NEUTRAL;
+            return CabModule.read(info.nbt().getCompound(
                     info.nbt().contains("CabControls") ? "CabControls" : "TestControls")).state();
+        }
+        @Override public void operateControl(DrivingConsoleContext cab, Player player, CabControl control, int value) {
+            if (vehicle instanceof SnapshotCarriageEntity car && car.motion() != null)
+                car.motion().operateCabControl(car, cab, player, control.id(), value);
+        }
+        @Override public CabSurfaceGeometry.AnimationSource animationSource(BlockPos position) {
+            return vehicle.getContraption().getBlockEntityClientSide(position) instanceof CabSurfaceGeometry.AnimationSource source
+                    ? source : null;
         }
         @Override public Vec3 toLocal(Vec3 world, float partialTick) {
             if (vehicle instanceof SnapshotCarriageEntity car)

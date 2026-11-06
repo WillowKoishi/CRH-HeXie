@@ -2,6 +2,217 @@
 
 
 ---
+### version 0.4.13-A.R.O.N.A.
+##### 2026.11.5
+
+添加方块（组）:
+- CRH2A 宽体客室门（HachimiYang, WillowKoishi）
+- CRH2A 自动车钩（HachimiYang, WillowKoishi）
+- CRH2A 非统型驾驶台（未完成）（HachimiYang, WillowKoishi, AlpacaEgg）
+- CRH2A 驾驶室座椅（HachimiYang, WillowKoishi）
+
+添加功能:
+- 非统型驾驶台的牵引、制动、换向手柄交互，添加档位提示及手柄动画（开发中）（HachimiYang）
+- 添加动车组创造物品分类（HachimiYang）
+- 自动车钩的防护罩开合及模型表面交互（HachimiYang）
+- 完善带天线车顶的变体切换（HachimiYang）
+
+修改机制:
+- 统一车辆部件的多方块放置、选取与拆除，添加旧部件布局迁移（HachimiYang）
+- 完善 RailX 轨道适配，处理轨道网络、轨面高度、选取框及道床渲染（HachimiYang）
+- 调整自动驾驶、进站停车与发车逻辑，完善运行图进度保存及恢复（HachimiYang）
+- 整理驾驶台控制接口，调整简易键盘控制、制动限制与 DMI 显示的数据衔接（HachimiYang）
+- 优化道砟及无砟轨道曲线道床的批量渲染、实例化渲染与光照采样（HachimiYang）
+
+修复问题:
+- 修复 CRH2A 头车无法放置的问题（WillowKoishi）
+- 修正重构后的驾驶台控制、座位同步及车门、车钩交互行为（HachimiYang）
+
+新增 / 修改美术资源:
+- 高柱三显信号机的低模、高模及配套贴图，本阶段为美术资源（AlpacaEgg）
+- CRH2A 驾驶台、操纵手柄、司机座椅模型及贴图（WillowKoishi, AlpacaEgg）
+- 优化 CRH2A 头车模型，补充带天线车顶变种（WillowKoishi）
+- SKTB-200 拖车转向架及拖车轮模型，本阶段为美术资源（WillowKoishi）
+- 修正 DT206 转向架、CRH2A 头车侧面及前窗贴图（WillowKoishi）
+
+其他:
+- 完善构建产物中的项目、字体、第三方及美术许可声明（HachimiYang）
+- 构建时同时生成代码源码包和对应的美术源码包（HachimiYang）
+
+---
+### version 0.4.12-A.R.O.N.A.
+##### 2026.11.4
+
+添加方块（组）:
+- CRH2A 客室门（HachimiYang, WillowKoishi）
+- CRH2A 司机室门（HachimiYang, WillowKoishi）
+- CRH2A 端面（HachimiYang, WillowKoishi）
+
+添加功能:
+- 编辑 CRH2A 头车车号及车身标记（HachimiYang）
+- 添加车号、车身标记编辑界面，适配刷子工具（HachimiYang）
+- 在 CRH2A 车身厢板上粘贴“和谐号”标志（HachimiYang）
+- 添加车门的模型表面选取及组装后交互（HachimiYang）
+
+修改机制:
+- 调整 CRH2A 端面、车门的模型拆分与渲染（HachimiYang, WillowKoishi）
+- 继续调整组装车厢的静态模型、动态部件及透明渲染（HachimiYang）
+
+新增 / 修改美术资源:
+- CRH2A 端面、车钩、客室门、宽体门及门框模型（WillowKoishi）
+- 调整 CRH2A 车身通风部分、车门及端面贴图，补充路徽资源（WillowKoishi）
+- 蒸汽机车五室汽笛模型（AlpacaEgg）
+- 前进型、KD6487 号、8620 型 58654 号、D51200 号及 HXD3C 型机车汽笛 / 风笛资源，本阶段为美术资源（AlpacaEgg）
+- 整理部分装饰类美术资源的名称与目录（AlpacaEgg）
+
+---
+### version 0.4.11-A.R.O.N.A.
+##### 2026.11.2
+
+添加方块（组）:
+- CRH2A 非统型头车（HachimiYang, WillowKoishi）
+- CRH2A 无窗厢板、加厚无窗厢板、小窗及宽窗厢板（HachimiYang, WillowKoishi）
+- CRH2A 车顶、侧车顶、裙板及地板部件（HachimiYang, WillowKoishi）
+- CRH2A 驾驶座、驾驶台及测试驾驶台（HachimiYang, WillowKoishi）
+- DT206 转向架（HachimiYang, WillowKoishi）
+- 可编辑的老式站牌（HachimiYang, AlpacaEgg）
+
+添加物品:
+- 地板高度 / 转向架位置调节工具（HachimiYang）
+- 车钩转换装置（HachimiYang）
+
+添加功能:
+- 添加 CTCS2-200H 样式的 DMI 显示，接入速度、目标距离、限速及线路规划信息（HachimiYang）
+- 添加驾驶台手动 / 自动控制、紧急制动、停放制动及缓解逻辑（HachimiYang）
+- 调整列控目标、信号显示与运行图衔接（HachimiYang）
+- 支持调整车辆地板高度及转向架纵向位置（HachimiYang）
+- 支持用方块材质更换标准轨道道砟，适配直线及曲线轨道（HachimiYang）
+- 站牌可编辑站名、拼音、前后站信息，并切换字体（HachimiYang）
+- 更新车厢编号、区间牌及速度标的字体渲染，支持通过资源包配置字体（HachimiYang）
+
+修改机制:
+- 重构车辆组装、车体运动、转向架、车钩及车辆间约束计算（HachimiYang）
+- 进一步分离车辆逻辑与渲染，优化轨道几何及运动计算（HachimiYang）
+- 适配“汽鸣”车钩（HachimiYang）
+- 抬高轨道并调整转向架、轨道覆盖层及预览的高度（HachimiYang）
+- 调整乘客在组装车厢上的移动、座位乘坐与下车定位（HachimiYang）
+- 优化 CRH2A 静态车体和动态部件渲染（HachimiYang）
+
+修复问题:
+- 修复可动方块控制器界面崩溃及物品栏同步问题（WillowKoishi）
+- 修复组装车厢透明渲染，以及车门透视后方方块的问题（WillowKoishi, HachimiYang）
+- 修正信号机右键长按行为（WillowKoishi）
+- 恢复 25Z 车厢预览比例（WillowKoishi）
+- 调整车厢浏览器的视图边界、模型加载与资源重载（HachimiYang）
+
+新增 / 修改美术资源:
+- CRH2A 非统型转向架，以及头车窗户、侧板、内饰、车顶、底盘、驾驶台模型及贴图（WillowKoishi）
+- 拆分 CRH2A 头车模型，修正 UV 与排障器（WillowKoishi）
+- 国铁样式道口信号机、老式站牌及 CRH 停车位置标识资源（AlpacaEgg）
+- 国铁 G 型客车空调发电车车顶装饰、四类车顶通风口，以及 25G、25K 行李车上厢板资源（AlpacaEgg）
+
+其他:
+- 更新项目介绍，说明跨越 0.3.9n 资源来源及 Create / Simurail 兼容关系（WillowKoishi）
+- 补充美术资源的 GPL-3.0-only 许可及适用范围说明（WillowKoishi）
+
+---
+### version 0.4.10-A.R.O.N.A.
+##### 2026.10.28
+
+添加功能:
+- 添加创造物品栏中的车厢模型浏览器（HachimiYang）
+- 支持切换车型、浏览车厢内外部及选取对应部件（HachimiYang）
+- 点击部件可打开分组物品弹窗，选取同组变体（HachimiYang）
+- 支持在车厢预览与原物品菜单之间切换（HachimiYang）
+- 支持通过资源包配置车型、预览结构、部件分组及目标创造标签页（HachimiYang）
+
+修改机制:
+- 完善车厢切换动画、视图平移、缩放与部件选取（HachimiYang）
+- 调整取物弹窗分页及边界，保存不同标签页的浏览状态（HachimiYang）
+- 优化车厢预览的资源加载及重载（HachimiYang）
+
+其他:
+- 添加车厢浏览器资源包配置示例（HachimiYang）
+
+---
+### version 0.4.9-A.R.O.N.A.
+##### 2026.10.27
+
+添加功能:
+- 添加可调整朝向的信号机（HachimiYang）
+- 支持按世界方向或轨道方向对齐信号机，并通过扳手旋转（HachimiYang）
+- 完善曲线轨道上的信号机绑定（HachimiYang）
+
+修改机制:
+- 微调 Simurail 物理化转向架参数（WillowKoishi）
+- 整理转向架、轨道及信号机注册与模型生成（WillowKoishi）
+
+修复问题:
+- 修复修改车厢号码牌导致玩家被踢出的问题（FlycatFeimao）
+
+其他:
+- 添加航空学兼容测试使用的客户端运行配置（WillowKoishi）
+- 添加持续集成构建配置（WillowKoishi）
+- 补充第三方版权声明（HachimiYang）
+
+---
+### version 0.4.8-A.R.O.N.A.
+##### 2026.10.26
+
+添加功能:
+- 接入 Simurail 转向架兼容（HachimiYang）
+
+修改机制:
+- 整理车厢、车门、座椅、标牌等方块的公共逻辑（WillowKoishi）
+- 调整方块实体数据保存、交互及渲染实现（WillowKoishi）
+
+修复问题:
+- 修复前进型转向架连杆动画（HachimiYang）
+- 修复信号机贴图透视问题（WillowKoishi）
+
+其他:
+- 添加并固定 Simurail、Aeronautics 及 Sable 的开发依赖（WillowKoishi）
+
+---
+### version 0.4.7-A.R.O.N.A.
+##### 2026.10.25
+
+修复问题:
+- 修复国铁过票闸机的渲染及崩溃问题（WillowKoishi）
+- 修复信号机朝西放置时的朝向问题（WillowKoishi）
+- 修复轨道重复绑定及放置交互问题（WillowKoishi）
+
+修改机制:
+- 调整信号机、轨道物品的放置状态与客户端同步（WillowKoishi）
+
+---
+### version 0.4.6-A.R.O.N.A.
+##### 2026.10.25
+
+版本迁移:
+- 将既有铁路装饰内容迁移至 Minecraft 1.21.1 / NeoForge（WillowKoishi, FlycatFeimao）
+- 使用 Java 21，适配 Create 6.0.10 及相关渲染、注册接口（WillowKoishi, FlycatFeimao）
+- 迁移车厢、转向架、接触网、信号机、售票及标牌等既有内容（FlycatFeimao, WillowKoishi）
+
+添加方块（组）:
+- 各锈蚀阶段的涂蜡耐候钢块（WillowKoishi）
+- 前进型转向架反向模型（WillowKoishi）
+
+修改机制:
+- 调整网络包、菜单注册、物品数据及 Mixin，以适应新版本接口（WillowKoishi, FlycatFeimao）
+- 补充信号机灯色选项及相关模型资源（WillowKoishi）
+- 优化车门、端面、标牌与界面组件的渲染及缓存（WillowKoishi）
+
+修复问题:
+- 修复前进型转向架朝向（WillowKoishi）
+- 修复转向架预览缩放（WillowKoishi）
+- 修复轨道破坏时的粒子效果（WillowKoishi）
+- 修正 OBJ 模型、资源路径及部分界面的兼容性问题（WillowKoishi, FlycatFeimao）
+
+其他:
+- 补全 Gradle Wrapper（WillowKoishi）
+
+---
 ### 2024.2.20
 ##### version 0.3.8-izayoi_sakuya
 

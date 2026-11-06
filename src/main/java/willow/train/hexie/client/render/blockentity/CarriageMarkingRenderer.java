@@ -22,7 +22,8 @@ public final class CarriageMarkingRenderer implements BlockEntityRenderer<CRH2Pa
         if(!(state.getBlock() instanceof willow.train.hexie.blocks.parts.VehicleMarkingSurface block)
                 ||!block.markingRoot(entity.getLevel(),entity.getBlockPos(),state).equals(entity.getBlockPos()))return;
         var fields=entity.fields();
-        if(java.util.Arrays.stream(fields).allMatch(String::isBlank)&&entity.harmony(0)==0&&entity.harmony(1)==0)return;
+        if(java.util.Arrays.stream(fields).allMatch(String::isBlank)&&entity.harmony(0)==0&&entity.harmony(1)==0
+                &&entity.panelText(0).text().isEmpty()&&entity.panelText(1).text().isEmpty())return;
         var localBounds=block.markingBounds(state);
         pose.pushPose();
         pose.translate(.5,0,.5);
@@ -31,6 +32,7 @@ public final class CarriageMarkingRenderer implements BlockEntityRenderer<CRH2Pa
         }));
         pose.translate(-.5,0,-.5);
         for(int slot=0;slot<block.markingSlots(state);slot++) {
+            drawLabel(entity.panelText(slot), block, localBounds, slot, pose, buffers, light);
             if(entity.harmony(slot)==0)continue;
             boolean right=entity.harmony(slot)==2;
             var layout= willow.train.hexie.blocks.emu.crh2a.HarmonyMarking.layout(localBounds.minX+slot,localBounds.maxY,right);
@@ -47,6 +49,19 @@ public final class CarriageMarkingRenderer implements BlockEntityRenderer<CRH2Pa
         drawMarking(fields,entity.descriptionLeft(),pose,buffers,light);
         pose.popPose();
     }
+    public static void drawLabel(willow.train.hexie.blocks.parts.PanelText label,
+            willow.train.hexie.blocks.parts.VehicleMarkingSurface block, AABB localBounds, int slot,
+            PoseStack pose, MultiBufferSource buffers, int light) {
+        if (label.text().isEmpty()) return;
+        float x = (float)(localBounds.minX + slot + .5 + label.x() / 64d);
+        float y = (float)((localBounds.minY + localBounds.maxY) / 2 + label.y() / 64d);
+        var profile = ResourceLocation.parse(label.font());
+        SignTextRenderer.drawLine(profile, label.text(), pose, buffers, x, y, label.size() / 16f,
+                Float.MAX_VALUE, 0xff171717, light, SignTextRenderer.Alignment.CENTER, true,
+                (px, py) -> new net.minecraft.world.phys.Vec3(px, py, block.markingDepth(py) + .003),
+                label.spacing() / 100f);
+    }
+
     public static void drawMarking(String[] fields,boolean descriptionLeft,PoseStack pose,MultiBufferSource buffers,int light) {
         float height=HeadNumberRenderer.NUMBER_HEIGHT,maxWidth=HeadNumberRenderer.NUMBER_WIDTH;
         float numberWidth=SignTextRenderer.width(HeadNumberRenderer.FONT,fields[0],height,maxWidth);
@@ -67,7 +82,7 @@ public final class CarriageMarkingRenderer implements BlockEntityRenderer<CRH2Pa
     }
     @Override public AABB getRenderBoundingBox(CRH2PartEntity entity) {
         if(entity.getBlockState().getBlock() instanceof willow.train.hexie.blocks.parts.VehicleMarkingSurface panel)
-            return panel.markingRenderBounds(entity.getBlockState()).inflate(3,.2,3).move(entity.getBlockPos());
+            return panel.markingRenderBounds(entity.getBlockState()).inflate(3,2,3).move(entity.getBlockPos());
         return new AABB(entity.getBlockPos());
     }
     @Override public boolean shouldRenderOffScreen(CRH2PartEntity entity) { return true; }

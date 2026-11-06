@@ -55,7 +55,7 @@ final class TrackBedSampling {
             double t = length > 0 ? (distance[i] - distance[start]) / length : (i - start) / (double) (end - start);
             Frame original = frames.get(i);
             double centerError = original.center().sub(a.center().lerp(b.center(), t)).length();
-            // Every vertex is within 2 m of the centreline and 0.5 m above it. The sum bounds
+            // Vertices extend at most 2 m sideways and 0.5 m along either direction of the up axis. The sum bounds
             // its displacement for both the straight-edged ballast and the slab's normalized joint frames.
             double sideError = axisError(original.side(), a.side().lerp(b.side(), t));
             double upError = axisError(original.up(), a.up().lerp(b.up(), t));

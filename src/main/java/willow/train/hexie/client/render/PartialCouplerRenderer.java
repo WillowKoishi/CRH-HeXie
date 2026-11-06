@@ -5,9 +5,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import dev.engine_room.flywheel.lib.model.baked.PartialModel;
 import java.util.List;
 import java.util.function.Function;
-import net.createmod.catnip.render.CachedBuffers;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.AABB;
@@ -15,7 +13,7 @@ import org.joml.Vector3f;
 import willow.train.hexie.compat.create.SnapshotCouplerAnimation;
 
 /** Model parameters for the existing coupler render pass, shared by rigid arms and body-mounted bellows. */
-public final class PartialCouplerRenderer implements SnapshotCouplerRenderer.Renderer {
+public final class PartialCouplerRenderer implements CouplerModelParts {
     /** Authored lower/upper contact edges; all side parts inherit the solution between them. */
     public record ContactSpan(double lowerY, double upperY) {
         public ContactSpan {
@@ -66,39 +64,19 @@ public final class PartialCouplerRenderer implements SnapshotCouplerRenderer.Ren
 
     @Override public AABB attachedBounds(BlockState state) { return bounds.apply(state); }
 
-    @Override
-    public void renderArm(BlockState state, SnapshotCouplerAnimation.Parameters parameters, float partialTick,
-            PoseStack stack, MultiBufferSource buffers, int light, int overlay) {
+    @Override public void arm(PoseStack stack, Sink sink) {
         stack.pushPose();
-        // The existing pass already applied the solved arm rotation and pivot position.
         stack.translate(-pivot.x, -pivot.y, -pivot.z);
-        CachedBuffers.partial(arm, state).light(light).overlay(overlay)
-                .renderInto(stack, buffers.getBuffer(RenderType.cutoutMipped()));
+        sink.draw(arm, stack, null);
         stack.popPose();
     }
 
-    @Override
-    public void renderBase(BlockState state, PoseStack stack, MultiBufferSource buffers, int light, int overlay) {
-        if (base != null) CachedBuffers.partial(base, state).light(light).overlay(overlay)
-                .renderInto(stack, buffers.getBuffer(RenderType.cutoutMipped()));
+    @Override public void base(PoseStack stack, Sink sink) {
+        if (base != null) sink.draw(base, stack, null);
     }
 
-    @Override
-    public void renderAttachedParts(BlockState state, SnapshotCouplerAnimation.Parameters parameters,
-            float partialTick, PoseStack stack, MultiBufferSource buffers, int light, int overlay) {
-        renderBellows(state, parameters, false, stack, buffers, light, overlay);
-    }
-
-    @Override
-    public void renderUncoupledAttachedParts(BlockState state, PoseStack stack,
-            MultiBufferSource buffers, int light, int overlay) {
-        renderBellows(state, null, true, stack, buffers, light, overlay);
-    }
-
-    private void renderBellows(BlockState state, SnapshotCouplerAnimation.Parameters parameters, boolean uncoupled,
-            PoseStack stack, MultiBufferSource buffers, int light, int overlay) {
-        var consumer = buffers.getBuffer(RenderType.cutoutMipped());
-        var modelPose = new PoseStack();
+    @Override public void attached(BlockState state, BlockEntity display, SnapshotCouplerAnimation.Parameters parameters,
+            float partialTick, boolean uncoupled, PoseStack stack, Sink sink) {
         BellowsDeformation deformation = null;
         for (var part : bellows) {
             // Parts with the same fixed depth share the upper/lower solution.
@@ -108,10 +86,7 @@ public final class PartialCouplerRenderer implements SnapshotCouplerRenderer.Ren
                         : BellowsDeformation.of(pivot, part.baseZ(), part.frontZ(), part.maxThickness(), parameters, extensionShare))
                         .withContactSpan(contactSpan);
             }
-            // Keep the cached source vertices in model space. Apply the existing world/body pose
-            // only after changing depth, so facing and carriage rotation do not alter the deformation.
-            CachedBuffers.partial(part.model(), state).light(light).overlay(overlay)
-                    .renderInto(modelPose, new DeformingConsumer(consumer, stack.last(), deformation));
+            sink.draw(part.model(), stack, deformation);
         }
     }
 
@@ -198,16 +173,26 @@ public final class PartialCouplerRenderer implements SnapshotCouplerRenderer.Ren
             double fraction = Math.max(0, Math.min(1, (z - baseZ) / (frontZ - baseZ)));
             return z + fraction * (front(x, y) - frontZ);
         }
+
+        void normal(float x, float y, float z, float nx, float ny, float nz, Vector3f normal) {
+            double length = frontZ() - baseZ();
+            double fraction = Math.max(0, Math.min(1, (z - baseZ()) / length));
+            double front = front(x, y);
+            double scale = Math.max(1e-6, (front - baseZ()) / length);
+            // Inverse-transpose of the depth deformation's Jacobian, followed by the body normal matrix.
+            normal.set((float) (nx - fraction * frontSlopeX(x, y) * nz / scale),
+                    (float) (ny - fraction * frontSlopeY(x, y) * nz / scale), (float) (nz / scale));
+        }
     }
 
-    private static final class DeformingConsumer implements VertexConsumer {
+    static final class DeformingConsumer implements VertexConsumer {
         private final VertexConsumer delegate;
         private final PoseStack.Pose pose;
         private final BellowsDeformation deformation;
         private final Vector3f normal = new Vector3f();
         private float x, y, z;
 
-        private DeformingConsumer(VertexConsumer delegate, PoseStack.Pose pose, BellowsDeformation deformation) {
+        DeformingConsumer(VertexConsumer delegate, PoseStack.Pose pose, BellowsDeformation deformation) {
             this.delegate = delegate; this.pose = pose; this.deformation = deformation;
         }
 
@@ -221,13 +206,7 @@ public final class PartialCouplerRenderer implements SnapshotCouplerRenderer.Ren
         @Override public VertexConsumer setUv1(int u, int v) { delegate.setUv1(u, v); return this; }
         @Override public VertexConsumer setUv2(int u, int v) { delegate.setUv2(u, v); return this; }
         @Override public VertexConsumer setNormal(float nx, float ny, float nz) {
-            double length = deformation.frontZ() - deformation.baseZ();
-            double fraction = Math.max(0, Math.min(1, (z - deformation.baseZ()) / length));
-            double front = deformation.front(x, y);
-            double scale = Math.max(1e-6, (front - deformation.baseZ()) / length);
-            // Inverse-transpose of the depth deformation's Jacobian, followed by the body normal matrix.
-            normal.set((float) (nx - fraction * deformation.frontSlopeX(x, y) * nz / scale),
-                    (float) (ny - fraction * deformation.frontSlopeY(x, y) * nz / scale), (float) (nz / scale));
+            deformation.normal(x, y, z, nx, ny, nz, normal);
             pose.normal().transform(normal);
             normal.normalize();
             delegate.setNormal(normal.x, normal.y, normal.z);

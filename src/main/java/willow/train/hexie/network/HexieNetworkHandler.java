@@ -13,6 +13,7 @@ import willow.train.hexie.Main;
 import willow.train.hexie.network.c2s.*;
 import willow.train.hexie.network.c2s.signs.*;
 import willow.train.hexie.network.s2c.ContraptionSeatPositionPacket;
+import willow.train.hexie.network.s2c.NativeControlsStartedPacket;
 
 
 public final class HexieNetworkHandler {
@@ -28,18 +29,23 @@ public final class HexieNetworkHandler {
         register(TrainSpeedSignUpdatePacket.class, TrainSpeedSignUpdatePacket::new);
         register(GroundStationSignUpdatePacket.class, GroundStationSignUpdatePacket::new);
         register(DrivingConsoleExitPacket.class, DrivingConsoleExitPacket::new);
-        register(TestCabActionPacket.class, TestCabActionPacket::new);
+        register(CabControlPacket.class, CabControlPacket::new);
         register(HeadNumberUpdatePacket.class, HeadNumberUpdatePacket::new);
+        register(PanelTextUpdatePacket.class, PanelTextUpdatePacket::new);
         register(CarriageMarkingUpdatePacket.class, CarriageMarkingUpdatePacket::new);
         register(CabKeyboardPacket.class, CabKeyboardPacket::new);
-        register(Crh2CabHandlePacket.class, Crh2CabHandlePacket::new);
-        var registrar = event.registrar("5");
+        register(ReleaseNativeControlsPacket.class, ReleaseNativeControlsPacket::new);
+        var registrar = event.registrar("8");
+        registrar.playToClient(NativeControlsStartedPacket.TYPE, NativeControlsStartedPacket.CODEC,
+                (packet, context) -> packet.handle(context));
         registrar.playToClient(willow.train.hexie.network.s2c.CouplerDefinitionsPacket.TYPE,
                 willow.train.hexie.network.s2c.CouplerDefinitionsPacket.CODEC, (packet, context) -> packet.handle(context));
         registrar.playToServer(CarriagePlayerMovePacket.TYPE, CarriagePlayerMovePacket.CODEC,
                 (packet, context) -> packet.handle(context));
         registrar.playToClient(willow.train.hexie.network.s2c.CarriagePlayerStatePacket.TYPE,
                 willow.train.hexie.network.s2c.CarriagePlayerStatePacket.CODEC, (packet, context) -> packet.handle(context));
+        registrar.playToClient(willow.train.hexie.network.s2c.CarriagePositionCorrectionPacket.TYPE,
+                willow.train.hexie.network.s2c.CarriagePositionCorrectionPacket.CODEC, (packet, context) -> packet.handle(context));
         registrar.playToServer(FloorHeightPacket.TYPE, FloorHeightPacket.CODEC,
                 (packet, context) -> packet.handle(context));
         registrar.playToServer(TrackBallastPacket.TYPE, TrackBallastPacket.CODEC, (packet, context) -> packet.handle(context));

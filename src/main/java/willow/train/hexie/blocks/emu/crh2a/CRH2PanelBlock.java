@@ -60,6 +60,11 @@ public final class CRH2PanelBlock extends CRH2PartBlock implements EntityBlock, 
         var entity=markingEntity(level,pos,state);
         if(entity==null)return net.minecraft.world.InteractionResult.PASS;
         int logoSlot=HarmonyMarking.slot(this,state,entity.getBlockPos(),hit.getLocation());
+        if (player.isShiftKeyDown() && !entity.panelText(logoSlot).text().isEmpty()) {
+            if (player instanceof net.minecraft.server.level.ServerPlayer server)
+                willow.train.hexie.menu.PanelTextMenu.open(server, entity, logoSlot, net.minecraft.world.InteractionHand.MAIN_HAND);
+            return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide);
+        }
         if(entity.harmony(logoSlot)!=0) {
             if(!level.isClientSide)entity.toggleHarmony(logoSlot);
             return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide);

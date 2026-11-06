@@ -39,7 +39,7 @@ public class HeXieClientInit {
         willow.train.hexie.client.carriage.browser.CarriageBrowserClient.register(Main.bus);
         Main.bus.addListener(HeXieClientInit::registerBlockExtensions);
         Main.bus.addListener(HeXieClientInit::registerMenus);
-        Main.bus.addListener(willow.train.hexie.client.events.Crh2CabCaption::register);
+        Main.bus.addListener(willow.train.hexie.client.events.CabControlCaption::register);
         Main.bus.addListener(HeXieClientInit::registerRenderers);
         Main.bus.addListener(HeXieClientInit::registerEntityVisuals);
         PartialModelInit.init();
@@ -147,6 +147,7 @@ public class HeXieClientInit {
     }
 
     public static void registerMenus(final RegisterMenuScreensEvent event) {
+        event.register(MenuInit.PANEL_TEXT_MENU.get(), PanelTextScreen::new);
         event.register(MenuInit.CARRIAGE_MARKING_MENU.get(), CarriageMarkingScreen::new);
         event.register(MenuInit.HEAD_NUMBER_MENU.get(), HeadNumberScreen::new);
         event.register(MenuInit.GROUND_STATION_SIGN_MENU.get(), GroundStationSignScreen::new);

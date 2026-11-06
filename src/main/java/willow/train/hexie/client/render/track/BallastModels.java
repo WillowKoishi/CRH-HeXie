@@ -6,6 +6,7 @@ import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.*;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.neoforged.neoforge.client.model.data.ModelData;
@@ -21,7 +22,6 @@ public final class BallastModels {
         private final TextureAtlasSprite sprite;
         private final int color;
         private final float[] uv = new float[8];
-        private final float mipSpan;
 
         Material(TextureAtlasSprite sprite, int color, BakedQuad face) {
             this.sprite = sprite;
@@ -37,24 +37,15 @@ public final class BallastModels {
                     uv[2 * i + 1] = Float.intBitsToFloat(vertices[offset + 5]);
                 }
             }
-            this.mipSpan = alignedMipSpan();
         }
 
         public TextureAtlasSprite sprite() { return sprite; }
         public int color() { return color; }
         public float atlasU(double u, double v) { return interpolate(0, u, v); }
         public float atlasV(double u, double v) { return interpolate(1, u, v); }
-        float mipSpan() { return mipSpan; }
 
-        // A mip texel spanning more than this many base pixels could contain another panel
-        // on the same sprite. Sprite origins are aligned to the atlas's supported mip levels.
-        private float alignedMipSpan() {
-            int edges = 0;
-            for (int i = 0; i < 8; i += 2) {
-                edges |= Math.round((uv[i] - sprite.getU0()) * sprite.contents().width() / (sprite.getU1() - sprite.getU0()));
-                edges |= Math.round((uv[i + 1] - sprite.getV0()) * sprite.contents().height() / (sprite.getV1() - sprite.getV0()));
-            }
-            return Math.max(1, Integer.lowestOneBit(edges));
+        ResourceLocation curveTexture(boolean repeating) {
+            return CurveBedTexture.forFace(sprite, uv, repeating);
         }
 
         private float interpolate(int c, double u, double v) {

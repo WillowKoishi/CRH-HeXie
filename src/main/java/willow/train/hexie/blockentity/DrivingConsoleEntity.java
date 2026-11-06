@@ -1,21 +1,33 @@
 package willow.train.hexie.blockentity;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.Nullable;
+import willow.train.hexie.api.cab.CabControl;
+import willow.train.hexie.api.cab.CabControlHost;
+import willow.train.hexie.api.cab.CabSurfaceGeometry;
+import willow.train.hexie.api.cab.CabSurfaceInstance;
+import willow.train.hexie.api.cab.CabSurfaceState;
 import willow.train.hexie.api.cab.CabDisplaySource;
 import willow.train.hexie.api.cab.CabDisplayHost;
 import willow.train.hexie.api.cab.CabDisplayState;
 import willow.train.hexie.blocks.emu.TestDrivingConsoleBlock;
 import willow.train.hexie.init.BlockEntitiesInit;
-import willow.train.hexie.vehicle.control.Crh2CabHandle;
+import willow.train.hexie.vehicle.control.CabModule;
+import willow.train.hexie.vehicle.control.SimpleCabControls;
+import willow.train.hexie.vehicle.control.SimpleCabControls.ShuntingReadiness;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
 
 /** Live display sources and stationary handle positions. The vehicle owns a moving console's controls. */
 public final class DrivingConsoleEntity extends BlockEntity implements CabDisplayHost, willow.train.hexie.api.cab.CabControlsHost,
-        willow.train.hexie.api.cab.CabTimetableHost {
+        willow.train.hexie.api.cab.CabTimetableHost, CabSurfaceInstance, CabSurfaceGeometry.AnimationSource {
     private net.minecraft.nbt.CompoundTag pendingTimetable = new net.minecraft.nbt.CompoundTag();
     @Override public net.minecraft.nbt.CompoundTag timetable() { return pendingTimetable.copy(); }
     /** Opaque backend data; the console does not interpret Create's schedule format. */
@@ -28,53 +40,60 @@ public final class DrivingConsoleEntity extends BlockEntity implements CabDispla
     private willow.train.hexie.vehicle.control.CabModule benchControls = new willow.train.hexie.vehicle.control.CabModule();
     private java.util.function.Supplier<willow.train.hexie.vehicle.control.CabModule.State> controlsSource = () -> benchControls.state();
     private boolean vehicleSource;
-    // Visual travel is local to this rendered console. The end detent takes longer
-    // to traverse so that lifting the grip and turning it remain distinct.
-    private int shownBrakeTarget = -1;
-    private double brakeStartTravel, brakeStartTime;
-
-    public double visualBrakePosition(int target, double now) {
-        double previousGoal = shownBrakeTarget == 9 ? 14 : shownBrakeTarget;
-        double elapsed = Math.max(0, now - brakeStartTime);
-        double travel = shownBrakeTarget < 0 || now < brakeStartTime ? (target == 9 ? 14 : target)
-                : brakeStartTravel + Math.copySign(Math.min(elapsed, Math.abs(previousGoal - brakeStartTravel)),
-                        previousGoal - brakeStartTravel);
-        if (shownBrakeTarget != target || now < brakeStartTime) {
-            brakeStartTravel = travel;
-            brakeStartTime = now;
-            shownBrakeTarget = target;
+    private record Motion(double start, double target, double time) {
+        double at(double now) {
+            return start + Math.copySign(Math.min(now - time, Math.abs(target - start)), target - start);
         }
-        return travel <= 8 ? travel : 8 + (travel - 8) / 6;
+    }
+    private final Map<String, Motion> animations = new HashMap<>();
+
+    /** Animation progress belongs to this desk, including its virtual block entity on a carriage. */
+    // Carriage visuals and the player's hit test may sample the same moving handle on different threads.
+    @Override public synchronized double visualTravel(CabControl control, double target, double now) {
+        var motion = animations.get(control.id());
+        double current = motion == null || now < motion.time() ? target : motion.at(now);
+        if (motion == null || motion.target() != target || now < motion.time())
+            animations.put(control.id(), new Motion(current, target, now));
+        return current;
     }
     public boolean hasVehicleSource() { return vehicleSource; }
     @Override public void controlsSource(java.util.function.Supplier<willow.train.hexie.vehicle.control.CabModule.State> source) {
         controlsSource = Objects.requireNonNull(source); vehicleSource = true;
     }
     @Override public willow.train.hexie.vehicle.control.CabModule.State controls() { return controlsSource.get(); }
-    public willow.train.hexie.vehicle.control.TestCabControls.View testControls() {
-        return willow.train.hexie.vehicle.control.TestCabControls.view(controls());
+    @Override public CabSurfaceState surfaceState() {
+        var block = getBlockState();
+        return block.getBlock() instanceof CabControlHost host ? host.surfaceState(block, controls()) : CabSurfaceState.EMPTY;
     }
-    public void benchAction(int action) {
-        benchControls.submit(willow.train.hexie.vehicle.control.TestCabControls.apply(benchControls.state(), action, 0));
-        setChanged();
-        if (level != null) level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+    @Override public void operateControl(Player player, CabControl control, int value) {
+        operateControl(control.id(), value);
     }
-    public void setCrh2Handle(Crh2CabHandle handle, int notch) {
-        benchControls.submit(handle.apply(benchControls.state(), notch, 0));
+    public void operateControl(String controlId, int value) {
+        var block = getBlockState();
+        if (!(block.getBlock() instanceof willow.train.hexie.api.cab.CabControlHost host)) return;
+        var next = CabModule.operateControls(host, block, controlId, value, benchControls.state(), 0);
+        if (next == null) return;
+        benchControls.submit(next);
         setChanged();
         if (level != null) level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
     }
     public void benchKeyboard(boolean toggleSimple, int mask) {
-        boolean updateApproach = getBlockState().getBlock() instanceof willow.train.hexie.api.cab.CabControlHost host
-                && host.keyboardActions(getBlockState(), benchControls.state().simple())
-                        .contains(willow.train.hexie.api.cab.CabControlHost.KeyboardAction.APPROACH);
-        benchKeyboard(toggleSimple, mask, updateApproach);
+        benchKeyboard(toggleSimple, mask, ignored -> {});
     }
-    public void benchKeyboard(boolean toggleSimple, int mask, boolean updateApproach) {
-        var next = willow.train.hexie.vehicle.control.SimpleCabControls.apply(
-                benchControls.state(), toggleSimple, mask, 0, updateApproach);
+    public void benchKeyboard(boolean toggleSimple, int mask, Consumer<ShuntingReadiness> onBlocked) {
+        benchKeyboard(null, toggleSimple, mask, onBlocked);
+    }
+    public void benchKeyboard(Player driver, boolean toggleSimple, int mask) {
+        benchKeyboard(driver, toggleSimple, mask, blocked -> SimpleCabControls.notifyShuntingBlocked(driver, blocked));
+    }
+    private void benchKeyboard(@Nullable Player driver, boolean toggleSimple, int mask,
+                               Consumer<ShuntingReadiness> onBlocked) {
+        var block = getBlockState();
+        if (!(block.getBlock() instanceof CabControlHost host)) return;
+        var next = SimpleCabControls.applyBindings(host, block, benchControls.state(), toggleSimple, mask, 0, onBlocked);
+        if (next == null) return;
         benchControls.keyboard(mask);
-        benchControls.submit(next);
+        SimpleCabControls.submitAndNotify(driver, benchControls, next);
         setChanged();
         if (level != null) level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
     }
@@ -111,13 +130,18 @@ public final class DrivingConsoleEntity extends BlockEntity implements CabDispla
 
     @Override
     public CabDisplayState displayState() {
-        if (!vehicleSource && getBlockState().getBlock() instanceof TestDrivingConsoleBlock) {
+        var block = getBlockState();
+        if (!vehicleSource && block.getBlock() instanceof TestDrivingConsoleBlock desk) {
             var state = benchControls.state();
-            var command = benchControls.update(benchControls.mode(), 1, 0, null, 0);
+            var command = state.simple()
+                    ? benchControls.updateSimple(false, 1, 0, null, 0,
+                            willow.train.hexie.vehicle.control.StationStopControl.State.RUNNING)
+                    : benchControls.update(benchControls.mode(), 1, 0, null, 0);
+            double traction = desk.trainControl(block).tractionOutput(command.throttle(), command.brake());
             return new CabDisplayState(0, java.util.Map.of(), new willow.train.hexie.api.cab.DmiState(
                     state.automatic() ? willow.train.hexie.api.cab.DmiState.Mode.AUTOMATIC : willow.train.hexie.api.cab.DmiState.Mode.MANUAL,
                     null, willow.train.hexie.vehicle.control.TrainControl.LINE_SPEED_LIMIT_KMH, 0,
-                    Math.abs(command.throttle()), command.brake(), "静态测试台", "", "", "", ""));
+                    Math.abs(traction), command.brake(), "静态测试台", "", "", "", ""));
         }
         return source.displayState();
     }

@@ -10,6 +10,8 @@ final class SlabTrackMesh {
     static final double WIDTH = 3;
     static final double LENGTH = 7;
     static final double HEIGHT = (4.4184 + 1) / 16;
+    private static final double BASE_DEPTH = 0.5;
+    private static final double SIDE_UV_SPAN = (HEIGHT + BASE_DEPTH) / WIDTH;
     private static final double JOINT_EDGE = 1.0 / 32;
     private static final double JOINT_DEPTH = 1.0 / 64;
     // A slight crown sheds water and keeps intersecting runs from sharing a plane.
@@ -21,12 +23,13 @@ final class SlabTrackMesh {
     private static Rim rim(Frame a, Frame b, double t, double phase, double height) {
         double edge = Math.min(phase, LENGTH - phase);
         double recess = JOINT_DEPTH * Math.max(0, 1 - edge / JOINT_EDGE);
-        Point floor = a.center().lerp(b.center(), t);
+        Point origin = a.center().lerp(b.center(), t);
         Point up = a.up().lerp(b.up(), t).unit();
-        Point centerTop = floor.add(up.mul(height + FOOT_CENTER * CROSS_FALL - recess));
+        Point bottom = origin.sub(up.mul(BASE_DEPTH));
+        Point centerTop = origin.add(up.mul(height + FOOT_CENTER * CROSS_FALL - recess));
         Point offset = a.side().lerp(b.side(), t).unit().mul(WIDTH / 2);
         Point edgeTop = centerTop.sub(up.mul(WIDTH / 2 * CROSS_FALL));
-        return new Rim(floor.sub(offset), floor.add(up.mul(WIDTH / 2 * CROSS_FALL)), floor.add(offset),
+        return new Rim(bottom.sub(offset), bottom.add(up.mul(WIDTH / 2 * CROSS_FALL)), bottom.add(offset),
                 edgeTop.sub(offset), centerTop, edgeTop.add(offset));
     }
 
@@ -68,11 +71,10 @@ final class SlabTrackMesh {
                         vertex(s.centerBottom, .5, v1), vertex(r.centerBottom, .5, v0));
                 face(mesh, vertex(r.centerBottom, .5, v0), vertex(s.centerBottom, .5, v1),
                         vertex(s.leftBottom, 0, v1), vertex(r.leftBottom, 0, v0));
-                double strip = HEIGHT / WIDTH;
-                face(mesh, vertex(r.leftBottom, strip, v0), vertex(s.leftBottom, strip, v1),
+                face(mesh, vertex(r.leftBottom, SIDE_UV_SPAN, v0), vertex(s.leftBottom, SIDE_UV_SPAN, v1),
                         vertex(s.leftTop, 0, v1), vertex(r.leftTop, 0, v0));
                 face(mesh, vertex(r.rightTop, 1, v0), vertex(s.rightTop, 1, v1),
-                        vertex(s.rightBottom, 1 - strip, v1), vertex(r.rightBottom, 1 - strip, v0));
+                        vertex(s.rightBottom, 1 - SIDE_UV_SPAN, v1), vertex(r.rightBottom, 1 - SIDE_UV_SPAN, v0));
                 if (i == 1 && along == 0) cap(mesh, r, true);
                 if (i == retained.length - 1 && along + step >= length - EPSILON) cap(mesh, s, false);
                 along += step;
@@ -82,13 +84,12 @@ final class SlabTrackMesh {
     }
 
     private static void cap(List<Quad> mesh, Rim rim, boolean start) {
-        double strip = HEIGHT / WIDTH;
-        Vertex centerBottom = vertex(rim.centerBottom, .5, strip), centerTop = vertex(rim.centerTop, .5, 0);
+        Vertex centerBottom = vertex(rim.centerBottom, .5, SIDE_UV_SPAN), centerTop = vertex(rim.centerTop, .5, 0);
         double first = start ? 0 : 1, last = 1 - first;
-        face(mesh, vertex(start ? rim.leftBottom : rim.rightBottom, first, strip),
+        face(mesh, vertex(start ? rim.leftBottom : rim.rightBottom, first, SIDE_UV_SPAN),
                 vertex(start ? rim.leftTop : rim.rightTop, first, 0), centerTop, centerBottom);
         face(mesh, centerBottom, centerTop, vertex(start ? rim.rightTop : rim.leftTop, last, 0),
-                vertex(start ? rim.rightBottom : rim.leftBottom, last, strip));
+                vertex(start ? rim.rightBottom : rim.leftBottom, last, SIDE_UV_SPAN));
     }
 
     private static Vertex vertex(Point point, double u, double v) {

@@ -1,6 +1,11 @@
 package willow.train.hexie.client.render.track;
 
+import dev.engine_room.flywheel.api.material.CardinalLightingMode;
+import dev.engine_room.flywheel.api.material.Material;
 import dev.engine_room.flywheel.api.model.Model;
+import dev.engine_room.flywheel.lib.material.LightShaders;
+import dev.engine_room.flywheel.lib.material.Materials;
+import dev.engine_room.flywheel.lib.material.SimpleMaterial;
 import dev.engine_room.flywheel.lib.memory.MemoryBlock;
 import dev.engine_room.flywheel.lib.model.EmptyModel;
 import dev.engine_room.flywheel.lib.model.SimpleQuadMesh;
@@ -10,6 +15,7 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 
 import java.util.List;
@@ -17,11 +23,14 @@ import java.util.List;
 import static willow.train.hexie.client.render.track.BallastMesh.*;
 
 final class CurveBedModel {
+    private static final Material BED = SimpleMaterial.builderOf(Materials.CUTOUT_MIPPED_BLOCK)
+            .light(LightShaders.SMOOTH).cardinalLightingMode(CardinalLightingMode.CHUNK).build();
+
     private CurveBedModel() {}
 
-    static Model of(List<Quad> faces) {
+    static Model of(List<Quad> faces, ResourceLocation texture) {
         if (faces.isEmpty()) return EmptyModel.INSTANCE;
-        // The instance supplies the tint; this compact Flywheel view provides white vertices and no overlay.
+        // The selected face is the whole bound texture. The sampler repeats even across long spans.
         var vertices = new PosTexNormalVertexView();
         int count = Math.multiplyExact(faces.size(), 4);
         var memory = MemoryBlock.mallocTracked(count * vertices.stride());
@@ -36,7 +45,8 @@ final class CurveBedModel {
             put(vertices, i++, face.d(), face.normal());
         }
         // Flywheel computes the endpoint-local bounding sphere once and shares its standard quad indices.
-        return new SingleMeshModel(new SimpleQuadMesh(vertices, "HeXie curve bed"), CurveBedInstance.material());
+        return new SingleMeshModel(new SimpleQuadMesh(vertices, "HeXie curve bed"),
+                SimpleMaterial.builderOf(BED).texture(texture).build());
     }
 
     static LongSet lightSections(BlockPos origin, List<Quad> faces) {
