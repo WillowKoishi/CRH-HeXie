@@ -16,7 +16,7 @@ import net.neoforged.neoforge.client.event.*;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import org.lwjgl.glfw.GLFW;
 import willow.train.hexie.api.cab.DrivingConsoleContext;
-import willow.train.hexie.api.cab.CabControl;
+import willow.train.hexie.api.interaction.BlockControl;
 import willow.train.hexie.api.cab.CabSurfaceHost;
 import willow.train.hexie.api.cab.CabSurfaceHost.KeyboardAction;
 import willow.train.hexie.api.cab.CabSurfaceHost.KeyboardBinding;
@@ -26,12 +26,12 @@ import willow.train.hexie.network.HexieNetworkHandler;
 import willow.train.hexie.network.c2s.CabControlPacket;
 import willow.train.hexie.network.c2s.CabKeyboardPacket;
 import willow.train.hexie.client.cab.CabPresentation;
+import willow.train.hexie.client.interaction.SurfaceInteraction;
 
 @EventBusSubscriber(modid = "hexie", value = Dist.CLIENT)
 public final class DrivingConsoleClient {
     private static DrivingConsoleContext context;
     private static boolean pointer;
-    private static CabHandleDrag drag;
     private static final Set<InputConstants.Key> capturedKeys = new HashSet<>();
     private static final Set<InputConstants.Key> suppressedMappings = new HashSet<>();
     private static int lastMask = -1, inputTicks;
@@ -39,7 +39,7 @@ public final class DrivingConsoleClient {
 
     // Create can take control between client ticks. Yield input, camera and HUD immediately.
     public static DrivingConsoleContext context() { return ControlsHandler.getContraption() == null ? context : null; }
-    static boolean draggingHandle() { return drag != null; }
+    static boolean draggingHandle() { return context != null && SurfaceInteraction.dragging(context); }
 
     static DrivingConsoleContext occupiedCab() {
         var player = Minecraft.getInstance().player;
@@ -52,7 +52,7 @@ public final class DrivingConsoleClient {
 
     public static boolean capturesInput() {
         var mc = Minecraft.getInstance();
-        return context() != null && mc.screen == null && mc.getOverlay() == null && mc.isWindowActive();
+        return occupiedCab() != null && mc.screen == null && mc.getOverlay() == null && mc.isWindowActive();
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -70,8 +70,7 @@ public final class DrivingConsoleClient {
         var next = ControlsHandler.getContraption() == null ? DrivingConsoleContext.find(mc.player) : null;
         if (!java.util.Objects.equals(context, next)) {
             boolean wasActive = context != null;
-            if (drag != null && capturesInput()) mc.mouseHandler.handleAccumulatedMovement();
-            drag = null;
+            if (context != null) SurfaceInteraction.cancel(context);
             releaseInput();
             releaseMappings();
             capturedKeys.clear();
@@ -97,17 +96,11 @@ public final class DrivingConsoleClient {
             }
             for (var key : claimed) KeyMapping.set(key, false);
             suppressedMappings.clear(); suppressedMappings.addAll(claimed);
-            if (drag != null) {
-                if (!drag.fits(occupiedCab(), mc.getWindow())
-                        || GLFW.glfwGetMouseButton(mc.getWindow().getWindow(), drag.button) != GLFW.GLFW_PRESS)
-                    endDrag(mc);
-                else drag.update(mc.getWindow());
-            }
-            boolean showCursor = pointer || drag != null;
+            boolean showCursor = pointer || SurfaceInteraction.dragging();
             if (showCursor && mc.mouseHandler.isMouseGrabbed()) mc.mouseHandler.releaseMouse();
             if (!showCursor && !mc.mouseHandler.isMouseGrabbed()) mc.mouseHandler.grabMouse();
         } else {
-            drag = null;
+            if (context != null) SurfaceInteraction.cancel(context);
             releaseInput();
             releaseMappings();
         }
@@ -214,20 +207,12 @@ public final class DrivingConsoleClient {
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void mouse(InputEvent.MouseButton.Pre event) {
+        if (SurfaceInteraction.handleMouseButton(event)) return;
         if (!capturesInput()) return;
-        if (drag != null && event.getButton() == drag.button) {
-            event.setCanceled(true);
-            if (event.getAction() == GLFW.GLFW_RELEASE) {
-                var mc = Minecraft.getInstance();
-                if (drag.fits(occupiedCab(), mc.getWindow())) drag.update(mc.getWindow());
-                endDrag(mc);
-            }
-            return;
-        }
         var binding = mouseBindings().stream().filter(candidate -> candidate.button() == event.getButton()).findFirst().orElse(null);
         if (binding == null) return;
         event.setCanceled(true);
-        if (event.getAction() != GLFW.GLFW_PRESS || drag != null) return;
+        if (event.getAction() != GLFW.GLFW_PRESS || SurfaceInteraction.dragging()) return;
         if (binding.action() == MouseAction.POINTER) {
             pointer = !pointer;
             if (pointer) Minecraft.getInstance().mouseHandler.releaseMouse();
@@ -236,35 +221,36 @@ public final class DrivingConsoleClient {
             var cab = occupiedCab();
             if (cab == null) return;
             var ray = consoleRay();
-            var control = CabPresentation.hit(cab, ray.origin, ray.direction);
-            if (control instanceof CabControl.Handle handle)
-                drag = new CabHandleDrag(Minecraft.getInstance(), cab, handle, event.getButton(), pointer);
-            else if (control instanceof CabControl.Button button)
-                HexieNetworkHandler.sendToServer(new CabControlPacket(cab.seatAccess().vehicle().getId(), cab.console(), button.id(), 0));
-            else NeoForge.EVENT_BUS.post(ray);
+            var hit = CabPresentation.pick(cab, ray.origin, ray.direction);
+            var state = cab.seatAccess().blockState(cab.console());
+            var target = state == null ? null : new ConsoleTarget(cab, state.getBlock());
+            if (!SurfaceInteraction.click(target, hit, event.getButton(), pointer)) NeoForge.EVENT_BUS.post(ray);
         }
     }
 
-    private static void endDrag(Minecraft mc) {
-        if (pointer) drag.restorePointer(mc.getWindow());
-        else {
-            // Flush the ungrabbed cursor movement before Minecraft resumes mouse look.
-            mc.mouseHandler.handleAccumulatedMovement();
-            mc.mouseHandler.grabMouse();
+    private record ConsoleTarget(DrivingConsoleContext cab, net.minecraft.world.level.block.Block block)
+            implements SurfaceInteraction.Context {
+        @Override public Object identity() { return cab; }
+        @Override public willow.train.hexie.api.interaction.ControlState state() { return cab.surfaceState(); }
+        @Override public BlockControl control(String id) {
+            var state = cab.seatAccess().blockState(cab.console());
+            return state != null && state.getBlock() instanceof CabSurfaceHost host ? host.control(state, id) : null;
         }
-        drag = null;
-    }
-
-    @SubscribeEvent
-    public static void openingScreen(ScreenEvent.Opening event) {
-        drag = null;
+        @Override public boolean valid() {
+            if (!capturesInput() || !cab.equals(occupiedCab())) return false;
+            var state = cab.seatAccess().blockState(cab.console());
+            return state != null && state.is(block) && state.getBlock() instanceof CabSurfaceHost;
+        }
+        @Override public void submit(BlockControl control, int value) {
+            HexieNetworkHandler.sendToServer(new CabControlPacket(cab.seatAccess().vehicle().getId(), cab.console(), control.id(), value));
+        }
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void scroll(InputEvent.MouseScrollingEvent event) {
         if (!capturesInput() || !scrollControlsZoom()) return;
         event.setCanceled(true);
-        if (drag == null) zoom = Math.clamp(zoom * Math.pow(1.12, event.getScrollDeltaY()), .5, 4);
+        if (!SurfaceInteraction.dragging()) zoom = Math.clamp(zoom * Math.pow(1.12, event.getScrollDeltaY()), .5, 4);
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
@@ -282,21 +268,17 @@ public final class DrivingConsoleClient {
         var layer = event.getName();
         if (layer.equals(VanillaGuiLayers.HOTBAR) || layer.equals(VanillaGuiLayers.SELECTED_ITEM_NAME)) {
             if (!cab.simple()) event.setCanceled(true);
-        } else if (layer.equals(VanillaGuiLayers.CROSSHAIR) && (pointer || drag != null)) event.setCanceled(true);
+        } else if (layer.equals(VanillaGuiLayers.CROSSHAIR) && pointer) event.setCanceled(true);
     }
 
     @SubscribeEvent
     public static void handleHud(RenderGuiEvent.Post event) {
         var mc = Minecraft.getInstance();
         var cab = occupiedCab();
-        if (!capturesInput() || mc.options.hideGui || cab == null) return;
-        if (drag != null) {
-            if (drag.fits(cab, mc.getWindow())) drag.render(mc, event.getGuiGraphics());
-        } else {
-            var ray = consoleRay();
-            var control = CabPresentation.hit(cab, ray.origin, ray.direction);
-            if (control != null) CabControlCaption.hover(mc, event.getGuiGraphics(), control, cab.surfaceState(), pointer);
-        }
+        if (!capturesInput() || mc.options.hideGui || cab == null || SurfaceInteraction.dragging()) return;
+        var ray = consoleRay();
+        SurfaceInteraction.hover(CabPresentation.pick(cab, ray.origin, ray.direction),
+                cab.surfaceState(), event.getGuiGraphics(), pointer);
     }
 
     private static DrivingConsoleClickEvent consoleRay() {
@@ -309,8 +291,7 @@ public final class DrivingConsoleClient {
         var ray = new org.joml.Vector3f((float) (x * scale * window.getWidth() / window.getHeight()),
                 (float) (y * scale), -1).rotate(camera.rotation()).normalize();
         Vec3 origin = camera.getPosition(), end = origin.add(ray.x, ray.y, ray.z);
-        origin = context.toConsoleLocal(origin, camera.getPartialTickTime());
-        end = context.toConsoleLocal(end, camera.getPartialTickTime());
-        return new DrivingConsoleClickEvent(context, origin, end.subtract(origin).normalize());
+        var local = context.toConsoleLocalRay(origin, end, camera.getPartialTickTime());
+        return new DrivingConsoleClickEvent(context, local.from(), local.to().subtract(local.from()).normalize());
     }
 }

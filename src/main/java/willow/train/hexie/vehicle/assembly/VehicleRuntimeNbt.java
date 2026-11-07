@@ -272,7 +272,7 @@ public final class VehicleRuntimeNbt {
                 point(tag, tag.contains("Origin") ? "Origin" : "Pivot"), point(tag, "Offset"));
     }
 
-    private static CompoundTag renderState(CouplingEndpoint.RenderState state) {
+    public static CompoundTag renderState(CouplingEndpoint.RenderState state) {
         var tag = new CompoundTag();
         tag.putString("Block", state.block());
         var properties = new CompoundTag();
@@ -281,7 +281,7 @@ public final class VehicleRuntimeNbt {
         return tag;
     }
 
-    private static CouplingEndpoint.RenderState renderState(CompoundTag parent, String key) {
+    public static CouplingEndpoint.RenderState renderState(CompoundTag parent, String key) {
         require(parent, key, Tag.TAG_COMPOUND);
         var tag = parent.getCompound(key);
         require(tag, "Properties", Tag.TAG_COMPOUND);

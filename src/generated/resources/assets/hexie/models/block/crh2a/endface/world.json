@@ -1,14 +1,3 @@
 {
-  "parent": "minecraft:block/block",
-  "loader": "neoforge:obj",
-  "ambientocclusion": false,
-  "shade_quads": false,
-  "emissive_ambient": false,
-  "automatic_culling": false,
-  "flip_v": true,
-  "model": "hexie:models/block/crh2a/endface/world.obj",
-  "render_type": "minecraft:cutout",
-  "textures": {
-    "particle": "hexie:block/crh2a/endface/crh2a_end_face"
-  }
+  "parent": "hexie:block/crh2a/endface/world_original"
 }

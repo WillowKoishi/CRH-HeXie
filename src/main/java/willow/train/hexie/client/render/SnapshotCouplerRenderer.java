@@ -30,6 +30,13 @@ public final class SnapshotCouplerRenderer {
         void renderArm(BlockState state, SnapshotCouplerAnimation.Parameters parameters, float partialTick,
                        PoseStack stack, MultiBufferSource buffers, int light, int overlay);
 
+        /** Local articulation, such as a knuckle, shares the solved arm's transform. */
+        default void renderArm(BlockState state, net.minecraft.world.level.block.entity.BlockEntity blockEntity,
+                SnapshotCouplerAnimation.Parameters parameters, float partialTick, PoseStack stack,
+                MultiBufferSource buffers, int light, int overlay) {
+            renderArm(state, parameters, partialTick, stack, buffers, light, overlay);
+        }
+
         /** Base origin is the block's lower corner, rotated to the registered facing. */
         default void renderBase(BlockState state, PoseStack stack, MultiBufferSource buffers, int light, int overlay) {}
 
@@ -59,6 +66,46 @@ public final class SnapshotCouplerRenderer {
     }
 
     private SnapshotCouplerRenderer() {}
+
+    /** Adapter stacks may extend past Create's captured structure envelope. */
+    static net.minecraft.world.phys.AABB adapterBounds(SnapshotCarriageEntity entity, float partialTick) {
+        var animation = entity.couplerAnimation();
+        var body = willow.train.hexie.compat.create.CarriagePlayerSupport.frame(entity, partialTick);
+        net.minecraft.world.phys.AABB result = null;
+        for (int i = 0; i < animation.frames().size() && i < animation.parameters().size(); i++) {
+            var attachment = animation.parameters(i, partialTick).attachment();
+            if (attachment == null) continue;
+            var bounds = adapterBounds(attachment, animation.frame(i, partialTick), body::world);
+            if (bounds != null) result = result == null ? bounds : result.minmax(bounds);
+        }
+        return result;
+    }
+
+    /** Shares the arm/contact transforms used below, with the full knuckle sweep included. */
+    static net.minecraft.world.phys.AABB adapterBounds(SnapshotCouplerAnimation.AdapterAttachment attachment,
+            willow.train.hexie.compat.create.SnapshotBogeyAnimation.Frame frame,
+            java.util.function.UnaryOperator<net.minecraft.world.phys.Vec3> localToWorld) {
+        var adapter = attachment.adapter();
+        String baseModel = attachment.reversed() ? adapter.secondModel() : adapter.firstModel();
+        var box = willow.train.hexie.blocks.coupler.CouplerAdapterGeometry.bounds(adapter, baseModel);
+        if (box == null) return null;
+        var contact = attachment.complete();
+        var pivot = attachment.pivot();
+        box = box.move(contact.x() - pivot.x(), contact.y() - pivot.y(), contact.z() - pivot.z());
+        var rotation = frame.rotation();
+        net.minecraft.world.phys.AABB result = null;
+        for (int corner = 0; corner < 8; corner++) {
+            var point = new org.joml.Vector3f((float) ((corner & 1) == 0 ? box.minX : box.maxX),
+                    (float) ((corner & 2) == 0 ? box.minY : box.maxY),
+                    (float) ((corner & 4) == 0 ? box.minZ : box.maxZ));
+            rotation.transform(point);
+            var world = localToWorld.apply(new net.minecraft.world.phys.Vec3(
+                    point.x + frame.x(), point.y + frame.y(), point.z + frame.z()));
+            var single = new net.minecraft.world.phys.AABB(world, world);
+            result = result == null ? single : result.minmax(single);
+        }
+        return result;
+    }
 
     /** Register on the client during setup; no concrete test models are loaded by this renderer. */
     public static void register(Block block, Renderer renderer) {
@@ -144,12 +191,12 @@ public final class SnapshotCouplerRenderer {
             if (!drawRegistered && !drawMoving && (instances != null || attachment == null)) continue;
             int light = SnapshotCarriageRenderer.light(entity, frame, partialTick);
             if (instances != null) instances.light = light;
+            var blockEntity = drawRegistered || attachment != null ? client.getBlockEntity(frame.position()) : null;
             if (drawRegistered) {
                 stack.pushPose();
                 // Bellows remain attached to the body's floor. Unlike an independent coupler base,
                 // their mount must not subtract floorOffset when the body height is adjusted.
                 mount(stack, frame.position(), 0, facing);
-                var blockEntity = client.getBlockEntity(frame.position());
                 if (instances != null) parts.attached(block.state(), blockEntity, parameters, partialTick, false, stack, instances);
                 else renderer.renderAttachedParts(block.state(), blockEntity, parameters, partialTick,
                         stack, buffers, light, overlay);
@@ -179,15 +226,19 @@ public final class SnapshotCouplerRenderer {
                 }
                 stack.popPose();
             } else if (drawRegistered && !hasMoving) {
-                if (instances != null) parts.arm(stack, instances);
-                else renderer.renderArm(block.state(), parameters, partialTick, stack, buffers, light, overlay);
+                if (instances != null) parts.arm(block.state(), blockEntity, parameters, partialTick, stack, instances);
+                else renderer.renderArm(block.state(), blockEntity, parameters, partialTick, stack, buffers, light, overlay);
             }
             if (attachment != null && instances == null) {
                 var complete = attachment.complete();
                 var pivot = attachment.pivot();
                 stack.translate(complete.x() - pivot.x(), complete.y() - pivot.y(), complete.z() - pivot.z());
-                CouplerBlockEntityRenderer.renderAdapter(attachment.adapter(), attachment.reversed(), entity.level(),
-                        stack, buffers, light, overlay);
+                float knuckleProgress = blockEntity instanceof willow.train.hexie.blockentity.CouplerBlockEntity display
+                        ? display.rescueKnuckleProgress(partialTick)
+                        : willow.train.hexie.blocks.coupler.RescueCouplerState.progress(
+                                block.nbt(), entity.level().getGameTime(), partialTick);
+                CouplerBlockEntityRenderer.renderAdapter(attachment.adapter(), attachment.reversed(), knuckleProgress,
+                        entity.level(), stack, buffers, light, overlay);
             }
             stack.popPose();
         }

@@ -31,12 +31,12 @@ public final class CreatePartVariantInteraction extends MovingInteractionBehavio
                 || !block.partRoot(world, root, owner.state()).equals(root)) return false;
         var cells = block.partCells(world, root, owner.state());
         if (!clicked.state().equals(cells.get(position))) return false;
-        boolean alternate = !owner.state().getValue(VariantPartBlock.ALTERNATE);
+        var appearance = owner.state().cycle(VariantPartBlock.ALTERNATE).getValue(VariantPartBlock.ALTERNATE);
         var updates = new ArrayList<StructureBlockInfo>(cells.size());
         for (var expected : cells.entrySet()) {
             var info = contraption.getBlocks().get(expected.getKey());
             if (info == null || !info.state().equals(expected.getValue())) return false;
-            updates.add(new StructureBlockInfo(info.pos(), info.state().setValue(VariantPartBlock.ALTERNATE, alternate), info.nbt()));
+            updates.add(new StructureBlockInfo(info.pos(), info.state().setValue(VariantPartBlock.ALTERNATE, appearance), info.nbt()));
         }
         if (!entity.level().isClientSide)
             for (var info : updates) entity.setBlock(info.pos(), info);

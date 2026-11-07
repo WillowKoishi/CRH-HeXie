@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.BaseRailBlock;
 import com.simibubi.create.content.trains.track.ITrackBlock;
 import willow.train.hexie.Main;
 import willow.train.hexie.api.carriage.CarriageRegistry;
+import willow.train.hexie.compat.create.PrefabSchematic;
 
 import java.io.*;
 import java.util.*;
@@ -25,7 +26,7 @@ public final class CarriageAssets {
     public record Model(ResourceLocation id, Component title, double frontGap, double rearGap,
                         int width, int height, int length, List<Cell> cells,
                         Map<ResourceLocation, List<ResourceLocation>> assignments,
-                        Map<ResourceLocation, List<ResourceLocation>> groups, BlockState track) {
+                        Map<ResourceLocation, List<ResourceLocation>> groups, BlockState track, ItemStack schematic) {
         public List<ResourceLocation> variantIds(ResourceLocation block) {
             Set<ResourceLocation> ids = new LinkedHashSet<>();
             for (ResourceLocation group : assignments.getOrDefault(block, List.of()))
@@ -95,12 +96,31 @@ public final class CarriageAssets {
                 Component title = json.has("title_key") ? Component.translatable(json.get("title_key").getAsString())
                         : Component.literal(json.get("title").getAsString());
                 BlockState track = readTrack(json.getAsJsonObject("track"));
+                ItemStack schematic = readSchematic(resources, directory, json, errors);
                 assignments.replaceAll((block, memberships) -> List.copyOf(memberships));
                 models.add(new Model(id, title, front, rear, bounds[0], bounds[1], bounds[2], List.copyOf(cells),
-                        Map.copyOf(assignments), Map.copyOf(localGroups), track));
+                        Map.copyOf(assignments), Map.copyOf(localGroups), track, schematic));
             } catch (Exception e) { report(errors, id, e); }
         });
         return new Catalog(List.copyOf(models), List.copyOf(errors));
+    }
+
+    private static ItemStack readSchematic(ResourceManager resources, ResourceLocation directory,
+                                           JsonObject json, List<String> errors) {
+        if (!json.has("schematic")) return ItemStack.EMPTY;
+        try {
+            String name = json.get("schematic").getAsString();
+            if (name.isBlank()) return ItemStack.EMPTY;
+            ResourceLocation resource = child(directory, name);
+            if (!name.endsWith(".nbt")) throw new IOException("Schematic must be a compressed .nbt file: " + name);
+            try (InputStream stream = resources.getResourceOrThrow(resource).open()) {
+                return PrefabSchematic.create(resource, stream.readNBytes(PrefabSchematic.MAX_COMPRESSED_BYTES + 1));
+            }
+        } catch (Exception e) {
+            // An optional blueprint must not prevent the carriage itself from being browsed.
+            report(errors, directory, e);
+            return ItemStack.EMPTY;
+        }
     }
 
     private static double gap(JsonObject json, String name) throws IOException {

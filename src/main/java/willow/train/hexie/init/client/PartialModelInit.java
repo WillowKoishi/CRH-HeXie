@@ -28,6 +28,15 @@ public class PartialModelInit {
             CRH2_CAB_DOOR_LEFT_GLASS = block("crh2a/doors/crh2a_cab_door_left_glass"),
             CRH2_CAB_DOOR_RIGHT_GLASS = block("crh2a/doors/crh2a_cab_door_right_glass"),
             CRH2_END_COUPLER = block("crh2a/endface/coupler"),
+            JANNEY_BASE = block("coupler/general_janney/base"),
+            JANNEY_BODY = block("coupler/general_janney/body"),
+            JANNEY_KNUCKLE = block("coupler/general_janney/knuckle"),
+            JANNEY_BODY_PIN = block("coupler/general_janney/body_pin"),
+            JANNEY_KNUCKLE_PIN = block("coupler/general_janney/knuckle_pin"),
+            RESCUE_COUPLER_BODY = block("coupler/crh2a_rescue/body"),
+            RESCUE_COUPLER_KNUCKLE = block("coupler/crh2a_rescue/knuckle"),
+            CRH2_END_CABLE_TILTED = block("crh2a/endface/cable_tilted"),
+            CRH2_END_CABLE_HORIZONTAL = block("crh2a/endface/cable_horizontal"),
             CRH2_AUTO_COUPLER_BASE = block("crh2a/auto_coupler/base"),
             CRH2_AUTO_COUPLER_ARM = block("crh2a/auto_coupler/arm"),
             CRH2_AUTO_COUPLER_COVER_LEFT = block("crh2a/auto_coupler/cover_left"),
@@ -120,6 +129,7 @@ public class PartialModelInit {
         return mirrored ? CRH2_CAB_DOOR_RIGHT_BODY : CRH2_CAB_DOOR_LEFT_BODY;
     }
 
-    @SuppressWarnings("EmptyMethod")
-    public static void init() {}
+    public static void init() {
+        willow.train.hexie.client.render.bogey.BogeySuspensionModels.init();
+    }
 }

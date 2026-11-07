@@ -1,10 +1,10 @@
 package willow.train.hexie.client.cab;
 
-import willow.train.hexie.api.cab.CabControl;
+import willow.train.hexie.api.interaction.BlockControl;
 
 /** Maps the handle's declared screen positions to the available vertical track. */
-public record CabSliderTrack(CabControl.Handle handle, int top, int travel) {
-    public static CabSliderTrack at(CabControl.Handle handle, int notch, double pointerY, int height) {
+public record CabSliderTrack(BlockControl.Handle handle, int top, int travel) {
+    public static CabSliderTrack at(BlockControl.Handle handle, int notch, double pointerY, int height) {
         double smallestGap = 1;
         for (int n = handle.minNotch(); n < handle.maxNotch(); n++)
             smallestGap = Math.min(smallestGap, Math.abs(handle.sliderPosition(n + 1) - handle.sliderPosition(n)));

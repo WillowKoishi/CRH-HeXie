@@ -19,7 +19,7 @@ import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.storage.loot.LootParams;
 import willow.train.hexie.api.cab.CabControlHost;
 import willow.train.hexie.api.cab.CabNeutralPositions;
-import willow.train.hexie.api.cab.CabSurfaceGeometry;
+import willow.train.hexie.api.interaction.ControlSurface;
 import willow.train.hexie.api.traincontrol.CabTrainControl;
 import willow.train.hexie.blockentity.DrivingConsoleEntity;
 
@@ -35,15 +35,15 @@ public abstract class DrivingConsoleBlock extends Block implements EntityBlock, 
             new KeyboardBinding('A', KeyboardAction.LEFT), new KeyboardBinding('D', KeyboardAction.RIGHT),
             new KeyboardBinding(' ', KeyboardAction.APPROACH));
 
-    private final Supplier<CabSurfaceGeometry> geometry;
+    private final Supplier<ControlSurface> geometry;
     private final CabTrainControl trainControl;
     private final CabNeutralPositions neutralPositions;
 
-    protected DrivingConsoleBlock(Properties properties, Supplier<CabSurfaceGeometry> geometry, CabTrainControl trainControl) {
+    protected DrivingConsoleBlock(Properties properties, Supplier<ControlSurface> geometry, CabTrainControl trainControl) {
         this(properties, geometry, trainControl, CabNeutralPositions.FROM_REQUEST);
     }
 
-    protected DrivingConsoleBlock(Properties properties, Supplier<CabSurfaceGeometry> geometry, CabTrainControl trainControl,
+    protected DrivingConsoleBlock(Properties properties, Supplier<ControlSurface> geometry, CabTrainControl trainControl,
                                   CabNeutralPositions neutralPositions) {
         super(properties);
         this.geometry = Objects.requireNonNull(geometry);
@@ -52,7 +52,7 @@ public abstract class DrivingConsoleBlock extends Block implements EntityBlock, 
         registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH));
     }
 
-    @Override public CabSurfaceGeometry surfaceGeometry(BlockState state) { return geometry.get(); }
+    @Override public ControlSurface surfaceGeometry(BlockState state) { return geometry.get(); }
     @Override public CabTrainControl trainControl(BlockState state) { return trainControl; }
     @Override public CabNeutralPositions neutralPositions(BlockState state) { return neutralPositions; }
     @Override public Direction cabFacing(BlockState state) { return state.getValue(FACING); }

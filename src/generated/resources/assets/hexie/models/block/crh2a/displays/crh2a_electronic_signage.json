@@ -1,0 +1,20 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:composite",
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "hexie:block/crh2a/displays/crh2a_electronic_display_body"
+  },
+  "children": {
+    "body": {
+      "parent": "hexie:block/crh2a/displays/crh2a_electronic_signage_body"
+    },
+    "glass": {
+      "parent": "hexie:block/crh2a/displays/crh2a_electronic_signage_glass"
+    }
+  },
+  "item_render_order": [
+    "body",
+    "glass"
+  ]
+}

@@ -27,14 +27,22 @@ import willow.train.hexie.blocks.base.SideMirrorBlockBase;
 
 import java.util.Random;
 
-public class OrdinaryTrainPanelBlock extends SideMirrorBlockBase {
+public class OrdinaryTrainPanelBlock extends SideMirrorBlockBase implements willow.train.hexie.blocks.signs.PassengerDisplayPanel {
+
+    private final boolean passengerDisplays;
+    @Override public boolean supportsPassengerDisplay() { return passengerDisplays; }
 
 protected static final VoxelShape SOUTH_AABB = Block.box(0, 0, 15, 16, 16, 17);
 protected static final VoxelShape NORTH_AABB = Block.box(0, 0, -1, 16, 16, 1);
 Random random = new Random();
 
     public OrdinaryTrainPanelBlock(Properties pProperties) {
+        this(pProperties, true);
+    }
+
+    public OrdinaryTrainPanelBlock(Properties pProperties, boolean passengerDisplays) {
         super(pProperties);
+        this.passengerDisplays = passengerDisplays;
     }
 
     public VoxelShape getShape(

@@ -21,17 +21,25 @@ public class CouplerAdapterItem extends Item {
     private final String firstModel;
     private final String secondModel;
     private final double thickness;
+    private final willow.train.hexie.vehicle.runtime.CouplingEndpoint.Point offset;
 
     public CouplerAdapterItem(Properties properties, String firstModel, String secondModel, double thickness) {
+        this(properties, firstModel, secondModel, thickness,
+                new willow.train.hexie.vehicle.runtime.CouplingEndpoint.Point(0, 0, -thickness));
+    }
+
+    protected CouplerAdapterItem(Properties properties, String firstModel, String secondModel, double thickness,
+            willow.train.hexie.vehicle.runtime.CouplingEndpoint.Point offset) {
         super(properties);
-        new CouplerAdapter("hexie:registration", firstModel, secondModel, thickness);
+        new CouplerAdapter("hexie:registration", firstModel, secondModel, thickness, offset);
         this.firstModel = firstModel;
         this.secondModel = secondModel;
         this.thickness = thickness;
+        this.offset = offset;
     }
 
     public CouplerAdapter adapter() {
-        return new CouplerAdapter(BuiltInRegistries.ITEM.getKey(this).toString(), firstModel, secondModel, thickness);
+        return new CouplerAdapter(BuiltInRegistries.ITEM.getKey(this).toString(), firstModel, secondModel, thickness, offset);
     }
 
     /** CUSTOM_DATA may override the registered definition, retaining the held item's model and identity. */
@@ -42,7 +50,7 @@ public class CouplerAdapterItem extends Item {
         CouplerAdapter configured = CouplerAdapterData.read(data);
         if (configured == null) return null;
         return new CouplerAdapter(BuiltInRegistries.ITEM.getKey(this).toString(), configured.firstModel(),
-                configured.secondModel(), configured.thickness());
+                configured.secondModel(), configured.thickness(), configured.offset());
     }
 
     /** Preserves the configured dimensions when the installed converter is dropped again. */
@@ -71,9 +79,10 @@ public class CouplerAdapterItem extends Item {
         if (coupler.geometry() != null) {
             var requested = new net.minecraft.world.phys.BlockHitResult(context.getClickLocation(),
                     context.getClickedFace(), pos, context.isInside());
-            var surface = CouplerInteraction.classifyWorld(level, pos, state, player, requested);
+            var surface = CouplerInteraction.classifyHit(level, pos, state, requested);
             if (surface == null) return InteractionResult.FAIL;
             if (!surface.head()) {
+                if (!coupler.geometry().hasCovers()) return InteractionResult.FAIL;
                 AbstractCouplerBlock.toggleCover(level, pos, state);
                 return InteractionResult.sidedSuccess(level.isClientSide);
             }

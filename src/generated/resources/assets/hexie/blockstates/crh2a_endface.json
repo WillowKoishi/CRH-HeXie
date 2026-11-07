@@ -1,35 +1,131 @@
 {
   "variants": {
-    "assembled=false,facing=north": {
-      "model": "hexie:block/crh2a/endface/world",
+    "assembled=false,facing=north,variant=original": {
+      "model": "hexie:block/crh2a/endface/world_original",
       "y": 0
     },
-    "assembled=true,facing=north": {
-      "model": "hexie:block/crh2a/endface/body",
+    "assembled=true,facing=north,variant=original": {
+      "model": "hexie:block/crh2a/endface/body_original",
       "y": 0
     },
-    "assembled=false,facing=east": {
-      "model": "hexie:block/crh2a/endface/world",
+    "assembled=false,facing=east,variant=original": {
+      "model": "hexie:block/crh2a/endface/world_original",
       "y": 90
     },
-    "assembled=true,facing=east": {
-      "model": "hexie:block/crh2a/endface/body",
+    "assembled=true,facing=east,variant=original": {
+      "model": "hexie:block/crh2a/endface/body_original",
       "y": 90
     },
-    "assembled=false,facing=south": {
-      "model": "hexie:block/crh2a/endface/world",
+    "assembled=false,facing=south,variant=original": {
+      "model": "hexie:block/crh2a/endface/world_original",
       "y": 180
     },
-    "assembled=true,facing=south": {
-      "model": "hexie:block/crh2a/endface/body",
+    "assembled=true,facing=south,variant=original": {
+      "model": "hexie:block/crh2a/endface/body_original",
       "y": 180
     },
-    "assembled=false,facing=west": {
-      "model": "hexie:block/crh2a/endface/world",
+    "assembled=false,facing=west,variant=original": {
+      "model": "hexie:block/crh2a/endface/world_original",
       "y": 270
     },
-    "assembled=true,facing=west": {
-      "model": "hexie:block/crh2a/endface/body",
+    "assembled=true,facing=west,variant=original": {
+      "model": "hexie:block/crh2a/endface/body_original",
+      "y": 270
+    },
+    "assembled=false,facing=north,variant=tilted": {
+      "model": "hexie:block/crh2a/endface/world_tilted",
+      "y": 0
+    },
+    "assembled=true,facing=north,variant=tilted": {
+      "model": "hexie:block/crh2a/endface/body_tilted",
+      "y": 0
+    },
+    "assembled=false,facing=east,variant=tilted": {
+      "model": "hexie:block/crh2a/endface/world_tilted",
+      "y": 90
+    },
+    "assembled=true,facing=east,variant=tilted": {
+      "model": "hexie:block/crh2a/endface/body_tilted",
+      "y": 90
+    },
+    "assembled=false,facing=south,variant=tilted": {
+      "model": "hexie:block/crh2a/endface/world_tilted",
+      "y": 180
+    },
+    "assembled=true,facing=south,variant=tilted": {
+      "model": "hexie:block/crh2a/endface/body_tilted",
+      "y": 180
+    },
+    "assembled=false,facing=west,variant=tilted": {
+      "model": "hexie:block/crh2a/endface/world_tilted",
+      "y": 270
+    },
+    "assembled=true,facing=west,variant=tilted": {
+      "model": "hexie:block/crh2a/endface/body_tilted",
+      "y": 270
+    },
+    "assembled=false,facing=north,variant=horizontal_wired": {
+      "model": "hexie:block/crh2a/endface/world_horizontal_wired",
+      "y": 0
+    },
+    "assembled=true,facing=north,variant=horizontal_wired": {
+      "model": "hexie:block/crh2a/endface/body_horizontal_wired",
+      "y": 0
+    },
+    "assembled=false,facing=east,variant=horizontal_wired": {
+      "model": "hexie:block/crh2a/endface/world_horizontal_wired",
+      "y": 90
+    },
+    "assembled=true,facing=east,variant=horizontal_wired": {
+      "model": "hexie:block/crh2a/endface/body_horizontal_wired",
+      "y": 90
+    },
+    "assembled=false,facing=south,variant=horizontal_wired": {
+      "model": "hexie:block/crh2a/endface/world_horizontal_wired",
+      "y": 180
+    },
+    "assembled=true,facing=south,variant=horizontal_wired": {
+      "model": "hexie:block/crh2a/endface/body_horizontal_wired",
+      "y": 180
+    },
+    "assembled=false,facing=west,variant=horizontal_wired": {
+      "model": "hexie:block/crh2a/endface/world_horizontal_wired",
+      "y": 270
+    },
+    "assembled=true,facing=west,variant=horizontal_wired": {
+      "model": "hexie:block/crh2a/endface/body_horizontal_wired",
+      "y": 270
+    },
+    "assembled=false,facing=north,variant=horizontal_plain": {
+      "model": "hexie:block/crh2a/endface/world_horizontal_plain",
+      "y": 0
+    },
+    "assembled=true,facing=north,variant=horizontal_plain": {
+      "model": "hexie:block/crh2a/endface/body_horizontal_plain",
+      "y": 0
+    },
+    "assembled=false,facing=east,variant=horizontal_plain": {
+      "model": "hexie:block/crh2a/endface/world_horizontal_plain",
+      "y": 90
+    },
+    "assembled=true,facing=east,variant=horizontal_plain": {
+      "model": "hexie:block/crh2a/endface/body_horizontal_plain",
+      "y": 90
+    },
+    "assembled=false,facing=south,variant=horizontal_plain": {
+      "model": "hexie:block/crh2a/endface/world_horizontal_plain",
+      "y": 180
+    },
+    "assembled=true,facing=south,variant=horizontal_plain": {
+      "model": "hexie:block/crh2a/endface/body_horizontal_plain",
+      "y": 180
+    },
+    "assembled=false,facing=west,variant=horizontal_plain": {
+      "model": "hexie:block/crh2a/endface/world_horizontal_plain",
+      "y": 270
+    },
+    "assembled=true,facing=west,variant=horizontal_plain": {
+      "model": "hexie:block/crh2a/endface/body_horizontal_plain",
       "y": 270
     }
   }

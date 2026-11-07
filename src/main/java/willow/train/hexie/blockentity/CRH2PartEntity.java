@@ -17,7 +17,20 @@ import java.util.List;
 import willow.train.hexie.blocks.parts.PanelText;
 
 /** The panel root owns its lower-body markings; proxy cells resolve all editing to that root. */
-public final class CRH2PartEntity extends SmartBlockEntity implements MenuProvider, willow.train.hexie.blocks.parts.VehicleMarkings {
+public final class CRH2PartEntity extends SmartBlockEntity implements MenuProvider, willow.train.hexie.blocks.parts.VehicleMarkings,
+        willow.train.hexie.api.display.PassengerDisplayHost {
+    private willow.train.hexie.api.display.PassengerDisplaySource passengerSource =
+            () -> willow.train.hexie.api.display.PassengerDisplayState.EMPTY;
+    @Override public void passengerDisplaySource(willow.train.hexie.api.display.PassengerDisplaySource source) { passengerSource = source; }
+    @Override public willow.train.hexie.api.display.PassengerDisplayState passengerDisplay() { return passengerSource.read(); }
+    private String carriageNumber = "";
+    @Override public String carriageNumber() { return carriageNumber; }
+    @Override public void setCarriageNumber(String number) {
+        if (!willow.train.hexie.api.display.PassengerCarriageNumber.valid(number) || carriageNumber.equals(number)) return;
+        carriageNumber = number;
+        setChanged();
+        sendData();
+    }
     private final String[] fields = {"", "", ""};
     private boolean descriptionLeft;
     private int markingSlot;
@@ -48,6 +61,21 @@ public final class CRH2PartEntity extends SmartBlockEntity implements MenuProvid
         descriptionLeft=left; setChanged(); sendData();
     }
     public void toggleDescription() { descriptionLeft=!descriptionLeft; setChanged(); sendData(); }
+    public boolean hasMarkings() {
+        return java.util.Arrays.stream(fields).anyMatch(value -> !value.isBlank())
+                || java.util.Arrays.stream(harmony).anyMatch(value -> value != 0)
+                || java.util.Arrays.stream(labels).anyMatch(value -> !value.text().isEmpty());
+    }
+    /** Remove user-applied content while keeping the panel and its passenger data source. */
+    public void clearMarkings() {
+        java.util.Arrays.fill(fields, "");
+        java.util.Arrays.fill(harmony, 0);
+        java.util.Arrays.fill(labels, PanelText.EMPTY);
+        descriptionLeft = false;
+        markingSlot = 0;
+        setChanged();
+        sendData();
+    }
     @Override protected void write(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
         super.write(tag, registries, clientPacket);
         writeAppearance(tag);
@@ -56,6 +84,7 @@ public final class CRH2PartEntity extends SmartBlockEntity implements MenuProvid
         super.writeSafe(tag,registries);writeAppearance(tag);
     }
     private void writeAppearance(CompoundTag tag) {
+        willow.train.hexie.api.display.PassengerCarriageNumber.write(tag, carriageNumber);
         for (int i=0;i<fields.length;i++) tag.putString("CarriageMarking"+i, fields[i]);
         tag.putBoolean("DescriptionLeft", descriptionLeft);
         tag.putInt("CarriageMarkingSlot", markingSlot);
@@ -65,6 +94,7 @@ public final class CRH2PartEntity extends SmartBlockEntity implements MenuProvid
     }
     @Override protected void read(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
         super.read(tag, registries, clientPacket);
+        carriageNumber = willow.train.hexie.api.display.PassengerCarriageNumber.read(tag);
         for (int i=0;i<fields.length;i++) fields[i]=GroundStationSignEntity.clean(tag.getString("CarriageMarking"+i));
         descriptionLeft=tag.getBoolean("DescriptionLeft");
         markingSlot=Math.clamp(tag.getInt("CarriageMarkingSlot"),0,1);

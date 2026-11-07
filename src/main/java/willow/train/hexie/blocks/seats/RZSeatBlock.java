@@ -25,6 +25,8 @@ import willow.train.hexie.blocks.emu.ConsoleSeatPlacement;
 
 public class RZSeatBlock extends SeatBlock implements IWrenchable {
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    /** Passenger eye height above the seat block's base, in blocks (metres). */
+    public static final double EYE_HEIGHT = 1.2;
     private final java.util.Map<Direction, VoxelShape> collisions = new java.util.EnumMap<>(Direction.class);
     private final VoxelShape northShape;
     private final VoxelShape southShape;

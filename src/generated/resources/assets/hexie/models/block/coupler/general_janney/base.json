@@ -1,0 +1,14 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "ambientocclusion": false,
+  "shade_quads": false,
+  "emissive_ambient": false,
+  "automatic_culling": false,
+  "flip_v": true,
+  "model": "hexie:models/block/coupler/general_janney/base.obj",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "particle": "hexie:block/coupler/general_janney/general_janney_coupler"
+  }
+}

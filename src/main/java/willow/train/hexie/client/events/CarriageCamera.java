@@ -9,7 +9,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderFrameEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
 import org.joml.Matrix3f;
@@ -98,8 +97,8 @@ public final class CarriageCamera {
         if (rotation != null) applyLook(rotation);
     }
 
-    @SubscribeEvent(priority = EventPriority.LOWEST)
-    public static void beforeTick(ClientTickEvent.Pre event) {
+    /** Match movement input to the body pose at this player's tick, regardless of entity order. */
+    public static void beforePlayerTick() {
         update(1);
     }
 

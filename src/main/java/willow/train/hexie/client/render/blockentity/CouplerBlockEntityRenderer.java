@@ -29,7 +29,8 @@ public final class CouplerBlockEntityRenderer implements BlockEntityRenderer<Cou
                                  MultiBufferSource buffers, int light, int overlay) {
         var adapter = entity.adapter();
         var state = entity.getBlockState();
-        if (entity.getLevel() instanceof net.minecraft.client.multiplayer.ClientLevel)
+        if (entity.getLevel() instanceof net.minecraft.client.multiplayer.ClientLevel
+                || entity.getLevel() instanceof com.simibubi.create.foundation.virtualWorld.VirtualRenderWorld)
             willow.train.hexie.client.render.SnapshotCouplerRenderer.renderWorldAttachedParts(
                     state, entity, partialTick, stack, buffers, light, overlay);
         if (adapter == null || !(state.getBlock() instanceof CouplerBlock hook)
@@ -39,29 +40,47 @@ public final class CouplerBlockEntityRenderer implements BlockEntityRenderer<Cou
         stack.mulPose(Axis.YP.rotationDegrees(yaw(hook.facing(state))));
         var complete = hook.complete();
         stack.translate(complete.x(), complete.y(), complete.z());
-        renderAdapter(adapter, !hook.model().equals(adapter.firstModel()), entity.getLevel(), stack, buffers, light, overlay);
+        renderAdapter(adapter, !hook.model().equals(adapter.firstModel()), entity.rescueKnuckleProgress(partialTick),
+                entity.getLevel(), stack, buffers, light, overlay);
         stack.popPose();
     }
 
     /** Origin is the original model's complete point, with local north pointing out of the hook. */
     public static void renderAdapter(CouplerAdapter adapter, boolean reversed, Level level, PoseStack stack,
                                      MultiBufferSource buffers, int light, int overlay) {
-        if (!adapter.layers().isEmpty()) {
-            stack.pushPose();
-            String model = reversed ? adapter.secondModel() : adapter.firstModel();
-            for (var layer : reversed ? adapter.layers().reversed() : adapter.layers()) {
-                renderAdapter(layer, !model.equals(layer.firstModel()), level, stack, buffers, light, overlay);
-                model = layer.otherModel(model);
-                stack.translate(0, 0, -layer.thickness());
-            }
-            stack.popPose();
-            return;
+        renderAdapter(adapter, reversed, 1, level, stack, buffers, light, overlay);
+    }
+
+    public static void renderAdapter(CouplerAdapter adapter, boolean reversed, float knuckleProgress,
+            Level level, PoseStack stack, MultiBufferSource buffers, int light, int overlay) {
+        stack.pushPose();
+        String model = reversed ? adapter.secondModel() : adapter.firstModel();
+        var layers = reversed ? adapter.items().reversed() : adapter.items();
+        for (int i = 0; i < layers.size(); i++) {
+            var layer = layers.get(i);
+            boolean layerReversed = !model.equals(layer.firstModel());
+            // Interior Janney ends are already engaged with their adjacent hook/adapter.
+            float progress = i == layers.size() - 1 && !layerReversed ? knuckleProgress : 0;
+            renderLayer(layer, layerReversed, progress, level, stack, buffers, light, overlay);
+            var offset = layer.offsetFrom(model);
+            stack.translate(offset.x(), offset.y(), offset.z());
+            model = layer.otherModel(model);
         }
+        stack.popPose();
+    }
+
+    private static void renderLayer(CouplerAdapter adapter, boolean reversed, float progress,
+            Level level, PoseStack stack, MultiBufferSource buffers, int light, int overlay) {
         var item = ADAPTER_ITEMS.computeIfAbsent(adapter.itemId(), id -> {
             var location = ResourceLocation.tryParse(id);
             return location == null ? ItemStack.EMPTY : new ItemStack(BuiltInRegistries.ITEM.get(location));
         });
         if (item.isEmpty()) return;
+        if (item.getItem() instanceof willow.train.hexie.item.RescueCouplerItem) {
+            willow.train.hexie.client.render.RescueCouplerRenderer.render(adapter, reversed, progress,
+                    stack, buffers, light, overlay);
+            return;
+        }
         stack.pushPose();
         // ItemRenderer centres [0,1]^3. Its z=1 face meets the old head and z=0 is the new head.
         stack.translate(0, 0, -adapter.thickness() / 2);
@@ -74,6 +93,8 @@ public final class CouplerBlockEntityRenderer implements BlockEntityRenderer<Cou
 
     @Override public AABB getRenderBoundingBox(CouplerBlockEntity entity) {
         var base = new AABB(entity.getBlockPos());
+        var modelBounds = willow.train.hexie.blocks.coupler.CouplerAdapterGeometry.bounds(entity.getBlockState(), entity);
+        if (modelBounds != null) base = base.minmax(modelBounds.move(entity.getBlockPos()));
         var adapter = entity.adapter();
         var state = entity.getBlockState();
         var attached = willow.train.hexie.client.render.SnapshotCouplerRenderer.attachedBounds(state);

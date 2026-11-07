@@ -27,7 +27,7 @@ import willow.train.hexie.item.FloorSwitcherItem;
 import willow.train.hexie.mixins.mixin.ContraptionWorldAccessor;
 
 /** Door placement uses the authored reference cube as the supporting neighbour. */
-public class CRH2DoorBlock extends CustomRenderedDoorBlock {
+public class CRH2DoorBlock extends CustomRenderedDoorBlock implements willow.train.hexie.interaction.NativeControlSurface {
     public enum Type {
         PASSENGER("crh2a_passenger_door", CRH2DoorBlock.SLIDE_TRAVEL),
         WIDE_PASSENGER("crh2a_passenger_door_wide", 16.1 / 16d - 0.1),
@@ -131,10 +131,19 @@ public class CRH2DoorBlock extends CustomRenderedDoorBlock {
     @Override public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         boolean upper = state.getValue(HALF)==DoubleBlockHalf.UPPER;
         BlockPos root = upper ? pos.below() : pos;
-        var entity = level.getBlockEntity(root);
-        float progress = entity instanceof CustomRenderedDoorEntity door
-                ? door.crh2InteractionProgress() : state.getValue(OPEN) ? 1 : 0;
-        boolean reverse = entity instanceof CustomRenderedDoorEntity door && door.hasReverseSlide();
+        float progress;
+        boolean reverse;
+        var contraption = level instanceof ContraptionWorldAccessor view ? view.hexie$getContraption() : null;
+        var info = contraption == null ? null : contraption.getBlocks().get(root);
+        if (info != null && info.state().is(this) && info.state().getValue(HALF) == DoubleBlockHalf.LOWER) {
+            progress = CRH2DoorMovement.fullyOpen(contraption, root, this) ? 1 : 0;
+            reverse = info.nbt() != null && info.nbt().getBoolean(CustomRenderedDoorEntity.REVERSE_SLIDE_TAG);
+        } else {
+            var entity = level.getBlockEntity(root);
+            progress = entity instanceof CustomRenderedDoorEntity door
+                    ? door.crh2InteractionProgress() : state.getValue(OPEN) ? 1 : 0;
+            reverse = entity instanceof CustomRenderedDoorEntity door && door.hasReverseSlide();
+        }
         int key = interactionKey(state, progress, reverse)*2+(upper ? 1 : 0);
         if (halfInteractionShapes[key]==null) {
             VoxelShape shape = interactionShape(state, progress, reverse);

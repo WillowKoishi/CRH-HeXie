@@ -1,6 +1,7 @@
 package willow.train.hexie.blocks.parts;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -9,18 +10,36 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import willow.train.hexie.blocks.emu.crh2a.CRH2PartBlock;
 import willow.train.hexie.item.FloorSwitcherItem;
 
-/** Two appearances share one item, occupied structure and placement geometry. */
+/** Centre-roof appearances share one item, occupied structure and placement geometry. */
 public class VariantPartBlock extends CRH2PartBlock {
-    public static final BooleanProperty ALTERNATE = BooleanProperty.create("alternate");
+    public enum Appearance implements StringRepresentable {
+        ANTENNA("false"),
+        ANTENNA_2("true"),
+        CABLE("cable"),
+        FLAT("flat");
+
+        private final String serializedName;
+
+        Appearance(String serializedName) {
+            this.serializedName = serializedName;
+        }
+
+        @Override public String getSerializedName() {
+            return serializedName;
+        }
+    }
+
+    // Keep the property name and the original two values readable in existing worlds and schematics.
+    public static final EnumProperty<Appearance> ALTERNATE = EnumProperty.create("alternate", Appearance.class);
 
     public VariantPartBlock(Properties properties, String model) {
         super(properties, model);
-        registerDefaultState(defaultBlockState().setValue(ALTERNATE, false));
+        registerDefaultState(defaultBlockState().setValue(ALTERNATE, Appearance.ANTENNA));
     }
 
     @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {

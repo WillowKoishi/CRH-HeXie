@@ -43,13 +43,15 @@ public final class SnapshotCarriageVisual extends ContraptionVisual<SnapshotCarr
 
     @Override
     protected void beginFrame(DynamicVisual.Context context) {
+        if (entity.getContraption() == null) return;
         super.beginFrame(context);
         updateCompatibleTransparency();
         animate(context.partialTick());
     }
 
     private void updateCompatibleTransparency() {
-        if (!compatibleTransparency || compatibleStructureVersion == lastStructureVersion) return;
+        if (!compatibleTransparency || entity.getContraption() == null || structure == null
+                || compatibleStructureVersion == lastStructureVersion) return;
         var model = CompatibleCarriageVisual.createCompatibleStructure(entity.getContraption().getOrCreateClientContraptionLazy());
         if (model != null) {
             embedding.instancerProvider().instancer(InstanceTypes.TRANSFORMED, model).stealInstance(structure);
@@ -83,8 +85,10 @@ public final class SnapshotCarriageVisual extends ContraptionVisual<SnapshotCarr
             // BogeyStyle.render supplies this translation in the non-instanced path.
             pose.translate(0, -1.5 - 1 / 128f, 0);
             entry.visual.updateLight(SnapshotCarriageRenderer.light(entity, frame, partialTick));
-            entry.visual.update(SnapshotCarriageRenderer.data(entity, be, frame),
-                    (float) (frame.wheelAngle() % 360), pose);
+            try (var suspension = SnapshotCarriageRenderer.suspensionPose(be, frame)) {
+                entry.visual.update(SnapshotCarriageRenderer.data(entity, be, frame),
+                        (float) (frame.wheelAngle() % 360), pose);
+            }
         }
         while (bogeys.size() > animation.frames().size()) {
             var entry = bogeys.removeLast();

@@ -6,23 +6,50 @@ import java.util.List;
 import java.util.Map;
 import net.minecraft.core.Direction;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.StringRepresentable;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import willow.train.hexie.blocks.coupler.AbstractCouplerBlock;
 import willow.train.hexie.blocks.emu.head.HeadGeometry;
+import willow.train.hexie.item.FloorSwitcherItem;
 import willow.train.hexie.vehicle.runtime.CouplingEndpoint.Point;
 import willow.train.hexie.vehicle.runtime.CouplingEndpoint.Axis;
 
 /** End wall, gangways and coupler share only the central floor installation block. */
 public final class CRH2EndFaceBlock extends AbstractCouplerBlock {
+    public enum Type implements StringRepresentable {
+        ORIGINAL("original"), TILTED("tilted"), HORIZONTAL_WIRED("horizontal_wired"), HORIZONTAL_PLAIN("horizontal_plain");
+
+        private final String name;
+        Type(String name) { this.name = name; }
+        @Override public String getSerializedName() { return name; }
+        public boolean isHorizontal() { return this == HORIZONTAL_WIRED || this == HORIZONTAL_PLAIN; }
+        public boolean blackCableCompatible(Type other) {
+            return this != ORIGINAL && other != null && other != ORIGINAL && isHorizontal() == other.isHorizontal();
+        }
+        public Component displayName() {
+            return Component.translatable("block.hexie.crh2a_endface.variant." + name);
+        }
+    }
+
+    public static final EnumProperty<Type> VARIANT = EnumProperty.create("variant", Type.class);
     public static final MapCodec<CRH2EndFaceBlock> CODEC = simpleCodec(CRH2EndFaceBlock::new);
     public static final Axis AXIS = new Axis(0, -.08125);
     public static final double BELLOWS_BASE_Z = -1 / 16d;
@@ -32,7 +59,42 @@ public final class CRH2EndFaceBlock extends AbstractCouplerBlock {
     private static final VoxelShape FLOOR = Shapes.block();
     private static final Map<Direction, List<AABB>> PLAYER_BOXES = playerBoxes();
 
-    public CRH2EndFaceBlock(Properties properties) { super(properties); }
+    public CRH2EndFaceBlock(Properties properties) {
+        super(properties);
+        // NBT states without the new property decode from this default as well.
+        registerDefaultState(defaultBlockState().setValue(VARIANT, Type.ORIGINAL));
+    }
+    @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        super.createBlockStateDefinition(builder);
+        builder.add(VARIANT);
+    }
+    public static Type type(BlockState state) {
+        return state.getOptionalValue(VARIANT).orElse(Type.ORIGINAL);
+    }
+    public static boolean blackCableCompatible(BlockState first, BlockState second) {
+        return first.getBlock() instanceof CRH2EndFaceBlock && second.getBlock() instanceof CRH2EndFaceBlock
+                && type(first).blackCableCompatible(type(second));
+    }
+    public static void showVariant(Player player, BlockState state) {
+        if (!player.level().isClientSide)
+            player.displayClientMessage(Component.translatable("block.hexie.crh2a_endface.variant.changed",
+                    type(state).displayName()), true);
+    }
+
+    @Override public ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
+            BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        if (!(stack.getItem() instanceof FloorSwitcherItem) || player.isShiftKeyDown())
+            return super.useItemOn(stack, state, level, pos, player, hand, hit);
+        if (player.isSpectator() || !player.mayBuild() || !level.mayInteract(player, pos)
+                || !player.mayUseItemAt(pos, hit.getDirection(), stack)) return ItemInteractionResult.FAIL;
+        BlockState next = state.cycle(VARIANT);
+        // A same-block state change retains the coupler block entity and its installed adapters.
+        if (!level.isClientSide) {
+            if (!level.setBlock(pos, next, Block.UPDATE_ALL)) return ItemInteractionResult.FAIL;
+            showVariant(player, next);
+        }
+        return ItemInteractionResult.sidedSuccess(level.isClientSide);
+    }
     @Override protected MapCodec<? extends HorizontalDirectionalBlock> codec() { return CODEC; }
     @Override protected VoxelShape couplerShape(BlockState state) { return FLOOR; }
     @Override public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
@@ -67,11 +129,12 @@ public final class CRH2EndFaceBlock extends AbstractCouplerBlock {
 
     public static List<AABB> playerBoxes(Direction facing) { return PLAYER_BOXES.get(facing); }
     public static AABB bounds(Direction facing) {
-        return HeadGeometry.rotate(new AABB(-19 / 16d, -.0875, -.5, 35 / 16d, 3.5, 2), facing);
+        // Union of the three static end-face variants; installation and collision stay one floor cell.
+        return HeadGeometry.rotate(new AABB(-19 / 16d, -.0875, -.5, 35 / 16d, 3.9125, 2.9625), facing);
     }
 
     private static Map<Direction, List<AABB>> playerBoxes() {
-        // Export coordinates: x=.5-X/16, y=1+Y/16, z=(200-Z)/16.
+        // Export coordinates: x=.5-X/16, y=1+Y/16, z=(8-Z)/16.
         // Both the end wall and inner gangway leave the requested [0,1] x [1,3] opening.
         List<AABB> north = List.of(
                 new AABB(-19 / 16d, 13 / 16d, -1 / 16d, 0, 3.5, 0),

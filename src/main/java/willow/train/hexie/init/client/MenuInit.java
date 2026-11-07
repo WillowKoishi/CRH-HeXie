@@ -16,6 +16,8 @@ public class MenuInit {
 
     public static final DeferredRegister<MenuType<?>> MENUS =
             DeferredRegister.create(Registries.MENU, Main.MOD_ID);
+    public static final DeferredHolder<MenuType<?>, MenuType<CarriageNumberMenu>> CARRIAGE_NUMBER_MENU =
+            registerMenuType(CarriageNumberMenu::new, "carriage_number");
     public static final DeferredHolder<MenuType<?>, MenuType<PanelTextMenu>> PANEL_TEXT_MENU =
             registerMenuType(PanelTextMenu::new, "panel_text");
     public static final DeferredHolder<MenuType<?>, MenuType<CarriageMarkingMenu>> CARRIAGE_MARKING_MENU =

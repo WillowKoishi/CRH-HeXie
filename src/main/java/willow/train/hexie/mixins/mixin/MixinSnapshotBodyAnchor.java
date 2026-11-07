@@ -1,12 +1,18 @@
 package willow.train.hexie.mixins.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.sugar.Local;
 import com.simibubi.create.content.trains.entity.Carriage.DimensionalCarriageEntity;
+import com.simibubi.create.content.trains.entity.CarriageContraptionEntity;
 import net.createmod.catnip.data.Couple;
 import net.createmod.catnip.math.VecHelper;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -15,6 +21,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import willow.train.hexie.compat.create.SnapshotBodyAnchor;
+import willow.train.hexie.compat.create.SnapshotCarriageEntity;
 
 @Mixin(value = DimensionalCarriageEntity.class, remap = false)
 public abstract class MixinSnapshotBodyAnchor implements SnapshotBodyAnchor {
@@ -38,6 +45,14 @@ public abstract class MixinSnapshotBodyAnchor implements SnapshotBodyAnchor {
             target = "Lcom/simibubi/create/content/trains/entity/Carriage$DimensionalCarriageEntity;rotationAnchors:Lnet/createmod/catnip/data/Couple;"))
     private Couple<Vec3> hexie$orientBody(Couple<Vec3> railAnchors) {
         return hexie$bodyAnchors == null ? railAnchors : hexie$bodyAnchors;
+    }
+
+    @WrapOperation(method = "alignEntity", at = @At(value = "INVOKE",
+            target = "Lcom/simibubi/create/content/trains/entity/CarriageEntityHandler;isActiveChunk(Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;)Z"))
+    private boolean hexie$alignIndependentBody(Level level, BlockPos pos, Operation<Boolean> original,
+            @Local(argsOnly = true) CarriageContraptionEntity entity) {
+        // The solved body and its passengers follow the logical train across chunk boundaries.
+        return entity instanceof SnapshotCarriageEntity || original.call(level, pos);
     }
 
     @Inject(method = "write", at = @At("RETURN"))

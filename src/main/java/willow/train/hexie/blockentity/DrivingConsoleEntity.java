@@ -5,11 +5,11 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
-import willow.train.hexie.api.cab.CabControl;
+import willow.train.hexie.api.interaction.BlockControl;
 import willow.train.hexie.api.cab.CabControlHost;
-import willow.train.hexie.api.cab.CabSurfaceGeometry;
+import willow.train.hexie.api.interaction.ControlSurface;
 import willow.train.hexie.api.cab.CabSurfaceInstance;
-import willow.train.hexie.api.cab.CabSurfaceState;
+import willow.train.hexie.api.interaction.ControlState;
 import willow.train.hexie.api.cab.CabDisplaySource;
 import willow.train.hexie.api.cab.CabDisplayHost;
 import willow.train.hexie.api.cab.CabDisplayState;
@@ -27,7 +27,7 @@ import java.util.function.DoubleSupplier;
 
 /** Live display sources and stationary handle positions. The vehicle owns a moving console's controls. */
 public final class DrivingConsoleEntity extends BlockEntity implements CabDisplayHost, willow.train.hexie.api.cab.CabControlsHost,
-        willow.train.hexie.api.cab.CabTimetableHost, CabSurfaceInstance, CabSurfaceGeometry.AnimationSource {
+        willow.train.hexie.api.cab.CabTimetableHost, CabSurfaceInstance, ControlSurface.AnimationSource {
     private net.minecraft.nbt.CompoundTag pendingTimetable = new net.minecraft.nbt.CompoundTag();
     @Override public net.minecraft.nbt.CompoundTag timetable() { return pendingTimetable.copy(); }
     /** Opaque backend data; the console does not interpret Create's schedule format. */
@@ -49,7 +49,7 @@ public final class DrivingConsoleEntity extends BlockEntity implements CabDispla
 
     /** Animation progress belongs to this desk, including its virtual block entity on a carriage. */
     // Carriage visuals and the player's hit test may sample the same moving handle on different threads.
-    @Override public synchronized double visualTravel(CabControl control, double target, double now) {
+    @Override public synchronized double visualTravel(BlockControl control, double target, double now) {
         var motion = animations.get(control.id());
         double current = motion == null || now < motion.time() ? target : motion.at(now);
         if (motion == null || motion.target() != target || now < motion.time())
@@ -61,11 +61,11 @@ public final class DrivingConsoleEntity extends BlockEntity implements CabDispla
         controlsSource = Objects.requireNonNull(source); vehicleSource = true;
     }
     @Override public willow.train.hexie.vehicle.control.CabModule.State controls() { return controlsSource.get(); }
-    @Override public CabSurfaceState surfaceState() {
+    @Override public ControlState surfaceState() {
         var block = getBlockState();
-        return block.getBlock() instanceof CabControlHost host ? host.surfaceState(block, controls()) : CabSurfaceState.EMPTY;
+        return block.getBlock() instanceof CabControlHost host ? host.surfaceState(block, controls()) : ControlState.EMPTY;
     }
-    @Override public void operateControl(Player player, CabControl control, int value) {
+    @Override public void operateControl(Player player, BlockControl control, int value) {
         operateControl(control.id(), value);
     }
     public void operateControl(String controlId, int value) {
@@ -137,7 +137,9 @@ public final class DrivingConsoleEntity extends BlockEntity implements CabDispla
                     ? benchControls.updateSimple(false, 1, 0, null, 0,
                             willow.train.hexie.vehicle.control.StationStopControl.State.RUNNING)
                     : benchControls.update(benchControls.mode(), 1, 0, null, 0);
-            double traction = desk.trainControl(block).tractionOutput(command.throttle(), command.brake());
+            var converter = desk.trainControl(block);
+            command = benchControls.convertOutput(converter, command, 1, 0);
+            double traction = state.enabled() ? converter.tractionOutput(command.throttle(), command.brake()) : 0;
             return new CabDisplayState(0, java.util.Map.of(), new willow.train.hexie.api.cab.DmiState(
                     state.automatic() ? willow.train.hexie.api.cab.DmiState.Mode.AUTOMATIC : willow.train.hexie.api.cab.DmiState.Mode.MANUAL,
                     null, willow.train.hexie.vehicle.control.TrainControl.LINE_SPEED_LIMIT_KMH, 0,

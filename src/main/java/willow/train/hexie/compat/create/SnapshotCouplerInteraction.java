@@ -33,13 +33,17 @@ final class SnapshotCouplerInteraction {
             return false;
         // Keep the existing wrench relocation available on this block too.
         if (player.getItemInHand(hand).is(net.neoforged.neoforge.common.Tags.Items.TOOLS_WRENCH)) return false;
+        // This wrench changes only the end-face appearance through its moving interaction behaviour.
+        if (info.state().getBlock() instanceof willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock
+                && player.getItemInHand(hand).getItem() instanceof willow.train.hexie.item.FloorSwitcherItem) return false;
         if (entity.level().isClientSide) return true;
         if (willow.train.hexie.blocks.coupler.CouplerInteraction.hasGeometry(info.state())) {
             var hit = SnapshotCouplerModelInteraction.classify(entity, player, position);
             // The owner cell is not an interaction target: only a visible model surface is.
             if (hit == null) return true;
             if (!hit.head()) {
-                SnapshotCouplerModelInteraction.toggle(entity, info);
+                if (CouplerBlock.of(info.state()).geometry().hasCovers())
+                    SnapshotCouplerModelInteraction.toggle(entity, info);
                 return true;
             }
         }

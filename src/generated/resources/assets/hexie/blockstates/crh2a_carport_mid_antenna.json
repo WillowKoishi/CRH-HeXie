@@ -8,11 +8,27 @@
       "model": "hexie:block/crh2a/parts/crh2a_carport_mid_antenna2",
       "y": 0
     },
+    "alternate=cable,facing=north,part=0": {
+      "model": "hexie:block/crh2a/parts/crh2a_carport_mid_antenna_cable",
+      "y": 0
+    },
+    "alternate=flat,facing=north,part=0": {
+      "model": "hexie:block/crh2a/parts/crh2a_carport_mid_flat",
+      "y": 0
+    },
     "alternate=false,facing=north,part=1": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 0
     },
     "alternate=true,facing=north,part=1": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
+    "alternate=cable,facing=north,part=1": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
+    "alternate=flat,facing=north,part=1": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 0
     },
@@ -24,11 +40,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 0
     },
+    "alternate=cable,facing=north,part=2": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
+    "alternate=flat,facing=north,part=2": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
     "alternate=false,facing=north,part=3": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 0
     },
     "alternate=true,facing=north,part=3": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
+    "alternate=cable,facing=north,part=3": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
+    "alternate=flat,facing=north,part=3": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 0
     },
@@ -40,11 +72,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 0
     },
+    "alternate=cable,facing=north,part=4": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
+    "alternate=flat,facing=north,part=4": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
     "alternate=false,facing=north,part=5": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 0
     },
     "alternate=true,facing=north,part=5": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
+    "alternate=cable,facing=north,part=5": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
+    "alternate=flat,facing=north,part=5": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 0
     },
@@ -56,11 +104,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 0
     },
+    "alternate=cable,facing=north,part=6": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
+    "alternate=flat,facing=north,part=6": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
     "alternate=false,facing=north,part=7": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 0
     },
     "alternate=true,facing=north,part=7": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
+    "alternate=cable,facing=north,part=7": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
+    "alternate=flat,facing=north,part=7": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 0
     },
@@ -72,11 +136,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 0
     },
+    "alternate=cable,facing=north,part=8": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
+    "alternate=flat,facing=north,part=8": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
     "alternate=false,facing=north,part=9": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 0
     },
     "alternate=true,facing=north,part=9": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
+    "alternate=cable,facing=north,part=9": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
+    "alternate=flat,facing=north,part=9": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 0
     },
@@ -88,11 +168,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 0
     },
+    "alternate=cable,facing=north,part=10": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
+    "alternate=flat,facing=north,part=10": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
     "alternate=false,facing=north,part=11": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 0
     },
     "alternate=true,facing=north,part=11": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
+    "alternate=cable,facing=north,part=11": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
+    "alternate=flat,facing=north,part=11": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 0
     },
@@ -104,11 +200,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 0
     },
+    "alternate=cable,facing=north,part=12": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
+    "alternate=flat,facing=north,part=12": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
     "alternate=false,facing=north,part=13": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 0
     },
     "alternate=true,facing=north,part=13": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
+    "alternate=cable,facing=north,part=13": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
+    "alternate=flat,facing=north,part=13": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 0
     },
@@ -120,11 +232,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 0
     },
+    "alternate=cable,facing=north,part=14": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
+    "alternate=flat,facing=north,part=14": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
     "alternate=false,facing=north,part=15": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 0
     },
     "alternate=true,facing=north,part=15": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
+    "alternate=cable,facing=north,part=15": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 0
+    },
+    "alternate=flat,facing=north,part=15": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 0
     },
@@ -136,11 +264,27 @@
       "model": "hexie:block/crh2a/parts/crh2a_carport_mid_antenna2",
       "y": 90
     },
+    "alternate=cable,facing=east,part=0": {
+      "model": "hexie:block/crh2a/parts/crh2a_carport_mid_antenna_cable",
+      "y": 90
+    },
+    "alternate=flat,facing=east,part=0": {
+      "model": "hexie:block/crh2a/parts/crh2a_carport_mid_flat",
+      "y": 90
+    },
     "alternate=false,facing=east,part=1": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 90
     },
     "alternate=true,facing=east,part=1": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
+    "alternate=cable,facing=east,part=1": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
+    "alternate=flat,facing=east,part=1": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 90
     },
@@ -152,11 +296,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 90
     },
+    "alternate=cable,facing=east,part=2": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
+    "alternate=flat,facing=east,part=2": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
     "alternate=false,facing=east,part=3": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 90
     },
     "alternate=true,facing=east,part=3": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
+    "alternate=cable,facing=east,part=3": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
+    "alternate=flat,facing=east,part=3": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 90
     },
@@ -168,11 +328,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 90
     },
+    "alternate=cable,facing=east,part=4": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
+    "alternate=flat,facing=east,part=4": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
     "alternate=false,facing=east,part=5": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 90
     },
     "alternate=true,facing=east,part=5": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
+    "alternate=cable,facing=east,part=5": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
+    "alternate=flat,facing=east,part=5": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 90
     },
@@ -184,11 +360,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 90
     },
+    "alternate=cable,facing=east,part=6": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
+    "alternate=flat,facing=east,part=6": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
     "alternate=false,facing=east,part=7": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 90
     },
     "alternate=true,facing=east,part=7": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
+    "alternate=cable,facing=east,part=7": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
+    "alternate=flat,facing=east,part=7": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 90
     },
@@ -200,11 +392,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 90
     },
+    "alternate=cable,facing=east,part=8": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
+    "alternate=flat,facing=east,part=8": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
     "alternate=false,facing=east,part=9": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 90
     },
     "alternate=true,facing=east,part=9": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
+    "alternate=cable,facing=east,part=9": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
+    "alternate=flat,facing=east,part=9": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 90
     },
@@ -216,11 +424,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 90
     },
+    "alternate=cable,facing=east,part=10": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
+    "alternate=flat,facing=east,part=10": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
     "alternate=false,facing=east,part=11": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 90
     },
     "alternate=true,facing=east,part=11": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
+    "alternate=cable,facing=east,part=11": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
+    "alternate=flat,facing=east,part=11": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 90
     },
@@ -232,11 +456,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 90
     },
+    "alternate=cable,facing=east,part=12": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
+    "alternate=flat,facing=east,part=12": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
     "alternate=false,facing=east,part=13": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 90
     },
     "alternate=true,facing=east,part=13": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
+    "alternate=cable,facing=east,part=13": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
+    "alternate=flat,facing=east,part=13": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 90
     },
@@ -248,11 +488,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 90
     },
+    "alternate=cable,facing=east,part=14": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
+    "alternate=flat,facing=east,part=14": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
     "alternate=false,facing=east,part=15": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 90
     },
     "alternate=true,facing=east,part=15": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
+    "alternate=cable,facing=east,part=15": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 90
+    },
+    "alternate=flat,facing=east,part=15": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 90
     },
@@ -264,11 +520,27 @@
       "model": "hexie:block/crh2a/parts/crh2a_carport_mid_antenna2",
       "y": 180
     },
+    "alternate=cable,facing=south,part=0": {
+      "model": "hexie:block/crh2a/parts/crh2a_carport_mid_antenna_cable",
+      "y": 180
+    },
+    "alternate=flat,facing=south,part=0": {
+      "model": "hexie:block/crh2a/parts/crh2a_carport_mid_flat",
+      "y": 180
+    },
     "alternate=false,facing=south,part=1": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 180
     },
     "alternate=true,facing=south,part=1": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
+    "alternate=cable,facing=south,part=1": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
+    "alternate=flat,facing=south,part=1": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 180
     },
@@ -280,11 +552,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 180
     },
+    "alternate=cable,facing=south,part=2": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
+    "alternate=flat,facing=south,part=2": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
     "alternate=false,facing=south,part=3": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 180
     },
     "alternate=true,facing=south,part=3": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
+    "alternate=cable,facing=south,part=3": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
+    "alternate=flat,facing=south,part=3": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 180
     },
@@ -296,11 +584,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 180
     },
+    "alternate=cable,facing=south,part=4": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
+    "alternate=flat,facing=south,part=4": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
     "alternate=false,facing=south,part=5": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 180
     },
     "alternate=true,facing=south,part=5": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
+    "alternate=cable,facing=south,part=5": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
+    "alternate=flat,facing=south,part=5": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 180
     },
@@ -312,11 +616,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 180
     },
+    "alternate=cable,facing=south,part=6": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
+    "alternate=flat,facing=south,part=6": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
     "alternate=false,facing=south,part=7": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 180
     },
     "alternate=true,facing=south,part=7": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
+    "alternate=cable,facing=south,part=7": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
+    "alternate=flat,facing=south,part=7": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 180
     },
@@ -328,11 +648,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 180
     },
+    "alternate=cable,facing=south,part=8": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
+    "alternate=flat,facing=south,part=8": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
     "alternate=false,facing=south,part=9": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 180
     },
     "alternate=true,facing=south,part=9": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
+    "alternate=cable,facing=south,part=9": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
+    "alternate=flat,facing=south,part=9": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 180
     },
@@ -344,11 +680,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 180
     },
+    "alternate=cable,facing=south,part=10": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
+    "alternate=flat,facing=south,part=10": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
     "alternate=false,facing=south,part=11": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 180
     },
     "alternate=true,facing=south,part=11": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
+    "alternate=cable,facing=south,part=11": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
+    "alternate=flat,facing=south,part=11": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 180
     },
@@ -360,11 +712,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 180
     },
+    "alternate=cable,facing=south,part=12": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
+    "alternate=flat,facing=south,part=12": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
     "alternate=false,facing=south,part=13": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 180
     },
     "alternate=true,facing=south,part=13": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
+    "alternate=cable,facing=south,part=13": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
+    "alternate=flat,facing=south,part=13": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 180
     },
@@ -376,11 +744,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 180
     },
+    "alternate=cable,facing=south,part=14": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
+    "alternate=flat,facing=south,part=14": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
     "alternate=false,facing=south,part=15": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 180
     },
     "alternate=true,facing=south,part=15": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
+    "alternate=cable,facing=south,part=15": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 180
+    },
+    "alternate=flat,facing=south,part=15": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 180
     },
@@ -392,11 +776,27 @@
       "model": "hexie:block/crh2a/parts/crh2a_carport_mid_antenna2",
       "y": 270
     },
+    "alternate=cable,facing=west,part=0": {
+      "model": "hexie:block/crh2a/parts/crh2a_carport_mid_antenna_cable",
+      "y": 270
+    },
+    "alternate=flat,facing=west,part=0": {
+      "model": "hexie:block/crh2a/parts/crh2a_carport_mid_flat",
+      "y": 270
+    },
     "alternate=false,facing=west,part=1": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 270
     },
     "alternate=true,facing=west,part=1": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
+    "alternate=cable,facing=west,part=1": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
+    "alternate=flat,facing=west,part=1": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 270
     },
@@ -408,11 +808,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 270
     },
+    "alternate=cable,facing=west,part=2": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
+    "alternate=flat,facing=west,part=2": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
     "alternate=false,facing=west,part=3": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 270
     },
     "alternate=true,facing=west,part=3": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
+    "alternate=cable,facing=west,part=3": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
+    "alternate=flat,facing=west,part=3": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 270
     },
@@ -424,11 +840,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 270
     },
+    "alternate=cable,facing=west,part=4": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
+    "alternate=flat,facing=west,part=4": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
     "alternate=false,facing=west,part=5": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 270
     },
     "alternate=true,facing=west,part=5": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
+    "alternate=cable,facing=west,part=5": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
+    "alternate=flat,facing=west,part=5": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 270
     },
@@ -440,11 +872,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 270
     },
+    "alternate=cable,facing=west,part=6": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
+    "alternate=flat,facing=west,part=6": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
     "alternate=false,facing=west,part=7": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 270
     },
     "alternate=true,facing=west,part=7": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
+    "alternate=cable,facing=west,part=7": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
+    "alternate=flat,facing=west,part=7": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 270
     },
@@ -456,11 +904,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 270
     },
+    "alternate=cable,facing=west,part=8": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
+    "alternate=flat,facing=west,part=8": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
     "alternate=false,facing=west,part=9": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 270
     },
     "alternate=true,facing=west,part=9": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
+    "alternate=cable,facing=west,part=9": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
+    "alternate=flat,facing=west,part=9": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 270
     },
@@ -472,11 +936,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 270
     },
+    "alternate=cable,facing=west,part=10": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
+    "alternate=flat,facing=west,part=10": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
     "alternate=false,facing=west,part=11": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 270
     },
     "alternate=true,facing=west,part=11": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
+    "alternate=cable,facing=west,part=11": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
+    "alternate=flat,facing=west,part=11": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 270
     },
@@ -488,11 +968,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 270
     },
+    "alternate=cable,facing=west,part=12": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
+    "alternate=flat,facing=west,part=12": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
     "alternate=false,facing=west,part=13": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 270
     },
     "alternate=true,facing=west,part=13": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
+    "alternate=cable,facing=west,part=13": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
+    "alternate=flat,facing=west,part=13": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 270
     },
@@ -504,11 +1000,27 @@
       "model": "hexie:block/crh2a/parts/empty",
       "y": 270
     },
+    "alternate=cable,facing=west,part=14": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
+    "alternate=flat,facing=west,part=14": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
     "alternate=false,facing=west,part=15": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 270
     },
     "alternate=true,facing=west,part=15": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
+    "alternate=cable,facing=west,part=15": {
+      "model": "hexie:block/crh2a/parts/empty",
+      "y": 270
+    },
+    "alternate=flat,facing=west,part=15": {
       "model": "hexie:block/crh2a/parts/empty",
       "y": 270
     }

@@ -185,6 +185,17 @@ public final class CarriageBrowserClient {
                 && !(screen instanceof CarriagePaletteScreen) && previewMode(creative);
     }
 
+    public static boolean hiddenSlot(Screen screen, net.minecraft.world.inventory.Slot slot) {
+        if (slot == null || slot.index >= 45 || !active(screen)) return false;
+        var view = VIEWS.get(screen);
+        return view == null || !view.isSchematicSlot(slot);
+    }
+
+    public static void restoreSlots(CreativeModeInventoryScreen screen) {
+        var view = VIEWS.get(screen);
+        if (view != null) view.restoreSchematicSlot();
+    }
+
     public static void render(CreativeModeInventoryScreen screen, GuiGraphics gui, int x, int y) {
         if (!active(screen)) { removed(screen); return; }
         var previous = VIEWS.get(screen);

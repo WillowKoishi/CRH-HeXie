@@ -5,7 +5,8 @@ import net.minecraft.world.level.block.state.*;
 import net.minecraft.world.level.block.state.properties.*;
 
 /** Uses the same handed placement and mirror rules as existing carriage panels. */
-public final class CRH2PanelBlock extends CRH2PartBlock implements EntityBlock, willow.train.hexie.blocks.parts.VehicleMarkingSurface {
+public final class CRH2PanelBlock extends CRH2PartBlock implements EntityBlock, willow.train.hexie.blocks.parts.VehicleMarkingSurface,
+        willow.train.hexie.blocks.signs.PassengerDisplayPanel {
     @Override public net.minecraft.core.BlockPos markingRoot(net.minecraft.world.level.BlockGetter level,net.minecraft.core.BlockPos pos,BlockState state) { return root(pos,state); }
     @Override public net.minecraft.world.phys.AABB markingBounds(BlockState state) { return placementBounds(state.setValue(FACING,net.minecraft.core.Direction.NORTH)); }
     @Override public net.minecraft.world.phys.AABB markingRenderBounds(BlockState state) { return placementBounds(state); }

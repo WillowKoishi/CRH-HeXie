@@ -1,19 +1,16 @@
 package willow.train.hexie.item.editable_panels;
 
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
-import net.minecraft.world.level.block.state.BlockState;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import willow.train.hexie.blocks.carriage.OrdinaryTrainPanelBlock;
-import willow.train.hexie.blockentity.CarriageTypeSignEntity;
+import willow.train.hexie.blocks.signs.PanelAttachmentRemoval;
 
 import java.util.List;
 
@@ -33,15 +30,7 @@ public class Brush extends Item {
     }
 
     @Override
-    public InteractionResult useOn(UseOnContext pContext) {
-        if (pContext.getPlayer() == null) return InteractionResult.PASS;
-        BlockState pBlockState = pContext.getPlayer().getBlockStateOn();
-        if (pContext.getLevel().isClientSide) return InteractionResult.SUCCESS;
-        if (pBlockState.getBlock().getClass().equals(OrdinaryTrainPanelBlock.class)) {
-            ((ServerPlayer) pContext.getPlayer()).openMenu(
-                    (CarriageTypeSignEntity)
-                            pContext.getLevel().getBlockEntity(pContext.getClickedPos()));
-        }
-        return InteractionResult.CONSUME;
+    public InteractionResult useOn(UseOnContext context) {
+        return PanelAttachmentRemoval.remove(context);
     }
 }

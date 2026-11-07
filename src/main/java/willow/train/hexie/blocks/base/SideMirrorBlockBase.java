@@ -86,7 +86,8 @@ public class SideMirrorBlockBase extends HorizontalBlockBase {
     public BlockState mirror(BlockState pState, Mirror pMirror) {
         return pMirror == Mirror.NONE
                 ? pState
-                : pState.rotate(pMirror.getRotation(pState.getValue(FACING))).cycle(HINGE);
+                : willow.train.hexie.blocks.signs.PanelDisplayColumn.mirror(
+                        pState.rotate(pMirror.getRotation(pState.getValue(FACING))).cycle(HINGE), pMirror);
     }
 
 }

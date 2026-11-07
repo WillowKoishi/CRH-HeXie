@@ -59,6 +59,27 @@ public final class SnapshotBogeyAnimation {
         interpolationSteps = 0;
     }
 
+    /** Tick endpoints sampled from the same server timeline as the parent body. */
+    public void playback(List<Frame> before, List<Frame> now) {
+        boolean sameSupports = before.size() == now.size();
+        for (int i = 0; sameSupports && i < before.size(); i++)
+            sameSupports = before.get(i).position().equals(now.get(i).position());
+        previous = sameSupports ? before : now;
+        current = target = now;
+        interpolationSteps = 0;
+    }
+
+    public static List<Frame> interpolate(List<Frame> from, List<Frame> to, float fraction) {
+        if (fraction <= 0) return from;
+        if (fraction >= 1 || from.size() != to.size()) return to;
+        var result = new ArrayList<Frame>(from.size());
+        for (int i = 0; i < from.size(); i++) {
+            if (!from.get(i).position().equals(to.get(i).position())) return to;
+            result.add(from.get(i).interpolate(to.get(i), fraction));
+        }
+        return List.copyOf(result);
+    }
+
     public Frame frame(int index, float partialTick) {
         return previous.size() == current.size()
                 ? previous.get(index).interpolate(current.get(index), partialTick) : current.get(index);
@@ -182,6 +203,15 @@ public final class SnapshotBogeyAnimation {
     }
 
     public void read(CompoundTag root, int steps) {
+        target = decode(root);
+        boolean sameSupports = current.size() == target.size();
+        for (int i = 0; sameSupports && i < current.size(); i++)
+            sameSupports = current.get(i).position.equals(target.get(i).position);
+        if (!sameSupports || steps <= 0) previous = current = target;
+        interpolationSteps = Math.max(1, steps);
+    }
+
+    public static List<Frame> decode(CompoundTag root) {
         var decoded = new ArrayList<Frame>();
         for (Tag value : root.getList("Supports", Tag.TAG_COMPOUND)) {
             var tag = (CompoundTag) value;
@@ -192,12 +222,7 @@ public final class SnapshotBogeyAnimation {
             decoded.add(new Frame(BlockPos.of(tag.getLong("Pos")), f[0], f[1], f[2],
                     f[3], f[4], f[5], f[6], tag.getDouble("Wheel"), f[7]));
         }
-        target = List.copyOf(decoded);
-        boolean sameSupports = current.size() == target.size();
-        for (int i = 0; sameSupports && i < current.size(); i++)
-            sameSupports = current.get(i).position.equals(target.get(i).position);
-        if (!sameSupports || steps <= 0) previous = current = target;
-        interpolationSteps = Math.max(1, steps);
+        return List.copyOf(decoded);
     }
 
     public void tick() {

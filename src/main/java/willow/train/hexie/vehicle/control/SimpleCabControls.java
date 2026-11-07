@@ -8,7 +8,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 import willow.train.hexie.api.cab.CabControlHost;
 import willow.train.hexie.api.cab.CabNeutralPositions;
-import willow.train.hexie.api.cab.CabSurfaceState;
+import willow.train.hexie.api.interaction.ControlState;
 import willow.train.hexie.api.traincontrol.CabTrainRequest;
 
 /** Converts a console's declared directional actions, independently of its physical key bindings. */
@@ -18,7 +18,7 @@ public final class SimpleCabControls {
     private SimpleCabControls() {}
 
     public record ShuntingReadiness(boolean powerAtZero, boolean reverserCutOut) {
-        private static ShuntingReadiness read(CabNeutralPositions positions, CabSurfaceState surface, CabTrainRequest request) {
+        private static ShuntingReadiness read(CabNeutralPositions positions, ControlState surface, CabTrainRequest request) {
             var power = positions.powerZero();
             var reverser = positions.reverserCutOut();
             return new ShuntingReadiness(power == null ? request.power() == 0 : power.matches(surface),
@@ -80,7 +80,7 @@ public final class SimpleCabControls {
     public static CabModule.State apply(CabModule.State previous, boolean toggleSimple, int mask, double speed,
                                         boolean updateApproach) {
         return apply(previous, toggleSimple, mask, speed, updateApproach,
-                () -> ShuntingReadiness.read(CabNeutralPositions.FROM_REQUEST, CabSurfaceState.EMPTY, previous.request()), ignored -> {});
+                () -> ShuntingReadiness.read(CabNeutralPositions.FROM_REQUEST, ControlState.EMPTY, previous.request()), ignored -> {});
     }
 
     private static CabModule.State apply(CabModule.State previous, boolean toggleSimple, int mask, double speed,

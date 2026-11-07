@@ -11,7 +11,10 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 import willow.train.hexie.blocks.base.SideMirrorBlockBase;
 
-public class PanelBlock25Side extends SideMirrorBlockBase {
+public class PanelBlock25Side extends SideMirrorBlockBase implements willow.train.hexie.blocks.signs.PassengerDisplayPanel {
+
+    private final boolean passengerDisplays;
+    @Override public boolean supportsPassengerDisplay() { return passengerDisplays; }
 
 protected static final VoxelShape WEST_AABB = Block.box(0, 0.0D, 0.0D, 1, 16.0D, 16.0D);
 protected static final VoxelShape EAST_AABB = Block.box(15, 0.0D, 0D, 16.0D, 16.0D, 16.0D);
@@ -25,7 +28,12 @@ protected static final VoxelShape EAST_AABB = Block.box(15, 0.0D, 0D, 16.0D, 16.
     }
 
     public PanelBlock25Side(Properties pProperties) {
+        this(pProperties, true);
+    }
+
+    public PanelBlock25Side(Properties pProperties, boolean passengerDisplays) {
         super(pProperties);
+        this.passengerDisplays = passengerDisplays;
         this.registerDefaultState(
                 this.stateDefinition
                         .any().setValue(willow.train.hexie.blocks.parts.LegacyPartLayout.OCCUPIED,false)

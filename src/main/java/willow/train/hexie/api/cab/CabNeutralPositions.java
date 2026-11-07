@@ -1,5 +1,9 @@
 package willow.train.hexie.api.cab;
 
+import willow.train.hexie.api.interaction.ControlState;
+
+import willow.train.hexie.api.interaction.BlockControl;
+
 import java.util.Objects;
 import java.util.function.Predicate;
 import org.jetbrains.annotations.Nullable;
@@ -10,7 +14,7 @@ public record CabNeutralPositions(@Nullable Detent powerZero, @Nullable Detent r
     public static final CabNeutralPositions FROM_REQUEST = new CabNeutralPositions(null, null);
 
     public static final class Detent {
-        private final Predicate<CabSurfaceState> atPosition;
+        private final Predicate<ControlState> atPosition;
 
         /** A button-operated selector supplies its readout in the restored surface state. */
         public Detent(String positionKey, int notch) {
@@ -19,12 +23,12 @@ public record CabNeutralPositions(@Nullable Detent powerZero, @Nullable Detent r
         }
 
         /** Read the same physical notch as the slider, including its initial position on a fresh desk. */
-        public Detent(CabControl.Handle handle, int notch) {
+        public Detent(BlockControl.Handle handle, int notch) {
             handle.checkNotch(notch);
             atPosition = surface -> handle.notch(surface) == notch;
         }
 
-        public boolean matches(CabSurfaceState surface) {
+        public boolean matches(ControlState surface) {
             return atPosition.test(surface);
         }
     }

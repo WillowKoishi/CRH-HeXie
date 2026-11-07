@@ -35,7 +35,11 @@ public final class SnapshotCouplerAnimation {
     }
 
     /** Partner's north-facing block-corner model space, expressed in this hook's same model space. */
-    public record PartnerPose(UUID endpoint, Point origin, float qx, float qy, float qz, float qw) {
+    public record PartnerPose(UUID endpoint, Point origin, float qx, float qy, float qz, float qw,
+                              CouplingEndpoint.RenderState state) {
+        public PartnerPose(UUID endpoint, Point origin, float qx, float qy, float qz, float qw) {
+            this(endpoint, origin, qx, qy, qz, qw, null);
+        }
         public PartnerPose {
             Objects.requireNonNull(endpoint);
             Objects.requireNonNull(origin);
@@ -59,7 +63,7 @@ public final class SnapshotCouplerAnimation {
             return new PartnerPose(endpoint, new Point(origin.x() + (next.origin.x() - origin.x()) * fraction,
                     origin.y() + (next.origin.y() - origin.y()) * fraction,
                     origin.z() + (next.origin.z() - origin.z()) * fraction),
-                    rotation.x, rotation.y, rotation.z, rotation.w);
+                    rotation.x, rotation.y, rotation.z, rotation.w, next.state);
         }
 
         /** Use the two fixed body mounts, never the independently swinging coupler pivot. */
@@ -74,7 +78,8 @@ public final class SnapshotCouplerAnimation {
             var rotatedCenter = relative.transform(new Vector3f(.5f, .5f, .5f));
             return new PartnerPose(partner.id(), new Point(.5 + localDelta.x - rotatedCenter.x,
                     .5 + localDelta.y - rotatedCenter.y, .5 + localDelta.z - rotatedCenter.z),
-                    relative.x, relative.y, relative.z, relative.w);
+                    relative.x, relative.y, relative.z, relative.w,
+                    partner.visual() == null ? null : partner.visual().fixed());
         }
     }
 
@@ -120,6 +125,8 @@ public final class SnapshotCouplerAnimation {
     }
 
     private final SnapshotBogeyAnimation poses = new SnapshotBogeyAnimation();
+    private List<SnapshotBogeyAnimation.Frame> indexedFrames = List.of();
+    private final java.util.Map<BlockPos, Integer> frameIndices = new HashMap<>();
     private CarriageDefinition sourceDefinition;
     private Direction sourceForward;
     private List<Arm> arms = List.of();
@@ -127,8 +134,46 @@ public final class SnapshotCouplerAnimation {
     private int parameterInterpolationSteps;
     private double floorOffset;
 
+    public record State(List<SnapshotBogeyAnimation.Frame> poses, List<Parameters> parameters, double floorOffset) {
+        public State interpolate(State next, float fraction) {
+            if (fraction <= 0) return this;
+            if (fraction >= 1) return next;
+            var hooks = next.parameters;
+            if (parameters.size() == hooks.size()) {
+                var interpolated = new ArrayList<Parameters>(hooks.size());
+                for (int i = 0; i < hooks.size(); i++) interpolated.add(parameters.get(i).interpolate(hooks.get(i), fraction));
+                hooks = List.copyOf(interpolated);
+            }
+            return new State(SnapshotBogeyAnimation.interpolate(poses, next.poses, fraction), hooks, next.floorOffset);
+        }
+    }
+
+    /** Uses the parent's confirmed timeline; no separate animation clock is advanced. */
+    public void playback(State before, State now) {
+        poses.playback(before.poses, now.poses);
+        previousParameters = before.parameters;
+        currentParameters = targetParameters = now.parameters;
+        floorOffset = now.floorOffset;
+        parameterInterpolationSteps = 0;
+    }
+
     public List<SnapshotBogeyAnimation.Frame> frames() { return poses.frames(); }
     public SnapshotBogeyAnimation.Frame frame(int index, float partialTick) { return poses.frame(index, partialTick); }
+    /** Index the compact pose list once per replacement, not once per picked owner. */
+    public SnapshotBogeyAnimation.Frame frameAt(BlockPos position, float partialTick) {
+        int index = frameIndex(position);
+        return index < 0 ? null : frame(index, partialTick);
+    }
+    private int frameIndex(BlockPos position) {
+        var current = frames();
+        if (indexedFrames != current) {
+            frameIndices.clear();
+            for (int index = 0; index < current.size(); index++)
+                frameIndices.put(current.get(index).position(), index);
+            indexedFrames = current;
+        }
+        return frameIndices.getOrDefault(position, -1);
+    }
     public List<Parameters> parameters() { return currentParameters; }
     public double floorOffset() { return floorOffset; }
     public CouplingEndpoint.Visual visual(BlockPos position) {
@@ -136,9 +181,7 @@ public final class SnapshotCouplerAnimation {
         return null;
     }
     public boolean hasShiftedBase(BlockPos position) {
-        if (floorOffset == 0) return false;
-        for (var frame : frames()) if (frame.position().equals(position)) return true;
-        return false;
+        return floorOffset != 0 && frameIndex(position) >= 0;
     }
     public Parameters parameters(int index, float partialTick) {
         return previousParameters.size() == currentParameters.size()
@@ -165,6 +208,7 @@ public final class SnapshotCouplerAnimation {
                 writePoint(partnerTag, "Origin", partner.origin());
                 partnerTag.putFloat("Qx", partner.qx()); partnerTag.putFloat("Qy", partner.qy());
                 partnerTag.putFloat("Qz", partner.qz()); partnerTag.putFloat("Qw", partner.qw());
+                if (partner.state() != null) partnerTag.put("State", VehicleRuntimeNbt.renderState(partner.state()));
                 tag.put("PartnerPose", partnerTag);
             }
             if (parameters.attachment() != null) {
@@ -185,6 +229,24 @@ public final class SnapshotCouplerAnimation {
     public void read(CompoundTag root, int steps) {
         poses.read(root, steps);
         floorOffset = root.getDouble("FloorOffset");
+        targetParameters = decodeParameters(root);
+        boolean sameHooks = currentParameters.size() == targetParameters.size();
+        for (int i = 0; sameHooks && i < currentParameters.size(); i++) {
+            var current = currentParameters.get(i);
+            var target = targetParameters.get(i);
+            sameHooks = current.endpoint().equals(target.endpoint()) && current.position().equals(target.position())
+                    && Objects.equals(current.visual(), target.visual());
+        }
+        // Legacy animation payloads still supply poses; their absent hook parameters stay empty.
+        if (!sameHooks || steps <= 0) previousParameters = currentParameters = targetParameters;
+        parameterInterpolationSteps = Math.max(1, steps);
+    }
+
+    public static State decode(CompoundTag root) {
+        return new State(SnapshotBogeyAnimation.decode(root), decodeParameters(root), root.getDouble("FloorOffset"));
+    }
+
+    private static List<Parameters> decodeParameters(CompoundTag root) {
         var decoded = new ArrayList<Parameters>();
         for (Tag value : root.getList("Hooks", Tag.TAG_COMPOUND)) {
             var tag = (CompoundTag) value;
@@ -206,24 +268,16 @@ public final class SnapshotCouplerAnimation {
                         && partnerTag.contains("Qz", Tag.TAG_FLOAT) && partnerTag.contains("Qw", Tag.TAG_FLOAT))
                     partner = new PartnerPose(partnerTag.getUUID("Id"), readPoint(partnerTag, "Origin"),
                             partnerTag.getFloat("Qx"), partnerTag.getFloat("Qy"),
-                            partnerTag.getFloat("Qz"), partnerTag.getFloat("Qw"));
+                            partnerTag.getFloat("Qz"), partnerTag.getFloat("Qw"),
+                            partnerTag.contains("State", Tag.TAG_COMPOUND)
+                                    ? VehicleRuntimeNbt.renderState(partnerTag, "State") : null);
             }
             decoded.add(new Parameters(tag.getUUID("Id"), BlockPos.of(tag.getLong("Pos")), tag.getDouble("Extension"),
                     new CouplerAngles(tag.getDouble("Yaw"), tag.getDouble("Pitch")), attachment,
                     !tag.contains("Coupled", Tag.TAG_BYTE) || tag.getBoolean("Coupled"), partner,
                     tag.contains("Visual") ? VehicleRuntimeNbt.readCouplerVisual(tag.getCompound("Visual")) : null));
         }
-        targetParameters = List.copyOf(decoded);
-        boolean sameHooks = currentParameters.size() == targetParameters.size();
-        for (int i = 0; sameHooks && i < currentParameters.size(); i++) {
-            var current = currentParameters.get(i);
-            var target = targetParameters.get(i);
-            sameHooks = current.endpoint().equals(target.endpoint()) && current.position().equals(target.position())
-                    && Objects.equals(current.visual(), target.visual());
-        }
-        // Legacy animation payloads still supply poses; their absent hook parameters stay empty.
-        if (!sameHooks || steps <= 0) previousParameters = currentParameters = targetParameters;
-        parameterInterpolationSteps = Math.max(1, steps);
+        return List.copyOf(decoded);
     }
 
     public void tick() {
@@ -299,6 +353,11 @@ public final class SnapshotCouplerAnimation {
             // A vertical axis permits yaw in the body's own frame. Body pitch/roll still follow the track.
             Quaternionf relative = new Quaternionf(inverseSourceBody).mul(restingRotation).rotateY((float) angles.yaw());
             var offset = solved.pivot().subtract(body.position());
+            // The solver may reference another height on the same vertical axis for an offset adapter.
+            // Keep the original hook mesh and its adapter mounting face at the authored base height.
+            var basePivot = endpoint.axis().atHeight(endpoint.complete().y());
+            double adapterHeight = endpoint.axisPoint().y() - basePivot.y();
+            if (adapterHeight != 0) offset = offset.subtract(body.rotate(new Point(0, adapterHeight, 0)));
             Vector3f local = inverseSourceBody.transform(new Vector3f((float) offset.x(), (float) offset.y(), (float) offset.z()));
             // The frame origin is the registered pivot. Rendering subtracts the arm model's own pivot.
             next.add(new SnapshotBogeyAnimation.Frame(arm.position, local.x + .5f, local.y + .5f, local.z + .5f,
@@ -310,7 +369,7 @@ public final class SnapshotCouplerAnimation {
                     : PartnerPose.between(endpoint, body, partnerMount.endpoint, partnerMount.body);
             nextParameters.add(new Parameters(endpoint.id(), arm.position, gap == null ? 0 : Math.sqrt(gap.dot(gap)),
                     angles, endpoint.adapter() == null ? null
-                    : new AdapterAttachment(endpoint.adapter(), modelPoint(endpoint.axisPoint()), modelPoint(endpoint.complete()),
+                    : new AdapterAttachment(endpoint.adapter(), modelPoint(basePivot), modelPoint(endpoint.complete()),
                             !endpoint.model().equals(endpoint.adapter().firstModel())), partner != null, partnerPose, endpoint.visual()));
         }
         poses.setFrames(next);

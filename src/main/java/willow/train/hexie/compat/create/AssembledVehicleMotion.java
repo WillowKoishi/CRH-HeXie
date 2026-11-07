@@ -745,13 +745,12 @@ public final class AssembledVehicleMotion {
     /** Both automatic operation and explicit space-to-approach use our route-based driving policy. */
     public void controlAutomatic(UUID member, willow.train.hexie.vehicle.control.AutomaticTrainControl.Target target,
                                  double serviceDeceleration) {
-        if (hasEnabledCabModule(member)) return; // Enabled modules are aggregated after route data is collected.
         // Manual drivers receive no automatic intervention unless they explicitly hold approach.
-        if (!isAutomaticControlSelected(member)) return;
+        if (!isBackendAutomaticControlSelected(member)) return;
         var train = compatibility == null ? null : compatibility.train(member);
         if (train == null) return;
         train.backendAutomaticRequest = willow.train.hexie.vehicle.control.AutomaticTrainControl.update(
-                controlSource(member), runtime.speed(member), target, serviceDeceleration, stationStopState(member));
+                backendControlSource(member), runtime.speed(member), target, serviceDeceleration, stationStopState(member));
         applyControls(member);
     }
 
@@ -785,25 +784,25 @@ public final class AssembledVehicleMotion {
         for (UUID member : carriages) {
             var train = compatibility == null ? null : compatibility.train(member);
             if (train == null || !visited.add(train.id)) continue;
+            boolean automatic = isBackendAutomaticControlSelected(member);
             if (!train.controlObservationsReady) {
-                if (train.controlResetRequested && !hasEnabledCabModule(member)) {
+                if (train.controlResetRequested || !automatic && train.backendAutomaticRequest != null) {
                     train.backendAutomaticRequest = null;
                     controlledCarriages.add(member);
                 }
                 train.controlResetRequested = false;
+                train.automaticControlActive = automatic;
                 continue;
             }
-            boolean automatic = isAutomaticControlSelected(member);
-            if (!hasEnabledCabModule(member)) {
-                var command = CabController.automaticOutput(controlSource(member), automatic,
-                        train.automaticControlActive, isManuallyControlled(member), train.controlResetRequested,
-                        runtime.speed(member), automaticTarget(member),
-                        TrainControl.serviceDeceleration(runtime, member, controlSource(member)), stationStopState(member));
-                if (command != null) {
-                    train.backendAutomaticRequest = automatic ? command : null;
-                    controlledCarriages.add(member);
-                }
-            } else train.backendAutomaticRequest = null;
+            var source = backendControlSource(member);
+            var command = CabController.automaticOutput(source, automatic,
+                    train.automaticControlActive, hasNativeManualControl(member), train.controlResetRequested,
+                    runtime.speed(member), automaticTarget(member),
+                    TrainControl.serviceDeceleration(runtime, member, source), stationStopState(member));
+            if (command != null || !automatic && train.backendAutomaticRequest != null) {
+                train.backendAutomaticRequest = automatic ? command : null;
+                controlledCarriages.add(member);
+            }
             train.controlResetRequested = false;
             train.automaticControlActive = automatic;
         }
@@ -825,10 +824,19 @@ public final class AssembledVehicleMotion {
             return controllers.entrySet().stream().anyMatch(entry -> runtime.connected(member, entry.getKey().carriage())
                     && entry.getValue().cabControls != null && entry.getValue().cabControls.state().enabled()
                     && (entry.getValue().cabControls.state().automatic() || entry.getValue().approachingStation));
+        return isBackendAutomaticControlSelected(member);
+    }
+
+    /** Backend execution keeps its own mode even while a desk owns traction and the physical route. */
+    boolean isBackendAutomaticControlSelected(UUID member) {
         if (controllers.entrySet().stream().anyMatch(entry -> runtime.connected(member, entry.getKey().carriage())
                 && entry.getValue().cabControls == null && entry.getValue().attended && !entry.getValue().timedOut
                 && entry.getValue().approachingStation)) return true;
         return nativeAutomaticSelected(member);
+    }
+
+    TrainControl.Source backendControlSource(UUID member) {
+        return hasNativeManualControl(member) ? TrainControl.Source.CREATE_MANUAL : TrainControl.Source.CREATE_AUTOMATIC;
     }
 
     private boolean nativeAutomaticSelected(UUID member) {
@@ -914,7 +922,6 @@ public final class AssembledVehicleMotion {
         if (converted == null) return false;
         boolean wasAutomatic = driver.cabControls.state().automatic();
         boolean wasSimple = driver.cabControls.state().simple();
-        boolean hadEnabledCab = hasEnabledCabModule(car.getUUID());
         controllers.put(key, driver);
         driver.cabConverter = host.trainControl(state);
         driver.player = player.getUUID(); driver.attended = true;
@@ -928,24 +935,10 @@ public final class AssembledVehicleMotion {
             driver.cabControls.keyboard(keyboardMask);
             driver.lastKeyboardInput = level.getGameTime();
         }
-        if (converted.enabled() && converted.approachHeld() && (converted.simple() || !converted.automatic())) {
+        if (converted.approachHeld() && (converted.simple() || !converted.automatic())) {
             driver.approachHeld = true; driver.lastApproachInput = level.getGameTime();
         } else releaseCabApproach(car.getUUID(), driver);
         var train = compatibility == null ? null : compatibility.train(car.getUUID());
-        if (!hadEnabledCab && converted.enabled()) {
-            if (train != null) {
-                train.backendAutomaticRequest = null;
-                train.manualSteer = SteerDirection.NONE;
-            }
-            controllers.forEach((address, nativeDriver) -> {
-                if (nativeDriver.cabControls == null && runtime.connected(car.getUUID(), address.carriage())) {
-                    nativeDriver.approachingStation = false;
-                    nativeDriver.approachHeld = false;
-                    if (nativeDriver.nativeRequest != null)
-                        nativeDriver.nativeRequest = new VehicleRuntime.Control(0, nativeDriver.nativeRequest.brake());
-                }
-            });
-        }
         if (train != null) {
             if (converted.simple()) syncTrainHud(train, driver, player);
             if (wasSimple && (!converted.simple() || !converted.enabled())) train.manualSteer = SteerDirection.NONE;
@@ -1017,9 +1010,8 @@ public final class AssembledVehicleMotion {
         var cabs = controllers.entrySet().stream().filter(e -> e.getValue().cabControls != null
                 && consist.contains(e.getKey().carriage())).toList();
         var selection = CabControlArbitration.select(cabs.stream().map(e -> e.getValue().cabControls.state()).toList());
-        var limits = selection.hasEnabledCab() ? willow.train.hexie.vehicle.control.TrainControlLimits.capture(runtime, member) : null;
-        double deceleration = selection.hasEnabledCab()
-                ? TrainControl.serviceDeceleration(runtime, member, TrainControl.Source.CAB_MANUAL) : 0;
+        var limits = willow.train.hexie.vehicle.control.TrainControlLimits.capture(runtime, member);
+        double deceleration = TrainControl.serviceDeceleration(runtime, member, TrainControl.Source.CAB_MANUAL);
         var commands = new ArrayList<CabControlArbitration.Command>();
         for (var e : cabs) {
             UUID carriage = e.getKey().carriage();
@@ -1032,14 +1024,10 @@ public final class AssembledVehicleMotion {
                     && level.getGameTime() - driver.lastKeyboardInput <= 20;
             if (!acceptsHeldKeys) input.keyboard(0);
             // Occupancy only authorizes gestures. Enable inputs and stored handles persist unattended.
-            if (!input.state().enabled() || selection.conflicting() || !driver.attended || cab == null
+            if (!driver.attended || cab == null
                     || !cab.console().equals(driver.pos) || !cab.seatAccess().vehicle().getUUID().equals(carriage)
                     || driver.approachHeld && level.getGameTime() - driver.lastApproachInput > 20)
                 releaseCabApproach(carriage, driver);
-            if (!input.state().enabled()) {
-                commands.add(new CabControlArbitration.Command(false, input.state().brakingOnly()));
-                continue;
-            }
             int direction = driver.cabFacing == forward(carriage) ? 1 : -1;
             var train = compatibility == null ? null : compatibility.train(carriage);
             if (driver.approachHeld && (input.state().simple() || !input.state().automatic()) && train != null)
@@ -1055,11 +1043,11 @@ public final class AssembledVehicleMotion {
                     ? input.updateSimple(approaching, direction, runtime.speed(carriage), target, deceleration, stop)
                     : input.update(approaching ? CabController.Mode.AUTOMATIC : input.mode(), direction,
                             runtime.speed(carriage), target, deceleration, stop);
-            commands.add(new CabControlArbitration.Command(true, command, driver.cabConverter));
+            command = input.convertOutput(driver.cabConverter, command, direction, runtime.speed(carriage));
+            commands.add(new CabControlArbitration.Command(input.state().enabled(), command));
         }
         var train = compatibility == null ? null : compatibility.train(member);
-        if (train != null && train.backendAutomaticRequest != null
-                && (selection.hasEnabledCab() || !isAutomaticControlSelected(member)))
+        if (train != null && train.backendAutomaticRequest != null && !isBackendAutomaticControlSelected(member))
             train.backendAutomaticRequest = null;
         var automatic = train == null ? null : train.backendAutomaticRequest;
         long latestInput = -1;
@@ -1077,6 +1065,18 @@ public final class AssembledVehicleMotion {
         }
         var backend = automatic == null ? new VehicleRuntime.Control(nativePower, nativeBrake)
                 : new VehicleRuntime.Control(automatic.throttle(), Math.max(automatic.brake(), nativeBrake));
+        // Supply the same consist brake feedback to each vehicle/desk conversion before aggregation.
+        double consistBrake = backend.brake();
+        for (var command : commands) consistBrake = Math.max(consistBrake, command.control().brake());
+        for (int i = 0; i < commands.size(); i++) {
+            var command = commands.get(i);
+            var converter = cabs.get(i).getValue().cabConverter;
+            double power = converter.tractionOutput(command.control().throttle(), consistBrake);
+            commands.set(i, new CabControlArbitration.Command(command.enabled(),
+                    new VehicleRuntime.Control(power, command.control().brake())));
+        }
+        // Create's own controls retain their brake-priority traction policy in this adapter.
+        if (consistBrake > 0) backend = new VehicleRuntime.Control(0, backend.brake());
         var output = CabControlArbitration.aggregate(commands, backend);
         boolean derailed = consist.stream().anyMatch(derailedCarriages::contains) || isDerailed(member);
         if (derailed) output = new VehicleRuntime.Control(0, output.brake());
@@ -1205,7 +1205,7 @@ public final class AssembledVehicleMotion {
 
 
     public boolean startControl(SnapshotCarriageEntity entity, BlockPos pos, Player player) {
-        if (!validControl(entity, pos, player) || isDerailed(entity.getUUID()) || hasEnabledCabModule(entity.getUUID())) return false;
+        if (!validControl(entity, pos, player) || isDerailed(entity.getUUID())) return false;
         // Create owns the per-entity control handoff. It does not impose a train-wide exclusive seat.
         controllers.entrySet().removeIf(e -> e.getKey().carriage().equals(entity.getUUID()) && e.getValue().cabControls == null);
         controllers.put(new ControlKey(entity.getUUID(), pos), new Controller(player.getUUID(), pos, level.getGameTime()));
@@ -1226,8 +1226,7 @@ public final class AssembledVehicleMotion {
             return controllers.entrySet().stream().anyMatch(e ->
                     e.getKey().carriage().equals(entity.getUUID()) && e.getValue().cabControls == null);
         }
-        if (!validControl(entity, pos, player) || isDerailed(entity.getUUID())
-                || hasEnabledCabModule(entity.getUUID()) || keys.contains(5)) return false;
+        if (!validControl(entity, pos, player) || isDerailed(entity.getUUID()) || keys.contains(5)) return false;
         driver.lastInput = level.getGameTime();
         driver.timedOut = false;
         int direction = (keys.contains(0) ? 1 : 0) - (keys.contains(1) ? 1 : 0);
@@ -1252,10 +1251,11 @@ public final class AssembledVehicleMotion {
         driver.nativeBasis = forward(entity.getUUID());
         driver.inputSequence = NATIVE_INPUT_SEQUENCE.incrementAndGet();
         if (train != null) {
-            train.manualSteer = steering < 0 ? SteerDirection.LEFT : steering > 0 ? SteerDirection.RIGHT : SteerDirection.NONE;
-            train.manualTick = true;
+            if (!hasEnabledCabModule(entity.getUUID()))
+                train.manualSteer = steering < 0 ? SteerDirection.LEFT : steering > 0 ? SteerDirection.RIGHT : SteerDirection.NONE;
+            train.manualTick = isManuallyControlled(entity.getUUID());
             syncTrainHud(train, driver, player);
-            if (train.speedBeforeStall != null && power > 0 && direction != 0
+            if (!hasEnabledCabModule(entity.getUUID()) && train.speedBeforeStall != null && power > 0 && direction != 0
                     && Math.signum(train.speedBeforeStall) != -direction)
                 train.cancelStall();
             if (controlStationApproach(train, driver, player, keys.contains(4), direction, speed, !inverted))

@@ -23,8 +23,16 @@ public final class CouplerAdapterData {
     public static CouplerAdapter decode(CompoundTag tag) {
         var layers = new java.util.ArrayList<CouplerAdapter>();
         for (Tag layer : tag.getList("Layers", Tag.TAG_COMPOUND)) layers.add(decode((CompoundTag) layer));
-        return new CouplerAdapter(tag.getString("Item"), tag.getString("FirstModel"),
-                tag.getString("SecondModel"), tag.getDouble("Thickness"), layers);
+        double thickness = tag.getDouble("Thickness");
+        if (!tag.contains("Offset")) return new CouplerAdapter(tag.getString("Item"), tag.getString("FirstModel"),
+                tag.getString("SecondModel"), thickness, layers);
+        if (!tag.contains("Offset", Tag.TAG_COMPOUND)) throw new IllegalArgumentException("Invalid adapter offset");
+        var offset = tag.getCompound("Offset");
+        for (var key : java.util.List.of("X", "Y", "Z"))
+            if (!offset.contains(key, Tag.TAG_DOUBLE)) throw new IllegalArgumentException("Missing adapter offset " + key);
+        return new CouplerAdapter(tag.getString("Item"), tag.getString("FirstModel"), tag.getString("SecondModel"),
+                thickness, layers, new willow.train.hexie.vehicle.runtime.CouplingEndpoint.Point(
+                        offset.getDouble("X"), offset.getDouble("Y"), offset.getDouble("Z")));
     }
 
     public static CompoundTag encode(CouplerAdapter adapter) {
@@ -33,6 +41,11 @@ public final class CouplerAdapterData {
         tag.putString("FirstModel", adapter.firstModel());
         tag.putString("SecondModel", adapter.secondModel());
         tag.putDouble("Thickness", adapter.thickness());
+        if (adapter.offset().x() != 0 || adapter.offset().y() != 0) {
+            var offset = new CompoundTag();
+            offset.putDouble("X", adapter.offset().x()); offset.putDouble("Y", adapter.offset().y());
+            offset.putDouble("Z", adapter.offset().z()); tag.put("Offset", offset);
+        }
         if (!adapter.layers().isEmpty()) {
             var layers = new net.minecraft.nbt.ListTag();
             adapter.layers().forEach(layer -> layers.add(encode(layer)));

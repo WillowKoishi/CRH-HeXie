@@ -18,6 +18,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.phys.AABB;
 import willow.train.hexie.blocks.coupler.AbstractCouplerBlock;
+import willow.train.hexie.blocks.signs.PanelDisplayMount;
+import willow.train.hexie.blocks.signs.PanelDisplayColumn;
+import willow.train.hexie.blocks.signs.PassengerDisplayPanel;
 
 /** Immutable structure data. Capturing or decoding this record never places or removes blocks. */
 public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos origin,
@@ -33,12 +36,10 @@ public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos o
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(dimension, "dimension");
         origin = Objects.requireNonNull(origin, "origin").immutable();
-        // Initialize missing coupler/head storage through its registered block-entity factory.
+        // Known additive entities can be absent from snapshots captured before their introduction.
         var upgradedBlocks = new ArrayList<Block>(blocks.size());
         for (Block block : blocks) {
-            if ((block.state().getBlock() instanceof AbstractCouplerBlock
-                    || block.state().getBlock() instanceof willow.train.hexie.blocks.emu.head.CRH2HeadBlock
-                    || block.state().getBlock() instanceof willow.train.hexie.blocks.emu.crh2a.CRH2PanelBlock) && block.entityData == null) {
+            if (canInitializeEntity(block.state()) && block.entityData == null) {
                 BlockPos world = absolute(origin, block.position());
                 var data = new CompoundTag();
                 var entity = ((net.minecraft.world.level.block.EntityBlock) block.state().getBlock()).newBlockEntity(world, block.state());
@@ -86,9 +87,9 @@ public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos o
             Objects.requireNonNull(state, "state");
             // Air may retain a removed block's local position during saved-data migration.
             if (state.hasBlockEntity() != (entityData != null)
-                    && !((state.getBlock() instanceof AbstractCouplerBlock
-                        || state.getBlock() instanceof willow.train.hexie.blocks.emu.head.CRH2HeadBlock
-                        || state.getBlock() instanceof willow.train.hexie.blocks.emu.crh2a.CRH2PanelBlock) && entityData == null))
+                    && !(entityData == null && (canInitializeEntity(state)
+                        // Unsupported subclasses inherit EntityBlock, but deliberately have no entity.
+                        || state.getBlock() instanceof PassengerDisplayPanel && !PassengerDisplayPanel.supports(state.getBlock()))))
                 throw new IllegalArgumentException("Block entity data does not match block state");
             if (entityData != null) {
                 require(entityData, "id", Tag.TAG_STRING);
@@ -207,6 +208,26 @@ public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos o
                 // Old snapshots remain single-root layouts. Their cells are not invented during decoding.
                 properties.putString("occupied","false");
             }
+            // Pre-display panels had no attachments. Only this known additive field defaults;
+            // existing facing/hinge fields and explicit display values remain strictly validated.
+            if (state.getBlock() instanceof PassengerDisplayPanel && state.hasProperty(PanelDisplayMount.PROPERTY)
+                    && !properties.contains(PanelDisplayMount.PROPERTY.getName())) {
+                properties = properties.copy();
+                properties.putString(PanelDisplayMount.PROPERTY.getName(), PanelDisplayMount.NONE.getSerializedName());
+            }
+            // Older display mounts did not record the clicked column. Keep them on the root cell.
+            if (state.getBlock() instanceof PassengerDisplayPanel && state.hasProperty(PanelDisplayColumn.PROPERTY)
+                    && !properties.contains(PanelDisplayColumn.PROPERTY.getName())) {
+                properties = properties.copy();
+                properties.putString(PanelDisplayColumn.PROPERTY.getName(), PanelDisplayColumn.ROOT.getSerializedName());
+            }
+            // Before connector variants existed, this block used the original bare end wall.
+            if (state.getBlock() instanceof willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock
+                    && !properties.contains(willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock.VARIANT.getName())) {
+                properties = properties.copy();
+                properties.putString(willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock.VARIANT.getName(),
+                        willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock.Type.ORIGINAL.getSerializedName());
+            }
             if (properties.size() != state.getProperties().size())
                 throw new IllegalArgumentException("Incomplete block state properties: " + name);
             for (String key : properties.getAllKeys()) {
@@ -217,6 +238,12 @@ public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos o
             }
         }
         return state;
+    }
+
+    private static boolean canInitializeEntity(BlockState state) {
+        return state.getBlock() instanceof AbstractCouplerBlock
+                || state.getBlock() instanceof willow.train.hexie.blocks.emu.head.CRH2HeadBlock
+                || PassengerDisplayPanel.supports(state.getBlock());
     }
 
     public static void validateEntityType(BlockState state, CompoundTag tag, RegistryAccess registries) {

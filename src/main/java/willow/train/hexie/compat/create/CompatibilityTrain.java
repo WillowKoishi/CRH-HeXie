@@ -80,7 +80,13 @@ public final class CompatibilityTrain extends Train {
     private long retryAt;
     private long pendingTick = Long.MIN_VALUE;
     private PendingVehicleRelocation pendingRelocation;
-    boolean hasLifecycleData() { return bridge != null || savedMotionOwner != null; }
+    boolean importedWithoutRoute;
+    boolean hasLifecycleData() { return bridge != null || savedMotionOwner != null || importedWithoutRoute; }
+
+    void markImportedWithoutRoute(ServerLevel level) {
+        importedWithoutRoute = true;
+        motionDimension = level.dimension().location().toString();
+    }
 
     /** A reported stop lasts until timetable departure or leaving the station range, independently of docking. */
     public boolean isWaitingForDeparture() { return stationStopControl().state().waitingForDeparture(); }
@@ -184,11 +190,11 @@ public final class CompatibilityTrain extends Train {
         for (var train : candidates) {
             // Rebuilding proxies transfers the same carriage identities to new records.
             if (train.carriageIds.stream().allMatch(retained::contains)) continue;
-            if (train.bridge == null && train.savedMotionOwner == null) continue;
+            if (!train.hasLifecycleData()) continue;
             if (!processed.add(train)) continue;
             var group = candidates.stream().filter(other -> other == train
                     || train.bridge != null && other.bridge == train.bridge
-                    || train.bridge == null && other.bridge == null
+                    || train.savedMotionOwner != null && train.bridge == null && other.bridge == null
                             && java.util.Objects.equals(train.savedMotionOwner, other.savedMotionOwner)).toList();
             processed.addAll(group);
             train.discardSourceCarriages(server, group);
@@ -203,6 +209,7 @@ public final class CompatibilityTrain extends Train {
                 .collect(java.util.stream.Collectors.toSet());
         Runnable retain;
         if (bridge != null) retain = bridge.motion().prepareDisassembly(selected);
+        else if (importedWithoutRoute) retain = () -> {};
         else {
             var source = savedMotion != null ? this
                     : Create.RAILWAYS.trains.get(savedMotionOwner) instanceof CompatibilityTrain owner ? owner : null;
@@ -273,6 +280,10 @@ public final class CompatibilityTrain extends Train {
     private void tickLogical(ServerLevel server) {
         restoreForTick(server);
         var current = Create.RAILWAYS.trains.get(id);
+        if (current instanceof CompatibilityTrain imported && imported.importedWithoutRoute) {
+            ImportedCarriageCompatibility.recoverFromNativePoints(imported, server);
+            current = Create.RAILWAYS.trains.get(id);
+        }
         if (!(current instanceof CompatibilityTrain train)) return;
         if (train.bridge != null) train.bridge.motion().tickLogic();
         else {
@@ -399,6 +410,10 @@ public final class CompatibilityTrain extends Train {
         tag.putUUID(ASSEMBLY_KEY, assemblyId);
         // A pending legacy carriage may still have old wheels after its controls have been converted.
         tag.putBoolean(NATIVE_WHEEL_ORDER, nativeWheelOrder);
+        if (importedWithoutRoute) {
+            tag.putBoolean("HeXieImportedWithoutRoute", true);
+            tag.putString("HeXieMotionDimension", motionDimension);
+        }
         ListTag ids = new ListTag();
         for (UUID id : carriageIds) { var entry = new CompoundTag(); entry.putUUID("Id", id); ids.add(entry); }
         tag.put("HeXieCarriages", ids);
@@ -430,6 +445,7 @@ public final class CompatibilityTrain extends Train {
         var result = new CompatibilityTrain(source.id, source.owner, tag.getUUID(ASSEMBLY_KEY), ids,
                 source.graph, carriages, source.carriageSpacing);
         result.nativeWheelOrder = tag.getBoolean(NATIVE_WHEEL_ORDER);
+        result.importedWithoutRoute = tag.getBoolean("HeXieImportedWithoutRoute");
         boolean legacyDirection = !tag.contains(NATIVE_WHEEL_ORDER);
         CreateTrackCompatibility.synchronizeGraph(result);
         // A saved graph reference can be read before the railway graph itself is loaded.
@@ -441,7 +457,7 @@ public final class CompatibilityTrain extends Train {
         result.throttle = source.throttle;
         result.speedBeforeStall = source.speedBeforeStall;
         if (legacyDirection && result.speedBeforeStall != null) result.speedBeforeStall = -result.speedBeforeStall;
-        result.carriageWaitingForChunks = source.carriageWaitingForChunks;
+        result.carriageWaitingForChunks = -1;
         result.migrationCooldown = source.migrationCooldown;
         ((CreateTrainAccess) (Object) result).hexie$getMigratingPoints()
                 .addAll(((CreateTrainAccess) (Object) source).hexie$getMigratingPoints());

@@ -43,7 +43,8 @@ public class CRH2PartBlock extends HorizontalBlockBase implements willow.train.h
     }
     @Override public com.simibubi.create.content.schematics.requirement.ItemRequirement getRequiredItems(BlockState state, net.minecraft.world.level.block.entity.BlockEntity entity) {
         return state.getValue(PART)==0 ? new com.simibubi.create.content.schematics.requirement.ItemRequirement(
-                com.simibubi.create.content.schematics.requirement.ItemRequirement.ItemUseType.CONSUME,asItem())
+                com.simibubi.create.content.schematics.requirement.ItemRequirement.ItemUseType.CONSUME,
+                willow.train.hexie.blocks.signs.PassengerDisplayPanel.withDisplayDrops(state, java.util.List.of(asItem().getDefaultInstance())))
                 : com.simibubi.create.content.schematics.requirement.ItemRequirement.NONE;
     }
     @Override public net.minecraft.world.level.block.RenderShape getRenderShape(BlockState s) {

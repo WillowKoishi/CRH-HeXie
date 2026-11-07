@@ -16,6 +16,11 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.phys.Vec3;
 import willow.train.hexie.client.render.bogey.DF11GBogeyRenderer;
+import willow.train.hexie.client.render.bogey.BogeySuspensionPose;
+import willow.train.hexie.blocks.bogeys.BogeyFloorData;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import org.joml.Vector3f;
+import org.joml.Quaternionf;
 import willow.train.hexie.compat.create.SnapshotBogeyAnimation;
 import willow.train.hexie.compat.create.SnapshotCarriageEntity;
 import willow.train.hexie.datafix.Constants;
@@ -23,6 +28,17 @@ import willow.train.hexie.datafix.Constants;
 /** Reuses Create's structure renderer and each registered bogey renderer, without its two-support limit. */
 public final class SnapshotCarriageRenderer extends ContraptionEntityRenderer<SnapshotCarriageEntity> {
     public SnapshotCarriageRenderer(EntityRendererProvider.Context context) { super(context); }
+
+    @Override public boolean shouldRender(SnapshotCarriageEntity entity,
+            net.minecraft.client.renderer.culling.Frustum frustum, double cameraX, double cameraY, double cameraZ) {
+        if (super.shouldRender(entity, frustum, cameraX, cameraY, cameraZ)) return true;
+        // Keep Create's readiness and vanilla's distance checks; only extend the visible mesh envelope.
+        if (entity.getContraption() == null || !entity.isAliveOrStale() || !entity.isReadyForRender()
+                || !entity.shouldRender(cameraX, cameraY, cameraZ)) return false;
+        float partial = net.minecraft.client.Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
+        var extra = SnapshotCouplerRenderer.adapterBounds(entity, partial);
+        return extra != null && frustum.isVisible(extra.inflate(.5));
+    }
 
     @Override
     public void render(SnapshotCarriageEntity entity, float yaw, float partialTick, PoseStack poseStack,
@@ -42,9 +58,11 @@ public final class SnapshotCarriageRenderer extends ContraptionEntityRenderer<Sn
                     || !(be.getBlockState().getBlock() instanceof AbstractBogeyBlock<?> block)) continue;
             poseStack.pushPose();
             transform(poseStack, frame);
-            be.getStyle().render(block.getSize(), partialTick, poseStack, buffers,
-                    light(entity, frame, partialTick), overlay, (float) (frame.wheelAngle() % 360),
-                    data(entity, be, frame), true);
+            try (var suspension = suspensionPose(be, frame)) {
+                be.getStyle().render(block.getSize(), partialTick, poseStack, buffers,
+                        light(entity, frame, partialTick), overlay, (float) (frame.wheelAngle() % 360),
+                        data(entity, be, frame), true);
+            }
             poseStack.popPose();
         }
         poseStack.popPose();
@@ -53,6 +71,20 @@ public final class SnapshotCarriageRenderer extends ContraptionEntityRenderer<Sn
     static void transform(PoseStack stack, SnapshotBogeyAnimation.Frame frame) {
         stack.translate(frame.x(), frame.y(), frame.z());
         stack.mulPose(frame.rotation());
+    }
+
+    static BogeySuspensionPose.Scope suspensionPose(AbstractBogeyBlockEntity be, SnapshotBogeyAnimation.Frame frame) {
+        var position = be.getBlockPos();
+        var shift = BogeyFloorData.displacement(be.getBlockState(), BogeyFloorData.longitudinal(be.getBogeyData()));
+        float floorHeight = (float) BogeyFloorData.offset(BogeyFloorData.heightFromBogeyData(be.getBogeyData()));
+        boolean xAxis = be.getBlockState().getOptionalValue(BlockStateProperties.HORIZONTAL_AXIS)
+                .orElse(Direction.Axis.Z) == Direction.Axis.X;
+        return BogeySuspensionPose.push(BogeySuspensionPose.relative(
+                new Vector3f(frame.x(), frame.y(), frame.z()), frame.rotation(),
+                // The solved carriage already includes floor height. Cancel it only for mechanical attachments.
+                new Vector3f((float) (position.getX() + .5 + shift.x), position.getY() + .5f - floorHeight,
+                        (float) (position.getZ() + .5 + shift.z)),
+                new Quaternionf().rotationY(xAxis ? (float) Math.PI / 2 : 0)));
     }
 
     static CompoundTag data(SnapshotCarriageEntity entity, AbstractBogeyBlockEntity be,

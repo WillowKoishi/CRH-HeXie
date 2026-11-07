@@ -4,75 +4,86 @@ import java.util.UUID;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import willow.train.hexie.Main;
+import willow.train.hexie.compat.create.CarriageChunkAccess;
 import willow.train.hexie.compat.create.CarriagePlayerSupport;
 import willow.train.hexie.compat.create.SnapshotCarriageEntity;
-import willow.train.hexie.network.s2c.CarriagePlayerStatePacket;
 import willow.train.hexie.vehicle.player.CarriedPlayerConnection;
 
-/** Replaces, rather than supplements, the corresponding vanilla movement packet. */
-public record CarriagePlayerMovePacket(int carriageId, UUID carriageUuid, Vec3 position,
-        float yaw, float pitch, boolean onGround, long contactTick) implements CustomPacketPayload {
+/** Client-resolved local feet while attached, followed by one world-space exit report. */
+public record CarriagePlayerMovePacket(int carriageId, UUID carriageUuid, Vec3 position, boolean attached,
+        float yaw, float pitch, boolean onGround) implements CustomPacketPayload {
     public static final Type<CarriagePlayerMovePacket> TYPE = new Type<>(Main.asResource("carriage_player_move"));
     public static final StreamCodec<RegistryFriendlyByteBuf, CarriagePlayerMovePacket> CODEC = StreamCodec.of(
-            (b, p) -> { b.writeVarInt(p.carriageId); b.writeUUID(p.carriageUuid);
-                b.writeDouble(p.position.x); b.writeDouble(p.position.y); b.writeDouble(p.position.z);
-                b.writeFloat(p.yaw); b.writeFloat(p.pitch); b.writeBoolean(p.onGround); b.writeVarLong(p.contactTick + 1); },
-            b -> new CarriagePlayerMovePacket(b.readVarInt(), b.readUUID(),
-                    new Vec3(b.readDouble(), b.readDouble(), b.readDouble()), b.readFloat(), b.readFloat(), b.readBoolean(), b.readVarLong() - 1));
+            (b, p) -> {
+                b.writeVarInt(p.carriageId); b.writeUUID(p.carriageUuid); b.writeVec3(p.position);
+                b.writeBoolean(p.attached); b.writeFloat(p.yaw); b.writeFloat(p.pitch); b.writeBoolean(p.onGround);
+            },
+            b -> new CarriagePlayerMovePacket(b.readVarInt(), b.readUUID(), b.readVec3(), b.readBoolean(),
+                    b.readFloat(), b.readFloat(), b.readBoolean()));
+
     @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
     public void handle(IPayloadContext context) {
         context.enqueueWork(() -> { if (context.player() instanceof ServerPlayer player) apply(player); });
     }
+
     public void apply(ServerPlayer player) {
-        if (!Double.isFinite(position.x) || !Double.isFinite(position.y) || !Double.isFinite(position.z)
-                || !Float.isFinite(yaw) || !Float.isFinite(pitch) || player.isPassenger()) return;
-        if (player.connection instanceof CarriedPlayerConnection c && !c.hexie$canCarry()) return;
-        SnapshotCarriageEntity car = carriageId < 0 ? null
-                : player.level().getEntity(carriageId) instanceof SnapshotCarriageEntity found
-                    && found.getUUID().equals(carriageUuid) ? found : null;
-        if (carriageId >= 0 && car == null) {
-            CarriagePlayerSupport.detach(player);
-            correctRejectedBoarding(player);
+        if (carriageId < 0 || !finite(position) || !Float.isFinite(yaw) || !Float.isFinite(pitch)
+                || !player.isAlive() || player.isRemoved() || player.isPassenger() || player.wonGame
+                || player.isSleeping() || player.isChangingDimension()
+                || !(player.connection instanceof CarriedPlayerConnection connection) || !connection.hexie$canCarry()) return;
+
+        SnapshotCarriageEntity previous = CarriagePlayerSupport.attachedCarriage(player);
+        if (!attached) {
+            // Sync or lifecycle cleanup can already have removed Standing. The last
+            // accepted identity still permits exactly one exit, until any vanilla
+            // movement or server teleport revokes it.
+            boolean owned = previous != null && previous.getId() == carriageId && previous.getUUID().equals(carriageUuid);
+            if ((!owned && !connection.hexie$wasCarriedBy(carriageId, carriageUuid)) || !worldPosition(position)) return;
+            var terrain = CarriageChunkAccess.enter(previous == null ? player : previous);
+            try {
+                if (connection.hexie$acceptCarriageMovement(position, Vec3.ZERO, Vec3.ZERO, yaw, pitch, onGround)) {
+                    CarriagePlayerSupport.detach(player);
+                    connection.hexie$forgetCarriage();
+                }
+            } finally { CarriageChunkAccess.exit(terrain); }
             return;
         }
-        if (car != null) CarriagePlayerSupport.advance(car);
-        else CarriagePlayerSupport.detach(player);
-        var frame = car == null ? null : CarriagePlayerSupport.frame(car, 1);
-        Vec3 world = frame == null ? position : frame.world(position);
-        Vec3 contact = car == null ? null : CarriagePlayerSupport.boardingContact(car, player, contactTick, position);
-        Vec3 requested = contact == null ? world : contact;
-        // Vanilla still checks the player's own movement and world collisions. Only known
-        // platform displacement was added to its baselines by advance(), never the requested walk.
-        player.connection.handleMovePlayer(new ServerboundMovePlayerPacket.PosRot(
-                requested.x, requested.y, requested.z, yaw, pitch, onGround));
-        boolean accepted = player.position().distanceToSqr(requested) < 1e-6
-                && player.connection instanceof CarriedPlayerConnection connection && connection.hexie$canCarry();
-        if (accepted && car != null && !player.getAbilities().flying && !player.isFallFlying()
-                && !player.isSpectator() && !CarriagePlayerSupport.touchesWorld(player)
-                && (contact != null ? CarriagePlayerSupport.finishBoarding(car, player, contactTick, position, world)
-                    : CarriagePlayerSupport.carriage(player) == car || CarriagePlayerSupport.hasBoardingContact(car, player, player.position(), frame))) {
-            CarriagePlayerSupport.accept(player, car, position);
-            if (player.connection instanceof CarriedPlayerConnection connection) connection.hexie$grounded();
-        }
-        // A corrected movement packet does not end an established attachment.
-        // carriage() clears it on world contact, flight or invalid lifecycle state.
-        SnapshotCarriageEntity support = CarriagePlayerSupport.carriage(player);
-        if (accepted && car != null && support == null) correctRejectedBoarding(player);
-        PacketDistributor.sendToPlayersTrackingEntity(player, new CarriagePlayerStatePacket(player.getId(),
-                support == null ? -1 : support.getId(), support == null ? new UUID(0, 0) : support.getUUID(),
-                support == null ? player.position() : CarriagePlayerSupport.localPosition(player)));
+
+        if (player.isSpectator() || player.getAbilities().flying || player.isFallFlying()) return;
+        SnapshotCarriageEntity car = player.level().getEntity(carriageId) instanceof SnapshotCarriageEntity found
+                && found.getUUID().equals(carriageUuid) ? found : null;
+        // Occupied entities can temporarily leave the terrain entity lookup. Only
+        // the already-owned identity may bridge that lifecycle gap.
+        if (car == null && previous != null && previous.getId() == carriageId && previous.getUUID().equals(carriageUuid))
+            car = previous;
+        if (car == null || car.isRemoved() || car.level() != player.level() || car.getContraption() == null) return;
+
+        var frame = CarriagePlayerSupport.frame(car, 1);
+        Vec3 world = frame.world(position);
+        if (!worldPosition(world)) return;
+        Vec3 localMovement = previous == car ? position.subtract(CarriagePlayerSupport.localPosition(player)) : Vec3.ZERO;
+        Vec3 worldMovement = frame.x().scale(localMovement.x).add(frame.y().scale(localMovement.y)).add(frame.z().scale(localMovement.z));
+        if (!finite(localMovement) || !finite(worldMovement)) return;
+        var terrain = CarriageChunkAccess.enter(car);
+        try {
+            if (connection.hexie$acceptCarriageMovement(world, localMovement, worldMovement, yaw, pitch, onGround)) {
+                CarriagePlayerSupport.accept(player, car, position);
+                connection.hexie$rememberCarriage(carriageId, carriageUuid);
+            }
+        } finally { CarriageChunkAccess.exit(terrain); }
     }
 
-    private void correctRejectedBoarding(ServerPlayer player) {
-        // A first step can pass vanilla's movement check but miss the actual body. Resolve the
-        // client's predicted attachment once; an existing vanilla correction already does this.
-        if (contactTick >= 0 && player.connection instanceof CarriedPlayerConnection c && c.hexie$canCarry())
-            player.connection.teleport(player.getX(), player.getY(), player.getZ(), player.getYRot(), player.getXRot());
+    private static boolean finite(Vec3 value) {
+        return Double.isFinite(value.x) && Double.isFinite(value.y) && Double.isFinite(value.z);
+    }
+
+    private static boolean worldPosition(Vec3 value) {
+        // Keep the vanilla coordinate domain without performing movement validation.
+        return finite(value) && Math.abs(value.x) <= 3.0E7 && Math.abs(value.y) <= 2.0E7 && Math.abs(value.z) <= 3.0E7;
     }
 }

@@ -19,7 +19,7 @@ import net.neoforged.neoforge.client.model.data.ModelData;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
 import willow.train.hexie.api.cab.CabSurfaceHost;
-import willow.train.hexie.api.cab.CabSurfaceGeometry;
+import willow.train.hexie.api.interaction.ControlSurface;
 import willow.train.hexie.blockentity.DrivingConsoleEntity;
 import willow.train.hexie.blocks.emu.TestDrivingConsoleBlock;
 import willow.train.hexie.client.cab.CabPresentation;
@@ -50,7 +50,7 @@ public final class DrivingConsoleRenderer implements BlockEntityRenderer<Driving
         var state = cab.getBlockState();
         if (!(state.getBlock() instanceof CabSurfaceHost host)) return;
         var surface = host.surfaceGeometry(state);
-        if (surface == CabSurfaceGeometry.EMPTY) return;
+        if (surface == ControlSurface.EMPTY) return;
         pose.pushPose();
         orient(pose, host.cabFacing(state));
         boolean drawGeometry = !CarriageBlockVisual.ownsParts(cab);
@@ -73,7 +73,7 @@ public final class DrivingConsoleRenderer implements BlockEntityRenderer<Driving
 
     static void orient(PoseStack pose, Direction facing) {
         pose.translate(.5, 0, .5);
-        pose.mulPose(Axis.YP.rotationDegrees(CabSurfaceGeometry.yaw(facing)));
+        pose.mulPose(Axis.YP.rotationDegrees(ControlSurface.yaw(facing)));
         pose.translate(-.5, 0, -.5);
     }
 
@@ -81,7 +81,7 @@ public final class DrivingConsoleRenderer implements BlockEntityRenderer<Driving
         void draw(ModelResourceLocation model, Matrix4fc transform, RenderType layer);
     }
 
-    static void visitModels(DrivingConsoleEntity cab, CabSurfaceGeometry surface, Models models) {
+    static void visitModels(DrivingConsoleEntity cab, ControlSurface surface, Models models) {
         var controls = cab.surfaceState();
         var animation = CabPresentation.animation(cab);
         for (var part : surface.parts()) {

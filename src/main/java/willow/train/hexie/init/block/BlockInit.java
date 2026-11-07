@@ -95,10 +95,25 @@ public class BlockInit {
                             .sound(SoundType.METAL).noOcclusion(), "hexie:crh2_auto", Main.asResource("crh2a_auto_coupler_geometry")),
                     block -> () -> new BlockItem(block.get(), new Item.Properties()));
 
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.coupler.JanneyCouplerBlock> GENERAL_JANNEY_COUPLER =
+            register("general_janney_coupler", () -> new willow.train.hexie.blocks.coupler.JanneyCouplerBlock(
+                    BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
+                            .sound(SoundType.METAL).noOcclusion()),
+                    block -> () -> new BlockItem(block.get(), new Item.Properties()));
+
     private static DeferredHolder<Block, CRH2PanelBlock> crh2Panel(String name) {
         return register(name, () -> new CRH2PanelBlock(BlockBehaviour.Properties.of()
                 .mapColor(MapColor.METAL).strength(2).sound(SoundType.METAL).noOcclusion(), name),
                 block -> () -> new willow.train.hexie.item.CRH2PartItem(block.get(), new Item.Properties()));
+    }
+
+    public static final DeferredHolder<Block, Block> CRH2A_ELECTRONIC_SIGNAGE = passengerDisplay("crh2a_electronic_signage", false);
+    public static final DeferredHolder<Block, Block> CRH2A_CARRIAGE_NUMBER_DISPLAY = passengerDisplay("crh2a_carriage_number_display", true);
+
+    private static DeferredHolder<Block, Block> passengerDisplay(String name, boolean number) {
+        return register(name, () -> new Block(BlockBehaviour.Properties.of().mapColor(MapColor.METAL)
+                        .strength(1.5f).sound(SoundType.METAL).noOcclusion()),
+                block -> () -> new willow.train.hexie.item.PassengerDisplayItem(block.get(), new Item.Properties(), number));
     }
 
     private static DeferredHolder<Block, CRH2PartBlock> crh2Part(String name) {
@@ -503,7 +518,7 @@ public static final DeferredHolder<Block, TrainOpenableWindowBlock> ORIGINAL_COL
 
     public static final DeferredHolder<Block, OrdinaryTrainPanelBlock> END_FACE_25Z_ORIGINAL_UPPER_AC = register("end_face_25z_original_upper_ac",
             () -> new OrdinaryTrainPanelBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
-                    .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),
+                    .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion(), false),
             object -> () -> new ToolTipsItemHelper(object.get(), new Item.Properties()));
 
     //猪
@@ -828,7 +843,7 @@ public static final DeferredHolder<Block, HXD3DPanelBlocks> CARPORT_25BGZKT_WATE
             object -> () -> new willow.train.hexie.item.PartBlockItem(object.get(), new Item.Properties()));
     public static final DeferredHolder<Block, PanelBlock25Side> PANEL_25T_ORIGINAL_SKIRT_SIDE = register("panel_25t_original_skirt_side",
             () -> new PanelBlock25Side(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
-                    .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),
+                    .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion(), false),
             object -> () -> new willow.train.hexie.item.PartBlockItem(object.get(), new Item.Properties()));
 
     public static final DeferredHolder<Block, CarPortBlockBGKZ> CARPORT_25T = register("carport_25t",
@@ -953,7 +968,7 @@ public static final DeferredHolder<Block, HXD3DPanelBlocks> CARPORT_25BGZKT_WATE
 
     public static final DeferredHolder<Block, PanelBlock25Side> PANEL_25T_MARSHALLED_SKIRT_SIDE = register("panel_25t_marshalled_skirt_side",
             () -> new PanelBlock25Side(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
-                    .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),
+                    .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion(), false),
             object -> () -> new willow.train.hexie.item.PartBlockItem(object.get(), new Item.Properties()));
 
     public static final DeferredHolder<Block, Train25KTEndFaceBlock> END_FACE_25T_ORIGINAL = register("end_face_25t_original",
@@ -1060,7 +1075,7 @@ public static final DeferredHolder<Block, HXD3DPanelBlocks> CARPORT_25BGZKT_WATE
             object -> () -> new willow.train.hexie.item.PartBlockItem(object.get(), new Item.Properties()));
     public static final DeferredHolder<Block, PanelBlock25Side> PANEL_MARSHALLED_CR200J_SKIRT_SIDE = register("panel_marshalled_cr200j_skirt_side",
             () -> new PanelBlock25Side(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
-                    .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),
+                    .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion(), false),
             object -> () -> new willow.train.hexie.item.PartBlockItem(object.get(), new Item.Properties()));
 
     public static final DeferredHolder<Block, TrainUnOpenableWindowBlock> MARSHALLED_WINDOW_CR200J_WIDE_SEALED = register("marshalled_window_cr200j_wide_sealed",

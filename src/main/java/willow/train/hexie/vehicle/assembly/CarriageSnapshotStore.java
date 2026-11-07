@@ -132,6 +132,22 @@ public final class CarriageSnapshotStore extends SavedData {
         return active.values().stream().filter(entry -> entry.station().equals(station)).findFirst();
     }
 
+    /** Register an already captured structure without reading or changing world blocks. */
+    public ActiveAssembly importAssembly(UUID assemblyId, UUID owner, BlockPos reference, Direction forward,
+                                         List<CarriageSnapshot> structures) {
+        requireServerThread();
+        if (active.containsKey(Objects.requireNonNull(assemblyId)))
+            throw new IllegalArgumentException("Assembly identity already exists");
+        structures = List.copyOf(structures);
+        var entry = new ActiveAssembly(assemblyId, owner, reference, forward,
+                structures.stream().map(CarriageSnapshot::id).toList());
+        // addAll validates every identity, dimension and block before inserting any snapshot.
+        addAll(structures);
+        active.put(entry.id(), entry);
+        setDirty();
+        return entry;
+    }
+
     public ActiveAssembly assemble(ServerLevel level, UUID owner, BlockPos station,
                                    VehicleAssemblyPreparer.Prepared prepared) {
         return assemble(level, owner, station, prepared.forward(),

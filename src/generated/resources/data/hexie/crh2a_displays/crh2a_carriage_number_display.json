@@ -1,0 +1,79 @@
+{
+  "source": "art_assets/CRH2A/CRH2A头车适配版/crh2a_carriage_number_display.bbmodel",
+  "source_sha256": "a01497833a883a1b02555bbe52770fdf410c490a3bdc22e62d22caa7ea02ed57",
+  "units": "model_pixels",
+  "pixels_per_block": 16,
+  "source_to_local_axes": [
+    "-z",
+    "y",
+    "x"
+  ],
+  "front_normal": [
+    0,
+    0,
+    1
+  ],
+  "text_right": [
+    1,
+    0,
+    0
+  ],
+  "text_up": [
+    0,
+    1,
+    0
+  ],
+  "bounds": [
+    -1.05,
+    -1.025,
+    -0.65,
+    1.05,
+    1.025,
+    0
+  ],
+  "skin_depth": 0,
+  "display_bounds": [
+    -0.97,
+    -0.945,
+    -0.36,
+    0.97,
+    0.945,
+    -0.36
+  ],
+  "glass_bounds": [
+    -0.97,
+    -0.945,
+    -0.18,
+    0.97,
+    0.945,
+    -0.18
+  ],
+  "display_width": 1.94,
+  "display_height": 1.89,
+  "layers": {
+    "body": {
+      "triangles": 28,
+      "bounds_blocks": [
+        -0.065625,
+        -0.0640625,
+        -0.040625,
+        0.065625,
+        0.0640625,
+        0.0
+      ],
+      "model": "hexie:block/crh2a/displays/crh2a_carriage_number_display_body"
+    },
+    "glass": {
+      "triangles": 2,
+      "bounds_blocks": [
+        -0.060625,
+        -0.0590625,
+        -0.01125,
+        0.060625,
+        0.0590625,
+        -0.01125
+      ],
+      "model": "hexie:block/crh2a/displays/crh2a_carriage_number_display_glass"
+    }
+  }
+}

@@ -57,6 +57,7 @@ public class HXStandardBogeyRenderer {
             boolean inInstancedContraption = vb == null;
             BogeyModelData frame = getTransform(HXSTANDARDBOGEY_FRAME, ms, inInstancedContraption);
             frame.render(ms, light, vb);
+            BogeySuspensionModels.render(this, BogeySuspensionModels.CW2, bogeyData, ms, light, vb);
 
             BogeyModelData[] wheels =
                     getTransform(HXSTANDARDBOGEY_WHEEL, ms, inInstancedContraption, 2);
@@ -106,6 +107,9 @@ public class HXStandardBogeyRenderer {
             BogeyModelData wheel2 = getTransform(PK209P_WHEEL2, ms, inInstancedContraption);
             // 发电机小轮
             BogeyModelData motorWheel = getTransform(PK209P_MOTORWHEEL, ms, inInstancedContraption);
+
+            BogeySuspensionModels.render(this, BogeySuspensionModels.PK209P, bogeyData, ms, light, vb,
+                    !inContraption && (direction == Direction.SOUTH || direction == Direction.EAST) ? 180 : 0);
 
             if (direction == Direction.SOUTH || direction == Direction.EAST) {
                 if (inContraption) {
@@ -164,6 +168,7 @@ public class HXStandardBogeyRenderer {
             boolean inInstancedContraption = vb == null;
             // 无发电机转向架架体
             BogeyModelData main = getTransform(PK209P_NO_MOTOR, ms, inInstancedContraption);
+            BogeySuspensionModels.render(this, BogeySuspensionModels.PK209P, bogeyData, ms, light, vb);
             // 普通轮对
             BogeyModelData[] wheel2s = getTransform(PK209P_WHEEL2, ms, inInstancedContraption, 2);
 
@@ -214,6 +219,9 @@ public class HXStandardBogeyRenderer {
             BogeyModelData wheel2 = getTransform(PK209P_WHEEL2, ms, inInstancedContraption);
             // 发电机小轮
             BogeyModelData motorWheel = getTransform(PK209P_MOTORWHEEL, ms, inInstancedContraption);
+
+            BogeySuspensionModels.render(this, BogeySuspensionModels.PK209P, bogeyData, ms, light, vb,
+                    !inContraption && (direction == Direction.SOUTH || direction == Direction.EAST) ? 0 : 180);
 
             // 反方向渲染
             if (direction == Direction.SOUTH || direction == Direction.EAST) {
@@ -284,6 +292,7 @@ public class HXStandardBogeyRenderer {
             BogeyModelData[] wheels = getTransform(PK209P_WHEEL2, ms, inInstancedContraption, 2);
 
             frame.translate(0, 0.635, 0).render(ms, light, vb);
+            BogeySuspensionModels.render(this, BogeySuspensionModels.SW220K, bogeyData, ms, light, vb);
 
             for (int side : Iterate.positiveAndNegative) {
                 if (!inInstancedContraption) ms.pushPose();
@@ -320,6 +329,7 @@ public class HXStandardBogeyRenderer {
 
             // 渲染架体
             frame.translate(0, 0.635, 0).render(ms, light, vb);
+            BogeySuspensionModels.render(this, BogeySuspensionModels.SW220K, bogeyData, ms, light, vb);
             // 渲染轮对
             for (int side : Iterate.positiveAndNegative) {
                 if (!inInstancedContraption) ms.pushPose();
@@ -355,6 +365,7 @@ public class HXStandardBogeyRenderer {
             BogeyModelData[] wheels = getTransform(SW160_WHEEL, ms, inInstancedContraption, 2);
 
             frame.translate(0, 0.264, 0).render(ms, light, vb);
+            BogeySuspensionModels.render(this, BogeySuspensionModels.SW160, bogeyData, ms, light, vb);
 
             for (int side : Iterate.positiveAndNegative) {
                 if (!inInstancedContraption) ms.pushPose();
@@ -386,6 +397,8 @@ public class HXStandardBogeyRenderer {
             boolean instanced = buffer == null;
             getTransform(frame, pose, instanced)
                     .translate(0, AXLE_HEIGHT + frameOffset, 0).render(pose, light, buffer);
+            BogeySuspensionModels.render(this, size.equals(BogeySizesInit.DT206)
+                    ? BogeySuspensionModels.DT206 : BogeySuspensionModels.SKTB200, data, pose, light, buffer);
             BogeyModelData[] wheels = getTransform(wheel, pose, instanced, 2);
             for (int side : Iterate.positiveAndNegative) {
                 if (!instanced) pose.pushPose();

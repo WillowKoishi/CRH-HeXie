@@ -89,7 +89,7 @@ public final class FloorSwitcherItem extends Item {
 
     public static Component message(int height) {
         return height == 24 ? Component.translatable("gui.hexie.floor_height.original")
-                : Component.translatable("item.hexie.floor_switcher.height", height / 10 + "." + height % 10);
+                : Component.translatable("item.hexie.harmony_wrench.height", height / 10 + "." + height % 10);
     }
 
     public static void beginUsing(Player player, InteractionHand hand, UUID carriage, BlockPos position) {

@@ -1,0 +1,14 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "ambientocclusion": false,
+  "shade_quads": false,
+  "emissive_ambient": false,
+  "automatic_culling": false,
+  "flip_v": true,
+  "model": "hexie:models/block/coupler/crh2a_rescue/knuckle.obj",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "particle": "hexie:block/coupler/crh2a_rescue/crh2a_rescus_coupler"
+  }
+}

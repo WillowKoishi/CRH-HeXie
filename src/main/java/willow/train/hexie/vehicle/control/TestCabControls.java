@@ -1,12 +1,13 @@
 package willow.train.hexie.vehicle.control;
 
 import java.util.List;
-import willow.train.hexie.api.cab.CabControl;
+import willow.train.hexie.api.interaction.BlockControl;
 import willow.train.hexie.api.cab.CabNeutralPositions;
 import willow.train.hexie.api.cab.CabNeutralPositions.Detent;
-import willow.train.hexie.api.cab.CabSurfaceState;
+import willow.train.hexie.api.interaction.ControlState;
 import willow.train.hexie.api.traincontrol.CabTrainControl;
 import willow.train.hexie.api.traincontrol.CabTrainRequest;
+import willow.train.hexie.vehicle.runtime.VehicleRuntime;
 
 /** The test surface owns ten service notches, emergency notch 11 and its handle-return gesture. */
 public enum TestCabControls implements CabTrainControl {
@@ -21,7 +22,17 @@ public enum TestCabControls implements CabTrainControl {
 
     public record View(int power, int brake, int reverser, boolean automatic, boolean parking) {}
 
-    public static View view(CabSurfaceState surface) {
+    /** This desk continues its handle brake demand after its reverser is cut out. */
+    @Override public VehicleRuntime.Control output(boolean enabled, VehicleRuntime.Control handles,
+                                                  VehicleRuntime.Control controlled) {
+        return enabled ? controlled : handles;
+    }
+
+    @Override public double tractionOutput(double signedPower, double consistBrake) {
+        return consistBrake > 0 ? 0 : signedPower;
+    }
+
+    public static View view(ControlState surface) {
         return new View(surface.getOrDefault(POWER, 0), surface.getOrDefault(BRAKE, 0),
                 surface.getOrDefault(REVERSER, 0), surface.getOrDefault(MODE, 0) == 1, surface.getOrDefault(PARKING, 0) == 1);
     }
@@ -30,7 +41,7 @@ public enum TestCabControls implements CabTrainControl {
         return view(state.surface(INSTANCE));
     }
 
-    @Override public CabSurfaceState restore(CabSurfaceState saved, CabTrainRequest current) {
+    @Override public ControlState restore(ControlState saved, CabTrainRequest current) {
         int power = (int) Math.round(current.power() * 10);
         int brake = current.emergencyDemand() ? EMERGENCY : Math.clamp(Math.round(
                 current.serviceBrake() / TrainControl.Source.CAB_MANUAL.serviceBrakeLimit() * SERVICE_NOTCHES), 0, SERVICE_NOTCHES);
@@ -42,12 +53,12 @@ public enum TestCabControls implements CabTrainControl {
         return saved.with(PARKING, current.parking() ? 1 : 0);
     }
 
-    private static CabSurfaceState restoreSetting(CabSurfaceState saved, String key, int fallback, int min, int max) {
+    private static ControlState restoreSetting(ControlState saved, String key, int fallback, int min, int max) {
         var value = saved.positions().get(key);
         return value == null || value < min || value > max ? saved.with(key, fallback) : saved;
     }
 
-    @Override public Result operate(CabControl control, int value, CabSurfaceState before, CabSurfaceState after,
+    @Override public Result operate(BlockControl control, int value, ControlState before, ControlState after,
                                     CabTrainRequest current) {
         var old = view(before);
         var button = (TestCabButton) control;
@@ -68,6 +79,18 @@ public enum TestCabControls implements CabTrainControl {
         boolean enabled = button == TestCabButton.REVERSER ? next.reverser() != 0 : current.enabled();
         return new Result(surface, new CabTrainRequest(next.power() / 10d, service, next.reverser(), enabled,
                 next.automatic(), next.parking(), emergency, release, current.approach()));
+    }
+
+    /** This desk accepts the handle-return release only while stopped, with power zero and reverser cut out. */
+    @Override public Result operate(BlockControl control, int value, ControlState before, ControlState after,
+                                    CabTrainRequest current, double speed) {
+        var result = operate(control, value, before, after, current);
+        var request = result.request();
+        boolean release = request.releaseEmergency() && Math.abs(speed) < 1e-4
+                && request.power() == 0 && request.reverser() == 0;
+        return new Result(result.surface(), new CabTrainRequest(request.power(), request.serviceBrake(),
+                request.reverser(), request.enabled(), request.automatic(), request.parking(),
+                request.emergencyDemand(), release, request.approach()));
     }
 
     /** Compatibility entry for older test callers that identify buttons by their number. */

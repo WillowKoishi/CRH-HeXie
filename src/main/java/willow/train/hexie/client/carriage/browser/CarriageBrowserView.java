@@ -6,6 +6,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 import org.joml.Matrix4f;
 import org.lwjgl.glfw.GLFW;
 import willow.train.hexie.Main;
@@ -18,6 +20,7 @@ public final class CarriageBrowserView implements AutoCloseable {
     private static final int STRIP_HEIGHT = 18;
     private static final int PREVIEW_TOP = 37;
     private static final int CONTROL_X = 174, CONTROL_Y = 19, CONTROL_SIZE = 14, CONTROL_PITCH = 18;
+    private static final int SCHEMATIC_X = 173, SCHEMATIC_Y = 112;
     private static final float FRONT_YAW = 142;
     private static final float CAMERA_PITCH = 44;
     final CreativeModeInventoryScreen host;
@@ -42,6 +45,8 @@ public final class CarriageBrowserView implements AutoCloseable {
     boolean openingPalette;
     private CarriagePreview.Hit hovered;
     private Matrix4f hoveredTransform;
+    private Slot originalSchematicSlot, schematicSlot;
+    private ItemStack schematicPrototype, schematicStack = ItemStack.EMPTY;
     private final List<StripEntry> stripEntries = new ArrayList<>();
     private static final Map<ResourceLocation, Saved> SAVED = new HashMap<>();
     final ResourceLocation tab;
@@ -130,6 +135,7 @@ public final class CarriageBrowserView implements AutoCloseable {
         motion.target(targetPosition);
         lastInput = now();
         hovered = null;
+        syncSchematicSlot();
     }
 
     private void cycle(int delta) {
@@ -177,15 +183,55 @@ public final class CarriageBrowserView implements AutoCloseable {
 
     public void render(GuiGraphics gui, int mouseX, int mouseY) {
         if (generation != CarriageBrowserClient.resourceGeneration) init();
-        if (!host.getMenu().items.isEmpty()) {
-            host.getMenu().items.clear();
-            host.getMenu().scrollTo(0);
-        }
+        syncSchematicSlot();
         gui.flush();
         gui.pose().pushPose();
         gui.pose().translate(host.getGuiLeft(), host.getGuiTop(), 0);
         try { renderScene(gui, mouseX - host.getGuiLeft(), mouseY - host.getGuiTop()); }
         finally { gui.pose().popPose(); }
+    }
+
+    private void syncSchematicSlot() {
+        var menu = host.getMenu();
+        if (schematicSlot == null || menu.slots.getFirst() != schematicSlot) {
+            restoreSchematicSlot();
+            Slot original = menu.slots.getFirst();
+            originalSchematicSlot = original;
+            // Reuse a native creative slot and its container. Adding a slot would
+            // change vanilla's hotbar-to-server slot arithmetic.
+            schematicSlot = new Slot(original.container, original.getContainerSlot(), SCHEMATIC_X, SCHEMATIC_Y) {
+                @Override public boolean mayPlace(ItemStack stack) { return original.mayPlace(stack); }
+                @Override public boolean mayPickup(net.minecraft.world.entity.player.Player player) {
+                    return original.mayPickup(player);
+                }
+            };
+            schematicSlot.index = original.index;
+            menu.slots.set(0, schematicSlot);
+        }
+        ItemStack schematic = layout == null ? ItemStack.EMPTY
+                : catalog.models().get(layout.model(selected)).schematic();
+        if (schematicPrototype != schematic) {
+            schematicPrototype = schematic;
+            schematicStack = schematic.copy();
+        }
+        if (menu.items.size() != 1 || menu.items.getFirst() != schematicStack) {
+            menu.items.clear();
+            menu.items.add(schematicStack);
+            menu.scrollTo(0);
+        } else if (schematicSlot.getItem() != schematicStack) {
+            // Palette screens share vanilla's creative container with this parent.
+            // Refresh only this cell while rendering the parent behind a palette.
+            schematicSlot.set(schematicStack);
+        }
+    }
+
+    boolean isSchematicSlot(Slot slot) { return slot == schematicSlot; }
+
+    void restoreSchematicSlot() {
+        if (originalSchematicSlot != null && !host.getMenu().slots.isEmpty()
+                && host.getMenu().slots.getFirst() == schematicSlot)
+            host.getMenu().slots.set(0, originalSchematicSlot);
+        originalSchematicSlot = schematicSlot = null;
     }
 
     private void scissor(GuiGraphics gui, int left, int top, int right, int bottom) {
@@ -204,6 +250,7 @@ public final class CarriageBrowserView implements AutoCloseable {
         gui.blit(SLOT_TEXTURE, 169, 17, 1, 90, 25, 17, 1, 18, 256, 256);
         gui.blit(SLOT_TEXTURE, 8, 106, 162, 1, 8, 34, 18, 1, 256, 256);
         gui.blit(SLOT_TEXTURE, 8, 34, 162, 2, 8, 34, 18, 2, 256, 256);
+        gui.blit(SLOT_TEXTURE, SCHEMATIC_X - 1, SCHEMATIC_Y - 1, 8, 17, 18, 18);
         hovered = null;
         selectedTransform = null;
         stripEntries.clear();
@@ -415,6 +462,7 @@ public final class CarriageBrowserView implements AutoCloseable {
     public boolean contains(double x, double y) { return x >= 8 && x < 188 && y >= 17 && y < 107; }
     private void closeMeshes() { previews.clear(); }
     @Override public void close() {
+        restoreSchematicSlot();
         if (layout != null) {
             SAVED.put(tab, new Saved(catalog.models().get(layout.model(selected)).id(), selected, phase, targetShell < .5f, panTarget,
                     position - targetPosition, motion.velocity()));

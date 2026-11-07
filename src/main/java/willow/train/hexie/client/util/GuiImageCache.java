@@ -1,15 +1,11 @@
 package willow.train.hexie.client.util;
 
 import com.mojang.blaze3d.platform.NativeImage;
-import com.simibubi.create.content.trains.bogey.BogeySizes;
-import com.simibubi.create.content.trains.bogey.BogeyStyle;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.resources.Resource;
 import org.jetbrains.annotations.Nullable;
 import willow.train.hexie.Main;
-import willow.train.hexie.init.bogeys.BogeyStylesInit;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -20,38 +16,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 public final class GuiImageCache {
     private static boolean loaded;
     private static final List<ImageData> PENDING_IMAGES = new ArrayList<>();
     private static final Map<ResourceLocation, ImageData> GUI_IMAGES = new HashMap<>();
-    public static final Map<String, ImageData> BOGEY_PREVIEWS = new HashMap<>();
 
     private GuiImageCache() {}
-
-    private static void loadBogeyPreviews(BogeyStyle style) {
-        String styleName = style.id.toDebugFileName();
-        for (BogeySizes.BogeySize size : style.validSizes()) {
-            String sizeName = size.id().toDebugFileName();
-            // Reversed bogeys share the corresponding forward preview.
-            if (sizeName.endsWith("_backward"))
-                continue;
-
-            ResourceLocation location = ResourceLocation.fromNamespaceAndPath(Main.MOD_ID,
-                    "textures/gui/bogey_style/" + styleName + "/" + sizeName + ".png");
-            Optional<Resource> resource = Minecraft.getInstance().getResourceManager().getResource(location);
-            if (resource.isEmpty())
-                continue;
-
-            try (InputStream stream = resource.get().open()) {
-                BOGEY_PREVIEWS.put(styleName + "." + sizeName,
-                        new ImageData(location, stream, true));
-            } catch (IOException exception) {
-                Main.LOGGER.warn("Could not load bogey preview {}", location, exception);
-            }
-        }
-    }
 
     private static ImageData register(ResourceLocation location, @Nullable Integer index) {
         // A registered path names one image, so only the first index is valid.
@@ -91,9 +62,6 @@ public final class GuiImageCache {
             return;
 
         loaded = true;
-        loadBogeyPreviews(BogeyStylesInit.HXSTANDARDBOGEY);
-        loadBogeyPreviews(BogeyStylesInit.DF11GBOGEY);
-        loadBogeyPreviews(BogeyStylesInit.CRHBOGEY);
         for (ImageData pending : PENDING_IMAGES) {
             ImageData image = register(pending.location, 0);
             if (image == null)

@@ -1,0 +1,42 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "ambientocclusion": false,
+  "shade_quads": false,
+  "emissive_ambient": false,
+  "automatic_culling": false,
+  "flip_v": true,
+  "model": "hexie:models/block/coupler/crh2a_rescue/closed.obj",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "particle": "hexie:block/coupler/crh2a_rescue/crh2a_rescus_coupler"
+  },
+  "display": {
+    "gui": {
+      "rotation": [
+        20,
+        -45,
+        0
+      ],
+      "scale": [
+        1.5,
+        1.5,
+        1.5
+      ]
+    },
+    "ground": {
+      "scale": [
+        0.6,
+        0.6,
+        0.6
+      ]
+    },
+    "fixed": {
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    }
+  }
+}

@@ -20,7 +20,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
-import willow.train.hexie.network.s2c.CarriagePlayerStatePacket;
 import willow.train.hexie.network.s2c.ContraptionSeatPositionPacket;
 import willow.train.hexie.blocks.seats.HardSeatPositionRequest;
 import willow.train.hexie.blocks.seats.HardSeatPosition;
@@ -149,9 +148,8 @@ public final class CarriagePlayerPersistence {
             }
         }
         keepTicket(player, level, new ChunkPos(car.blockPosition()));
-        Vec3 world = CarriagePlayerSupport.frame(car, 1).world(local);
         if (!Boolean.TRUE.equals(PENDING.get(player))) {
-            teleport(player, level, world);
+            teleport(player, level, CarriagePlayerSupport.frame(car, 1).world(local));
             PENDING.put(player, true);
             return;
         }
@@ -190,11 +188,7 @@ public final class CarriagePlayerPersistence {
                 }
             }
         }
-        Vec3 delta = world.subtract(player.position());
-        player.setPos(world);
-        if (player.connection instanceof CarriedPlayerConnection connection) connection.hexie$carry(delta);
-        CarriagePlayerSupport.accept(player, car, local);
-        PacketDistributor.sendToPlayer(player, new CarriagePlayerStatePacket(player.getId(), car.getId(), car.getUUID(), local, true));
+        CarriagePlayerSupport.placeAndSync(player, car, local);
         cancel(player);
     }
 

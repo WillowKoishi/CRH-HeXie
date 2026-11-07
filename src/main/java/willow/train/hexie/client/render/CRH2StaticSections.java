@@ -70,6 +70,7 @@ public final class CRH2StaticSections {
                 var key = BlockModelShaper.stateToModelLocation(state);
                 var original = event.getModels().get(key);
                 if (original == null) continue;
+                original = willow.train.hexie.client.render.display.PassengerPanelModels.wrap(original, state);
                 var mesh = new CRH2StaticMesh(original, state);
                 meshes.put(state, mesh);
                 event.getModels().put(key, new CRH2StaticModel(original));

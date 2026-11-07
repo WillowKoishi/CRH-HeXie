@@ -67,6 +67,20 @@ public final class VehicleRuntime {
         if (!updated.equals(old.couplings())) carriage.definition = new CarriageDefinition(old.id(), old.bogeys(), updated,
                 old.rearExtent(), old.frontExtent(), old.floorOffset());
     }
+    /** Explicit appearance edits preserve coupling geometry, adapters, connections and solved poses. */
+    public boolean updateCouplerVisual(UUID id, CouplingEndpoint.Visual visual) {
+        Objects.requireNonNull(visual);
+        var carriage = car(owner(id));
+        var old = carriage.definition;
+        var updated = old.couplings().stream().map(endpoint -> endpoint.id().equals(id)
+                ? new CouplingEndpoint(endpoint.id(), endpoint.blockCenter(), endpoint.facing(), endpoint.axis(),
+                        endpoint.start(), endpoint.complete(), endpoint.kind(), endpoint.maxExtension(), endpoint.model(),
+                        endpoint.adapter(), visual) : endpoint).toList();
+        if (updated.equals(old.couplings())) return false;
+        carriage.definition = new CarriageDefinition(old.id(), old.bogeys(), updated,
+                old.rearExtent(), old.frontExtent(), old.floorOffset());
+        return true;
+    }
     public double bogeySpeed(UUID id) { return Objects.requireNonNull(bogeySpeeds.get(id), "Unknown bogey"); }
     public double motionDistance(UUID bogey) { return Objects.requireNonNull(motionDistances.get(bogey), "Unknown bogey"); }
     public Optional<String> constraintFailure() { return Optional.ofNullable(constraintFailure); }

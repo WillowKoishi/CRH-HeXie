@@ -2,19 +2,28 @@ package willow.train.hexie.mixins.mixin.client;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.sugar.Local;
 import com.simibubi.create.content.contraptions.AbstractContraptionEntity;
 import com.simibubi.create.content.contraptions.ContraptionHandlerClient;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import willow.train.hexie.api.interaction.BlockControlHost;
+import willow.train.hexie.client.CarriageControlPicking;
 import willow.train.hexie.client.CarriageInteractionCoordinates;
-import willow.train.hexie.client.CouplerInteractionPicking;
-import willow.train.hexie.client.DoorInteractionPicking;
 import willow.train.hexie.compat.create.SnapshotCarriageEntity;
 
 @Mixin(ContraptionHandlerClient.class)
 public abstract class MixinCarriageInteraction {
+    @Unique private static final ThreadLocal<CarriageControlPicking> hexie$pickingCarriage = new ThreadLocal<>();
+
     @WrapOperation(method = "getRayInputs", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/world/phys/Vec3;distanceTo(Lnet/minecraft/world/phys/Vec3;)D"), remap = false)
     private static double hexie$missDoesNotOcclude(Vec3 hitLocation, Vec3 origin, Operation<Double> original) {
@@ -42,18 +51,44 @@ public abstract class MixinCarriageInteraction {
     }
 
     @com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod(method = "rayTraceContraption", remap = false)
-    private static net.minecraft.world.phys.BlockHitResult hexie$nativeCarriageRay(Vec3 origin, Vec3 target,
-            AbstractContraptionEntity entity, Operation<net.minecraft.world.phys.BlockHitResult> original) {
-        if (!(entity instanceof SnapshotCarriageEntity car))
-            return CouplerInteractionPicking.contraption(entity, origin, target,
-                    DoorInteractionPicking.contraption(entity, origin, target, original.call(origin, target, entity)));
-        var compatibility = CarriageInteractionCoordinates.compatibilityEntity(car);
+    private static BlockHitResult hexie$nativeCarriageRay(Vec3 origin, Vec3 target,
+            AbstractContraptionEntity entity, Operation<BlockHitResult> original) {
+        if (entity.getContraption() == null) return original.call(origin, target, entity);
+        var compatibility = entity;
+        if (entity instanceof SnapshotCarriageEntity car)
+            compatibility = CarriageInteractionCoordinates.compatibilityEntity(car);
+        float partial = CarriageInteractionCoordinates.partialTick();
+        var ray = CarriageInteractionCoordinates.toCompatibilityRay(entity, compatibility, origin, target, partial);
+        origin = ray.from();
+        target = ray.to();
         // Convert the entire ray before native traversal/shape clipping. The result is
         // already a native local block/face and goes straight to Create's interaction packet.
-        var nativeHit = original.call(CarriageInteractionCoordinates.toCompatibility(car, compatibility, origin),
-                CarriageInteractionCoordinates.toCompatibility(car, compatibility, target), compatibility);
-        return CouplerInteractionPicking.contraption(car, origin, target,
-                DoorInteractionPicking.contraption(car, origin, target, nativeHit));
+        var picking = new CarriageControlPicking(entity, ray.localFrom(), ray.localTo(), partial);
+        var previous = hexie$pickingCarriage.get();
+        hexie$pickingCarriage.set(picking);
+        try {
+            return picking.nearest(original.call(origin, target, compatibility));
+        } finally {
+            if (previous == null) hexie$pickingCarriage.remove();
+            else hexie$pickingCarriage.set(previous);
+        }
+    }
+
+    @WrapOperation(method = "lambda$rayTraceContraption$0", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/world/level/block/state/BlockState;getShape(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/phys/shapes/VoxelShape;"), remap = false)
+    private static VoxelShape hexie$carriageCandidateShape(BlockState state, BlockGetter level, BlockPos ignored,
+            Operation<VoxelShape> original, @Local(ordinal = 1) BlockPos position) {
+        return original.call(state, level,
+                BlockControlHost.find(state) != null ? position : ignored);
+    }
+
+    @WrapOperation(method = "lambda$rayTraceContraption$0", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/world/phys/shapes/VoxelShape;clip(Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/phys/BlockHitResult;"), remap = false)
+    private static BlockHitResult hexie$carriageCandidateClip(VoxelShape shape, Vec3 from, Vec3 to,
+            BlockPos position, Operation<BlockHitResult> original, @Local BlockState state) {
+        var picking = hexie$pickingCarriage.get();
+        return picking != null && picking.replacesNative(position, state) ? null
+                : original.call(shape, from, to, position);
     }
 
     @WrapOperation(method = "rightClickingOnContraptionsGetsHandledLocally", at = @At(value = "INVOKE",

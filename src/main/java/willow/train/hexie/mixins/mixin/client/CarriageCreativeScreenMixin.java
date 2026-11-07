@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import willow.train.hexie.client.carriage.browser.CarriageBrowserClient;
 
 @Mixin(CreativeModeInventoryScreen.class)
@@ -16,6 +17,9 @@ public class CarriageCreativeScreenMixin {
     private void hexie$saveGroupScroll(net.minecraft.world.item.CreativeModeTab tab, CallbackInfo ci) {
         CarriageBrowserClient.captureOriginal((CreativeModeInventoryScreen) (Object) this);
         willow.train.hexie.event.client.HXInventoryEvents.captureLegacyScroll((CreativeModeInventoryScreen) (Object) this);
+        // Inventory-tab switching snapshots the slot list; restore the native
+        // creative slot before vanilla takes that snapshot.
+        CarriageBrowserClient.restoreSlots((CreativeModeInventoryScreen) (Object) this);
     }
 
     @Inject(method = "renderBg", at = @At("TAIL"))
@@ -23,9 +27,15 @@ public class CarriageCreativeScreenMixin {
         CarriageBrowserClient.render((CreativeModeInventoryScreen) (Object) this, gui, x, y);
     }
 
+    @Inject(method = "insideScrollbar", at = @At("HEAD"), cancellable = true)
+    private void hexie$disablePreviewScrollbar(double x, double y, CallbackInfoReturnable<Boolean> cir) {
+        // Vanilla consumes left clicks here even when the item list cannot scroll.
+        if (CarriageBrowserClient.active((CreativeModeInventoryScreen) (Object) this)) cir.setReturnValue(false);
+    }
+
     @Inject(method = "slotClicked", at = @At("HEAD"), cancellable = true)
     private void hexie$noHiddenSlotClicks(Slot slot, int slotId, int button, ClickType type, CallbackInfo ci) {
-        if (slot != null && slot.index < 45 && CarriageBrowserClient.active((CreativeModeInventoryScreen) (Object) this))
+        if (CarriageBrowserClient.hiddenSlot((CreativeModeInventoryScreen) (Object) this, slot))
             ci.cancel();
     }
 

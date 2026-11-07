@@ -22,6 +22,17 @@ public class BlockEntitySynchronizeBehaviour implements MovementBehaviour {
             // the actor context can still contain the previous OPEN state on this client.
             var current = context.contraption.getBlocks().get(pos);
             coupler.setBlockState(current == null ? state : current.state());
+            if (context.contraption.entity instanceof willow.train.hexie.compat.create.SnapshotCarriageEntity carriage) {
+                for (var parameters : carriage.couplerAnimation().parameters()) {
+                    if (!parameters.position().equals(pos)) continue;
+                    var attachment = parameters.attachment();
+                    var adapter = attachment == null ? null : attachment.adapter();
+                    String baseModel = attachment == null ? ""
+                            : attachment.reversed() ? adapter.secondModel() : adapter.firstModel();
+                    coupler.updateRescueAnimationTarget(adapter, baseModel, parameters.coupled());
+                    break;
+                }
+            }
             coupler.tickCoverAnimation();
         }
     }

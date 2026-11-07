@@ -1,10 +1,10 @@
 package willow.train.hexie.vehicle.control;
 
 import net.minecraft.network.chat.Component;
-import willow.train.hexie.api.cab.CabControl;
+import willow.train.hexie.api.interaction.BlockControl;
 
 /** Physical detents, slider travel and labels of the non-standard CRH2A desk. */
-public enum Crh2CabHandle implements CabControl.Handle {
+public enum Crh2CabHandle implements BlockControl.Handle {
     POWER("power", 0, 10),
     BRAKE("brake", 0, 9),
     REVERSER("reverser", -1, 1);
@@ -49,8 +49,8 @@ public enum Crh2CabHandle implements CabControl.Handle {
 
     @Override public double sliderPosition(int notch) {
         return switch (this) {
-            case POWER -> CabControl.Handle.super.sliderPosition(notch);
-            case REVERSER -> 1 - CabControl.Handle.super.sliderPosition(notch);
+            case POWER -> BlockControl.Handle.super.sliderPosition(notch);
+            case REVERSER -> 1 - BlockControl.Handle.super.sliderPosition(notch);
             // Leave two ordinary intervals between rapid and removal on the scale.
             case BRAKE -> notch == maxNotch ? 0 : (maxNotch + 1 - notch) / (double) (maxNotch + 1);
         };

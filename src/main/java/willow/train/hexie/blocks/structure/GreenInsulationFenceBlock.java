@@ -12,6 +12,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import willow.train.hexie.blocks.carriage.PanelBlock25Side;
 
 public class GreenInsulationFenceBlock extends PanelBlock25Side {
+    @Override public boolean supportsPassengerDisplay() { return false; }
     protected int type = 0;
 
     public GreenInsulationFenceBlock(Properties pProperties, int tType) {

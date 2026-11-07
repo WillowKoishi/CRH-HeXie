@@ -21,11 +21,16 @@ public class AllItemsInit {
     public static final DeferredRegister<Item> ITEMS =
             DeferredRegister.create(Registries.ITEM, Main.MOD_ID);
 
-    public static final DeferredHolder<Item, FloorSwitcherItem> FLOOR_SWITCHER = ITEMS.register("floor_switcher",
+    public static final DeferredHolder<Item, FloorSwitcherItem> HARMONY_WRENCH = ITEMS.register("harmony_wrench",
             () -> new FloorSwitcherItem(new Item.Properties().stacksTo(1)));
+
+    public static final DeferredHolder<Item, willow.train.hexie.item.RescueCouplerItem> CRH2A_RESCUE_COUPLER =
+            ITEMS.register("crh2a_rescue_coupler",
+                    () -> new willow.train.hexie.item.RescueCouplerItem(new Item.Properties()));
 
     public static void registerAllItems(IEventBus bus) {
         fireAllInit();
+        ITEMS.addAlias(Main.asResource("floor_switcher"), HARMONY_WRENCH.getId());
         ITEMS.register(bus);
     }
 

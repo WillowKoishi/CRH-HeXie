@@ -1,70 +1,52 @@
 package willow.train.hexie.compat.create;
 
 import java.util.ArrayDeque;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
-import willow.train.hexie.vehicle.player.SupportFrame;
+import org.joml.Quaternionf;
+import org.joml.Quaternionfc;
 
-/** Recent authoritative poses published to clients. Used only for the first movement onto a body. */
+/** Retain recently visible bodies while a delayed client is stepping aboard. No player physics. */
 final class CarriageBoardingHistory {
     private static final class Sample {
         final long stamp;
-        final SupportFrame pose;
+        final Vec3 position, velocity;
+        final Quaternionf rotation;
         long lastTick;
 
-        Sample(long tick, SupportFrame pose) {
+        Sample(long tick, Vec3 position, Vec3 velocity, Quaternionfc rotation) {
             this.stamp = this.lastTick = tick;
-            this.pose = pose;
+            this.position = position;
+            this.velocity = velocity;
+            this.rotation = new Quaternionf(rotation);
         }
+
     }
     private final ArrayDeque<Sample> samples = new ArrayDeque<>();
     private static final int MAX_AGE_TICKS = 100;
 
     void clear() { samples.clear(); }
 
-    long record(long tick, SupportFrame pose) {
+    boolean wasInTrackingRange(Vec3 observer, double range, long now) {
+        double squaredRange = range * range;
+        for (Sample sample : samples) {
+            if (now - sample.lastTick > MAX_AGE_TICKS) continue;
+            double dx = observer.x - sample.position.x, dz = observer.z - sample.position.z;
+            if (dx * dx + dz * dz <= squaredRange) return true;
+        }
+        return false;
+    }
+
+    long record(long tick, Vec3 position, Vec3 velocity, Quaternionfc rotation) {
         while (!samples.isEmpty() && samples.getFirst().lastTick < tick - MAX_AGE_TICKS) samples.removeFirst();
         Sample last = samples.peekLast();
-        if (last != null && last.pose.equals(pose)) {
+        if (last != null && last.position.equals(position)
+                && last.velocity.equals(velocity) && last.rotation.equals(rotation)) {
             // A stopped carriage keeps the same network payload, however long it stands here.
             last.lastTick = tick;
             return last.stamp;
         }
-        samples.addLast(new Sample(tick, pose));
+        samples.addLast(new Sample(tick, position, velocity, rotation));
         return tick;
     }
 
-    Vec3 contact(long tick, Vec3 local, ServerPlayer player, int updateInterval) {
-        // Do not let a client select an arbitrary old pass of a train. Allow for packet batching,
-        // the interpolation interval and the measured round trip. The history also has a hard bound.
-        int delay = 2 * updateInterval + 8 + Mth.ceil(player.connection.latency() / 50.0);
-        long now = player.level().getGameTime();
-        Sample previous = null;
-        for (Sample sample : samples) {
-            if (sample.stamp == tick) {
-                if (now - sample.lastTick > Math.min(MAX_AGE_TICKS, delay)) return null;
-                Vec3 end = sample.pose.world(local);
-                if (previous == null || now - previous.lastTick > delay || tick - previous.lastTick > 2L * updateInterval)
-                    return end;
-                Vec3 start = previous.pose.world(local);
-                Vec3 segment = end.subtract(start);
-                if (segment.lengthSqr() < 1e-12) return end;
-                // The client's interpolation and the server's tick are asynchronous. Match the
-                // foot point along this broadcast interval to the last accepted player position.
-                double t = player.position().subtract(start).dot(segment) / segment.lengthSqr();
-                return start.add(segment.scale(Mth.clamp(t, 0, 1)));
-            }
-            previous = sample;
-        }
-        return null;
-    }
-
-    boolean carryToPresent(ServerPlayer player, long tick, Vec3 local, Vec3 current) {
-        for (Sample sample : samples) {
-            if (sample.stamp >= tick && !CarriagePlayerSupport.carryBoardingPlayer(player, sample.pose.world(local)))
-                return false;
-        }
-        return CarriagePlayerSupport.carryBoardingPlayer(player, current);
-    }
 }

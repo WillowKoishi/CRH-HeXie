@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "hexie:block/crh2a/displays/crh2a_carriage_number_display"
+    }
+  }
+}

@@ -11,10 +11,9 @@ import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import willow.train.hexie.compat.create.TrainSeatDismount;
-import willow.train.hexie.compat.create.CarriagePlayerSupport;
 import willow.train.hexie.compat.create.SnapshotCarriageEntity;
 
-/** Use the server's cab exit calculation in Create's client dismount packet. */
+/** Snapshot exits use the server's local placement packet; other cabs retain their exit rule. */
 @Mixin(value = ContraptionSeatMappingPacket.class, remap = false)
 public abstract class MixinDrivingConsoleDismountSync {
     @WrapOperation(method = "handle", at = @At(value = "INVOKE",
@@ -24,17 +23,12 @@ public abstract class MixinDrivingConsoleDismountSync {
                                          float partialTicks, Operation<Vec3> original) {
         // The packet reaches this call only for the local dismounting player,
         // before it replaces the old seat mapping with the post-dismount mapping.
+        // Snapshot's local placement follows this mapping packet. Do not queue a
+        // second placement or preserve Create's one-shot world-coordinate exit.
+        if (vehicle instanceof SnapshotCarriageEntity && passenger instanceof Player) return null;
         if (vehicle.getContraption() instanceof CarriageContraption contraption) {
             var seat = contraption.getSeatOf(passenger.getUUID());
             if (seat != null) {
-                if (vehicle instanceof SnapshotCarriageEntity car && passenger instanceof Player player) {
-                    Vec3 local = TrainSeatDismount.localBehind(vehicle, seat);
-                    if (local != null) {
-                        CarriagePlayerSupport.queueClientDismount(player, car, local);
-                        // The queued local placement replaces Create's one-shot world position.
-                        return null;
-                    }
-                }
                 Vec3 exit = TrainSeatDismount.behind(vehicle, seat);
                 if (exit != null) return exit;
             }

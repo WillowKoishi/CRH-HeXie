@@ -159,10 +159,18 @@ public final class CreateTrainBridge {
             train.speed = nativeSpeed(motion.runtime().speed(member));
             train.manualTick = motion.isManuallyControlled(train.carriageIds.getFirst());
             SnapshotCarriageEntity.prepareTimetableTick(train, motion.level().getGameTime());
-            if (backend) updateTimetable(train, member, motion.isAutomaticControlSelected(member), motion.controlSource(member), true);
-            else if (selected == null) {
-                train.usingReservationRoute(null);
-                CreateDmiRouteSource.readPhysicalSignals(motion, train);
+            boolean backendAutomatic = motion.isBackendAutomaticControlSelected(member);
+            var backendSource = motion.backendControlSource(member);
+            if (backend) updateTimetable(train, member, backendAutomatic, backendSource, true);
+            else {
+                // The original schedule retains its own observations while a desk owns the route.
+                // Running its native timetable here could start navigation or reserve another station.
+                updateStationRange(train);
+                refreshTimetableObservations(train, member, backendAutomatic, backendSource, false);
+                if (selected == null) {
+                    train.usingReservationRoute(null);
+                    CreateDmiRouteSource.readPhysicalSignals(motion, train);
+                }
             }
             for (var cab : motion.cabTimetables(member).values()) {
                 boolean publish = cab == selected;
@@ -179,6 +187,11 @@ public final class CreateTrainBridge {
         reportStoppedAtStation(train);
         train.runtime.tick(motion.level());
         train.updateStationDeparture();
+        refreshTimetableObservations(train, member, automatic, source, publish);
+    }
+
+    private void refreshTimetableObservations(CompatibilityTrain train, UUID member, boolean automatic,
+                                             TrainControl.Source source, boolean publish) {
         var preview = CreateWaypointSupport.preview(train);
         train.displayRoute = CreateDmiRouteSource.read(motion, train, preview, publish);
         if (publish) train.usingReservationRoute(automatic ? train.navigation : null);
@@ -203,6 +216,9 @@ public final class CreateTrainBridge {
         motionPausedCarriages.clear();
         if (removed) return;
         for (var train : List.copyOf(trains.values())) {
+            // Chunk activation controls native carrier visibility, not the independent journey.
+            // Discard a retained native wait when loading or regrouping an older train.
+            train.carriageWaitingForChunks = -1;
             if (train.graph == null) {
                 motionPausedCarriages.addAll(train.carriageIds);
                 continue;
@@ -212,8 +228,6 @@ public final class CreateTrainBridge {
                 ((CreateTrainAccess) (Object) train).hexie$tickDerailedSlowdown();
                 motion.runtime().speedForConsist(train.carriageIds.getFirst(), routeSpeed(train.speed));
             }
-            // Native chunk waiting pauses this frame's travel without erasing its speed.
-            if (train.carriageWaitingForChunks != -1) motionPausedCarriages.addAll(train.carriageIds);
             boolean stalled = train.carriages.stream().anyMatch(carriage -> carriage.stalled);
             if (stalled) {
                 if (train.speedBeforeStall == null) train.speedBeforeStall = train.speed;
@@ -312,6 +326,7 @@ public final class CreateTrainBridge {
             var member = train.carriageIds.getFirst();
             var selected = motion.selectedCabTimetable(member);
             if (!motion.hasEnabledCabModule(member)) updateAfterTravel(train, entry.getValue());
+            else updateBackendTravel(train, entry.getValue());
             for (var cab : motion.cabTimetables(member).values()) cab.with(train, cab == selected, () -> {
                 if (cab == selected) updateAfterTravel(train, entry.getValue());
                 else reportStoppedAtStation(train);
@@ -323,6 +338,15 @@ public final class CreateTrainBridge {
     private void updateAfterTravel(CompatibilityTrain train, double distance) {
         ((CreateTrainAccess) (Object) train).hexie$updateNavigationTarget(motion.level(), distance);
         reportStoppedAtStation(train);
+    }
+
+    /** Follow actual travel without allowing an unselected native schedule to choose another path. */
+    private void updateBackendTravel(CompatibilityTrain train, double distance) {
+        var navigation = train.navigation;
+        if (navigation.destination == null) return;
+        double travelled = navigation.destinationBehindTrain ? -distance : distance;
+        navigation.distanceToDestination -= travelled;
+        if (navigation.waitingForSignal != null) navigation.distanceToSignal -= travelled;
     }
 
     private void observeCabTravel(CompatibilityTrain train, double travel) {
@@ -370,7 +394,16 @@ public final class CreateTrainBridge {
         for (var train : trains.values()) {
             for (UUID id : train.carriageIds) {
                 // Lifecycle alignment and saved fallback anchors already carry the solved pose.
-                carriages.get(id).manageEntities(motion.level());
+                var carriage = carriages.get(id);
+                carriage.manageEntities(motion.level());
+                if (carriage.getDimensional(motion.level()).entity.get() instanceof SnapshotCarriageEntity entity
+                        && !entity.isRemoved()) {
+                    // The logical tick runs after entity ticks, including outside active chunks.
+                    motion.applyCurrent(entity);
+                    for (var passenger : entity.getPassengers())
+                        if (passenger instanceof net.minecraft.world.entity.player.Player)
+                            entity.positionRider(passenger);
+                }
             }
         }
     }
@@ -559,8 +592,7 @@ public final class CreateTrainBridge {
             }
         }
         target.speedBeforeStall = previous.speedBeforeStall;
-        if (previous.carriageWaitingForChunks >= 0 && previous.carriageWaitingForChunks < previous.carriageIds.size())
-            target.carriageWaitingForChunks = target.carriageIds.indexOf(previous.carriageIds.get(previous.carriageWaitingForChunks));
+        target.carriageWaitingForChunks = -1;
         CreateTrackCompatibility.transferTrain(motion.level(), previous, target);
         // Console execution follows that console. Native schedules retain their original transfer rule.
         var timetableCab = CreateConsoleTimetable.source(previous);

@@ -90,6 +90,14 @@ final class SnapshotCouplerVisual implements CouplerModelParts.Sink {
         acquire(model).setTransform(stack).setChanged();
     }
 
+    @Override public void cable(PartialModel model, PoseStack stack, CableDeformation deformation) {
+        for (var face : CableTriangles.forModel(model)) {
+            PosedInstance instance = acquire(face.model());
+            face.deform(instance, stack.last(), deformation, normalScratch);
+            instance.setChanged();
+        }
+    }
+
     private PosedInstance acquire(Model model) {
         Part part;
         if (used >= instances.size()) {

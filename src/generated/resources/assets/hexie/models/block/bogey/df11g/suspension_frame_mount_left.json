@@ -1,0 +1,10 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "flip_v": true,
+  "model": "hexie:models/block/bogey/df11g/suspension_frame_mount_left.obj",
+  "textures": {
+    "particle": "hexie:block/bogey/df11g_top"
+  },
+  "automatic_culling": false
+}

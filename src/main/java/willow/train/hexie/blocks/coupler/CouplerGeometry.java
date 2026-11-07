@@ -29,6 +29,8 @@ public final class CouplerGeometry {
         this.data = data;
         if (!Float.isFinite(data.openingAngle) || data.openingAngle < 0)
             throw new IllegalArgumentException("Invalid coupler cover angle");
+        if (!Float.isFinite(data.knuckleOpeningAngle))
+            throw new IllegalArgumentException("Invalid coupler knuckle angle");
         List<AABB> fixed = new ArrayList<>();
         fixed.addAll(data.head.boxes);
         fixed.addAll(data.shaft.boxes);
@@ -36,12 +38,19 @@ public final class CouplerGeometry {
         List<AABB> closed = new ArrayList<>(fixed);
         closed.addAll(data.left.boxes);
         closed.addAll(data.right.boxes);
+        closed.addAll(data.knuckle.boxes);
         List<AABB> open = new ArrayList<>(fixed);
         for (AABB box : data.left.boxes) open.add(sweptBox(box, radians(1), radians(1)));
         for (AABB box : data.right.boxes) open.add(sweptBox(box, radians(-1), radians(-1)));
+        double knuckleAngle = Math.toRadians(data.knuckleOpeningAngle);
+        for (AABB box : data.knuckle.boxes)
+            open.add(sweptBox(box, data.knuckleAxis, knuckleAngle, knuckleAngle));
         AABB fullBounds = fixed.stream().reduce(AABB::minmax).orElseThrow();
         for (AABB box : data.left.boxes) fullBounds = fullBounds.minmax(sweptBox(box, 0, radians(1)));
         for (AABB box : data.right.boxes) fullBounds = fullBounds.minmax(sweptBox(box, radians(-1), 0));
+        for (AABB box : data.knuckle.boxes)
+            fullBounds = fullBounds.minmax(sweptBox(box, data.knuckleAxis,
+                    Math.min(0, knuckleAngle), Math.max(0, knuckleAngle)));
         for (Direction facing : Direction.Plane.HORIZONTAL) {
             closedShapes.put(facing, shape(closed, facing));
             openShapes.put(facing, shape(open, facing));
@@ -55,11 +64,23 @@ public final class CouplerGeometry {
     public Vec3 armOrigin() { return new Vec3(data.modelAxis.x(), data.contact.y, data.modelAxis.z()); }
     public Vec3 contact() { return data.contact; }
     public float openingAngle() { return data.openingAngle; }
+    public boolean hasCovers() { return !data.left.triangles.isEmpty() || !data.right.triangles.isEmpty(); }
+    public boolean hasKnuckle() { return !data.knuckle.triangles.isEmpty(); }
+    public Axis knuckleAxis() { return data.knuckleAxis; }
+    public float knuckleOpeningAngle() { return data.knuckleOpeningAngle; }
 
-    public record Hit(Vec3 point, Direction face, boolean head) {}
+    public record Hit(Vec3 point, Direction face, boolean head, int adapterIndex) {
+        public Hit(Vec3 point, Direction face, boolean head) { this(point, face, head, -1); }
+        public boolean adapterHit() { return adapterIndex >= 0; }
+    }
 
     public Hit clipMoving(Vec3 from, Vec3 to) {
-        return hit(moving(from, to));
+        return clipMoving(0, from, to);
+    }
+
+    /** The knuckle moves inside the solver-driven arm's own model coordinates. */
+    public Hit clipMoving(float progress, Vec3 from, Vec3 to) {
+        return hit(moving(progress, from, to));
     }
 
     public Hit clipBase(Vec3 from, Vec3 to) {
@@ -75,7 +96,7 @@ public final class CouplerGeometry {
     }
 
     public Hit clip(float progress, Vec3 from, Vec3 to) {
-        return hit(nearest(moving(from, to),
+        return hit(nearest(moving(progress, from, to),
                 nearest(clip(data.base, from, to, false), covers(progress, from, to))));
     }
 
@@ -88,8 +109,10 @@ public final class CouplerGeometry {
         return bounds.get(facing);
     }
 
-    private Intersection moving(Vec3 from, Vec3 to) {
-        return nearest(clip(data.head, from, to, true), clip(data.shaft, from, to, false));
+    private Intersection moving(float progress, Vec3 from, Vec3 to) {
+        double angle = Math.toRadians(data.knuckleOpeningAngle * Math.clamp(progress, 0, 1));
+        return nearest(nearest(clip(data.head, from, to, true), clip(data.shaft, from, to, false)),
+                rotatedClip(data.knuckle, data.knuckleAxis, angle, from, to, true));
     }
 
     private Intersection covers(float progress, Vec3 from, Vec3 to) {
@@ -98,9 +121,13 @@ public final class CouplerGeometry {
     }
 
     private Intersection rotatedClip(Part part, double angle, Vec3 from, Vec3 to) {
-        Intersection result = clip(part, aroundCover(from, -angle), aroundCover(to, -angle), false);
-        return result == null ? null : new Intersection(aroundCover(result.point, angle),
-                rotate(result.normal, angle), result.distance, false);
+        return rotatedClip(part, data.coverAxis, angle, from, to, false);
+    }
+
+    private Intersection rotatedClip(Part part, Axis axis, double angle, Vec3 from, Vec3 to, boolean head) {
+        Intersection result = clip(part, around(from, axis, -angle), around(to, axis, -angle), head);
+        return result == null ? null : new Intersection(around(result.point, axis, angle),
+                rotate(result.normal, angle), result.distance, head);
     }
 
     /** Two-sided Moller-Trumbore, with t constrained to the finite from-to segment. */
@@ -146,8 +173,11 @@ public final class CouplerGeometry {
     }
 
     private Vec3 aroundCover(Vec3 point, double angle) {
-        return rotate(point.add(-data.coverAxis.x(), 0, -data.coverAxis.z()), angle)
-                .add(data.coverAxis.x(), 0, data.coverAxis.z());
+        return around(point, data.coverAxis, angle);
+    }
+
+    private static Vec3 around(Vec3 point, Axis axis, double angle) {
+        return rotate(point.add(-axis.x(), 0, -axis.z()), angle).add(axis.x(), 0, axis.z());
     }
 
     /** Same right-handed positive Y rotation as Axis.YP: north (-Z) turns toward -X. */
@@ -157,19 +187,23 @@ public final class CouplerGeometry {
     }
 
     private AABB sweptBox(AABB box, double start, double end) {
+        return sweptBox(box, data.coverAxis, start, end);
+    }
+
+    private static AABB sweptBox(AABB box, Axis axis, double start, double end) {
         AABB result = null;
         for (double x : new double[]{box.minX, box.maxX}) {
             for (double z : new double[]{box.minZ, box.maxZ}) {
                 Vec3 corner = new Vec3(x, box.minY, z);
-                result = include(result, aroundCover(corner, start));
-                result = include(result, aroundCover(corner, end));
-                double dx = x - data.coverAxis.x(), dz = z - data.coverAxis.z();
+                result = include(result, around(corner, axis, start));
+                result = include(result, around(corner, axis, end));
+                double dx = x - axis.x(), dz = z - axis.z();
                 // The extrema of x*cos(a)+z*sin(a) and z*cos(a)-x*sin(a).
                 for (double critical : new double[]{Math.atan2(dz, dx), Math.atan2(-dx, dz)}) {
                     int first = (int) Math.ceil((start - critical) / Math.PI);
                     int last = (int) Math.floor((end - critical) / Math.PI);
                     for (int turn = first; turn <= last; turn++)
-                        result = include(result, aroundCover(corner, critical + turn * Math.PI));
+                        result = include(result, around(corner, axis, critical + turn * Math.PI));
                 }
             }
         }
@@ -209,7 +243,10 @@ public final class CouplerGeometry {
             return new CouplerGeometry(new Geometry(axis(json.getAsJsonArray("model_axis")),
                     axis(json.getAsJsonArray("cover_axis")), vector(json.getAsJsonArray("contact")),
                     json.get("opening_angle").getAsFloat(), part(json, "head"), part(json, "shaft"),
-                    part(json, "base"), part(json, "cover_left"), part(json, "cover_right")));
+                    part(json, "base"), part(json, "cover_left"), part(json, "cover_right"),
+                    json.has("knuckle_axis") ? axis(json.getAsJsonArray("knuckle_axis")) : new Axis(0, 0),
+                    json.has("knuckle_opening_angle") ? json.get("knuckle_opening_angle").getAsFloat() : 0,
+                    json.getAsJsonObject("parts").has("knuckle") ? part(json, "knuckle") : new Part(List.of(), List.of())));
         } catch (IOException failure) {
             throw new IllegalStateException("Cannot load coupler geometry: " + resource, failure);
         }
@@ -242,6 +279,7 @@ public final class CouplerGeometry {
     private record Triangle(Vec3 a, Vec3 b, Vec3 c) {}
     private record Part(List<Triangle> triangles, List<AABB> boxes) {}
     private record Geometry(Axis modelAxis, Axis coverAxis, Vec3 contact, float openingAngle,
-            Part head, Part shaft, Part base, Part left, Part right) {}
+            Part head, Part shaft, Part base, Part left, Part right,
+            Axis knuckleAxis, float knuckleOpeningAngle, Part knuckle) {}
     private record Intersection(Vec3 point, Vec3 normal, double distance, boolean head) {}
 }

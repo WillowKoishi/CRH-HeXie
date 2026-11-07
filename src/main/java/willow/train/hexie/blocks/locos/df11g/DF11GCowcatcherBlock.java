@@ -10,6 +10,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import willow.train.hexie.blocks.carriage.OrdinaryTrainPanelBlock;
 
 public class DF11GCowcatcherBlock extends OrdinaryTrainPanelBlock {
+    @Override public boolean supportsPassengerDisplay() { return false; }
     protected static final VoxelShape ALLAABB = Block.box(-16, 8, -16, 32, 16, 32);
 
     public DF11GCowcatcherBlock(Properties p_49795_) {

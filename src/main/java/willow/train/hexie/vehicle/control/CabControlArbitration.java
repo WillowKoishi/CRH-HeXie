@@ -1,7 +1,6 @@
 package willow.train.hexie.vehicle.control;
 
 import java.util.Objects;
-import willow.train.hexie.api.traincontrol.CabTrainControl;
 import willow.train.hexie.vehicle.runtime.VehicleRuntime;
 
 /** Aggregates explicit enable inputs and converted commands without choosing between active cabs. */
@@ -20,9 +19,8 @@ public final class CabControlArbitration {
     }
 
     /** The caller computes each cab's command in the common train coordinate system first. */
-    public record Command(boolean enabled, VehicleRuntime.Control control, CabTrainControl converter) {
-        public Command(boolean enabled, VehicleRuntime.Control control) { this(enabled, control, CabTrainControl.NONE); }
-        public Command { Objects.requireNonNull(control); Objects.requireNonNull(converter); }
+    public record Command(boolean enabled, VehicleRuntime.Control control) {
+        public Command { Objects.requireNonNull(control); }
     }
 
     public static Selection select(Iterable<CabModule.State> cabs) {
@@ -49,15 +47,13 @@ public final class CabControlArbitration {
         int enabled = 0;
         double brake = backend.brake();
         double power = backend.throttle();
-        CabTrainControl converter = CabTrainControl.NONE;
         for (var command : commands) {
             Objects.requireNonNull(command);
             brake = Math.max(brake, command.control().brake());
             if (!command.enabled()) continue;
             enabled++;
             power = command.control().throttle();
-            converter = command.converter();
         }
-        return new VehicleRuntime.Control(enabled > 1 ? 0 : converter.tractionOutput(power, brake), brake);
+        return new VehicleRuntime.Control(enabled > 1 ? 0 : power, brake);
     }
 }

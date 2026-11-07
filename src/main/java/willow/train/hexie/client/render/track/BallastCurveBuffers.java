@@ -5,7 +5,6 @@ import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.simibubi.create.content.trains.track.BezierConnection;
 import com.simibubi.create.content.trains.track.TrackBlockEntity;
-import com.simibubi.create.content.trains.track.TrackBlockOutline;
 import dev.engine_room.flywheel.api.visualization.VisualizationManager;
 import dev.engine_room.flywheel.api.event.ReloadLevelRendererEvent;
 import net.minecraft.client.Minecraft;
@@ -24,6 +23,7 @@ import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 import willow.train.hexie.Main;
 import willow.train.hexie.blocks.track.standard.BallastData;
 import willow.train.hexie.init.track.TrackMaterialInit;
@@ -33,9 +33,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static willow.train.hexie.client.render.track.BallastMesh.Quad;
 
-/** Share curve discovery between Flywheel static effects and the non-instanced region buffers. */
+/** Loaded track lifecycle owns discovery; render work is shared by Flywheel and region buffers. */
 public final class BallastCurveBuffers {
     private static final Map<BezierConnection, Entry> CURVES = new IdentityHashMap<>();
+    private static final Map<TrackBlockEntity, Set<BezierConnection>> TRACKS = new IdentityHashMap<>();
+    private static final Map<BezierConnection, TrackBlockEntity> OWNERS = new IdentityHashMap<>();
+    private static final Map<TrackBlockEntity, Boolean> dirtyTracks = new IdentityHashMap<>();
+    private static final Set<BezierConnection> dirtyCurves = identitySet();
     private static final Set<Entry> pending = new LinkedHashSet<>();
     private static final ArrayDeque<Entry> ready = new ArrayDeque<>();
     private static boolean refreshQueue;
@@ -43,48 +47,117 @@ public final class BallastCurveBuffers {
     private static final Map<Long, Region> REGIONS = new ConcurrentHashMap<>();
     private static volatile ClientLevel cachedLevel;
     private static VisualizationManager visuals;
+    private static volatile boolean reloadRequested;
+    private static Vec3 lastCamera;
+    private static final Quaternionf lastRotation = new Quaternionf();
+    private static final Matrix4f lastProjection = new Matrix4f();
+    private static double lastRange;
+    private static long nextViewCheck;
+
+    private static <T> Set<T> identitySet() { return Collections.newSetFromMap(new IdentityHashMap<>()); }
+
+    /** Notifications only enqueue; a packet's connection and ballast reads finish before reconciliation. */
+    public static void changed(TrackBlockEntity track) {
+        if (!(track.getLevel() instanceof ClientLevel)) return;
+        synchronized (dirtyTracks) { dirtyTracks.put(track, false); }
+    }
+
+    /** Invalidation can precede the removed flag; honor the lifecycle event itself. */
+    public static void removed(TrackBlockEntity track) {
+        if (!(track.getLevel() instanceof ClientLevel)) return;
+        synchronized (dirtyTracks) { dirtyTracks.put(track, true); }
+    }
+
+    /** Geometry/material edits keep the connection identity, so they need an explicit notification too. */
+    public static void changed(BezierConnection curve) {
+        synchronized (dirtyCurves) { dirtyCurves.add(curve); }
+    }
 
     public static void register() {
         NeoForge.EVENT_BUS.addListener(BallastCurveBuffers::renderWorld);
         NeoForge.EVENT_BUS.addListener((ReloadLevelRendererEvent event) -> {
             // A shader-pack toggle can change the packed terrain vertex format even while Flywheel stays off.
-            if (visuals == null && event.level() == cachedLevel) clear();
+            if (event.level() == cachedLevel) clear();
         });
         Main.bus.addListener((ModelEvent.BakingCompleted event) -> {
             BallastModels.clear();
             RenderSystem.recordRenderCall(BallastCurveBuffers::clear);
         });
         NeoForge.EVENT_BUS.addListener((ClientTickEvent.Post event) -> {
-            ClientLevel level = Minecraft.getInstance().level;
-            var manager = level == null ? null : VisualizationManager.get(level);
-            if (level != cachedLevel || visuals != manager) {
-                clear();
-                cachedLevel = level;
-                visuals = manager;
-            }
-            if (level != null) synchronize(level);
+            prepare();
             CurveBedTexture.refreshAnimations();
         });
     }
 
-    public static void clear() {
-        if (visuals != null) for (var entry : CURVES.values())
-            if (entry.effect != null) visuals.effects().queueRemove(entry.effect);
-        visuals = null;
+    /** Renderer/resource reloads preserve the lifecycle directory, without rediscovering loaded chunks. */
+    public static void clear() { reloadRequested = true; }
+
+    private static void releaseRendering(boolean rebuild) {
+        for (var entry : CURVES.values()) {
+            if (visuals != null && entry.effect != null) visuals.effects().queueRemove(entry.effect);
+            entry.effect = null;
+            entry.tile = null;
+            entry.pieces.clear();
+        }
         REGIONS.values().forEach(region -> region.batches.values().forEach(CurveBedBatch::close));
         REGIONS.clear();
-        CURVES.clear();
         pending.clear();
         ready.clear();
         CurveBedTexture.clear();
+        if (rebuild) pending.addAll(CURVES.values());
+        refreshQueue = rebuild && !pending.isEmpty();
+        lastCamera = null;
+        nextViewCheck = 0;
     }
 
-    private static void synchronize(ClientLevel level) {
-        for (var be : TrackBlockOutline.TRACKS_WITH_TURNS.get(level).values()) {
-            if (be.isRemoved() || be.getLevel() != level || !(be instanceof BallastData data)) continue;
+    private static void prepare() {
+        ClientLevel level = Minecraft.getInstance().level;
+        var manager = level == null ? null : VisualizationManager.get(level);
+        if (level != cachedLevel) {
+            releaseRendering(false);
+            CURVES.clear();
+            TRACKS.clear();
+            OWNERS.clear();
+            cachedLevel = level;
+            visuals = manager;
+            reloadRequested = false;
+        } else if (reloadRequested || visuals != manager) {
+            releaseRendering(true);
+            visuals = manager;
+            reloadRequested = false;
+        }
+        synchronized (dirtyCurves) {
+            synchronized (dirtyTracks) {
+                for (var curve : dirtyCurves) {
+                    var owner = OWNERS.get(curve);
+                    if (owner != null) dirtyTracks.putIfAbsent(owner, false);
+                }
+            }
+            dirtyCurves.clear();
+        }
+        Map<TrackBlockEntity, Boolean> changed;
+        synchronized (dirtyTracks) {
+            if (dirtyTracks.isEmpty()) return;
+            changed = new IdentityHashMap<>(dirtyTracks);
+            dirtyTracks.clear();
+        }
+        changed.forEach(BallastCurveBuffers::synchronize);
+    }
+
+    /** Compare only this changed owner's connections, never the global track/curve tables. */
+    private static void synchronize(TrackBlockEntity be, boolean removed) {
+        var previous = TRACKS.remove(be);
+        Set<BezierConnection> current = identitySet();
+        if (!removed && cachedLevel != null && be.getLevel() == cachedLevel && !be.isRemoved() && be instanceof BallastData data) {
             for (var curve : be.getConnections().values()) {
+                current.add(curve);
+                OWNERS.put(curve, be);
                 boolean slab = curve.getMaterial() == TrackMaterialInit.BALLASTLESS;
-                if (!curve.isPrimary() || !slab && curve.getMaterial() != TrackMaterialInit.STANDARD) continue;
+                if (!curve.isPrimary() || !slab && curve.getMaterial() != TrackMaterialInit.STANDARD) {
+                    var entry = CURVES.remove(curve);
+                    if (entry != null) remove(entry);
+                    continue;
+                }
                 var texture = slab ? Blocks.SMOOTH_STONE.defaultBlockState() : data.hexie$getBallast(curve.getKey());
                 var entry = CURVES.get(curve);
                 if (entry == null || entry.changed(be, texture, slab)) {
@@ -92,22 +165,23 @@ public final class BallastCurveBuffers {
                     entry = new Entry(curve, be, texture, slab);
                     CURVES.put(curve, entry);
                     pending.add(entry);
+                    refreshQueue = true;
                 }
-                entry.seen = true;
             }
         }
-        CURVES.values().removeIf(entry -> {
-            if (entry.seen) { entry.seen = false; return false; }
-            remove(entry);
-            return true;
-        });
-        refreshQueue = !pending.isEmpty();
-        if (!refreshQueue) ready.clear();
+        if (previous != null) for (var curve : previous) {
+            if (current.contains(curve) || OWNERS.get(curve) != be) continue;
+            OWNERS.remove(curve);
+            var entry = CURVES.remove(curve);
+            if (entry != null) remove(entry);
+        }
+        if (!current.isEmpty()) TRACKS.put(be, current);
+        if (pending.isEmpty()) ready.clear();
     }
 
     private static void remove(Entry entry) {
         pending.remove(entry);
-        if (entry.effect != null) visuals.effects().queueRemove(entry.effect);
+        if (entry.effect != null && visuals != null) visuals.effects().queueRemove(entry.effect);
         for (var piece : entry.pieces) {
             var region = REGIONS.get(piece.region);
             var batch = region.batches.get(entry.material);
@@ -133,7 +207,9 @@ public final class BallastCurveBuffers {
     }
 
     private static void renderWorld(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES || cachedLevel == null) return;
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES) return;
+        prepare();
+        if (cachedLevel == null) return;
         var mc = Minecraft.getInstance();
         if (mc.level != cachedLevel) return;
         if (pending.isEmpty() && REGIONS.isEmpty()) return;
@@ -141,8 +217,20 @@ public final class BallastCurveBuffers {
         // Same maximum range as Create's track renderer. Measure to bounds, including long turns.
         double range = Math.min(192, mc.options.getEffectiveRenderDistance() * 16.0);
         double rangeSq = range * range;
-        if (refreshQueue) {
+        boolean viewChanged = false;
+        long now = System.nanoTime();
+        if (!pending.isEmpty() && now >= nextViewCheck) {
+            nextViewCheck = now + 50_000_000L;
+            viewChanged = lastCamera == null || !lastCamera.equals(camera)
+                    || !lastRotation.equals(event.getCamera().rotation()) || lastRange != range
+                    || !lastProjection.equals(event.getProjectionMatrix());
+        }
+        if (refreshQueue || viewChanged) {
             refreshQueue = false;
+            lastCamera = camera;
+            lastRotation.set(event.getCamera().rotation());
+            lastProjection.set(event.getProjectionMatrix());
+            lastRange = range;
             var visible = new ArrayList<Entry>();
             for (var entry : pending)
                 if (entry.bounds.distanceToSqr(camera) <= rangeSq && event.getFrustum().isVisible(entry.bounds)) visible.add(entry);
@@ -154,6 +242,10 @@ public final class BallastCurveBuffers {
             long start = System.nanoTime();
             while (!ready.isEmpty()) {
                 var entry = ready.removeFirst();
+                if (entry.bounds.distanceToSqr(camera) > rangeSq || !event.getFrustum().isVisible(entry.bounds)) {
+                    refreshQueue = true;
+                    continue;
+                }
                 if (!pending.remove(entry)) continue;
                 entry.build(cachedLevel);
                 // Spread first sightings after chunk loads over frames; a single long curve always makes progress.
@@ -247,19 +339,20 @@ public final class BallastCurveBuffers {
         final List<CurveBedBatch.Piece> pieces = new ArrayList<>();
         CurveBedEffect effect;
         ResourceLocation tile;
-        boolean seen;
         Entry(BezierConnection curve, TrackBlockEntity owner, BlockState texture, boolean slab) {
-            this.curve = curve; this.owner = owner; material = new MaterialKey(texture, slab);
-            bounds = curve.getBounds().inflate(2);
+            // A fresh geometry snapshot also avoids a native lazy Runtime cached before an in-place edit.
+            this.curve = curve.clone(); this.owner = owner; material = new MaterialKey(texture, slab);
+            bounds = this.curve.getBounds().inflate(2);
             start = curve.starts.getFirst(); end = curve.starts.getSecond();
             axis1 = curve.axes.getFirst(); axis2 = curve.axes.getSecond();
             normal1 = curve.normals.getFirst(); normal2 = curve.normals.getSecond();
         }
         boolean changed(TrackBlockEntity be, BlockState texture, boolean slab) {
+            var current = be.getConnections().get(curve.getKey());
             return owner != be || material.texture != texture || material.slab != slab
-                    || !start.equals(curve.starts.getFirst()) || !end.equals(curve.starts.getSecond())
-                    || !axis1.equals(curve.axes.getFirst()) || !axis2.equals(curve.axes.getSecond())
-                    || !normal1.equals(curve.normals.getFirst()) || !normal2.equals(curve.normals.getSecond());
+                    || current == null || !start.equals(current.starts.getFirst()) || !end.equals(current.starts.getSecond())
+                    || !axis1.equals(current.axes.getFirst()) || !axis2.equals(current.axes.getSecond())
+                    || !normal1.equals(current.normals.getFirst()) || !normal2.equals(current.normals.getSecond());
         }
         void build(ClientLevel level) {
             var mesh = material.slab ? SlabTrackModels.curve(curve) : BallastModels.curve(curve);

@@ -1,5 +1,11 @@
 package willow.train.hexie.api.cab;
 
+import willow.train.hexie.api.interaction.ControlSurface;
+
+import willow.train.hexie.api.interaction.ControlState;
+
+import willow.train.hexie.api.interaction.BlockControl;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -22,15 +28,21 @@ public record DrivingConsoleContext(SeatAccess seatAccess, BlockPos console) {
         BlockState blockState(BlockPos position);
         /** Let another provider take this seat when its surface needs a different backend. */
         default boolean supportsSurface(BlockPos position) { return true; }
-        default CabSurfaceState surfaceState(BlockPos position) { return CabSurfaceState.EMPTY; }
+        default ControlState surfaceState(BlockPos position) { return ControlState.EMPTY; }
         /** Client-side interpolation source for the same physical surface that is being rendered. */
-        default CabSurfaceGeometry.AnimationSource animationSource(BlockPos position) { return null; }
+        default ControlSurface.AnimationSource animationSource(BlockPos position) { return null; }
         default boolean simple(BlockPos position) { return false; }
         /** The server has checked occupancy, control membership and the requested detent. */
-        default void operateControl(DrivingConsoleContext cab, Player player, CabControl control, int value) {}
+        default void operateControl(DrivingConsoleContext cab, Player player, BlockControl control, int value) {}
         /** World coordinates to the coordinate system containing seat and console. */
         Vec3 toLocal(Vec3 world, float partialTick);
+        /** Transform both endpoints with the same sampled carrier pose. */
+        default Ray toLocalRay(Vec3 from, Vec3 to, float partialTick) {
+            return new Ray(toLocal(from, partialTick), toLocal(to, partialTick));
+        }
     }
+
+    public record Ray(Vec3 from, Vec3 to) {}
 
     /** Register during common setup; providers run on the querying player's game thread. */
     public static void registerSeatProvider(Function<Player, SeatAccess> provider) {
@@ -39,10 +51,16 @@ public record DrivingConsoleContext(SeatAccess seatAccess, BlockPos console) {
 
     public BlockPos seat() { return seatAccess.seat(); }
     public boolean simple() { return seatAccess.simple(console); }
-    public CabSurfaceState surfaceState() { return seatAccess.surfaceState(console); }
+    public ControlState surfaceState() { return seatAccess.surfaceState(console); }
 
     public Vec3 toConsoleLocal(Vec3 world, float partialTick) {
         return seatAccess.toLocal(world, partialTick).subtract(Vec3.atLowerCornerOf(console));
+    }
+
+    public Ray toConsoleLocalRay(Vec3 from, Vec3 to, float partialTick) {
+        var ray = seatAccess.toLocalRay(from, to, partialTick);
+        var offset = Vec3.atLowerCornerOf(console);
+        return new Ray(ray.from().subtract(offset), ray.to().subtract(offset));
     }
 
     /** Shared layout lookup for seat placement, occupied input and dismount; it imposes no occupancy rule. */

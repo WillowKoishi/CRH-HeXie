@@ -1,0 +1,4 @@
+newmtl t1
+map_Kd hexie:block/coupler/general_janney/general_janney_coupler
+Kd 1 1 1
+d 1

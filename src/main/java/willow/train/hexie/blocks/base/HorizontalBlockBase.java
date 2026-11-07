@@ -41,7 +41,8 @@ public class HorizontalBlockBase extends Block implements IWrenchable, willow.tr
     }
 
     public BlockState mirror(BlockState p_54357_, Mirror p_54358_) {
-        return p_54357_.rotate(p_54358_.getRotation(p_54357_.getValue(FACING)));
+        return willow.train.hexie.blocks.signs.PanelDisplayColumn.mirror(
+                p_54357_.rotate(p_54358_.getRotation(p_54357_.getValue(FACING))), p_54358_);
     }
 
     public BlockState getStateForPlacement(BlockPlaceContext context) {
@@ -51,11 +52,15 @@ public class HorizontalBlockBase extends Block implements IWrenchable, willow.tr
 
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> p_54370_) {
         p_54370_.add(FACING,willow.train.hexie.blocks.parts.LegacyPartLayout.OCCUPIED);
+        if (this instanceof willow.train.hexie.blocks.signs.PassengerDisplayPanel)
+            p_54370_.add(willow.train.hexie.blocks.signs.PanelDisplayMount.PROPERTY,
+                    willow.train.hexie.blocks.signs.PanelDisplayColumn.PROPERTY);
     }
 
     @Override
     public List<ItemStack> getDrops(BlockState pState, LootParams.Builder pBuilder) {
-        return List.of(this.asItem().getDefaultInstance());
+        return willow.train.hexie.blocks.signs.PassengerDisplayPanel.withDisplayDrops(
+                pState, List.of(this.asItem().getDefaultInstance()));
     }
     @Override protected void onRemove(BlockState state,net.minecraft.world.level.Level level,net.minecraft.core.BlockPos pos,BlockState next,boolean moving) {
         willow.train.hexie.blocks.parts.LegacyPartLayout.removed(level,pos,state,next,moving);

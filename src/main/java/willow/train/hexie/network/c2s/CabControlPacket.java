@@ -30,12 +30,9 @@ public record CabControlPacket(int vehicleId, BlockPos console, String controlId
             if (cab == null || cab.seatAccess().vehicle() != vehicle || !cab.console().equals(console)) return;
             var state = cab.seatAccess().blockState(console);
             if (state == null || !(state.getBlock() instanceof CabSurfaceHost host)) return;
-            for (var control : host.controls(state)) {
-                if (control.id().equals(controlId) && control.accepts(value)) {
-                    cab.seatAccess().operateControl(cab, player, control, value);
-                    return;
-                }
-            }
+            var control = host.control(state, controlId);
+            if (control != null && control.accepts(value))
+                cab.seatAccess().operateControl(cab, player, control, value);
         });
         return true;
     }

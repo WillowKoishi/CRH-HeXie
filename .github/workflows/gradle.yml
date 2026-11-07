@@ -26,19 +26,25 @@ jobs:
       uses: gradle/actions/wrapper-validation@v4
     - name: make gradle wrapper executable
       run: chmod +x ./gradlew
-    - name: Build and package JAR
-      run: ./gradlew build jar
+    - name: Build main mod and font mod
+      run: ./gradlew build
 
-    - name: Upload nightly JAR
+    - name: Upload main mod and font mod
       id: upload-jar
       uses: actions/upload-artifact@v7
       with:
         name: nightly-${{ github.sha }}
-        path: |
-          build/libs/*-NeoForge-*.jar
-          !build/libs/*-sources.jar
+        path: build/release/*.jar
+        if-no-files-found: error
+        retention-days: 30
+
+    - name: Upload corresponding sources
+      uses: actions/upload-artifact@v7
+      with:
+        name: nightly-sources-${{ github.sha }}
+        path: build/sources/*
         if-no-files-found: error
         retention-days: 30
 
     - name: Add download link to workflow summary
-      run: echo "Download the JAR from [this artifact](${{ steps.upload-jar.outputs.artifact-url }})." >> "$GITHUB_STEP_SUMMARY"
+      run: echo "Download the main mod and font mod from [this artifact](${{ steps.upload-jar.outputs.artifact-url }}). Install both JARs in the client mods directory. Corresponding sources are in the nightly-sources artifact." >> "$GITHUB_STEP_SUMMARY"

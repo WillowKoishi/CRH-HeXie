@@ -30,7 +30,7 @@ import willow.train.hexie.blocks.base.SideMirrorBlockBase;
 
 import java.util.Random;
 
-public class OrdinaryTrainUpperPanelBlock extends SideMirrorBlockBase {
+public class OrdinaryTrainUpperPanelBlock extends SideMirrorBlockBase implements willow.train.hexie.blocks.signs.PassengerDisplayPanel {
 
     Random random = HEXIE_RANDOM;
 protected static final VoxelShape SOUTH_AABB = Block.box(0.0D, 0.0D, 15, 16, 16, 16);

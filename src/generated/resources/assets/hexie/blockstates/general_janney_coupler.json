@@ -1,0 +1,68 @@
+{
+  "variants": {
+    "assembled=false,facing=north,open=false": {
+      "model": "hexie:block/coupler/general_janney/world",
+      "y": 0
+    },
+    "assembled=false,facing=north,open=true": {
+      "model": "hexie:block/coupler/general_janney/world",
+      "y": 0
+    },
+    "assembled=false,facing=east,open=false": {
+      "model": "hexie:block/coupler/general_janney/world",
+      "y": 90
+    },
+    "assembled=false,facing=east,open=true": {
+      "model": "hexie:block/coupler/general_janney/world",
+      "y": 90
+    },
+    "assembled=false,facing=south,open=false": {
+      "model": "hexie:block/coupler/general_janney/world",
+      "y": 180
+    },
+    "assembled=false,facing=south,open=true": {
+      "model": "hexie:block/coupler/general_janney/world",
+      "y": 180
+    },
+    "assembled=false,facing=west,open=false": {
+      "model": "hexie:block/coupler/general_janney/world",
+      "y": 270
+    },
+    "assembled=false,facing=west,open=true": {
+      "model": "hexie:block/coupler/general_janney/world",
+      "y": 270
+    },
+    "assembled=true,facing=north,open=false": {
+      "model": "hexie:block/coupler/general_janney/base",
+      "y": 0
+    },
+    "assembled=true,facing=north,open=true": {
+      "model": "hexie:block/coupler/general_janney/base",
+      "y": 0
+    },
+    "assembled=true,facing=east,open=false": {
+      "model": "hexie:block/coupler/general_janney/base",
+      "y": 90
+    },
+    "assembled=true,facing=east,open=true": {
+      "model": "hexie:block/coupler/general_janney/base",
+      "y": 90
+    },
+    "assembled=true,facing=south,open=false": {
+      "model": "hexie:block/coupler/general_janney/base",
+      "y": 180
+    },
+    "assembled=true,facing=south,open=true": {
+      "model": "hexie:block/coupler/general_janney/base",
+      "y": 180
+    },
+    "assembled=true,facing=west,open=false": {
+      "model": "hexie:block/coupler/general_janney/base",
+      "y": 270
+    },
+    "assembled=true,facing=west,open=true": {
+      "model": "hexie:block/coupler/general_janney/base",
+      "y": 270
+    }
+  }
+}

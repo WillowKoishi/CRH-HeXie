@@ -11,6 +11,7 @@
   "rear_gap": 0,
   "exterior": "exterior.nbt",
   "interior": "interior.nbt",
+  "schematic": "25t_original_color_yz_cart.nbt",
   "groups": {
     "hexie:carriage/air_conditioners": [
       "hexie:carport_25bgzk_air_condition_all",

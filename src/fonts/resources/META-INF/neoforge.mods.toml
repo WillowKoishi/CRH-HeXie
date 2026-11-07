@@ -1,0 +1,16 @@
+modLoader="lowcodefml"
+loaderVersion="[4,)"
+license="OFL-1.1 AND LPPL-1.3c-or-later; see META-INF/licenses/"
+
+[[mods]]
+modId="hexie_fonts"
+version="${mod_version}"
+displayName="HeXie Fonts"
+description="Font resources for HeXie signs and vehicle lettering."
+
+[[dependencies.hexie_fonts]]
+modId="minecraft"
+type="required"
+versionRange="[${minecraft_version}]"
+ordering="NONE"
+side="CLIENT"

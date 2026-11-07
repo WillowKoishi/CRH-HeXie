@@ -10,6 +10,8 @@ import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.nbt.Tag;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -26,6 +28,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import willow.train.hexie.blocks.emu.CRH2DriverSeatBlock;
 import willow.train.hexie.blocks.seats.HardSeatPositionRequest;
+import willow.train.hexie.blocks.seats.RZSeatBlock;
 import willow.train.hexie.blocks.seats.SeatYZBlock;
 import willow.train.hexie.network.c2s.SeatYZContraptionInteractionPacket;
 import willow.train.hexie.network.s2c.ContraptionSeatPositionCache;
@@ -34,8 +37,8 @@ import willow.train.hexie.network.s2c.ContraptionSeatPositionPacket;
 import java.util.UUID;
 
 /**
- * Adds the four passenger positions for HeXie's hard seat while leaving Create's
- * normal contraption seat implementation intact for other seat blocks and addons.
+ * Adds HeXie's four hard-seat positions and custom cab/soft-seat eye heights while
+ * leaving Create's normal contraption seat implementation intact for other seats.
  */
 @Mixin(AbstractContraptionEntity.class)
 public abstract class MixinAbstractContraptionEntity extends Entity {
@@ -234,9 +237,11 @@ public abstract class MixinAbstractContraptionEntity extends Entity {
             return original.call(passenger, partialTicks);
 
         BlockState state = contraption.getBlocks().get(seatPos).state();
-        if (state.getBlock() instanceof CRH2DriverSeatBlock) {
-            Vec3 eye = Vec3.atLowerCornerOf(seatPos).add(
-                    CRH2DriverSeatBlock.driverEyePosition(state));
+        if (state.getBlock() instanceof CRH2DriverSeatBlock || state.getBlock() instanceof RZSeatBlock) {
+            Vec3 eyeOffset = state.getBlock() instanceof RZSeatBlock
+                    ? new Vec3(.5, RZSeatBlock.EYE_HEIGHT, .5)
+                    : CRH2DriverSeatBlock.driverEyePosition(state);
+            Vec3 eye = Vec3.atLowerCornerOf(seatPos).add(eyeOffset);
             // Native positionRider adds the custom seat offset minus 1/8 block.
             return ((AbstractContraptionEntity) (Object) this).toGlobalVector(eye, partialTicks)
                     .add(0, .125 - SeatEntity.getCustomEntitySeatOffset(passenger) - passenger.getEyeHeight(), 0);
@@ -283,11 +288,23 @@ public abstract class MixinAbstractContraptionEntity extends Entity {
         original.call(passenger);
         if (!level().isClientSide && passenger instanceof Player && dismountSeat != null
                 && contraption instanceof com.simibubi.create.content.trains.entity.CarriageContraption) {
-            Vec3 feet = willow.train.hexie.compat.create.TrainSeatDismount.behind(
-                    (AbstractContraptionEntity) (Object) this, dismountSeat);
-            if (feet != null && (Object) this instanceof willow.train.hexie.compat.create.SnapshotCarriageEntity car) {
+            Vec3 feet = null;
+            if ((Object) this instanceof willow.train.hexie.compat.create.SnapshotCarriageEntity car
+                    && passenger instanceof ServerPlayer player && player.isAlive() && !player.isRemoved()
+                    && !car.isRemoved() && player.connection.isAcceptingMessages()) {
                 Vec3 local = willow.train.hexie.compat.create.TrainSeatDismount.localBehind(car, dismountSeat);
-                feet = willow.train.hexie.compat.create.CarriagePlayerSupport.dismount((Player) passenger, car, local);
+                if (local == null && player.getPersistentData().contains("ContraptionDismountLocation", Tag.TAG_LIST)) {
+                    // Create already selected the seat's world exit before removing
+                    // its mapping. Reuse it, including custom seat offsets, once.
+                    Vec3 nativeFeet = net.createmod.catnip.math.VecHelper.readNBT(
+                            player.getPersistentData().getList("ContraptionDismountLocation", Tag.TAG_DOUBLE));
+                    local = willow.train.hexie.compat.create.CarriagePlayerSupport.frame(car, 1).local(nativeFeet);
+                }
+                if (local != null)
+                    feet = willow.train.hexie.compat.create.CarriagePlayerSupport.placeAndSync(player, car, local);
+            } else if (!((Object) this instanceof willow.train.hexie.compat.create.SnapshotCarriageEntity)) {
+                feet = willow.train.hexie.compat.create.TrainSeatDismount.behind(
+                        (AbstractContraptionEntity) (Object) this, dismountSeat);
             }
             if (feet != null) passenger.getPersistentData().put("ContraptionDismountLocation",
                     net.createmod.catnip.math.VecHelper.writeNBT(feet));

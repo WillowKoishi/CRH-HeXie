@@ -10,3 +10,11 @@ newmtl t2
 map_Kd hexie:block/crh2a/endface/crh2a_semiauto_coupler
 Kd 1 1 1
 d 1
+newmtl t4
+map_Kd hexie:block/crh2a/endface/crh2a_endface_tilted_cable_connector
+Kd 1 1 1
+d 1
+newmtl t7
+map_Kd hexie:block/crh2a/endface/crh2a_endface_cable_connector
+Kd 1 1 1
+d 1

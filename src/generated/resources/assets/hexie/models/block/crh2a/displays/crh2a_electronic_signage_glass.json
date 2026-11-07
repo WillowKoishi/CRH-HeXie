@@ -1,0 +1,16 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "ambientocclusion": false,
+  "shade_quads": false,
+  "emissive_ambient": false,
+  "automatic_culling": false,
+  "flip_v": true,
+  "model": "hexie:models/block/crh2a/displays/crh2a_electronic_signage_glass.obj",
+  "render_type": "minecraft:translucent",
+  "textures": {
+    "particle": "hexie:block/crh2a/displays/crh2a_electronic_display_body",
+    "t0": "hexie:block/crh2a/displays/crh2a_electronic_display_body",
+    "t1": "hexie:block/crh2a/displays/crh2a_electronic_display_glass"
+  }
+}

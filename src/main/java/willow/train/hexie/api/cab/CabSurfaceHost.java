@@ -1,5 +1,7 @@
 package willow.train.hexie.api.cab;
 
+import willow.train.hexie.api.interaction.BlockControlHost;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -8,12 +10,9 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
 
 /** A seated operating surface. Each control belongs to this surface and has a stable ID. */
-public interface CabSurfaceHost {
+public interface CabSurfaceHost extends BlockControlHost {
     Direction cabFacing(BlockState state);
-    /** The actions accepted by this surface, including on a dedicated server. */
-    default List<? extends CabControl> controls(BlockState state) { return surfaceGeometry(state).controls(); }
-    /** Local geometry and animations for those same controls. North is the authored front. */
-    default CabSurfaceGeometry surfaceGeometry(BlockState state) { return CabSurfaceGeometry.EMPTY; }
+    @Override default Direction surfaceFacing(BlockState state) { return cabFacing(state); }
 
     enum KeyboardAction {
         TOGGLE_SIMPLE(0), EXIT(0), FORWARD(1), BACKWARD(2), LEFT(4), RIGHT(8), APPROACH(16);
@@ -38,7 +37,8 @@ public interface CabSurfaceHost {
     record MouseBinding(int button, MouseAction action) {
         public MouseBinding { Objects.requireNonNull(action); }
     }
-    List<MouseBinding> STANDARD_MOUSE = List.of(new MouseBinding(0, MouseAction.INTERACT), new MouseBinding(1, MouseAction.POINTER));
+    // Claimed only by the occupied cab. World controls use the player's ordinary use-item binding.
+    List<MouseBinding> STANDARD_MOUSE = List.of(new MouseBinding(0, MouseAction.POINTER), new MouseBinding(1, MouseAction.INTERACT));
     default List<MouseBinding> mouseBindings(BlockState state, boolean simple) {
         return controls(state).isEmpty() ? List.of() : STANDARD_MOUSE;
     }

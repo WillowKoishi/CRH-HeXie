@@ -9,6 +9,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import willow.train.hexie.blockentity.CustomRenderedDoorEntity;
+import willow.train.hexie.compat.sable.SableInteractionCoordinates;
 
 /** Validation for the ordinary use-item packet when an opened cab leaf lies in the next cell. */
 public final class CRH2DoorInteraction {
@@ -22,10 +23,13 @@ public final class CRH2DoorInteraction {
         BlockPos root = state.getValue(DoorBlock.HALF) == DoubleBlockHalf.UPPER ? position.below() : position;
         if (!level.getBlockState(root).is(door)
                 || !(level.getBlockEntity(root) instanceof CustomRenderedDoorEntity entity)) return false;
-        Vec3 eye = player.getEyePosition();
+        var frame = SableInteractionCoordinates.logical(level, root);
+        Vec3 worldEye = SableInteractionCoordinates.logicalWorld(level, player.getEyePosition());
+        Vec3 eye = frame.toStorage(worldEye);
         Vec3 location = hit.getLocation();
+        double distanceSquared = worldEye.distanceToSqr(frame.toWorld(location));
         double reach = player.blockInteractionRange();
-        if (eye.distanceToSqr(location) > reach * reach) return false;
+        if (distanceSquared > reach * reach) return false;
         Vec3 direction = location.subtract(eye);
         if (direction.lengthSqr() < 1e-12) return false;
         Vec3 target = location.add(direction.normalize().scale(1e-4));
@@ -36,7 +40,8 @@ public final class CRH2DoorInteraction {
                 ClipContext.Fluid.NONE, player));
         if (obstruction.getType() != HitResult.Type.MISS
                 && !obstruction.getBlockPos().equals(root) && !obstruction.getBlockPos().equals(root.above())
-                && obstruction.getLocation().distanceToSqr(eye) + 1e-6 < location.distanceToSqr(eye)) return false;
+                && SableInteractionCoordinates.logicalDistanceSquared(level, worldEye,
+                        obstruction.getBlockPos(), obstruction.getLocation()) + 1e-6 < distanceSquared) return false;
         return true;
     }
 }

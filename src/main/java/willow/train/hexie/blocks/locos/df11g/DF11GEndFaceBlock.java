@@ -11,6 +11,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import willow.train.hexie.blocks.carriage.OrdinaryTrainPanelBlock;
 
 public class DF11GEndFaceBlock extends OrdinaryTrainPanelBlock {
+    @Override public boolean supportsPassengerDisplay() { return false; }
     protected static final VoxelShape SOUTH_AABB =
             Shapes.or(
                     Block.box(-1, -16, 15, 17, -15, 24),

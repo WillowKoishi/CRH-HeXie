@@ -5,6 +5,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
 import willow.train.hexie.compat.create.CarriagePlayerSupport;
 import willow.train.hexie.compat.create.SnapshotCarriageEntity;
+import willow.train.hexie.compat.sable.SableInteractionCoordinates;
 
 /** Picking uses the same interpolated body frame as the visible carriage. */
 public final class CarriageInteractionCoordinates {
@@ -39,13 +40,48 @@ public final class CarriageInteractionCoordinates {
 
     public static Vec3 toCompatibility(SnapshotCarriageEntity visible,
             AbstractContraptionEntity compatibility, Vec3 world) {
-        Vec3 local = CarriagePlayerSupport.frame(visible, partialTick()).local(world);
-        return compatibility.toGlobalVector(local, 1);
+        float partial = partialTick();
+        Vec3 storage = SableInteractionCoordinates.render(visible.level(), visible.blockPosition(), partial)
+                .toStorage(world);
+        Vec3 local = CarriagePlayerSupport.frame(visible, partial).local(storage);
+        return SableInteractionCoordinates.logical(compatibility.level(), compatibility.blockPosition())
+                .toWorld(compatibility.toGlobalVector(local, 1));
+    }
+
+    public record PickingRay(Vec3 from, Vec3 to, Vec3 localFrom, Vec3 localTo) {}
+
+    /**
+     * Our geometry consumes the rendered carrier-local ray. Sable's native Create
+     * adapter expects a logical world ray, so project the same storage points out
+     * through its logical pose. This also works when an endpoint lies outside the
+     * target's plot allocation; it never relies on guessing that endpoint's plot.
+     */
+    public static PickingRay toCompatibilityRay(AbstractContraptionEntity visible,
+            AbstractContraptionEntity compatibility, Vec3 from, Vec3 to, float partial) {
+        var storage = SableInteractionCoordinates.render(visible.level(), visible.blockPosition(), partial)
+                .ray(from, to);
+        Vec3 localFrom, localTo, nativeFrom, nativeTo;
+        if (visible instanceof SnapshotCarriageEntity car) {
+            var body = CarriagePlayerSupport.frame(car, partial);
+            localFrom = body.local(storage.from());
+            localTo = body.local(storage.to());
+            nativeFrom = compatibility.toGlobalVector(localFrom, 1);
+            nativeTo = compatibility.toGlobalVector(localTo, 1);
+        } else {
+            nativeFrom = storage.from();
+            nativeTo = storage.to();
+            localFrom = compatibility.toLocalVector(nativeFrom, 1);
+            localTo = compatibility.toLocalVector(nativeTo, 1);
+        }
+        var logical = SableInteractionCoordinates.logical(compatibility.level(), compatibility.blockPosition());
+        return new PickingRay(logical.toWorld(nativeFrom), logical.toWorld(nativeTo), localFrom, localTo);
     }
 
     public static Vec3 toWorld(AbstractContraptionEntity entity, Vec3 local) {
-        return entity instanceof SnapshotCarriageEntity car
-                ? CarriagePlayerSupport.frame(car, partialTick()).world(local)
+        float partial = partialTick();
+        Vec3 storage = entity instanceof SnapshotCarriageEntity car
+                ? CarriagePlayerSupport.frame(car, partial).world(local)
                 : entity.toGlobalVector(local, 1);
+        return SableInteractionCoordinates.render(entity.level(), entity.blockPosition(), partial).toWorld(storage);
     }
 }

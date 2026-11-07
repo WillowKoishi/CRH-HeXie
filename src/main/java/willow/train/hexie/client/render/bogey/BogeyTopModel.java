@@ -15,11 +15,14 @@ import net.neoforged.neoforge.client.model.BakedModelWrapper;
 import net.neoforged.neoforge.client.model.data.ModelData;
 import net.neoforged.neoforge.client.model.data.ModelProperty;
 import willow.train.hexie.blocks.bogeys.*;
+import willow.train.hexie.blocks.bogeys.CRH.CRHBogeyBlock;
+import willow.train.hexie.init.track.TrackMaterialInit;
 
-/** The bolster follows the support offset. The floor stays over its carriage cell. */
+/** The bolster keeps its rail-height reference. Only the floor follows configured floor height. */
 public final class BogeyTopModel extends BakedModelWrapper<BakedModel> {
     private static final ModelProperty<Boolean> REVERSED = new ModelProperty<>();
     private static final ModelProperty<Vec3> OFFSET = new ModelProperty<>();
+    private static final ModelProperty<Vec3> FLOOR_OFFSET = new ModelProperty<>();
     public BogeyTopModel(BakedModel original) { super(original); }
     public static void register(net.neoforged.neoforge.client.event.ModelEvent.ModifyBakingResult event) {
         for (var block : net.minecraft.core.registries.BuiltInRegistries.BLOCK) {
@@ -33,29 +36,40 @@ public final class BogeyTopModel extends BakedModelWrapper<BakedModel> {
     @Override public ModelData getModelData(BlockAndTintGetter world, BlockPos pos, BlockState state, ModelData data) {
         var inherited = super.getModelData(world, pos, state, data);
         boolean reversed = false;
-        Vec3 offset = Vec3.ZERO;
+        Vec3 offset = restOffset(state);
+        Vec3 floorOffset = Vec3.ZERO;
         if (world.getBlockEntity(pos) instanceof HexieBogeyBlockEntity be) {
             reversed = be.getBogeyData().getBoolean(BogeyFloorData.REVERSED);
-            offset = BogeyFloorData.displacement(state, BogeyFloorData.longitudinal(be.getBogeyData()));
-            if (!be.isCarriageView()) offset = offset.add(0, BogeyFloorData.offset(BogeyFloorData.get(be)), 0);
+            offset = offset.add(BogeyFloorData.displacement(state, BogeyFloorData.longitudinal(be.getBogeyData())));
+            double height = BogeyFloorData.offset(BogeyFloorData.get(be));
+            // Snapshot body poses already include this height; their mechanical top must compensate it.
+            // Original non-EMU tops rise with the rail; EMU tops were already calibrated to that rail.
+            if (be.isCarriageView()) offset = offset.add(0, -height, 0);
+            else floorOffset = new Vec3(0, height, 0);
         }
-        return inherited.derive().with(OFFSET, offset).with(REVERSED, reversed).build();
+        return inherited.derive().with(OFFSET, offset).with(FLOOR_OFFSET, floorOffset).with(REVERSED, reversed).build();
     }
     @Override public List<BakedQuad> getQuads(BlockState state, Direction side, RandomSource random) {
         return getQuads(state, side, random, ModelData.EMPTY, null);
     }
     @Override public List<BakedQuad> getQuads(BlockState state, Direction side, RandomSource random, ModelData data, RenderType layer) {
         var offset = data.get(OFFSET);
-        if (state != null && state.getBlock() instanceof willow.train.hexie.blocks.bogeys.CRH.CRHBogeyBlock
+        if (offset == null) offset = restOffset(state);
+        if (state != null && state.getBlock() instanceof CRHBogeyBlock
                 && originalModel instanceof net.neoforged.neoforge.client.model.CompositeModel.Baked assembly) {
             var shift = offset == null ? Vec3.ZERO : offset;
             var result = new ArrayList<>(bolsterQuads(assembly.getPart("bolster"), state, side, random, data, layer, shift));
             if (!state.getValue(HexieBogeyBlock.HEAD_MOUNTED)) {
-                result.addAll(partQuads(assembly.getPart("floor"), state, side, random, data, layer, new Vec3(0, shift.y, 0)));
+                result.addAll(partQuads(assembly.getPart("floor"), state, side, random, data, layer, data.get(FLOOR_OFFSET)));
             }
             return result;
         }
         return bolsterQuads(originalModel, state, side, random, data, layer, offset);
+    }
+
+    private static Vec3 restOffset(BlockState state) {
+        return state != null && !(state.getBlock() instanceof CRHBogeyBlock)
+                ? new Vec3(0, TrackMaterialInit.RAIL_HEIGHT_INCREASE, 0) : Vec3.ZERO;
     }
 
     private static List<BakedQuad> bolsterQuads(BakedModel model, BlockState state, Direction side, RandomSource random,

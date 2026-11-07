@@ -1,5 +1,6 @@
 package willow.train.hexie.vehicle.control;
 
+import com.google.common.collect.MapMaker;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,9 +9,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.level.block.state.BlockState;
-import willow.train.hexie.api.cab.CabControl;
+import willow.train.hexie.api.interaction.BlockControl;
 import willow.train.hexie.api.cab.CabControlHost;
-import willow.train.hexie.api.cab.CabSurfaceState;
+import willow.train.hexie.api.interaction.ControlState;
 import willow.train.hexie.api.traincontrol.CabTrainControl;
 import willow.train.hexie.api.traincontrol.CabTrainInput;
 import willow.train.hexie.api.traincontrol.CabTrainRequest;
@@ -18,6 +19,9 @@ import willow.train.hexie.vehicle.runtime.VehicleRuntime;
 
 /** Vehicle-owned converted state. Occupancy authorizes operations, never continued execution. */
 public final class CabModule implements CabTrainInput {
+    // Legacy list declarations are stable objects; weak identity keys avoid rescanning or hashing their elements.
+    private static final Map<List<? extends BlockControl>, Map<String, BlockControl>> DECLARED_CONTROLS =
+            new MapMaker().weakKeys().makeMap();
     public record State(CabController.Input input, CabController.Mode mode, CabBrakeConversion.State brakes,
                         boolean approachHeld, boolean deskEnabled, boolean simple, Map<String, Integer> handlePositions) {
         public static final State NEUTRAL = new State(new CabController.Input(0, 0, 0),
@@ -37,8 +41,6 @@ public final class CabModule implements CabTrainInput {
         public boolean automatic() { return mode == CabController.Mode.AUTOMATIC; }
         /** Shunting supplies its own enable input while the desk retains its physical setting. */
         public boolean enabled() { return deskEnabled || simple; }
-        /** A cut-out desk still supplies its converted service, parking or latched emergency brake. */
-        public VehicleRuntime.Control brakingOnly() { return new VehicleRuntime.Control(0, input.brake()); }
         public State withApproach(boolean held) { return new State(input, mode, brakes, held, deskEnabled, simple, handlePositions); }
         public State withEnabled(boolean deskEnabled) {
             return new State(input, mode, brakes, approachHeld, deskEnabled, simple, handlePositions);
@@ -47,8 +49,8 @@ public final class CabModule implements CabTrainInput {
             return new CabTrainRequest(input.power(), brakes.serviceBrake(), input.reverser(), deskEnabled, automatic(),
                     brakes.parking(), brakes.emergencyHandle(), false, approachHeld);
         }
-        public CabSurfaceState surface(CabTrainControl desk) {
-            return desk.restore(new CabSurfaceState(handlePositions), request());
+        public ControlState surface(CabTrainControl desk) {
+            return desk.restore(new ControlState(handlePositions), request());
         }
         public State withSimple(boolean value) {
             if (simple == value) return this;
@@ -70,24 +72,29 @@ public final class CabModule implements CabTrainInput {
     public void releaseApproach() { state = state.withApproach(false); }
 
     /** A rejected request returns null before touching the saved positions or train commands. */
-    public static State operateControls(List<? extends CabControl> declared, CabTrainControl desk,
+    public static State operateControls(List<? extends BlockControl> declared, CabTrainControl desk,
                                         String id, int value, State previous, double speed) {
-        return operateControls(declared, desk, id, value, previous.surface(desk), previous, speed);
+        var index = DECLARED_CONTROLS.computeIfAbsent(declared, controls -> {
+            var byId = new LinkedHashMap<String, BlockControl>();
+            for (var control : controls) byId.putIfAbsent(control.id(), control);
+            return Map.copyOf(byId);
+        });
+        return operateControls(index.get(id), desk, value, previous.surface(desk), previous, speed);
     }
 
     public static State operateControls(CabControlHost host, BlockState block, String id, int value, State previous, double speed) {
-        var module = host.surfaceGeometry(block).owner(id);
+        var surface = host.surfaceGeometry(block);
+        var module = surface.owner(id);
         var owner = module == null ? host.trainControl(block)
                 : module instanceof CabTrainControl mounted ? mounted : CabTrainControl.NONE;
-        return operateControls(host.controls(block), owner, id, value, host.surfaceState(block, previous), previous, speed);
+        return operateControls(surface.control(id), owner, value, host.surfaceState(block, previous), previous, speed);
     }
 
-    private static State operateControls(List<? extends CabControl> declared, CabTrainControl owner,
-                                         String id, int value, CabSurfaceState before, State previous, double speed) {
-        var target = declared.stream().filter(control -> control.id().equals(id)).findFirst().orElse(null);
+    private static State operateControls(BlockControl target, CabTrainControl owner,
+                                         int value, ControlState before, State previous, double speed) {
         if (target == null || !target.accepts(value)) return null;
         var after = before.after(target, value);
-        var result = owner.operate(target, value, before, after, previous.request());
+        var result = owner.operate(target, value, before, after, previous.request(), speed);
         return accept(previous, result.request(), result.surface().positions(), speed);
     }
 
@@ -103,15 +110,20 @@ public final class CabModule implements CabTrainInput {
     }
     public VehicleRuntime.Control update(CabController.Mode mode, int direction,
             double speed, AutomaticTrainControl.Target target, double serviceDeceleration, StationStopControl.State stationStop) {
-        if (!state.enabled()) return state.brakingOnly();
         return CabController.update(mode, state.input().direction(direction), speed, target, serviceDeceleration, stationStop);
     }
     /** Select keyboard output using the existing manual controller or explicit station-approach controller. */
     public VehicleRuntime.Control updateSimple(boolean approachingStation, int direction,
             double speed, AutomaticTrainControl.Target target, double serviceDeceleration, StationStopControl.State stationStop) {
-        if (!state.enabled()) return state.brakingOnly();
         var mode = approachingStation ? CabController.Mode.AUTOMATIC : CabController.Mode.MANUAL;
         return CabController.update(mode, effectiveInput(speed * direction).direction(direction), speed, target, serviceDeceleration, stationStop);
+    }
+
+    /** Apply the desk's output policy before the common aggregator receives independent demands. */
+    public VehicleRuntime.Control convertOutput(CabTrainControl desk, VehicleRuntime.Control controlled,
+                                               int direction, double speed) {
+        var handles = CabController.manual(effectiveInput(speed * direction).direction(direction));
+        return desk.output(state.enabled(), handles, controlled);
     }
     public CompoundTag write() {
         var tag = new CompoundTag();

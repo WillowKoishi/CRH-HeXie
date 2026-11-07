@@ -11,6 +11,10 @@ import willow.train.hexie.compat.create.CRH2DoorMovement;
 public class InteractionBehaviourInit {
 
     public static void register() {
+        var passengerDisplays = new willow.train.hexie.compat.create.CreatePassengerDisplayInteraction();
+        MovingInteractionBehaviour.REGISTRY.registerProvider(block ->
+                willow.train.hexie.blocks.signs.PassengerDisplayPanel.supports(block)
+                        || block instanceof willow.train.hexie.blocks.parts.PartMemberBlock ? passengerDisplays : null);
         var doors=new com.simibubi.create.content.contraptions.behaviour.DoorMovingInteraction();
         MovingInteractionBehaviour.REGISTRY.registerProvider(block ->
                 block instanceof willow.train.hexie.blocks.carriage.CustomRenderedDoorBlock ? doors : null);
@@ -20,10 +24,15 @@ public class InteractionBehaviourInit {
         var variants = new willow.train.hexie.compat.create.CreatePartVariantInteraction();
         MovingInteractionBehaviour.REGISTRY.registerProvider(block ->
                 block instanceof willow.train.hexie.blocks.parts.VariantPartBlock ? variants : null);
+        var endFaceVariants = new willow.train.hexie.compat.create.CreateEndFaceVariantInteraction();
+        MovingInteractionBehaviour.REGISTRY.registerProvider(block ->
+                block instanceof willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock ? endFaceVariants : null);
         BlockEntitySynchronizeBehaviour besb = new BlockEntitySynchronizeBehaviour();
         var crh2Doors = new CRH2DoorMovement();
+        var passengerMovement = new willow.train.hexie.compat.create.CreatePassengerDisplayMovement();
         com.simibubi.create.api.behaviour.movement.MovementBehaviour.REGISTRY.registerProvider(
                 block -> {
+                    if (willow.train.hexie.blocks.signs.PassengerDisplayPanel.supports(block)) return passengerMovement;
                     if (block instanceof CRH2DoorBlock) return crh2Doors;
                     if (block instanceof willow.train.hexie.blocks.coupler.CouplerBlock hook && hook.geometry() != null) return besb;
                     if(block instanceof IBE<?> ibe &&

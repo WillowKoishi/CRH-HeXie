@@ -1,0 +1,79 @@
+{
+  "source": "art_assets/CRH2A/CRH2A头车适配版/crh2a_electronic_signage.bbmodel",
+  "source_sha256": "7b35e423ad0b8c4020cac3b2c650882475208d16184aa64b3e7a1b1c5a3ede3c",
+  "units": "model_pixels",
+  "pixels_per_block": 16,
+  "source_to_local_axes": [
+    "-z",
+    "y",
+    "x"
+  ],
+  "front_normal": [
+    0,
+    0,
+    1
+  ],
+  "text_right": [
+    1,
+    0,
+    0
+  ],
+  "text_up": [
+    0,
+    1,
+    0
+  ],
+  "bounds": [
+    -4.75,
+    -1.375,
+    -0.65,
+    4.75,
+    1.375,
+    0
+  ],
+  "skin_depth": 0,
+  "display_bounds": [
+    -4.67,
+    -1.295,
+    -0.36,
+    4.67,
+    1.295,
+    -0.36
+  ],
+  "glass_bounds": [
+    -4.67,
+    -1.295,
+    -0.18,
+    4.67,
+    1.295,
+    -0.18
+  ],
+  "display_width": 9.34,
+  "display_height": 2.59,
+  "layers": {
+    "body": {
+      "triangles": 28,
+      "bounds_blocks": [
+        -0.296875,
+        -0.0859375,
+        -0.040625,
+        0.296875,
+        0.0859375,
+        0.0
+      ],
+      "model": "hexie:block/crh2a/displays/crh2a_electronic_signage_body"
+    },
+    "glass": {
+      "triangles": 2,
+      "bounds_blocks": [
+        -0.291875,
+        -0.0809375,
+        -0.01125,
+        0.291875,
+        0.0809375,
+        -0.01125
+      ],
+      "model": "hexie:block/crh2a/displays/crh2a_electronic_signage_glass"
+    }
+  }
+}

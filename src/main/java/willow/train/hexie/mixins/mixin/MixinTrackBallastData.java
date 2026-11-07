@@ -22,7 +22,10 @@ public abstract class MixinTrackBallastData implements BallastData {
     public void hexie$setBallast(BlockPos target, BlockState state) {
         if (target == null) hexie$ballast = state;
         else hexie$curves.put(target.immutable(), state);
-        ((TrackBlockEntity) (Object) this).notifyUpdate();
+        var track = (TrackBlockEntity) (Object) this;
+        track.notifyUpdate();
+        net.createmod.catnip.platform.CatnipServices.PLATFORM.executeOnClientOnly(
+                () -> () -> willow.train.hexie.client.render.track.BallastCurveBuffers.changed(track));
     }
     @Inject(method = "write", at = @At("RETURN"), require = 1)
     private void hexie$write(CompoundTag tag, HolderLookup.Provider registries, boolean packet, CallbackInfo ci) {

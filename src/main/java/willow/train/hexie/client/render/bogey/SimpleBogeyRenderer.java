@@ -24,6 +24,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.Blocks;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 import willow.train.hexie.blocks.bogeys.BogeyFloorData;
 
 /** Shares each bogey's animation transforms between Create's renderer and Flywheel visual. */
@@ -114,6 +115,11 @@ public abstract class SimpleBogeyRenderer implements BogeyRenderer {
             return this;
         }
 
+        public BogeyModelData transform(Matrix4fc matrix) {
+            transform.mul(matrix);
+            return this;
+        }
+
         public void render(PoseStack poseStack, int light, VertexConsumer buffer) {
             boolean reversed = Boolean.TRUE.equals(reversedPass.get());
             // The geometry is already reflected. Cancel its local reflection after the animated transform.
@@ -126,7 +132,7 @@ public abstract class SimpleBogeyRenderer implements BogeyRenderer {
             }
             poseStack.pushPose();
             poseStack.last().pose().mul(local);
-            poseStack.last().normal().mul(new Matrix3f(local));
+            poseStack.last().normal().mul(new Matrix3f(local).invert().transpose());
             (reversed ? BogeyMirror.BUFFERS.get(model) : CachedBuffers.partial(model, Blocks.AIR.defaultBlockState()))
                     .light(light).overlay(overlay).renderInto(poseStack, buffer);
             poseStack.popPose();

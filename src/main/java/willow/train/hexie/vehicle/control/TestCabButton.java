@@ -1,11 +1,11 @@
 package willow.train.hexie.vehicle.control;
 
 import net.minecraft.network.chat.Component;
-import willow.train.hexie.api.cab.CabControl;
-import willow.train.hexie.api.cab.CabSurfaceState;
+import willow.train.hexie.api.interaction.BlockControl;
+import willow.train.hexie.api.interaction.ControlState;
 
 /** The test panel's momentary buttons, including the readout beside each one. */
-public enum TestCabButton implements CabControl.Button {
+public enum TestCabButton implements BlockControl.Button {
     POWER_UP("power_up"), POWER_DOWN("power_down"), BRAKE_UP("brake_up"), BRAKE_DOWN("brake_down"),
     REVERSER("reverser"), MODE("mode"), PARKING("parking");
 
@@ -16,7 +16,7 @@ public enum TestCabButton implements CabControl.Button {
     @Override public String id() { return id; }
     @Override public Component nameText() { return Component.translatable("gui.hexie.cab." + id); }
 
-    @Override public Component valueText(CabSurfaceState state) {
+    @Override public Component valueText(ControlState state) {
         var view = TestCabControls.view(state);
         return switch (this) {
             case POWER_UP, POWER_DOWN -> Component.translatable("gui.hexie.cab.power_notch", view.power());

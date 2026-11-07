@@ -15,7 +15,7 @@ public class RenderablePicture {
     private final GuiImageCache.ImageData data;
 
     public RenderablePicture(@Nonnull GuiImageCache.ImageData imageData, int uOffset, int vOffset, int uWidth, int vHeight, int color, float alpha) {
-        this.data = imageData;
+        this.data = ensureLoaded(imageData);
         this.uOffset = uOffset;
         this.vOffset = vOffset;
         this.uWidth = uWidth;
@@ -34,7 +34,13 @@ public class RenderablePicture {
     }
 
     public RenderablePicture(@Nonnull GuiImageCache.ImageData imageData) {
-        this(imageData, 0, 0, imageData.width, imageData.height, COLOR_DEFAULT, 1.0f);
+        // Load before the following arguments capture the full image's dimensions.
+        this(ensureLoaded(imageData), 0, 0, imageData.width, imageData.height, COLOR_DEFAULT, 1.0f);
+    }
+
+    private static GuiImageCache.ImageData ensureLoaded(GuiImageCache.ImageData imageData) {
+        GuiImageCache.loadPendingImages();
+        return imageData;
     }
 
     public double widthHeightRatio() {

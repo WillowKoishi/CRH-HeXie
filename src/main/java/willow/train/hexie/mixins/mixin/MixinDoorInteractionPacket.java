@@ -21,6 +21,7 @@ public abstract class MixinDoorInteractionPacket {
             target = "Lnet/minecraft/world/phys/Vec3;subtract(Lnet/minecraft/world/phys/Vec3;)Lnet/minecraft/world/phys/Vec3;"))
     private Vec3 hexie$validateExtendedDoorHit(Vec3 location, Vec3 centre, Operation<Vec3> original,
                                                ServerboundUseItemOnPacket packet) {
+        // Both coordinates belong to the target block's storage space, including a Sable plot.
         Vec3 delta = original.call(location, centre);
         if (Math.abs(delta.x) < 1.0000001 && Math.abs(delta.y) < 1.0000001 && Math.abs(delta.z) < 1.0000001)
             return delta;

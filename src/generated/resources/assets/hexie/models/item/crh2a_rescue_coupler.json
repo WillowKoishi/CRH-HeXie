@@ -1,0 +1,15 @@
+{
+  "parent": "hexie:block/coupler/crh2a_rescue/closed",
+  "display": {
+    "gui": {
+      "rotation": [25, 135, 0],
+      "scale": [1.2, 1.2, 1.2]
+    },
+    "ground": {
+      "scale": [0.6, 0.6, 0.6]
+    },
+    "fixed": {
+      "scale": [1, 1, 1]
+    }
+  }
+}

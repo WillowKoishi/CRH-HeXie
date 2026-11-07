@@ -13,7 +13,7 @@ import org.jetbrains.annotations.NotNull;
 
 import willow.train.hexie.blocks.base.HorizontalGlassBlockBase;
 
-public class TrainGlassPanelBlock extends HorizontalGlassBlockBase {
+public class TrainGlassPanelBlock extends HorizontalGlassBlockBase implements willow.train.hexie.blocks.signs.PassengerDisplayPanel {
 protected static final VoxelShape SOUTH_AABB = Block.box(0.0D, 0.0D, 15, 16, 16, 16);
 protected static final VoxelShape NORTH_AABB = Block.box(0.0D, 0.0D, 0.0D, 16.0D, 16.0D, 1);
 public TrainGlassPanelBlock(Properties p_52325_) {

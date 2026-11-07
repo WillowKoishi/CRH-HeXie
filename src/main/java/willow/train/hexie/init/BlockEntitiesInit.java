@@ -19,6 +19,12 @@ public class BlockEntitiesInit {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, Main.MOD_ID);
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PassengerPanelEntity>> PASSENGER_PANEL =
+            BLOCK_ENTITIES.register("passenger_panel", () -> BlockEntityType.Builder.of(PassengerPanelEntity::new,
+                    BuiltInRegistries.BLOCK.stream().filter(block -> willow.train.hexie.blocks.signs.PassengerDisplayPanel.supports(block)
+                            && !(block instanceof willow.train.hexie.blocks.emu.crh2a.CRH2PanelBlock))
+                            .toArray(Block[]::new)).build(null));
+
     // Shell geometry remains static. These entities retain editable vehicle markings and legacy IDs.
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CRH2HeadEntity>> CRH2A_HEAD =
             BLOCK_ENTITIES.register("crh2a_head", () -> BlockEntityType.Builder.of(

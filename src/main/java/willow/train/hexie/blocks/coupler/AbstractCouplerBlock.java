@@ -19,13 +19,14 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import willow.train.hexie.blockentity.CouplerBlockEntity;
 import willow.train.hexie.item.CouplerAdapterItem;
 import willow.train.hexie.vehicle.assembly.CarriageFloorView;
 
 /** Reusable coupler block behaviour; concrete blocks provide their model, geometry and coupling points. */
-public abstract class AbstractCouplerBlock extends HorizontalDirectionalBlock implements CouplerBlock, EntityBlock {
+public abstract class AbstractCouplerBlock extends HorizontalDirectionalBlock implements CouplerBlock, EntityBlock, willow.train.hexie.interaction.NativeControlSurface {
     public static final BooleanProperty ASSEMBLED = BooleanProperty.create("assembled");
 
     protected AbstractCouplerBlock(Properties properties) {
@@ -46,6 +47,20 @@ public abstract class AbstractCouplerBlock extends HorizontalDirectionalBlock im
         return state.rotate(mirror.getRotation(state.getValue(FACING)));
     }
     @Override protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos position, CollisionContext context) {
+        VoxelShape shape = placedShape(state, level);
+        if (geometry() == null) return shape;
+        float progress = level.getBlockEntity(position) instanceof CouplerBlockEntity coupler
+                ? coupler.coverProgress(1) : CouplerInteraction.coverProgress(state);
+        double floorOffset = level instanceof CarriageFloorView carriage ? carriage.floorOffset() : 0;
+        return new CouplerInteractionShape(shape, state, progress, floorOffset,
+                level.getBlockEntity(position) instanceof CouplerBlockEntity entity ? entity : null);
+    }
+
+    @Override protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos position, CollisionContext context) {
+        return hasCollision ? placedShape(state, level) : Shapes.empty();
+    }
+
+    private VoxelShape placedShape(BlockState state, BlockGetter level) {
         // The assembled flag changes only the static mesh; the complete coupler remains selectable.
         VoxelShape shape = couplerShape(state);
         return level instanceof CarriageFloorView carriage ? shape.move(0, -carriage.floorOffset(), 0) : shape;
@@ -78,9 +93,10 @@ public abstract class AbstractCouplerBlock extends HorizontalDirectionalBlock im
             net.minecraft.world.InteractionHand hand, net.minecraft.world.phys.BlockHitResult hit) {
         if (geometry() == null || stack.is(net.neoforged.neoforge.common.Tags.Items.TOOLS_WRENCH))
             return net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-        var surface = CouplerInteraction.classifyWorld(level, pos, state, player, hit);
+        var surface = CouplerInteraction.classifyHit(level, pos, state, hit);
         if (surface == null) return net.minecraft.world.ItemInteractionResult.FAIL;
         if (surface.head()) return net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        if (!geometry().hasCovers()) return net.minecraft.world.ItemInteractionResult.FAIL;
         if (player.isSpectator() || !player.mayBuild()) return net.minecraft.world.ItemInteractionResult.FAIL;
         toggleCover(level, pos, state);
         return net.minecraft.world.ItemInteractionResult.sidedSuccess(level.isClientSide);
@@ -110,9 +126,10 @@ public abstract class AbstractCouplerBlock extends HorizontalDirectionalBlock im
         if (geometry() != null) {
             if (player.getMainHandItem().is(net.neoforged.neoforge.common.Tags.Items.TOOLS_WRENCH))
                 return net.minecraft.world.InteractionResult.PASS;
-            var surface = CouplerInteraction.classifyWorld(level, pos, state, player, hit);
+            var surface = CouplerInteraction.classifyHit(level, pos, state, hit);
             if (surface == null) return net.minecraft.world.InteractionResult.PASS;
             if (!surface.head()) {
+                if (!geometry().hasCovers()) return net.minecraft.world.InteractionResult.PASS;
                 if (player.isSpectator() || !player.mayBuild()) return net.minecraft.world.InteractionResult.FAIL;
                 toggleCover(level, pos, state);
                 return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide);

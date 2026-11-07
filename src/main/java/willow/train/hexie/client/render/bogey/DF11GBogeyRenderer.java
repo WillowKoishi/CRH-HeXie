@@ -62,6 +62,8 @@ public class DF11GBogeyRenderer {
 
             BogeyModelData frame = getTransform(DF11G_FRAME, ms, inInstancedContraption);
             BogeyModelData[] wheels = getTransform(DF11G_WHEEL, ms, inInstancedContraption, 3);
+            // These rods were authored in the shared body top, also used by the backward variant.
+            BogeySuspensionModels.render(this, BogeySuspensionModels.DF11G, bogeyData, ms, light, vb);
 
             if (direction == Direction.SOUTH || direction == Direction.EAST) {
                 if (inContraption) {
@@ -128,6 +130,7 @@ public class DF11GBogeyRenderer {
 
             BogeyModelData frame = getTransform(DF11G_FRAME, ms, inInstancedContraption);
             BogeyModelData[] wheels = getTransform(DF11G_WHEEL, ms, inInstancedContraption, 3);
+            BogeySuspensionModels.render(this, BogeySuspensionModels.DF11G, bogeyData, ms, light, vb);
 
             if (direction == Direction.SOUTH || direction == Direction.EAST) {
                 if (inContraption) {

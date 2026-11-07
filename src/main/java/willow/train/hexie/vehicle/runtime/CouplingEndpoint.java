@@ -99,7 +99,7 @@ public record CouplingEndpoint(UUID id, Point blockCenter, Facing facing, Axis a
     }
     public Point effectiveComplete() { return adapterPoint(complete); }
     private Point adapterPoint(Point point) {
-        return adapter == null ? point : new Point(point.x(), point.y(), point.z() - adapter.thickness());
+        return adapter == null ? point : point.plus(adapter.offsetFrom(model));
     }
 
     public Point rotated(Point point) {

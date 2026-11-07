@@ -14,33 +14,82 @@ base.archivesName = "Hexie-${minecraft_version}-${artifactLoaderName}"
 
 tasks.withType(Jar).configureEach {
     archiveVersion = artifactArchiveVersion
-    from(project.files('LICENSE.txt', 'THIRD_PARTY_NOTICES.txt')) {
-        into 'META-INF'
-    }
-    from('art_assets') {
-        include 'LICENSE.txt', 'README.md'
-        into 'META-INF/licenses/hexie-art'
+    if (name != 'fontsJar') {
+        from(project.files('LICENSE.txt', 'THIRD_PARTY_NOTICES.txt')) { into 'META-INF' }
+        from('art_assets') {
+            include 'LICENSE.txt', 'README.md'
+            into 'META-INF/licenses/hexie-art'
+        }
     }
 }
+
+// Keep resource IDs unchanged: Minecraft merges the two mods' resource trees.
+// Sources stay in the development resource roots so IDE runs still load fonts.
+def fontResourcePatterns = [
+        'assets/hexie/sign_fonts/**',
+        'META-INF/licenses/sign-fonts/**',
+        'META-INF/licenses/tex-gyre/**'
+]
+def fontsJar = tasks.register('fontsJar', Jar) {
+    archiveBaseName = "Hexie-Fonts-${minecraft_version}-${artifactLoaderName}"
+    destinationDirectory = layout.buildDirectory.dir('libs')
+    from('src/main/resources') { include fontResourcePatterns }
+    from('src/generated/resources') { include fontResourcePatterns }
+    from('src/fonts/resources') {
+        filesMatching('META-INF/neoforge.mods.toml') {
+            expand mod_version: project.version, minecraft_version: minecraft_version
+        }
+    }
+    inputs.property('mod_version', project.version)
+    inputs.property('minecraft_version', minecraft_version)
+    duplicatesStrategy = DuplicatesStrategy.FAIL
+}
+
+tasks.named('jar', Jar) {
+    exclude fontResourcePatterns
+    dependsOn fontsJar
+}
+
 
 // Publish this archive alongside each release so editable artwork is available.
 def artSourcesZip = tasks.register('artSourcesZip', Zip) {
     archiveBaseName = base.archivesName
     archiveVersion = artifactArchiveVersion
     archiveClassifier = 'art-sources'
-    destinationDirectory = layout.buildDirectory.dir('libs')
+    destinationDirectory = layout.buildDirectory.dir('sources')
     from('art_assets') { into 'art_assets' }
     from(project.files('LICENSE.txt', 'THIRD_PARTY_NOTICES.txt'))
-    from('src/main/resources/META-INF/licenses') { into 'META-INF/licenses' }
+    from('src/main/resources/META-INF/licenses') {
+        exclude 'sign-fonts/**', 'tex-gyre/**'
+        into 'META-INF/licenses'
+    }
 }
 
 tasks.named('assemble') {
-    dependsOn artSourcesZip
+    dependsOn artSourcesZip, fontsJar
 }
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(21)
     withSourcesJar()
+}
+
+tasks.named('sourcesJar', Jar) {
+    destinationDirectory = layout.buildDirectory.dir('sources')
+    from('src/fonts/resources/META-INF/THIRD_PARTY_NOTICES.txt') {
+        into 'META-INF/licenses/sign-fonts'
+    }
+}
+
+// A clean download directory containing only this build's two installable mods.
+def releasePackages = tasks.register('releasePackages', Sync) {
+    from(tasks.named('jar', Jar).flatMap { it.archiveFile })
+    from(fontsJar.flatMap { it.archiveFile })
+    into layout.buildDirectory.dir('release')
+}
+
+tasks.named('assemble') {
+    dependsOn releasePackages
 }
 
 sourceSets.main.resources {

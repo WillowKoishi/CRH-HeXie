@@ -1,5 +1,7 @@
 package willow.train.hexie.api.cab;
 
+import willow.train.hexie.api.interaction.ControlState;
+
 import net.minecraft.world.level.block.state.BlockState;
 import willow.train.hexie.api.traincontrol.CabTrainControl;
 import willow.train.hexie.vehicle.control.CabModule;
@@ -13,7 +15,7 @@ public interface CabControlHost extends CabSurfaceHost {
     /** Physical detents for the common controller's power-zero and reverser-cut-out checks. */
     default CabNeutralPositions neutralPositions(BlockState block) { return CabNeutralPositions.FROM_REQUEST; }
 
-    default CabSurfaceState surfaceState(BlockState block, CabModule.State state) {
+    default ControlState surfaceState(BlockState block, CabModule.State state) {
         var surface = state.surface(trainControl(block));
         for (var mount : surfaceGeometry(block).mounts())
             if (mount.module() instanceof CabTrainControl module)

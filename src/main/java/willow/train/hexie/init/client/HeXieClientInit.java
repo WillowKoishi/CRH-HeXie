@@ -13,7 +13,6 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import willow.train.hexie.Main;
 import willow.train.hexie.client.screens.*;
-import willow.train.hexie.client.overlay.OverlayManager;
 import willow.train.hexie.event.client.HXInventoryEvents;
 import willow.train.hexie.init.BlockEntitiesInit;
 import willow.train.hexie.init.EntityInit;
@@ -30,6 +29,7 @@ import java.util.function.Supplier;
 public class HeXieClientInit {
 
     public static void init() {
+        willow.train.hexie.client.render.display.PassengerPanelModels.register();
         willow.train.hexie.client.render.CRH2StaticSections.register();
         Main.bus.addListener(willow.train.hexie.client.render.bogey.BogeyTopModel::register);
         willow.train.hexie.client.render.track.BallastCurveBuffers.register();
@@ -39,14 +39,13 @@ public class HeXieClientInit {
         willow.train.hexie.client.carriage.browser.CarriageBrowserClient.register(Main.bus);
         Main.bus.addListener(HeXieClientInit::registerBlockExtensions);
         Main.bus.addListener(HeXieClientInit::registerMenus);
-        Main.bus.addListener(willow.train.hexie.client.events.CabControlCaption::register);
+        Main.bus.addListener(willow.train.hexie.client.interaction.SurfaceControlCaption::register);
         Main.bus.addListener(HeXieClientInit::registerRenderers);
         Main.bus.addListener(HeXieClientInit::registerEntityVisuals);
         PartialModelInit.init();
         ClientModEventSubscriber.registerModelLayers();
         Main.bus.addListener(HeXieClientInit::onModelLayerRegistration);
         NeoForge.EVENT_BUS.register(new HXInventoryEvents());
-        NeoForge.EVENT_BUS.register(new OverlayManager.OverlayRenderEvent());
     }
 
     public static void registerBlockExtensions(RegisterClientExtensionsEvent event) {
@@ -72,6 +71,8 @@ public class HeXieClientInit {
     }
 
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerBlockEntityRenderer(BlockEntitiesInit.PASSENGER_PANEL.get(),
+                willow.train.hexie.client.render.blockentity.PassengerPanelRenderer::new);
         event.registerBlockEntityRenderer(BlockEntitiesInit.CRH2A_PART.get(), CarriageMarkingRenderer::new);
         event.registerBlockEntityRenderer(BlockEntitiesInit.CRH2A_HEAD.get(), HeadNumberRenderer::new);
         event.registerBlockEntityRenderer(BlockEntitiesInit.DRIVING_CONSOLE.get(),
@@ -116,6 +117,12 @@ public class HeXieClientInit {
     public static void registerEntityVisuals(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
             willow.train.hexie.client.render.SnapshotCouplerRenderer.register(
+                    willow.train.hexie.init.block.BlockInit.GENERAL_JANNEY_COUPLER.get(),
+                    new willow.train.hexie.client.render.JanneyCouplerRenderer(
+                            PartialModelInit.JANNEY_BASE, PartialModelInit.JANNEY_BODY, PartialModelInit.JANNEY_KNUCKLE,
+                            PartialModelInit.JANNEY_BODY_PIN, PartialModelInit.JANNEY_KNUCKLE_PIN,
+                            willow.train.hexie.init.block.BlockInit.GENERAL_JANNEY_COUPLER.get().geometry()));
+            willow.train.hexie.client.render.SnapshotCouplerRenderer.register(
                     willow.train.hexie.init.block.BlockInit.CRH2A_AUTO_COUPLER.get(),
                     new willow.train.hexie.client.render.CoveredCouplerRenderer(
                             PartialModelInit.CRH2_AUTO_COUPLER_BASE, PartialModelInit.CRH2_AUTO_COUPLER_ARM,
@@ -133,11 +140,11 @@ public class HeXieClientInit {
                             model, back, front, maximum)).toList();
             willow.train.hexie.client.render.SnapshotCouplerRenderer.register(
                     willow.train.hexie.init.block.BlockInit.CRH2A_END_FACE.get(),
-                    new willow.train.hexie.client.render.PartialCouplerRenderer(PartialModelInit.CRH2_END_COUPLER,
+                    new willow.train.hexie.client.render.CRH2EndFaceRenderer(new willow.train.hexie.client.render.PartialCouplerRenderer(PartialModelInit.CRH2_END_COUPLER,
                             new net.minecraft.world.phys.Vec3(pivot.x() + .5, pivot.y() + .5, pivot.z() + .5),
                             null, bellows, .5, state -> willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock.bounds(
                                     state.getValue(willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock.FACING)),
-                            new willow.train.hexie.client.render.PartialCouplerRenderer.ContactSpan(14 / 16d, 51 / 16d)));
+                            new willow.train.hexie.client.render.PartialCouplerRenderer.ContactSpan(14 / 16d, 51 / 16d))));
         });
         event.enqueueWork(() -> SimpleEntityVisualizer.builder(EntityInit.ASSEMBLED_CARRIAGE.get())
                 .factory(SnapshotCarriageVisual::new)
@@ -147,6 +154,7 @@ public class HeXieClientInit {
     }
 
     public static void registerMenus(final RegisterMenuScreensEvent event) {
+        event.register(MenuInit.CARRIAGE_NUMBER_MENU.get(), CarriageNumberScreen::new);
         event.register(MenuInit.PANEL_TEXT_MENU.get(), PanelTextScreen::new);
         event.register(MenuInit.CARRIAGE_MARKING_MENU.get(), CarriageMarkingScreen::new);
         event.register(MenuInit.HEAD_NUMBER_MENU.get(), HeadNumberScreen::new);
