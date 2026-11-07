@@ -1037,11 +1037,7 @@ public final class CreateTrainBridge {
         boolean increasing = direction > 0;
         var end = increasing ? train.carriages.getLast().getTrailingPoint() : train.carriages.getFirst().getLeadingPoint();
         double distance = binding(end).distance;
-        double remaining = increasing ? motion.route().path().maximumDistance() - distance
-                : distance - motion.route().path().minimumDistance();
-        if (remaining > Math.max(2, Math.abs(speed) / 20 + 2)) return;
-        var node = increasing ? end.node1 : end.node2;
-        int adjacent = motion.route().graph().getConnectionsFrom(node).hashCode();
+        double lookAhead = Math.max(2, Math.abs(speed) / 20 + 2);
         double minimumOccupied = Double.POSITIVE_INFINITY, maximumOccupied = Double.NEGATIVE_INFINITY;
         for (var point : pointLookup.values()) {
             double occupied = currentDistance(point);
@@ -1052,17 +1048,26 @@ public final class CreateTrainBridge {
             minimumOccupied = Math.min(minimumOccupied, bogey.distance());
             maximumOccupied = Math.max(maximumOccupied, bogey.distance());
         }
+        var scout = destination == null ? null : train.navigation.controlSignalScout();
+        CreateRouteBinding.RouteChoice choice = (graph, preview, extendingForward, choices) -> scout != null
+                ? scout.apply(graph, net.createmod.catnip.data.Pair.of(!extendingForward, choices))
+                : CreateRouteBinding.manualExit(graph, preview, !extendingForward, train.manualSteer, choices);
+        if (motion.reselectRoute(increasing, choice, distance, lookAhead, minimumOccupied, maximumOccupied)) {
+            finishRelocation();
+            extensionAttempts.clear();
+            return;
+        }
+        double remaining = increasing ? motion.route().path().maximumDistance() - distance
+                : distance - motion.route().path().minimumDistance();
+        if (remaining > lookAhead) return;
+        var node = increasing ? end.node1 : end.node2;
+        int adjacent = motion.route().graph().getConnectionsFrom(node).hashCode();
         var retainedEdge = motion.route().boundedPointAt(increasing ? minimumOccupied : maximumOccupied).edge;
         var attempt = new ExtensionAttempt(motion.route(), increasing, adjacent, train.manualSteer,
                 destination, train.navigation.distanceStartedAt, retainedEdge);
         if (attempt.equals(extensionAttempts.get(train.id))) return;
         extensionAttempts.put(train.id, attempt);
-        var navigation = destination == null ? null : train.navigation.controlSignalScout();
-        boolean extended = motion.extendRoute(increasing, (graph, preview, extendingForward, choices) -> {
-            if (navigation != null)
-                return navigation.apply(graph, net.createmod.catnip.data.Pair.of(!extendingForward, choices));
-            return CreateRouteBinding.manualExit(graph, preview, !extendingForward, train.manualSteer, choices);
-        }, minimumOccupied, maximumOccupied);
+        boolean extended = motion.extendRoute(increasing, choice, minimumOccupied, maximumOccupied);
         if (extended) {
             for (var compatible : trains.values()) {
                 if (compatible.graph == null) continue;

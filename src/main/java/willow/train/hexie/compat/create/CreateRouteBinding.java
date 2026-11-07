@@ -229,6 +229,51 @@ public final class CreateRouteBinding {
         return new Extension(continued.binding, shift + continued.distanceOffset);
     }
 
+    /** Reconsider cached forks before entry, while retaining every occupied wheel/support edge. */
+    Extension reselectAhead(boolean forward, RouteChoice choice, double distance, double lookAhead,
+                            double minimumOccupied, double maximumOccupied) {
+        int index = route.segmentIndex(boundDistance(distance));
+        int step = forward ? 1 : -1;
+        // Native travel chooses only after crossing a node. A wheel exactly at the node
+        // may still change its exit, although segmentIndex already names the next edge.
+        int next = forward && (index == 0 || route.distanceAt(index, 0) != distance) ? index + 1 : index;
+        for (int junction = next;
+                junction > 0 && junction < segments.size(); junction += step) {
+            double at = route.distanceAt(junction, 0);
+            if (Math.abs(at - distance) > lookAhead) break;
+            // Protect the whole shared corridor, including gaps between separate consists.
+            if (forward ? at < maximumOccupied : at > minimumOccupied) return new Extension(this, 0);
+            TrackNode previous = nodes.get(junction - step), current = nodes.get(junction);
+            TrackEdge incoming = graph.getConnectionsFrom(previous).get(current);
+            if (incoming == null) throw new RouteInvalidException();
+            var candidates = continuations(graph, previous, current, incoming);
+            if (candidates.size() < 2) continue;
+            var selected = choice.choose(graph, CreateTrackCompatibility.point(graph, previous, current, incoming,
+                    incoming.getLength(), false), forward, List.copyOf(candidates));
+            if (selected != null && candidates.stream().noneMatch(candidate -> candidate.getKey() == selected.getKey()
+                    && candidate.getValue() == selected.getValue()))
+                throw new IllegalArgumentException("Route choice returned an unavailable exit");
+            if (selected != null && selected.getKey() == nodes.get(junction + step)) continue;
+
+            // Keep the incoming edge, discard the obsolete future and release unused history
+            // so a return around a loop can revisit its old nodes. Reuse all occupied arc maps.
+            int first = forward ? Math.min(route.segmentIndex(boundDistance(minimumOccupied)), junction - 1) : junction;
+            int end = forward ? junction : route.segmentIndex(boundDistance(maximumOccupied)) + 1;
+            double shift = -route.distanceAt(first, 0);
+            var window = new CreateRouteBinding(this, nodes.subList(first, end + 1),
+                    segments.subList(first, end), route.slice(first, end), shift);
+            boolean[] firstChoice = {true};
+            var continued = window.extend(forward, (network, preview, extendingForward, choices) -> {
+                // Native scouts consume their copied itinerary when choosing. Do not consume
+                // this same fork twice when extending the newly truncated route.
+                if (firstChoice[0]) { firstChoice[0] = false; return selected; }
+                return choice.choose(network, preview, extendingForward, choices);
+            });
+            return new Extension(continued.binding, shift + continued.distanceOffset);
+        }
+        return new Extension(this, 0);
+    }
+
     /** Refresh only sampled/next-tick edges, not distant history or future selected track. */
     public Extension refresh(double minimumNeeded, double maximumNeeded) {
         int first = route.segmentIndex(boundDistance(minimumNeeded));

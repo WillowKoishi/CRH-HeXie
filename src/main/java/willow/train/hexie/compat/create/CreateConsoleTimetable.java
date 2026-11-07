@@ -240,6 +240,28 @@ public final class CreateConsoleTimetable extends MovingInteractionBehaviour {
         for (var cab : motion.cabTimetables(train.carriageIds.getFirst()).values()) cab.bind(train);
     }
 
+    static void invalidateNavigation(CompatibilityTrain train) {
+        var executions = new java.util.HashSet<CreateCabTimetable>();
+        if (train.bridge != null && !train.carriageIds.isEmpty())
+            executions.addAll(train.bridge.motion().cabTimetables(train.carriageIds.getFirst()).values());
+        if (train.currentCabTimetable != null) executions.add(train.currentCabTimetable);
+        executions.forEach(CreateCabTimetable::invalidateNavigation);
+        invalidateNavigationObservations(train);
+    }
+
+    static void invalidateNavigationObservations(CompatibilityTrain train) {
+        if (train.runtime instanceof Runtime runtime && runtime.pendingLegacyNavigation != null) {
+            runtime.pendingLegacyNavigation = null;
+            if (runtime.state == ScheduleRuntime.State.IN_TRANSIT) runtime.transitInterrupted();
+        }
+        CreateNavigationState.clearSignalWait(train);
+        train.automaticRouteAvailable = false;
+        train.controlObservationsReady = false;
+        train.waypointTransitionTicks = 0;
+        train.waypointTransitionActive = false;
+        train.displayRoute = willow.train.hexie.vehicle.control.TrainDisplayReadings.Route.unavailable();
+    }
+
     static void migrateLegacy(CompatibilityTrain train, AssembledVehicleMotion motion) {
         var legacy = source(train);
         if (legacy == null) return;

@@ -165,6 +165,16 @@ public final class AssembledVehicleMotion {
             maximumOccupied = Math.max(maximumOccupied, bogey.distance());
         }
         var extension = route.extend(forward, choice, minimumOccupied, maximumOccupied);
+        return applyRouteExtension(extension);
+    }
+
+    boolean reselectRoute(boolean forward, CreateRouteBinding.RouteChoice choice, double distance, double lookAhead,
+                          double minimumOccupied, double maximumOccupied) {
+        return applyRouteExtension(route.reselectAhead(forward, choice, distance, lookAhead,
+                minimumOccupied, maximumOccupied));
+    }
+
+    private boolean applyRouteExtension(CreateRouteBinding.Extension extension) {
         if (extension.binding() == route) return false;
         var extended = runtime.rebind(extension.binding().path(), extension.distanceOffset());
         route = extension.binding();
