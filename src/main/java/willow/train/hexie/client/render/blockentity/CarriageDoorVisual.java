@@ -10,6 +10,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
 import willow.train.hexie.blockentity.CustomRenderedDoorEntity;
 import willow.train.hexie.client.render.carriage.CarriageBlockVisual;
+import willow.train.hexie.client.render.carriage.CarriageTransparencyCompat;
+import willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock;
 
 /** Door instances use the carriage's transform and light volume, including beyond the entity render pass. */
 public final class CarriageDoorVisual extends CarriageBlockVisual<CustomRenderedDoorEntity>
@@ -52,7 +54,12 @@ public final class CarriageDoorVisual extends CarriageBlockVisual<CustomRendered
     }
 
     @Override public void draw(PartialModel model, RenderType layer, PoseStack transform) {
+        if (CarriageTransparencyCompat.required() && layer == RenderType.translucent()) return;
         parts.draw(model, layer, transform, layer != RenderType.cutoutMipped());
+    }
+
+    @Override protected boolean rendersEntireBlock() {
+        return !CarriageTransparencyCompat.required() || !(blockEntity.getBlockState().getBlock() instanceof CRH2DoorBlock);
     }
 
     @Override public void collectCrumblingInstances(Consumer<Instance> consumer) {

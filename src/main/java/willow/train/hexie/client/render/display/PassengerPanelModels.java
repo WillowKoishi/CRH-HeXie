@@ -28,6 +28,7 @@ import willow.train.hexie.blocks.emu.crh2a.CRH2PartBlock;
 import willow.train.hexie.blocks.signs.PanelDisplayColumn;
 import willow.train.hexie.blocks.signs.PanelDisplayMount;
 import willow.train.hexie.blocks.signs.PassengerDisplayPanel;
+import willow.train.hexie.client.render.carriage.CarriageTransparencyCompat;
 
 /** State-only shell apertures shared by terrain, snapshots and carriage meshes. */
 public final class PassengerPanelModels {
@@ -45,6 +46,7 @@ public final class PassengerPanelModels {
     private static final double EPS = 1e-6;
     private static volatile Map<String, BakedModel> screenModels = Map.of();
     private static volatile Map<BlockState, Layout> layouts = new ConcurrentHashMap<>();
+    private static volatile Map<BlockState, List<BakedQuad>> displayGlass = new ConcurrentHashMap<>();
 
     private PassengerPanelModels() {}
 
@@ -74,6 +76,7 @@ public final class PassengerPanelModels {
         }
         screenModels = Map.copyOf(parts);
         layouts = new ConcurrentHashMap<>();
+        displayGlass = new ConcurrentHashMap<>();
         for (var block : BuiltInRegistries.BLOCK) {
             // CRH2 shells are wrapped immediately before their section/Flywheel mesh is captured.
             if (!PassengerDisplayPanel.supports(block) || block instanceof CRH2PartBlock) continue;
@@ -85,6 +88,9 @@ public final class PassengerPanelModels {
     }
 
     public static Layout layout(BlockState state) { return layouts.get(state); }
+
+    /** Resource-baked display faces in block-local coordinates; excludes the carriage's window glass. */
+    public static List<BakedQuad> glass(BlockState state) { return displayGlass.getOrDefault(state, List.of()); }
 
     public static BakedModel wrap(BakedModel original, BlockState state) {
         if (original instanceof MountedModel || !PassengerDisplayPanel.supports(state.getBlock())
@@ -116,13 +122,18 @@ public final class PassengerPanelModels {
                 for (var clipped : cut(face.quad, plane, openings)) result.add(new Face(clipped, face.layer));
             } else result.add(face);
         }
+        var deferredGlass = new ArrayList<BakedQuad>();
         for (var opening : openings) for (String layer : List.of("body", "glass")) {
             var partial = screenModels.get(opening.model + "_" + layer);
             if (partial == null) throw new IllegalStateException("Passenger display models were not prepared before shell baking");
-            for (var face : faces(partial, state))
-                result.add(new Face(transform(face.quad, opening.center, plane), face.layer));
+            for (var face : faces(partial, state)) {
+                var quad = transform(face.quad, opening.center, plane);
+                if (layer.equals("glass") && CarriageTransparencyCompat.required()) deferredGlass.add(quad);
+                else result.add(new Face(quad, face.layer));
+            }
         }
-        return new MountedModel(original, result);
+        if (!deferredGlass.isEmpty()) displayGlass.put(state, List.copyOf(deferredGlass));
+        return new MountedModel(original, result, deferredGlass);
     }
 
     private static List<Face> faces(BakedModel model, BlockState state) {
@@ -379,14 +390,18 @@ public final class PassengerPanelModels {
         private final Map<RenderType, List<BakedQuad>> layers;
         private final List<BakedQuad> all;
         private final ChunkRenderTypeSet renderTypes;
-        MountedModel(BakedModel original, List<Face> faces) {
+        MountedModel(BakedModel original, List<Face> faces, List<BakedQuad> deferredGlass) {
             super(original);
             var grouped = new LinkedHashMap<RenderType, List<BakedQuad>>();
             for (var face : faces) grouped.computeIfAbsent(face.layer, ignored -> new ArrayList<>()).add(face.quad);
             var frozen = new LinkedHashMap<RenderType, List<BakedQuad>>();
             grouped.forEach((key, value) -> frozen.put(key, List.copyOf(value)));
             layers = Map.copyOf(frozen);
-            all = faces.stream().map(Face::quad).toList();
+            // Unlayered item/preview callers still receive the complete authored model.
+            var complete = new ArrayList<BakedQuad>();
+            for (var face : faces) complete.add(face.quad);
+            complete.addAll(deferredGlass);
+            all = List.copyOf(complete);
             renderTypes = ChunkRenderTypeSet.of(grouped.keySet());
         }
         @Override public List<BakedQuad> getQuads(BlockState state, Direction side, RandomSource random) {

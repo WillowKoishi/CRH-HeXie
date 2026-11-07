@@ -10,7 +10,7 @@ import willow.train.hexie.init.client.MenuInit;
 
 public class TrainSpeedSignEditMenu extends BlockEntityEditMenu<TrainSpeedSignEntity> {
     public TrainSpeedSignEditMenu(int id, Inventory inventory, FriendlyByteBuf data) {
-        this(id, inventory, inventory.player.level().getBlockEntity(data.readBlockPos()), new SimpleContainerData(2));
+        super(MenuInit.TRAIN_SPEED_SIGN_EDIT_MENU.get(), id, inventory, data, TrainSpeedSignEntity.class);
     }
 
     public TrainSpeedSignEditMenu(int id, Inventory inventory, BlockEntity entity, ContainerData data) {
@@ -18,5 +18,8 @@ public class TrainSpeedSignEditMenu extends BlockEntityEditMenu<TrainSpeedSignEn
     }
 
     public TrainSpeedSignEntity getTsse() { return target; }
+    public static boolean openMoving(net.minecraft.server.level.ServerPlayer player, Target target) {
+        return openMoving(player, target, (id, inv) -> new TrainSpeedSignEditMenu(id, inv, target.entity(), new SimpleContainerData(2)), net.minecraft.network.chat.Component.empty());
+    }
     public void setTsse(TrainSpeedSignEntity entity) { target = entity; }
 }

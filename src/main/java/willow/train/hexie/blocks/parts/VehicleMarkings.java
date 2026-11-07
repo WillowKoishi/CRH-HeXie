@@ -6,6 +6,9 @@ public interface VehicleMarkings {
     boolean descriptionLeft();
     int markingSlot();
     int harmony(int slot);
+    PanelText panelText(int slot);
+    void setPanelText(int slot, PanelText text);
+    void setHarmony(int slot, int direction);
     void update(String[] fields,boolean descriptionLeft);
     void selectMarkingSlot(int slot);
     void attachHarmony(int slot);

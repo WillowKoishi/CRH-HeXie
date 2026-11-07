@@ -115,7 +115,7 @@ public class CarriageNoSignEditScreen extends AbstractContainerScreen<CarriageNo
                                                     entity.setMessage(
                                                             Component.literal(content.getValue()));
                                                                     // .setStyle(HEXIE_STANDARD_STYLE));
-                                                    entity.markUpdated(true);
+                                                    LegacySignScreenSubmission.submit(menu);
                                                     onClose();
                                                 } catch (Exception e) {
                                                 }
@@ -123,13 +123,14 @@ public class CarriageNoSignEditScreen extends AbstractContainerScreen<CarriageNo
                                         } else if (b.equals(buttons[1])) {
                                             onClose();
                                         } else if (b.equals(buttons[2])) {
-                                            if (entity != null) {
+                                            if (entity != null && !menu.contentOnly()) {
                                                 entity.setLeftSide(!entity.isLeftSide());
-                                                entity.markUpdated(true);
+                                                LegacySignScreenSubmission.submit(menu);
                                             }
                                         }
                                     }));
         }
+        buttons[2].active = !menu.contentOnly();
     }
 
     @Override

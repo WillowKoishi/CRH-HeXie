@@ -158,6 +158,8 @@ public class LacqueredBoardEditScreen extends AbstractContainerScreen<LacqueredB
         forGroundColor.setValue(entity.getForGroundColor() + "");
         pinyinColor.setValue(entity.getBeltForGroundColor() + "");
         xOffset.setValue(entity.getXOffset() + "");
+        xOffset.setEditable(!menu.contentOnly());
+        xOffset.active = !menu.contentOnly();
 
         renderEditPanel1();
 
@@ -275,7 +277,7 @@ public class LacqueredBoardEditScreen extends AbstractContainerScreen<LacqueredB
                                                                 trainType.getValue(),
                                                                 No.getValue()
                                                             });
-                                                    entity.markUpdated(true);
+                                                    LegacySignScreenSubmission.submit(menu);
                                                     onClose();
                                                 }
                                             }

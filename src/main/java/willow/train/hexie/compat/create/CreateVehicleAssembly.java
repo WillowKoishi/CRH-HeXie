@@ -2,7 +2,6 @@ package willow.train.hexie.compat.create;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 import java.util.Objects;
@@ -27,7 +26,6 @@ import willow.train.hexie.vehicle.assembly.CarriageSnapshot;
 import willow.train.hexie.vehicle.assembly.BogeyModelCatalog;
 import willow.train.hexie.vehicle.assembly.VehicleAssemblyPreparer;
 import willow.train.hexie.vehicle.assembly.VehicleCouplingCatalog;
-import willow.train.hexie.blocks.coupler.CouplerBlock;
 import org.slf4j.Logger;
 
 /** Action-only bridge: Create selects/triggers; our scanner and snapshot store own the assembly. */
@@ -261,71 +259,38 @@ public final class CreateVehicleAssembly {
                 pose.position().z()), 0, angle, 0);
     }
 
-    /** Connected heads can share one cell while assembled; world blocks need separate cells. */
+    /** Leave a complete empty block layer between successive restored carriage structures. */
     static Map<UUID, StructureTransform> disassemblyTransforms(StationBlockEntity station,
             List<SnapshotCarriageEntity> carriers) {
         var transforms = new LinkedHashMap<UUID, StructureTransform>();
-        var partners = new HashMap<UUID, UUID>();
         for (var carrier : carriers)
             transforms.put(carrier.getUUID(), disassemblyTransform(carrier));
-        for (var motion : carriers.stream().map(SnapshotCarriageEntity::motion).distinct().toList())
-            for (var coupling : motion.runtime().couplingStates()) if (coupling.connected()) {
-                partners.put(coupling.first(), coupling.second());
-                partners.put(coupling.second(), coupling.first());
-            }
-        var occupied = new HashMap<BlockPos, UUID>();
-        // Only coincident, connected coupler blocks permit unfolding. Unrelated overlapping
-        // body blocks remain an invalid dismantle instead of silently moving a whole carriage.
-        boolean needsUnfolding = false;
-        for (var carrier : carriers) {
-            var transform = transforms.get(carrier.getUUID());
-            needsUnfolding |= checkCarriageOverlap(carrier, transform, occupied, partners);
-            addCarriageCells(carrier, transform, occupied);
-        }
-        if (!needsUnfolding) return transforms;
+        if (carriers.size() < 2) return transforms;
         Direction away = Objects.requireNonNull(station.getAssemblyDirection(), "Station has no assembly direction");
         var ordered = carriers.stream().sorted(Comparator.comparingInt(carrier -> {
             var position = transforms.get(carrier.getUUID()).offset;
             return position.getX() * away.getStepX() + position.getZ() * away.getStepZ();
         })).toList();
-        occupied.clear();
-        int shift = 0;
+        int previousEnd = Integer.MIN_VALUE;
         for (var carrier : ordered) {
             var original = transforms.get(carrier.getUUID());
-            StructureTransform target;
-            do {
-                target = new StructureTransform(original.offset.relative(away, shift), original.rotationAxis,
-                        original.rotation, original.mirror);
-                if (!checkCarriageOverlap(carrier, target, occupied, partners)) break;
-                shift++;
-            } while (true);
-            transforms.put(carrier.getUUID(), target);
-            addCarriageCells(carrier, target, occupied);
+            int start = Integer.MAX_VALUE;
+            int end = Integer.MIN_VALUE;
+            for (var position : carrier.getContraption().getBlocks().keySet()) {
+                BlockPos world = original.apply(position);
+                int alongTrack = world.getX() * away.getStepX() + world.getZ() * away.getStepZ();
+                start = Math.min(start, alongTrack);
+                end = Math.max(end, alongTrack);
+            }
+            if (end == Integer.MIN_VALUE) throw new IllegalStateException("Cannot dismantle an empty carriage");
+            // Indices differing by one still touch. A difference of two leaves one empty cell.
+            int shift = previousEnd == Integer.MIN_VALUE ? 0 : Math.max(0, previousEnd + 2 - start);
+            if (shift != 0)
+                transforms.put(carrier.getUUID(), new StructureTransform(original.offset.relative(away, shift),
+                        original.rotationAxis, original.rotation, original.mirror));
+            previousEnd = end + shift;
         }
         return transforms;
-    }
-
-    private static boolean checkCarriageOverlap(SnapshotCarriageEntity carrier, StructureTransform transform,
-            Map<BlockPos, UUID> occupied, Map<UUID, UUID> partners) {
-        boolean overlaps = false;
-        for (var block : carrier.getContraption().getBlocks().values()) {
-            BlockPos target = transform.apply(block.pos());
-            if (!occupied.containsKey(target)) continue;
-            UUID endpoint = carrier.hasCoupler(block.pos())
-                    ? VehicleCouplingCatalog.endpointId(carrier.getUUID(), block.pos()) : null;
-            if (endpoint == null || partners.get(endpoint) == null
-                    || !partners.get(endpoint).equals(occupied.get(target)))
-                throw new IllegalArgumentException("Overlapping assembly snapshots at " + target);
-            overlaps = true;
-        }
-        return overlaps;
-    }
-
-    private static void addCarriageCells(SnapshotCarriageEntity carrier, StructureTransform transform,
-            Map<BlockPos, UUID> occupied) {
-        for (var block : carrier.getContraption().getBlocks().values())
-            occupied.put(transform.apply(block.pos()), carrier.hasCoupler(block.pos())
-                    ? VehicleCouplingCatalog.endpointId(carrier.getUUID(), block.pos()) : null);
     }
 
     private static boolean hasRestorablePose(SnapshotCarriageEntity carrier) {

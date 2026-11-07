@@ -198,7 +198,7 @@ public class TrainSpeedSignEditScreen extends AbstractContainerScreen<TrainSpeed
                                                             (float) (x_offset.getValue() - 0.5));
                                                     entity.setY_offset(
                                                             (float) (y_offset.getValue() - 0.5));
-                                                    entity.markUpdated(true);
+                                                    LegacySignScreenSubmission.submit(menu);
                                                     onClose();
                                                 } catch (Exception e) {
                                                 }
@@ -213,6 +213,13 @@ public class TrainSpeedSignEditScreen extends AbstractContainerScreen<TrainSpeed
                                             onClose();
                                         }
                                     }));
+        }
+        if (menu.contentOnly()) {
+            x_offset.active = false;
+            y_offset.active = false;
+            revert_buttons[0].active = false;
+            revert_buttons[1].active = false;
+            buttons[1].active = false;
         }
     }
 

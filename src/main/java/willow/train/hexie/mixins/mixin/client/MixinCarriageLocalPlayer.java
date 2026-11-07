@@ -69,12 +69,13 @@ public abstract class MixinCarriageLocalPlayer {
             hexie$forgetSupport();
             hexie$movementEpoch = epoch;
         }
-        var restore = CarriagePlayerSupport.takeClientRestoreReport(player);
-        if (restore != null) {
+        var placement = CarriagePlayerSupport.takeClientPlacementReport(player);
+        if (placement != null) {
             // Placement (or carrier removal) completes the handoff before its attached/exit report.
-            if (restore.token() != 0) PacketDistributor.sendToServer(new CarriageRestoreAckPacket(restore.token()));
-            hexie$sentCarriageId = restore.carriageId();
-            hexie$sentCarriageUuid = restore.carriageUuid();
+            // Only login restoration has a server token; a seat exit is confirmed by this move itself.
+            if (placement.token() != 0) PacketDistributor.sendToServer(new CarriageRestoreAckPacket(placement.token()));
+            hexie$sentCarriageId = placement.carriageId();
+            hexie$sentCarriageUuid = placement.carriageUuid();
             hexie$sentLocal = null;
         }
         if (player.isPassenger()) {

@@ -39,7 +39,7 @@ public final class HeadNumberScreen extends AbstractContainerScreen<HeadNumberMe
         addRenderableWidget(number);
         addRenderableWidget(new Button(x + 5, 200, EDIT_BOX_WIDTH / 3 - 10, EDIT_BOX_HEIGHT,
                 Component.translatable("container.hexie.carriage_type_sign_edit_menu.confirm"), button -> {
-                    HexieNetworkHandler.sendToServer(new HeadNumberUpdatePacket(menu.pos, number.getValue()));
+                    HexieNetworkHandler.sendToServer(new HeadNumberUpdatePacket(menu.pos, number.getValue()).withMenuId(menu.containerId));
                     onClose();
                 }));
         addRenderableWidget(new Button(x + EDIT_BOX_WIDTH / 3 + 5, 200,

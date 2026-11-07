@@ -92,9 +92,8 @@ public final class CreateCarriageNumberTarget implements CarriageNumberMenu.Targ
         } else data = previous.nbt().copy();
         PassengerCarriageNumber.write(data, number);
         var next = new StructureBlockInfo(rootPos, previous.state(), data);
-        entity.setBlock(rootPos, next);
-        // Native Create's setBlock updates neither actor block data nor its separate spawn tag.
-        // Snapshot already updates both, so this common projection is deliberately idempotent.
+        contraption.getBlocks().put(rootPos, next);
+        // Content changes do not alter geometry or invalidate the contraption structure.
         updateCapturedNumber(contraption, rootPos, number);
         PacketDistributor.sendToPlayersTrackingEntity(entity,
                 new CarriageNumberPacket(entity.getId(), entity.getUUID(), rootPos, number));
@@ -108,13 +107,15 @@ public final class CreateCarriageNumberTarget implements CarriageNumberMenu.Targ
         PassengerCarriageNumber.write(data, number);
         var next = new StructureBlockInfo(pos, previous.state(), data);
         contraption.getBlocks().put(pos, next);
-        var actor = contraption.getActorAt(pos);
+        var actor = IndexedContraptionActors.get(contraption, pos);
         if (actor != null) {
             actor.left = next;
-            var actorData = data.copy();
-            if (actor.right.blockEntityData != null) actorData.merge(actor.right.blockEntityData);
-            PassengerCarriageNumber.write(actorData, number);
-            actor.right.blockEntityData = actorData;
+            if (actor.right != null) {
+                var actorData = data.copy();
+                if (actor.right.blockEntityData != null) actorData.merge(actor.right.blockEntityData);
+                PassengerCarriageNumber.write(actorData, number);
+                actor.right.blockEntityData = actorData;
+            }
         }
         var tags = ((ContraptionUpdateTagsAccessor) contraption).hexie$getUpdateTags();
         var update = tags.containsKey(pos) ? tags.get(pos).copy() : data.copy();

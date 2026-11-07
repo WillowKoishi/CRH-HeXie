@@ -261,12 +261,13 @@ public class CarriageTypeSignEntity extends SmartBlockEntity
     @Override
     public boolean readFromClipboard(
             net.minecraft.core.HolderLookup.Provider registries, CompoundTag tag, Player player, Direction side, boolean simulate) {
-        if (simulate) return true;
-        if (tag.contains("sign") && tag.contains("Color")) {
+        if (!willow.train.hexie.compat.create.CreatePanelClipboard.canPaste(this, player, side)) return false;
+        if (tag.getString("sign").equals("carriage_type_sign") && tag.contains("Color")) {
             for (int i = 0; i < 5; i++) {
                 if (!tag.contains(name[i])) return false;
             }
 
+            if (simulate) return true;
             this.color = tag.getInt("Color");
             for (int i = 0; i < 5; i++) {
                 if (tag.contains(name[i])) {

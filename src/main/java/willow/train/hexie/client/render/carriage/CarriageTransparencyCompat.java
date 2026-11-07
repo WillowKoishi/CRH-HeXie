@@ -1,6 +1,8 @@
 package willow.train.hexie.client.render.carriage;
 
 import com.simibubi.create.AllEntityTypes;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import com.simibubi.create.content.trains.entity.CarriageContraptionEntity;
 import com.simibubi.create.content.trains.entity.CarriageContraptionVisual;
 import dev.engine_room.flywheel.api.visual.EntityVisual;
@@ -8,9 +10,11 @@ import dev.engine_room.flywheel.api.visualization.EntityVisualizer;
 import dev.engine_room.flywheel.api.visualization.VisualizationContext;
 import dev.engine_room.flywheel.api.visualization.VisualizerRegistry;
 import dev.engine_room.flywheel.lib.visualization.SimpleEntityVisualizer;
+import net.minecraft.client.renderer.RenderType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.event.lifecycle.FMLLoadCompleteEvent;
+import net.neoforged.neoforge.client.event.RegisterRenderBuffersEvent;
 import willow.train.hexie.Main;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,6 +29,30 @@ public final class CarriageTransparencyCompat {
 
     public static void register(IEventBus modBus) {
         modBus.addListener(CarriageTransparencyCompat::onLoadComplete);
+        modBus.addListener(CarriageTransparencyCompat::registerBuffers);
+    }
+
+    private static void registerBuffers(RegisterRenderBuffersEvent event) {
+        if (required()) event.registerRenderBuffer(GlassRenderType.INSTANCE);
+    }
+
+    /** Only door/display glass uses this fixed buffer; ordinary carriage-window meshes stay instanced. */
+    public static RenderType glassLayer() { return GlassRenderType.INSTANCE; }
+
+    private static final class GlassRenderType extends RenderType {
+        // Keep the native moving-block shader, depth test and fabulous target. A fixed buffer
+        // is submitted after opaque geometry and text, with all its glass quads sorted together.
+        private static final RenderType INSTANCE = create("hexie_door_display_glass", DefaultVertexFormat.BLOCK,
+                VertexFormat.Mode.QUADS, 1536, false, true,
+                CompositeState.builder().setShaderState(RENDERTYPE_TRANSLUCENT_MOVING_BLOCK_SHADER)
+                        .setTextureState(BLOCK_SHEET_MIPPED).setLightmapState(LIGHTMAP)
+                        .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
+                        .setOutputState(ITEM_ENTITY_TARGET).createCompositeState(true));
+
+        private GlassRenderType() {
+            super("hexie_door_display_glass", DefaultVertexFormat.BLOCK, VertexFormat.Mode.QUADS,
+                    1536, false, true, () -> {}, () -> {});
+        }
     }
 
     private static void onLoadComplete(FMLLoadCompleteEvent event) {

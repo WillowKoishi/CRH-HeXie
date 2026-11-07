@@ -756,7 +756,8 @@ public final class AssembledVehicleMotion {
 
     private willow.train.hexie.vehicle.control.StationStopControl.State stationStopState(UUID member) {
         var train = compatibility == null ? null : compatibility.train(member);
-        return train == null ? willow.train.hexie.vehicle.control.StationStopControl.State.RUNNING
+        return train == null || isBackendApproachingStation(member)
+                ? willow.train.hexie.vehicle.control.StationStopControl.State.RUNNING
                 : train.stationStopControl().state();
     }
 
@@ -765,17 +766,21 @@ public final class AssembledVehicleMotion {
         if (train == null) return null;
         int direction = train.navigation.destination != null ? train.navigation.destinationBehindTrain ? 1 : -1
                 : runtime.speed(member) < 0 ? -1 : 1;
-        return willow.train.hexie.vehicle.control.AutomaticTrainControl.fromRoute(train.displayRoute, direction,
+        var target = willow.train.hexie.vehicle.control.AutomaticTrainControl.fromRoute(train.displayRoute, direction,
                 train.automaticRouteAvailable, train.waypointTransitionActive, runtime.speed(member),
                 willow.train.hexie.vehicle.control.TrainControlLimits.capture(runtime, member));
+        return isBackendApproachingStation(member)
+                ? willow.train.hexie.vehicle.control.AutomaticTrainControl.stationApproach(target) : target;
     }
 
     private willow.train.hexie.vehicle.control.AutomaticTrainControl.Target automaticTarget(CreateCabTimetable execution,
             double speed, willow.train.hexie.vehicle.control.TrainControlLimits limits) {
         int direction = execution.navigation.destination != null ? execution.navigation.destinationBehindTrain ? 1 : -1
                 : speed < 0 ? -1 : 1;
-        return willow.train.hexie.vehicle.control.AutomaticTrainControl.fromRoute(execution.displayRoute, direction,
+        var target = willow.train.hexie.vehicle.control.AutomaticTrainControl.fromRoute(execution.displayRoute, direction,
                 execution.automaticRouteAvailable, execution.waypointTransitionActive, speed, limits);
+        return isApproachingStation(execution.key())
+                ? willow.train.hexie.vehicle.control.AutomaticTrainControl.stationApproach(target) : target;
     }
 
     /** Bind backend observations to the common controller after route collection has completed. */
@@ -829,10 +834,13 @@ public final class AssembledVehicleMotion {
 
     /** Backend execution keeps its own mode even while a desk owns traction and the physical route. */
     boolean isBackendAutomaticControlSelected(UUID member) {
-        if (controllers.entrySet().stream().anyMatch(entry -> runtime.connected(member, entry.getKey().carriage())
+        return isBackendApproachingStation(member) || nativeAutomaticSelected(member);
+    }
+
+    boolean isBackendApproachingStation(UUID member) {
+        return controllers.entrySet().stream().anyMatch(entry -> runtime.connected(member, entry.getKey().carriage())
                 && entry.getValue().cabControls == null && entry.getValue().attended && !entry.getValue().timedOut
-                && entry.getValue().approachingStation)) return true;
-        return nativeAutomaticSelected(member);
+                && entry.getValue().approachingStation);
     }
 
     TrainControl.Source backendControlSource(UUID member) {
@@ -1038,7 +1046,10 @@ public final class AssembledVehicleMotion {
             var target = automaticTarget(driver.cabTimetable, runtime.speed(carriage), limits);
             boolean approaching = driver.approachingStation
                     || driver.approachHeld && driver.cabTimetable.stationStop.state().waitingForDeparture();
-            var stop = driver.cabTimetable.stationStop.state();
+            // Range arrival is a notification, not completion of the held Space docking movement.
+            var stop = driver.approachingStation
+                    ? willow.train.hexie.vehicle.control.StationStopControl.State.RUNNING
+                    : driver.cabTimetable.stationStop.state();
             var command = input.state().simple()
                     ? input.updateSimple(approaching, direction, runtime.speed(carriage), target, deceleration, stop)
                     : input.update(approaching ? CabController.Mode.AUTOMATIC : input.mode(), direction,
@@ -1278,7 +1289,7 @@ public final class AssembledVehicleMotion {
                                            boolean space, int direction, double speed, boolean forwardCab) {
         if (!space && driver.approachingStation) CreateNavigationState.clearSignalWait(train);
         var station = train.isWaitingForDeparture() ? train.waitingStation() : null;
-        if (station != null) {
+        if (station != null && (!space || compatibility.dockedAtStation(train, station))) {
             driver.approachingStation = false;
             if (space) {
                 if (driver.cabControls == null)
@@ -1287,6 +1298,8 @@ public final class AssembledVehicleMotion {
                         Component.literal(station.name).withStyle(s -> s.withColor(0x704630))), false);
                 return true;
             }
+            if (train.runtime.getSchedule() == null && train.navigation.destination != null)
+                CreateNavigationState.cancel(train, CreateNavigationState.Reason.MANUAL_APPROACH_CANCELLED);
             if (direction != 0) {
                 driver.stationMessage = false;
                 sendPrompt(player, CreateLang.translateDirect("train.departing_from",

@@ -37,14 +37,14 @@ public record CarriagePlayerMovePacket(int carriageId, UUID carriageUuid, Vec3 p
                 || player.isSleeping() || player.isChangingDimension()
                 || !(player.connection instanceof CarriedPlayerConnection connection) || !connection.hexie$canCarry()) return;
 
-        SnapshotCarriageEntity previous = CarriagePlayerSupport.attachedCarriage(player);
+        SnapshotCarriageEntity owner = CarriagePlayerSupport.attachedCarriage(player);
         if (!attached) {
             // Sync or lifecycle cleanup can already have removed Standing. The last
             // accepted identity still permits exactly one exit, until any vanilla
             // movement or server teleport revokes it.
-            boolean owned = previous != null && previous.getId() == carriageId && previous.getUUID().equals(carriageUuid);
+            boolean owned = owner != null && owner.getId() == carriageId && owner.getUUID().equals(carriageUuid);
             if ((!owned && !connection.hexie$wasCarriedBy(carriageId, carriageUuid)) || !worldPosition(position)) return;
-            var terrain = CarriageChunkAccess.enter(previous == null ? player : previous);
+            var terrain = CarriageChunkAccess.enter(owner == null ? player : owner);
             try {
                 if (connection.hexie$acceptCarriageMovement(position, Vec3.ZERO, Vec3.ZERO, yaw, pitch, onGround)) {
                     CarriagePlayerSupport.detach(player);
@@ -59,14 +59,17 @@ public record CarriagePlayerMovePacket(int carriageId, UUID carriageUuid, Vec3 p
                 && found.getUUID().equals(carriageUuid) ? found : null;
         // Occupied entities can temporarily leave the terrain entity lookup. Only
         // the already-owned identity may bridge that lifecycle gap.
-        if (car == null && previous != null && previous.getId() == carriageId && previous.getUUID().equals(carriageUuid))
-            car = previous;
+        if (car == null && owner != null && owner.getId() == carriageId && owner.getUUID().equals(carriageUuid))
+            car = owner;
         if (car == null || car.isRemoved() || car.level() != player.level() || car.getContraption() == null) return;
 
         var frame = CarriagePlayerSupport.frame(car, 1);
         Vec3 world = frame.world(position);
         if (!worldPosition(world)) return;
-        Vec3 localMovement = previous == car ? position.subtract(CarriagePlayerSupport.localPosition(player)) : Vec3.ZERO;
+        // A seat handoff owns the body but has no earlier client-local feet. Its first
+        // position is placement, not a walking/jumping delta from the old world position.
+        Vec3 localMovement = CarriagePlayerSupport.carriage(player) == car
+                ? position.subtract(CarriagePlayerSupport.localPosition(player)) : Vec3.ZERO;
         Vec3 worldMovement = frame.x().scale(localMovement.x).add(frame.y().scale(localMovement.y)).add(frame.z().scale(localMovement.z));
         if (!finite(localMovement) || !finite(worldMovement)) return;
         var terrain = CarriageChunkAccess.enter(car);

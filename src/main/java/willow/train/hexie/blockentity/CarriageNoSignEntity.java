@@ -175,12 +175,13 @@ public class CarriageNoSignEntity extends SmartBlockEntity
     @Override
     public boolean readFromClipboard(
             net.minecraft.core.HolderLookup.Provider registries, CompoundTag tag, Player player, Direction side, boolean simulate) {
-        if (simulate) return true;
+        if (!willow.train.hexie.compat.create.CreatePanelClipboard.canPaste(this, player, side)) return false;
         if (!tag.contains("sign")
                 || !tag.contains("message")
                 || !tag.contains("left")
                 || !tag.contains("color")) return false;
         if (!tag.getString("sign").equals("carriage_no_sign")) return false;
+        if (simulate) return true;
         this.color = tag.getInt("color");
         this.message = Component.literal(tag.getString("message"));
         this.isLeftSide = tag.getBoolean("left");

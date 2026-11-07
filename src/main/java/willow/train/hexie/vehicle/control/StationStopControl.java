@@ -30,10 +30,15 @@ public final class StationStopControl {
 
     public State state() { return state; }
 
+    public static boolean stopped(double speedMps) {
+        if (!Double.isFinite(speedMps)) throw new IllegalArgumentException("Invalid train speed");
+        return Math.abs(speedMps) <= STOPPED_SPEED_MPS;
+    }
+
     /** Returns true exactly once when the observed stopped train enters this station's arrival window. */
     public boolean observeStop(double speedMps, StationObservation station) {
-        if (!Double.isFinite(speedMps)) throw new IllegalArgumentException("Invalid train speed");
-        if (state.waitingForDeparture() || station == null || Math.abs(speedMps) > STOPPED_SPEED_MPS
+        boolean stopped = stopped(speedMps);
+        if (state.waitingForDeparture() || station == null || !stopped
                 || Math.abs(station.distanceM()) > ARRIVAL_DISTANCE_M + 1e-7) return false;
         state = new State(true, station.stationId(), station.stationName());
         return true;
@@ -46,7 +51,7 @@ public final class StationStopControl {
         return true;
     }
 
-    /** All control modes release the recorded station after leaving its arrival window. */
+    /** Leaving the observation window also invalidates a retained stop after relocation. */
     public boolean observeDistance(double distanceM) {
         if (!Double.isFinite(distanceM)) throw new IllegalArgumentException("Invalid station distance");
         if (!state.waitingForDeparture() || Math.abs(distanceM) <= ARRIVAL_DISTANCE_M + 1e-7) return false;

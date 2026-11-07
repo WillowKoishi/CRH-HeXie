@@ -301,17 +301,27 @@ public final class CreateTrainBridge {
             var member = train.carriageIds.getFirst();
             var selected = motion.selectedCabTimetable(member);
             double travel = requested != 0 ? requested : distance;
+            TravelResult result = TravelResult.PASS;
             if (travel != 0) {
-                boolean intercepted = withPhysicalRoute(train, selected, () -> advanceNativeEvents(train, travel));
+                result = withPhysicalRoute(train, selected, () -> advanceNativeEvents(train, travel));
                 // Only the consist traverses physical signals. Each other cab observes the committed journey.
                 for (var cab : motion.cabTimetables(member).values()) if (cab != selected)
                     cab.with(train, false, () -> { observeCabTravel(train, travel); return null; });
-                if (intercepted) distance = 0;
+                if (result.intercepted()) distance = 0;
             }
             sync(train);
             train.speed = nativeSpeed(motion.runtime().speed(member));
             if (train.speed != 0) train.currentlyBackwards = train.speed < 0;
-            if (train.speed != 0 && train.getCurrentStation() != null) train.leaveStation();
+            if (!willow.train.hexie.vehicle.control.StationStopControl.stopped(motion.runtime().speed(member))) {
+                if (train.getCurrentStation() != null) train.leaveStation();
+                train.clearStationStop();
+                for (var cab : motion.cabTimetables(member).values()) cab.stationStop.clear();
+            }
+            var docked = result.station();
+            if (docked != null) withPhysicalRoute(train, selected, () -> {
+                finishDocking(train, docked);
+                return null;
+            });
             travelled.put(train, distance);
         }
         // All fragments must expose this frame's solved positions before native collision sees
@@ -695,7 +705,11 @@ public final class CreateTrainBridge {
         return leading.distance - (motion.runtime().motionDistance(leading.bogey) + leading.offset);
     }
 
-    private boolean advanceNativeEvents(CompatibilityTrain train, double requested) {
+    private record TravelResult(boolean intercepted, GlobalStation station) {
+        private static final TravelResult PASS = new TravelResult(false, null);
+    }
+
+    private TravelResult advanceNativeEvents(CompatibilityTrain train, double requested) {
         var front = requested > 0 ? train.carriages.getFirst().getLeadingPoint() : train.carriages.getLast().getTrailingPoint();
         var back = requested > 0 ? train.carriages.getLast().getTrailingPoint() : train.carriages.getFirst().getLeadingPoint();
         var leading = binding(front); var trailing = binding(back);
@@ -705,8 +719,9 @@ public final class CreateTrainBridge {
         // A rejected solve alone does not authorize movement or a stop. Only Create's
         // blocked travelling point can recover that rejected interval at its exact rail end.
         double target = trackEnd == null ? committedTarget : requestedTarget;
-        if (target == leading.distance) return false;
+        if (target == leading.distance) return TravelResult.PASS;
         boolean[] intercepted = { false };
+        GlobalStation[] docked = { null };
         var listener = train.frontSignalListener();
         boolean conflict = motion.cabSelection(train.carriageIds.getFirst()).conflicting();
         boolean simpleOutput = motion.isSimpleControlSelected(train.carriageIds.getFirst());
@@ -727,10 +742,10 @@ public final class CreateTrainBridge {
             if (manualCab && event.getFirst() instanceof GlobalStation) return false;
             boolean waypoint = CreateWaypointSupport.active(train) && event.getFirst() == train.navigation.destination;
             if (!waypoint && event.getFirst() instanceof GlobalStation station) {
-                // Docking may still capture the exact marker. Reporting arrival is a separate
-                // operation after the independent body has actually stopped and been synchronized.
-                return intercepted[0] = station == train.navigation.destination
-                        && station.canApproachFrom(event.getSecond().getSecond());
+                if (station != train.navigation.destination
+                        || !station.canApproachFrom(event.getSecond().getSecond())) return false;
+                docked[0] = station;
+                return intercepted[0] = true;
             }
             if (event.getFirst() instanceof SignalBoundary signal) {
                 reportSignalPassage(train, signal, event.getSecond().getSecond());
@@ -751,7 +766,7 @@ public final class CreateTrainBridge {
                 });
         if (!intercepted[0] && trackEnd == null) {
             motion.route().traversePoints(trailing.distance, currentDistance(trailing), train.backSignalListener());
-            return false;
+            return TravelResult.PASS;
         }
         if (!intercepted[0]) allowed = trackEnd;
         motion.runtime().stopAtTrackPoint(train.carriageIds.getFirst(), leading.bogey, allowed - leading.offset);
@@ -769,7 +784,7 @@ public final class CreateTrainBridge {
         motion.route().traversePoints(trailing.distance, currentDistance(trailing), train.backSignalListener());
         if (!conflict && train.navigation.destination != null) train.navigation.distanceToDestination -=
                 (train.navigation.destinationBehindTrain ? -1 : 1) * (leading.distance - allowed);
-        return true;
+        return new TravelResult(true, docked[0]);
     }
 
     /** Mirror Create's signal-passage bookkeeping; braking decisions belong to the common controller. */
@@ -793,12 +808,24 @@ public final class CreateTrainBridge {
         if (!train.isWaitingForDeparture()) return;
         var station = train.waitingStation();
         if (station == null) return;
+        double distance = stationDistance(train, station);
+        if (Double.isFinite(distance) && train.stationStopControl().observeDistance(distance)
+                && station.id.equals(train.currentStation)) train.leaveStation();
+    }
+
+    boolean dockedAtStation(CompatibilityTrain train, GlobalStation station) {
+        return willow.train.hexie.vehicle.control.StationStopControl.stopped(
+                motion.runtime().speed(train.carriageIds.getFirst()))
+                && Math.abs(stationDistance(train, station)) <= 1e-6;
+    }
+
+    private double stationDistance(CompatibilityTrain train, GlobalStation station) {
+        if (train.graph == null) return Double.NaN;
         var first = train.graph.locateNode(station.edgeLocation.getFirst());
         var second = train.graph.locateNode(station.edgeLocation.getSecond());
-        if (first == null || second == null) return;
+        if (first == null || second == null) return Double.NaN;
         var edge = train.graph.getConnectionsFrom(first).get(second);
-        if (edge == null) return;
-        double distance;
+        if (edge == null) return Double.NaN;
         try {
             var route = motion.route();
             double stationPosition = route.distanceOf(CreateTrackCompatibility.point(train.graph, first, second, edge,
@@ -808,17 +835,28 @@ public final class CreateTrainBridge {
             // Keep the same physical end when reversing away from the station.
             boolean forward = station.canApproachFrom(end < start ? second : first);
             var front = forward ? train.carriages.getFirst().getLeadingPoint() : train.carriages.getLast().getTrailingPoint();
-            distance = stationPosition - currentDistance(binding(front));
+            return stationPosition - currentDistance(binding(front));
         } catch (CreateRouteBinding.RouteInvalidException | IllegalArgumentException unavailable) {
-            return;
+            return Double.NaN;
         }
-        if (train.stationStopControl().observeDistance(distance) && station.id.equals(train.currentStation))
-            train.leaveStation();
+    }
+
+    private boolean approachingStation(CompatibilityTrain train) {
+        return train.currentCabTimetable == null
+                ? motion.isBackendApproachingStation(train.carriageIds.getFirst())
+                : motion.isApproachingStation(train.currentCabTimetable.key());
     }
 
     /** Report station position and actual stops; this never moves a body or changes driver input. */
     private void reportStoppedAtStation(CompatibilityTrain train) {
         updateStationRange(train);
+        // Exact endpoint movement can stop on (rather than cross) the point in this frame.
+        if (approachingStation(train) && !CreateWaypointSupport.currentInstruction(train)
+                && train.navigation.destination != null
+                && dockedAtStation(train, train.navigation.destination)) {
+            finishDocking(train, train.navigation.destination);
+            return;
+        }
         if (train.isWaitingForDeparture() || CreateWaypointSupport.currentInstruction(train)) return;
         var navigation = train.navigation;
         var selected = navigation.destination;
@@ -856,7 +894,24 @@ public final class CreateTrainBridge {
         if (station == null || !train.stationStopControl().observeStop(motion.runtime().speed(train.carriageIds.getFirst()),
                 new willow.train.hexie.vehicle.control.StationStopControl.StationObservation(
                         station.id.toString(), station.name, nearestDistance[0]))) return;
-        completeStationVisit(train, station);
+        reportPhysicalStationStop(train, station, approachingStation(train));
+    }
+
+    private static void finishDocking(CompatibilityTrain train, GlobalStation station) {
+        train.stationStopControl().restore(new willow.train.hexie.vehicle.control.StationStopControl.State(
+                true, station.id.toString(), station.name));
+        reportPhysicalStationStop(train, station, false);
+    }
+
+    /** Range arrival publishes presence, but held Space keeps its independent docking itinerary. */
+    private static void reportPhysicalStationStop(CompatibilityTrain train, GlobalStation station, boolean keepNavigation) {
+        var navigation = train.navigation;
+        double remaining = navigation.distanceToDestination;
+        navigation.distanceToDestination = 0;
+        station.reserveFor(train);
+        train.arrivePhysicallyAt(station);
+        if (keepNavigation) navigation.distanceToDestination = remaining;
+        else finishStationNavigation(train);
     }
 
     /** Native visit notification shared by a confirmed stop and a timetable waypoint passage. */
@@ -865,6 +920,11 @@ public final class CreateTrainBridge {
         navigation.distanceToDestination = 0;
         if (train.currentCabTimetable == null || train.currentCabTimetable.publishing()) station.reserveFor(train);
         train.arriveAt(station);
+        finishStationNavigation(train);
+    }
+
+    private static void finishStationNavigation(CompatibilityTrain train) {
+        var navigation = train.navigation;
         navigation.destination = null;
         // With no destination, Create only clears the path/distance and does not interrupt the arrived timetable.
         navigation.cancelNavigation();

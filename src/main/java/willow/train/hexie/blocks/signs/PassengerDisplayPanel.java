@@ -7,8 +7,20 @@ import net.minecraft.world.level.block.state.BlockState;
 import willow.train.hexie.blockentity.PassengerPanelEntity;
 
 /** A carriage panel can retain both electronic display components in its own block state. */
-public interface PassengerDisplayPanel extends EntityBlock,
+public interface PassengerDisplayPanel extends EntityBlock, willow.train.hexie.api.interaction.BlockControlHost,
         com.simibubi.create.api.schematic.requirement.SpecialBlockItemRequirement {
+    @Override default boolean nativeInteraction() { return true; }
+    @Override default willow.train.hexie.api.interaction.ControlSurface surfaceGeometry(BlockState state) {
+        return PanelAttachmentSurface.SURFACE;
+    }
+    @Override default net.minecraft.world.phys.AABB controlBounds(BlockState state) {
+        return PanelAttachmentSurface.bounds(state);
+    }
+    @Override default willow.train.hexie.api.interaction.BlockControlHit pickControl(
+            willow.train.hexie.api.interaction.BlockControlContext context,
+            net.minecraft.world.phys.Vec3 from, net.minecraft.world.phys.Vec3 to) {
+        return PanelAttachmentSurface.pick(context, from, to);
+    }
     default boolean supportsPassengerDisplay() { return true; }
     static boolean supports(net.minecraft.world.level.block.Block block) {
         return block instanceof PassengerDisplayPanel panel && panel.supportsPassengerDisplay();

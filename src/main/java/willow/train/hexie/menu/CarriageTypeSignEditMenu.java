@@ -10,7 +10,7 @@ import willow.train.hexie.init.client.MenuInit;
 
 public class CarriageTypeSignEditMenu extends BlockEntityEditMenu<CarriageTypeSignEntity> {
     public CarriageTypeSignEditMenu(int id, Inventory inventory, FriendlyByteBuf data) {
-        this(id, inventory, inventory.player.level().getBlockEntity(data.readBlockPos()), new SimpleContainerData(2));
+        super(MenuInit.CARRIAGE_TYPE_SIGN_EDIT_MENU.get(), id, inventory, data, CarriageTypeSignEntity.class);
     }
 
     public CarriageTypeSignEditMenu(int id, Inventory inventory, BlockEntity entity, ContainerData data) {
@@ -18,5 +18,8 @@ public class CarriageTypeSignEditMenu extends BlockEntityEditMenu<CarriageTypeSi
     }
 
     public CarriageTypeSignEntity getCtse() { return target; }
+    public static boolean openMoving(net.minecraft.server.level.ServerPlayer player, Target target) {
+        return openMoving(player, target, (id, inv) -> new CarriageTypeSignEditMenu(id, inv, target.entity(), new SimpleContainerData(2)), net.minecraft.network.chat.Component.empty());
+    }
     public CarriageTypeSignEditMenu setCtse(CarriageTypeSignEntity entity) { target = entity; return this; }
 }

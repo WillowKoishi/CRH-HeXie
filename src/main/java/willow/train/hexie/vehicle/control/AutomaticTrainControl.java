@@ -77,6 +77,14 @@ public final class AutomaticTrainControl {
         return update(source, speed, target, serviceDeceleration, StationStopControl.State.RUNNING);
     }
 
+    /** Create commands slightly past the marker; the physical route captures the exact station point. */
+    public static Target stationApproach(Target target) {
+        if (target == null || !target.station() || !target.stop()) return target;
+        // Only the station endpoint moves. Signal constraints keep their actual distances.
+        return new Target(target.direction(), target.distanceM() + .25, target.speedLimitMps(),
+                true, true, target.constraints(), target.limits());
+    }
+
     public static VehicleRuntime.Control update(TrainControl.Source source, double speed,
                                                 Target target, double serviceDeceleration,
                                                 StationStopControl.State stationStop) {

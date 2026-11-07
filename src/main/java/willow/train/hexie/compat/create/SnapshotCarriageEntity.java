@@ -151,6 +151,12 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         }
     }
     private final CarriagePoseInterpolation<ClientAnimation> poseInterpolation = new CarriagePoseInterpolation<>();
+    // A consist has one playback time, even when its carriage spawn packets arrive on different ticks.
+    // Level keys keep a new world session independent from the previous world's train identities.
+    private static final Map<Level, Map<UUID, CarriagePoseInterpolation.Timeline>> CLIENT_POSE_TIMELINES =
+            new java.util.WeakHashMap<>();
+    private UUID clientPoseGroup;
+    private CarriagePoseInterpolation.Timeline clientPoseTimeline;
     private Vec3 motionSamplePosition, previousMotionPosition, olderMotionPosition, motionVelocity = Vec3.ZERO;
     private long motionSampleTick = Long.MIN_VALUE;
     private long motionFrameTick = Long.MIN_VALUE;
@@ -549,6 +555,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
                 prevYaw = yaw; prevPitch = pitch; prevRoll = roll;
             } else pendingClientMotionFrame = frame.copy();
         }
+        if (key.equals(COMPATIBILITY_TRAIN) && level().isClientSide) bindClientPoseTimeline();
         if (key.equals(COMPATIBILITY_POINTS) || key.equals(COMPATIBILITY_GRAPH) || key.equals(COMPATIBILITY_GRAPHS)
                 || key.equals(COMPATIBILITY_TRAIN) || key.equals(COMPATIBILITY_INDEX)
                 || key.equals(COMPATIBILITY_SPEED) || key.equals(COMPATIBILITY_DERAILED))
@@ -612,6 +619,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
     }
 
     private boolean queueClientPose(CompoundTag frame) {
+        bindClientPoseTimeline();
         var forward = Direction.byName(frame.getString("Forward"));
         var rotation = motionFrameRotation(frame.getFloat("Yaw"), frame.getFloat("Pitch"), frame.getFloat("Roll"), forward);
         long tick = frame.contains("SampleTick") ? frame.getLong("SampleTick") : frame.getLong("PoseTick");
@@ -620,6 +628,28 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
                 SnapshotCouplerAnimation.decode(frame.getCompound("Couplers")));
         return poseInterpolation.accept(new Vec3(frame.getDouble("X"), frame.getDouble("Y"), frame.getDouble("Z")),
                 new Vec3(frame.getDouble("Vx"), frame.getDouble("Vy"), frame.getDouble("Vz")), rotation, tick, animation);
+    }
+
+    private void bindClientPoseTimeline() {
+        UUID group = entityData.get(COMPATIBILITY_TRAIN).orElse(trainId == null ? getUUID() : trainId);
+        if (group.equals(clientPoseGroup)) return;
+        releaseClientPoseTimeline();
+        var timelines = CLIENT_POSE_TIMELINES.computeIfAbsent(level(), ignored -> new HashMap<>());
+        clientPoseGroup = group;
+        clientPoseTimeline = timelines.computeIfAbsent(group, ignored -> new CarriagePoseInterpolation.Timeline());
+        poseInterpolation.attach(clientPoseTimeline);
+    }
+
+    private void releaseClientPoseTimeline() {
+        if (clientPoseTimeline == null) return;
+        poseInterpolation.detach();
+        var timelines = CLIENT_POSE_TIMELINES.get(level());
+        if (timelines != null && clientPoseTimeline.isEmpty()) {
+            timelines.remove(clientPoseGroup, clientPoseTimeline);
+            if (timelines.isEmpty()) CLIENT_POSE_TIMELINES.remove(level());
+        }
+        clientPoseGroup = null;
+        clientPoseTimeline = null;
     }
 
     private static org.joml.Quaternionf motionFrameRotation(float yaw, float pitch, float roll, Direction forward) {
@@ -652,6 +682,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
     }
 
     @Override public void onClientRemoval() {
+        releaseClientPoseTimeline();
         if (compatibilityCarriage != null) {
             var dimensional = compatibilityCarriage.getDimensionalIfPresent(level().dimension());
             if (dimensional != null && dimensional.entity.get() == this) dimensional.entity.clear();
@@ -1437,6 +1468,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         if (nonDamageTicks > 0) nonDamageTicks--;
         if (level().isClientSide) {
             bindClientCompatibility();
+            bindClientPoseTimeline();
             prevYaw = yaw; prevPitch = pitch; prevRoll = roll;
             if (pendingClientMotionFrame != null) {
                 applyClientMotionFrame(pendingClientMotionFrame);
@@ -1444,7 +1476,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             }
             int steps = Math.max(1, interpolationSteps);
             if (poseInterpolation.initialized()) {
-                poseInterpolation.tick();
+                poseInterpolation.tick(level().getGameTime());
                 applyClientPose();
             } else if (interpolationSteps > 0 && interpolationTarget != null) {
                 setPos(position().lerp(interpolationTarget, 1.0 / steps));

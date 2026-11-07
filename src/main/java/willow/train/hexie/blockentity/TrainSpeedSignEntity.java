@@ -178,8 +178,11 @@ public class TrainSpeedSignEntity extends SmartBlockEntity
     @Override
     public boolean readFromClipboard(
             net.minecraft.core.HolderLookup.Provider registries, CompoundTag tag, Player player, Direction side, boolean simulate) {
-        if (simulate) return true;
+        if (!willow.train.hexie.compat.create.CreatePanelClipboard.canPaste(this, player, side)) return false;
         if (tag.contains("sign") && tag.getString("sign").equals("train_speed_sign")) {
+            if (!tag.contains("content") || !tag.contains("color") || !tag.contains("x_offset")
+                    || !tag.contains("y_offset") || !tag.contains("x_revert") || !tag.contains("y_revert")) return false;
+            if (simulate) return true;
             this.content =
                     Component.literal(tag.getString("content"));
             this.color = tag.getInt("color");

@@ -7,18 +7,15 @@ import java.util.UUID;
 import java.util.WeakHashMap;
 import com.google.common.collect.MapMaker;
 import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
 import willow.train.hexie.Main;
-import willow.train.hexie.network.s2c.CarriagePlayerStatePacket;
-import willow.train.hexie.vehicle.player.CarriedPlayerConnection;
 import willow.train.hexie.vehicle.player.SupportFrame;
 import willow.train.hexie.vehicle.player.RemotePlayerInterpolation;
 
@@ -34,8 +31,8 @@ public final class CarriagePlayerSupport {
     private record ClientRestore(int id, UUID uuid, Vec3 local, long token) {}
     private static final ThreadLocal<Map<Player, ClientRestore>> CLIENT_RESTORE =
             ThreadLocal.withInitial(() -> new MapMaker().weakKeys().makeMap());
-    public record ClientRestoreReport(int carriageId, UUID carriageUuid, long token) {}
-    private static final ThreadLocal<Map<Player, ClientRestoreReport>> CLIENT_RESTORE_REPORT =
+    public record ClientPlacementReport(int carriageId, UUID carriageUuid, long token) {}
+    private static final ThreadLocal<Map<Player, ClientPlacementReport>> CLIENT_PLACEMENT_REPORT =
             ThreadLocal.withInitial(() -> new MapMaker().weakKeys().makeMap());
     private record RemoteState(int carriageId, UUID carriageUuid, Vec3 local, long tick) {}
     // Pairing a player and pairing its carriage are separate packets. Keep the latest
@@ -48,22 +45,25 @@ public final class CarriagePlayerSupport {
     }
 
     /** Finish the handoff even when contact, flight or carrier removal immediately releases it. */
-    public static ClientRestoreReport takeClientRestoreReport(Player player) {
-        return CLIENT_RESTORE_REPORT.get().remove(player);
+    public static ClientPlacementReport takeClientPlacementReport(Player player) {
+        return CLIENT_PLACEMENT_REPORT.get().remove(player);
     }
 
-    /** One local placement handoff for both seat exits and login restoration. */
-    public static Vec3 placeAndSync(ServerPlayer player, SnapshotCarriageEntity car, Vec3 local) {
-        Vec3 previous = player.position();
-        Vec3 world = placeStanding(player, car, local);
-        long token = 0;
-        if (player.connection instanceof CarriedPlayerConnection connection) {
-            connection.hexie$carry(world.subtract(previous));
-            token = connection.hexie$beginCarriageRestore(car.getId(), car.getUUID());
-        }
-        PacketDistributor.sendToPlayer(player, new CarriagePlayerStatePacket(
-                player.getId(), car.getId(), car.getUUID(), local, true, -1, token));
-        return world;
+    public static void reportClientPlacement(Player player, int carriageId, UUID carriageUuid, long token) {
+        CLIENT_PLACEMENT_REPORT.get().put(player, new ClientPlacementReport(carriageId, carriageUuid, token));
+    }
+
+    /** The local client owns the exit feet and starts following at the body's current pose. */
+    public static void startClientFollowing(Player player, SnapshotCarriageEntity car, Vec3 local, long restoreToken) {
+        player.getPersistentData().remove("ContraptionDismountLocation");
+        placeStanding(player, car, local);
+        player.setDeltaMovement(Vec3.ZERO);
+        player.setOnGround(false);
+        player.resetFallDistance();
+        reportClientPlacement(player, car.getId(), car.getUUID(), restoreToken);
+        player.xo = player.xOld = player.getX();
+        player.yo = player.yOld = player.getY();
+        player.zo = player.zOld = player.getZ();
     }
 
     public static Vec3 placeStanding(Player player, SnapshotCarriageEntity car, Vec3 local) {
@@ -75,14 +75,24 @@ public final class CarriagePlayerSupport {
         return world;
     }
 
+    /** Retain the body's lifecycle/visibility until the client supplies its first exit feet. */
+    public static void beginDismount(ServerPlayer player, SnapshotCarriageEntity car) {
+        STANDING.get().put(player, new Standing(car));
+    }
+
     private static final class Standing {
         final WeakReference<SnapshotCarriageEntity> carriage;
         SupportFrame frame;
         Vec3 local, previousLocal;
         boolean placingFromLocal;
         RemotePlayerInterpolation remote;
-        Standing(SnapshotCarriageEntity carriage, Vec3 local) {
+        // Identity-only while a server-side seat exit awaits client-resolved coordinates.
+        // No frame or position is computed during that handoff.
+        Standing(SnapshotCarriageEntity carriage) {
             this.carriage = new WeakReference<>(carriage);
+        }
+        Standing(SnapshotCarriageEntity carriage, Vec3 local) {
+            this(carriage);
             this.frame = frame(carriage, 1);
             this.local = this.previousLocal = local;
         }
@@ -108,7 +118,7 @@ public final class CarriagePlayerSupport {
             STANDING.get().remove(player);
             return null;
         }
-        return car;
+        return s.local == null ? null : car;
     }
 
     private static boolean eligible(Player player) {
@@ -285,19 +295,19 @@ public final class CarriagePlayerSupport {
     public static void worldTeleport(Player player) {
         detach(player);
         CLIENT_RESTORE.get().remove(player);
-        CLIENT_RESTORE_REPORT.get().remove(player);
+        CLIENT_PLACEMENT_REPORT.get().remove(player);
     }
 
     public static Vec3 localPosition(Player player) {
         // Callers already resolved the support owner. Do not repeat the client's
         // world-contact query just to read the coordinate from that same record.
         Standing standing = STANDING.get().get(player);
-        return standing == null ? player.position() : standing.local;
+        return standing == null || standing.local == null ? player.position() : standing.local;
     }
 
     public static void accept(Player player, SnapshotCarriageEntity car, Vec3 local) {
         Standing old = STANDING.get().get(player);
-        if (old == null || old.carriage.get() != car) STANDING.get().put(player, new Standing(car, local));
+        if (old == null || old.local == null || old.carriage.get() != car) STANDING.get().put(player, new Standing(car, local));
         else { old.previousLocal = old.local; old.local = local; old.frame = frame(car, 1); }
 
     }
@@ -366,7 +376,7 @@ public final class CarriagePlayerSupport {
 
     public static Vec3 remoteMovement(Player player) {
         Standing standing = STANDING.get().get(player);
-        return standing == null ? Vec3.ZERO : standing.local.subtract(standing.previousLocal);
+        return standing == null || standing.local == null ? Vec3.ZERO : standing.local.subtract(standing.previousLocal);
     }
 
     public static void beginClientTick() {
@@ -378,13 +388,9 @@ public final class CarriagePlayerSupport {
             if (player.isPassenger()) continue;
             if (player.level().getEntity(restore.id()) instanceof SnapshotCarriageEntity car
                     && car.getUUID().equals(restore.uuid())) {
-                player.getPersistentData().remove("ContraptionDismountLocation");
-                placeStanding(player, car, restore.local());
-                player.setOnGround(false);
                 // Even immediate world contact or flight must finish the handoff
                 // before sending its single world-space exit report.
-                CLIENT_RESTORE_REPORT.get().put(player, new ClientRestoreReport(restore.id(), restore.uuid(), restore.token()));
-                player.xo = player.getX(); player.yo = player.getY(); player.zo = player.getZ();
+                startClientFollowing(player, car, restore.local(), restore.token());
                 CLIENT_RESTORE.get().remove(player);
             }
         }
@@ -415,7 +421,7 @@ public final class CarriagePlayerSupport {
         if (event.getEntity() instanceof Player player) {
             STANDING.get().remove(player);
             CLIENT_RESTORE.get().remove(player);
-            CLIENT_RESTORE_REPORT.get().remove(player);
+            CLIENT_PLACEMENT_REPORT.get().remove(player);
             var pending = PENDING_REMOTE.get().get(player.level());
             if (pending != null) pending.remove(player.getId());
         }
@@ -428,8 +434,7 @@ public final class CarriagePlayerSupport {
                 // with the client's current world feet instead of waiting forever.
                 Player player = entry.getKey();
                 if (!player.isRemoved() && player.isLocalPlayer())
-                    CLIENT_RESTORE_REPORT.get().put(player,
-                            new ClientRestoreReport(restore.id(), restore.uuid(), restore.token()));
+                    reportClientPlacement(player, restore.id(), restore.uuid(), restore.token());
                 return true;
             });
         }

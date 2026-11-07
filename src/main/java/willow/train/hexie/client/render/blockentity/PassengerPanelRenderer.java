@@ -15,6 +15,8 @@ import willow.train.hexie.blocks.parts.PartStructures;
 import willow.train.hexie.blocks.signs.PanelDisplayMount;
 import willow.train.hexie.client.render.display.PassengerPanelModels;
 import willow.train.hexie.client.sign.NativePanelText;
+import willow.train.hexie.client.render.carriage.CarriageTransparencyCompat;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 
 /** Timetable lettering shared by ordinary panel entities and CRH2 carriage-panel renderers. */
 public final class PassengerPanelRenderer implements BlockEntityRenderer<PassengerPanelEntity> {
@@ -26,11 +28,11 @@ public final class PassengerPanelRenderer implements BlockEntityRenderer<Passeng
 
     @Override public void render(PassengerPanelEntity entity, float partialTick, PoseStack pose,
                                  MultiBufferSource buffers, int light, int overlay) {
-        draw(entity, pose, buffers, partialTick);
+        draw(entity, pose, buffers, partialTick, light);
     }
 
     /** The supplied pose is block-local; layout already includes facing, handedness and shell slope. */
-    public static void draw(BlockEntity entity, PoseStack pose, MultiBufferSource buffers, float partialTick) {
+    public static void draw(BlockEntity entity, PoseStack pose, MultiBufferSource buffers, float partialTick, int light) {
         if (!(entity instanceof PassengerDisplayHost host) || entity.getLevel() == null) return;
         var state = entity.getBlockState();
         if (!state.hasProperty(PanelDisplayMount.PROPERTY)
@@ -43,6 +45,12 @@ public final class PassengerPanelRenderer implements BlockEntityRenderer<Passeng
         var clock = Minecraft.getInstance().level;
         double seconds = ((clock == null ? entity.getLevel() : clock).getGameTime() + partialTick) / 20d;
         drawMounted(layout, host.passengerDisplay(), host.carriageNumber(), pose, buffers, seconds);
+        var glass = PassengerPanelModels.glass(state);
+        if (!glass.isEmpty()) {
+            var out = buffers.getBuffer(CarriageTransparencyCompat.glassLayer());
+            for (var quad : glass)
+                out.putBulkData(pose.last(), quad, 1, 1, 1, 1, light, OverlayTexture.NO_OVERLAY);
+        }
     }
 
     /** Sign and number have independent recessed planes, including number-only installations. */

@@ -60,16 +60,23 @@ public final class CRH2PanelBlock extends CRH2PartBlock implements EntityBlock, 
             return net.minecraft.world.InteractionResult.PASS;
         var entity=markingEntity(level,pos,state);
         if(entity==null)return net.minecraft.world.InteractionResult.PASS;
-        int logoSlot=HarmonyMarking.slot(this,state,entity.getBlockPos(),hit.getLocation());
-        if (player.isShiftKeyDown() && !entity.panelText(logoSlot).text().isEmpty()) {
+        var root=willow.train.hexie.blocks.parts.PartStructures.resolve(level,pos,state);
+        if(root==null||willow.train.hexie.blocks.signs.PanelAttachmentHit.displayRegion(level,root,hit))
+            return net.minecraft.world.InteractionResult.PASS;
+        var target=willow.train.hexie.blocks.signs.PanelAttachmentHit.resolve(level,pos,hit);
+        if (player.isShiftKeyDown() && target.kind()==willow.train.hexie.blocks.signs.PanelAttachmentHit.Kind.PANEL_TEXT) {
             if (player instanceof net.minecraft.server.level.ServerPlayer server)
-                willow.train.hexie.menu.PanelTextMenu.open(server, entity, logoSlot, net.minecraft.world.InteractionHand.MAIN_HAND);
+                willow.train.hexie.menu.PanelTextMenu.open(server, entity, target.slot(), net.minecraft.world.InteractionHand.MAIN_HAND);
             return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide);
         }
-        if(entity.harmony(logoSlot)!=0) {
-            if(!level.isClientSide)entity.toggleHarmony(logoSlot);
+        if(target.kind()==willow.train.hexie.blocks.signs.PanelAttachmentHit.Kind.PANEL_TEXT)
+            return net.minecraft.world.InteractionResult.PASS;
+        if(target.kind()==willow.train.hexie.blocks.signs.PanelAttachmentHit.Kind.HARMONY) {
+            if(!level.isClientSide)entity.toggleHarmony(target.slot());
             return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide);
         }
+        int logoSlot=willow.train.hexie.blocks.signs.PanelAttachmentHit.lowerMarkingSlot(level,root,hit);
+        if(logoSlot<0)return net.minecraft.world.InteractionResult.PASS;
         if(java.util.Arrays.stream(entity.fields()).allMatch(String::isBlank))return net.minecraft.world.InteractionResult.PASS;
         if(!level.isClientSide) {
             entity.selectMarkingSlot(logoSlot);

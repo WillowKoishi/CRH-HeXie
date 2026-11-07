@@ -104,7 +104,7 @@ public final class DrivingConsoleClient {
             releaseInput();
             releaseMappings();
         }
-        SimpleCabTrainHud.tick(context != null && context.simple() ? context : null);
+        SimpleCabTrainHud.tick(context);
     }
 
     private static java.util.List<KeyboardBinding> keyboardBindings() {

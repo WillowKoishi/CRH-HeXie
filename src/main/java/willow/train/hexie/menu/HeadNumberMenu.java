@@ -17,13 +17,28 @@ public final class HeadNumberMenu extends BlockEntityEditMenu<CRH2HeadEntity> {
     public final String initialNumber;
     public HeadNumberMenu(int id, Inventory inventory, FriendlyByteBuf buf) {
         super(MenuInit.HEAD_NUMBER_MENU.get(), id, null, CRH2HeadEntity.class);
-        pos = buf.readBlockPos(); initialNumber = buf.readUtf(CRH2HeadEntity.MAX_LENGTH * 2); target = null;
+        pos = buf.readBlockPos(); initialNumber = buf.readUtf(CRH2HeadEntity.MAX_LENGTH * 2);
+        contentOnly = buf.isReadable() && buf.readBoolean(); target = null;
     }
     public HeadNumberMenu(int id, Inventory inventory, CRH2HeadEntity target) {
         super(MenuInit.HEAD_NUMBER_MENU.get(), id, target, CRH2HeadEntity.class);
         pos = target.getBlockPos(); initialNumber = target.number();
     }
+    public static boolean openMoving(net.minecraft.server.level.ServerPlayer player, Target moving) {
+        if (!(moving.entity() instanceof CRH2HeadEntity head) || !moving.stillValid(player)) return false;
+        player.openMenu(new net.minecraft.world.SimpleMenuProvider((id, inv, p) -> {
+            var menu = new HeadNumberMenu(id, inv, head);
+            menu.attachTarget(moving);
+            return menu;
+        }, net.minecraft.network.chat.Component.empty()), buf -> {
+            buf.writeBlockPos(head.getBlockPos());
+            buf.writeUtf(head.number(), CRH2HeadEntity.MAX_LENGTH * 2);
+            buf.writeBoolean(true);
+        });
+        return true;
+    }
     @Override public boolean stillValid(Player player) {
+        if (contentOnly()) return super.stillValid(player);
         if (!player.mayBuild() || player.isSpectator() || !player.level().hasChunkAt(pos)
                 || !(player.getMainHandItem().getItem() instanceof ColoredBrush || player.getOffhandItem().getItem() instanceof ColoredBrush)
                 || !(player.level().getBlockEntity(pos) instanceof CRH2HeadEntity head)

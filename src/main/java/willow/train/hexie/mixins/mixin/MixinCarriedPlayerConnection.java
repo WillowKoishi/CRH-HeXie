@@ -23,12 +23,6 @@ import willow.train.hexie.vehicle.player.CarriedPlayerConnection;
 @Mixin(ServerGamePacketListenerImpl.class)
 public abstract class MixinCarriedPlayerConnection implements CarriedPlayerConnection {
     @Shadow public ServerPlayer player;
-    @Shadow private double firstGoodX;
-    @Shadow private double firstGoodY;
-    @Shadow private double firstGoodZ;
-    @Shadow private double lastGoodX;
-    @Shadow private double lastGoodY;
-    @Shadow private double lastGoodZ;
     @Shadow private int aboveGroundTickCount;
     @Shadow private boolean clientIsFloating;
     @Shadow public abstract void resetPosition();
@@ -36,6 +30,7 @@ public abstract class MixinCarriedPlayerConnection implements CarriedPlayerConne
     @Unique private ServerPlayer hexie$reportedPlayer;
     @Unique private int hexie$reportedCarriageId = -1;
     @Unique private UUID hexie$reportedCarriageUuid;
+    @Unique private boolean hexie$awaitingCarriageDismount;
     @Unique private long hexie$restoreSequence;
     @Unique private long hexie$awaitingCarriageRestore;
 
@@ -43,9 +38,10 @@ public abstract class MixinCarriedPlayerConnection implements CarriedPlayerConne
             target = "Lnet/minecraft/network/protocol/PacketUtils;ensureRunningOnSameThread(Lnet/minecraft/network/protocol/Packet;Lnet/minecraft/network/PacketListener;Lnet/minecraft/server/level/ServerLevel;)V",
             shift = At.Shift.AFTER), cancellable = true)
     private void hexie$ordinaryMovement(ServerboundMovePlayerPacket packet, CallbackInfo ci) {
-        // Old world reports and seated Rot packets can arrive after a server-side
-        // seat exit or login placement. Only the client's placement ACK ends this handoff.
-        if (hexie$waitingForClientRestore()) {
+        // Old world reports and seated Rot packets must not overtake the client's
+        // movement after leaving a seat. Its first carriage report ends that handoff; only
+        // login restoration uses a separate placement ACK.
+        if (hexie$waitingForClientHandoff()) {
             ci.cancel();
             return;
         }
@@ -55,9 +51,13 @@ public abstract class MixinCarriedPlayerConnection implements CarriedPlayerConne
         CarriagePlayerSupport.detach(player);
     }
 
-    @Unique private boolean hexie$waitingForClientRestore() {
-        if (hexie$awaitingCarriageRestore == 0 || hexie$reportedPlayer != player || !player.isAlive()
+    @Unique private boolean hexie$waitingForClientHandoff() {
+        if ((hexie$awaitingCarriageRestore == 0 && !hexie$awaitingCarriageDismount)
+                || hexie$reportedPlayer != player || !player.isAlive()
                 || player.isRemoved() || player.isPassenger() || player.isSleeping() || player.isChangingDimension()) return false;
+        // Keep the exit identity even if the body disappears before the report.
+        // An older Rot packet must not revoke the client's final world-space exit.
+        if (hexie$awaitingCarriageDismount) return true;
         var entity = player.level().getEntity(hexie$reportedCarriageId);
         if (entity instanceof SnapshotCarriageEntity car && !car.isRemoved()
                 && car.getUUID().equals(hexie$reportedCarriageUuid)) return true;
@@ -121,6 +121,15 @@ public abstract class MixinCarriedPlayerConnection implements CarriedPlayerConne
         return true;
     }
 
+    @Override public void hexie$beginCarriageDismount(int id, UUID uuid) {
+        // The native seat delta already tells the client which passenger left.
+        // Preserve identity for its first attached/exit report, without placing
+        // the player or sending another server-owned position.
+        hexie$rememberCarriage(id, uuid);
+        hexie$awaitingCarriageDismount = true;
+        hexie$grounded();
+    }
+
     @Override public long hexie$beginCarriageRestore(int id, UUID uuid) {
         hexie$rememberCarriage(id, uuid);
         if (++hexie$restoreSequence == 0) ++hexie$restoreSequence;
@@ -135,6 +144,7 @@ public abstract class MixinCarriedPlayerConnection implements CarriedPlayerConne
     }
 
     @Override public void hexie$rememberCarriage(int id, UUID uuid) {
+        hexie$awaitingCarriageDismount = false;
         hexie$awaitingCarriageRestore = 0;
         hexie$reportedPlayer = player;
         hexie$reportedCarriageId = id;
@@ -147,15 +157,10 @@ public abstract class MixinCarriedPlayerConnection implements CarriedPlayerConne
     }
 
     @Override public void hexie$forgetCarriage() {
+        hexie$awaitingCarriageDismount = false;
         hexie$awaitingCarriageRestore = 0;
         hexie$reportedPlayer = null;
         hexie$reportedCarriageId = -1;
         hexie$reportedCarriageUuid = null;
-    }
-
-    @Override public void hexie$carry(Vec3 displacement) {
-        // Used only by explicit seat/login placement, not periodic following.
-        firstGoodX += displacement.x; firstGoodY += displacement.y; firstGoodZ += displacement.z;
-        lastGoodX += displacement.x; lastGoodY += displacement.y; lastGoodZ += displacement.z;
     }
 }

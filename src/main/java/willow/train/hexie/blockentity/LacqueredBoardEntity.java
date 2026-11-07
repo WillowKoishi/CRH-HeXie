@@ -215,7 +215,7 @@ public class LacqueredBoardEntity extends SmartBlockEntity
     @Override
     public boolean readFromClipboard(
             net.minecraft.core.HolderLookup.Provider registries, CompoundTag tag, Player player, Direction side, boolean simulate) {
-        if (simulate) return true;
+        if (!willow.train.hexie.compat.create.CreatePanelClipboard.canPaste(this, player, side)) return false;
         if (tag.contains("sign")
                 && tag.contains("type")
                 && tag.contains("beltColor")
@@ -226,6 +226,7 @@ public class LacqueredBoardEntity extends SmartBlockEntity
             for (int i = 0; i < this.messages.length; i++) {
                 if (!tag.contains("content " + i)) return false;
             }
+            if (simulate) return true;
             this.type = tag.getInt("type");
             for (int i = 0; i < messages.length; i++) {
                 messages[i] =

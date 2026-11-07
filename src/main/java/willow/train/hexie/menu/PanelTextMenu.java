@@ -23,7 +23,23 @@ public final class PanelTextMenu extends BlockEntityEditMenu<CRH2PartEntity> {
         initial = new PanelText(buf);
         panelState = net.minecraft.world.level.block.Block.stateById(buf.readVarInt());
         slot = buf.readVarInt();
+        contentOnly = buf.isReadable() && buf.readBoolean();
         hand = InteractionHand.MAIN_HAND;
+    }
+    public static boolean openMoving(ServerPlayer player, Target moving, int slot) {
+        if (!(moving.entity() instanceof CRH2PartEntity panel) || slot < 0 || slot > 1
+                || panel.panelText(slot).text().isBlank() || !moving.stillValid(player)) return false;
+        player.openMenu(new SimpleMenuProvider((id, inv, p) -> {
+            var menu = new PanelTextMenu(id, panel, slot, InteractionHand.MAIN_HAND);
+            menu.attachTarget(moving);
+            return menu;
+        }, Component.translatable("item.hexie.panel_text")), buf -> {
+            panel.panelText(slot).write(buf);
+            buf.writeVarInt(net.minecraft.world.level.block.Block.getId(panel.getBlockState()));
+            buf.writeVarInt(slot);
+            buf.writeBoolean(true);
+        });
+        return true;
     }
     private PanelTextMenu(int id, CRH2PartEntity panel, int slot, InteractionHand hand) {
         super(MenuInit.PANEL_TEXT_MENU.get(), id, panel, CRH2PartEntity.class);
@@ -46,6 +62,12 @@ public final class PanelTextMenu extends BlockEntityEditMenu<CRH2PartEntity> {
     }
     public void submit(Player player, PanelText value) {
         if (!stillValid(player)) return;
+        if (contentOnly()) {
+            if (value.text().isBlank()) return;
+            target.setPanelText(slot, new PanelText(value.text(), value.size(), initial.x(), initial.y(), value.font(), value.spacing()));
+            commitEdit(player);
+            return;
+        }
         if (initial.text().isEmpty() && !value.text().isBlank() && !player.getAbilities().instabuild)
             player.getItemInHand(hand).shrink(1);
         target.setPanelText(slot, value.text().isBlank() ? PanelText.EMPTY : value);

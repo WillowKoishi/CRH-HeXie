@@ -23,6 +23,7 @@ public enum PanelDisplayMount implements StringRepresentable {
     public boolean hasSign() { return (mask & 2) != 0; }
     public boolean numberLeft() { return numberLeft; }
     public PanelDisplayMount add(boolean number) { return of(mask | (number ? 1 : 2), numberLeft); }
+    public PanelDisplayMount remove(boolean number) { return of(mask & ~(number ? 1 : 2), numberLeft); }
     public PanelDisplayMount swap() { return of(mask, !numberLeft); }
     private static PanelDisplayMount of(int mask, boolean left) {
         return switch (mask) {

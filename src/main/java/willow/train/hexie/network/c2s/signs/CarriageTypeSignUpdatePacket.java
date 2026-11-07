@@ -8,6 +8,8 @@ import willow.train.hexie.network.c2s.HexiePacket;
 import willow.train.hexie.blockentity.CarriageTypeSignEntity;
 
 public class CarriageTypeSignUpdatePacket implements HexiePacket {
+    private int menuId = -1;
+    public CarriageTypeSignUpdatePacket withMenuId(int id) { menuId = id; return this; }
     private final BlockPos pos;
 
     private int color;
@@ -34,11 +36,12 @@ public class CarriageTypeSignUpdatePacket implements HexiePacket {
         for (int i = 0; i < 5; ++i) {
             this.lines[i] = pBuffer.readUtf(384);
         }
+        if (pBuffer.isReadable()) menuId = pBuffer.readVarInt();
     }
 
     @Override
     public boolean handle(IPayloadContext context) {
-        context.enqueueWork(() -> SignEditSubmission.commit(context.player(), pos, CarriageTypeSignEntity.class, entity -> {
+        context.enqueueWork(() -> SignEditSubmission.commit(context.player(), pos, menuId, CarriageTypeSignEntity.class, entity -> {
             entity.setMessages(lines);
             entity.setColor(color);
         }));
@@ -53,5 +56,6 @@ public class CarriageTypeSignUpdatePacket implements HexiePacket {
         for (int i = 0; i < 5; ++i) {
             pBuffer.writeUtf(this.lines[i]);
         }
+        pBuffer.writeVarInt(menuId);
     }
 }

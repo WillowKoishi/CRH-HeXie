@@ -10,6 +10,8 @@ import willow.train.hexie.network.c2s.HexiePacket;
 import willow.train.hexie.blockentity.CarriageNoSignEntity;
 
 public class CarriageNoSignUpdatePacket implements HexiePacket {
+    private int menuId = -1;
+    public CarriageNoSignUpdatePacket withMenuId(int id) { menuId = id; return this; }
 
     private final BlockPos pos;
     private final Component message;
@@ -30,11 +32,12 @@ public class CarriageNoSignUpdatePacket implements HexiePacket {
         this.color = buffer.readInt();
         this.message = Component.literal(buffer.readUtf(SignEditSubmission.MAX_TEXT_LENGTH));
         this.isLeftSide = buffer.readBoolean();
+        if (buffer.isReadable()) menuId = buffer.readVarInt();
     }
 
     @Override
     public boolean handle(IPayloadContext var1) {
-        var1.enqueueWork(() -> SignEditSubmission.commit(var1.player(), pos, CarriageNoSignEntity.class, entity -> {
+        var1.enqueueWork(() -> SignEditSubmission.commit(var1.player(), pos, menuId, CarriageNoSignEntity.class, entity -> {
             entity.setMessage(message);
             entity.setColor(color);
             entity.setLeftSide(isLeftSide);
@@ -48,5 +51,6 @@ public class CarriageNoSignUpdatePacket implements HexiePacket {
         var1.writeInt(color);
         var1.writeUtf(message.getString());
         var1.writeBoolean(isLeftSide);
+        var1.writeVarInt(menuId);
     }
 }

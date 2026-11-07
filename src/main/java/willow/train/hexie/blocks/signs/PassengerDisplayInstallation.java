@@ -34,7 +34,7 @@ public final class PassengerDisplayInstallation {
                 || !player.getOffhandItem().isEmpty() || player.isSpectator() || !player.mayBuild()) return;
         var root = PartStructures.resolve(event.getLevel(), event.getPos());
         if (root == null || !PassengerDisplayPanel.supports(root.state().getBlock())
-                || root.state().getValue(PanelDisplayMount.PROPERTY) == PanelDisplayMount.NONE) return;
+                || !PanelAttachmentHit.displayRegion(event.getLevel(), root, event.getHitVec())) return;
         event.setCanceled(true);
         boolean changed = change(event.getLevel(), root,
                 root.state().setValue(PanelDisplayMount.PROPERTY, root.state().getValue(PanelDisplayMount.PROPERTY).swap()),

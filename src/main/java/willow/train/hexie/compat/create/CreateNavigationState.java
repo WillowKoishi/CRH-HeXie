@@ -8,7 +8,11 @@ public final class CreateNavigationState {
     private CreateNavigationState() {}
 
     public static void cancel(Train train, Reason reason) {
+        var station = train.getCurrentStation();
         train.navigation.cancelNavigation();
+        // Space may be released after range arrival but before docking finishes. Native
+        // cancellation must not remove the already-present train from that station.
+        if (station != null && train.getCurrentStation() == station) station.reserveFor(train);
         if (reason == Reason.TIMETABLE_REPLACED || reason == Reason.MANUAL_APPROACH_CANCELLED
                 || reason == Reason.MODE_CHANGED) clearSignalWait(train);
         if (train instanceof CompatibilityTrain own) {

@@ -10,6 +10,8 @@ import willow.train.hexie.network.c2s.HexiePacket;
 import willow.train.hexie.blockentity.TrainSpeedSignEntity;
 
 public class TrainSpeedSignUpdatePacket implements HexiePacket {
+    private int menuId = -1;
+    public TrainSpeedSignUpdatePacket withMenuId(int id) { menuId = id; return this; }
 
     private final BlockPos pos;
     private final String content;
@@ -42,13 +44,14 @@ public class TrainSpeedSignUpdatePacket implements HexiePacket {
         this.y_offset = buf.readFloat();
         this.x_revert = buf.readBoolean();
         this.y_revert = buf.readBoolean();
+        if (buf.isReadable()) menuId = buf.readVarInt();
     }
 
     @Override
     public boolean handle(IPayloadContext context) {
         context.enqueueWork(() -> {
             if (!Float.isFinite(x_offset) || !Float.isFinite(y_offset)) return;
-            SignEditSubmission.commit(context.player(), pos, TrainSpeedSignEntity.class, entity -> {
+            SignEditSubmission.commit(context.player(), pos, menuId, TrainSpeedSignEntity.class, entity -> {
                 entity.setContent(Component.literal(content));
                 entity.setColor(color);
                 entity.setX_offset(x_offset);
@@ -69,5 +72,6 @@ public class TrainSpeedSignUpdatePacket implements HexiePacket {
         var1.writeFloat(y_offset);
         var1.writeBoolean(x_revert);
         var1.writeBoolean(y_revert);
+        var1.writeVarInt(menuId);
     }
 }

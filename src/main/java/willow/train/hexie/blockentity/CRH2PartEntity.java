@@ -41,16 +41,22 @@ public final class CRH2PartEntity extends SmartBlockEntity implements MenuProvid
         markingSlot=selected; setChanged(); sendData();
     }
     private final PanelText[] labels = {PanelText.EMPTY, PanelText.EMPTY};
-    public PanelText panelText(int slot) { return labels[slot]; }
-    public void setPanelText(int slot, PanelText text) {
+    @Override public PanelText panelText(int slot) { return labels[slot]; }
+    @Override public void setPanelText(int slot, PanelText text) {
         labels[slot] = text;
         setChanged();
         sendData();
     }
     private final int[] harmony={0,0};
     public int harmony(int slot) { return harmony[slot]; }
-    public void attachHarmony(int slot) { harmony[slot]=1; setChanged(); sendData(); }
-    public void toggleHarmony(int slot) { if(harmony[slot]!=0) { harmony[slot]=3-harmony[slot]; setChanged(); sendData(); } }
+    @Override public void setHarmony(int slot, int direction) {
+        if (slot < 0 || slot >= harmony.length || direction < 0 || direction > 2 || harmony[slot] == direction) return;
+        harmony[slot] = direction;
+        setChanged();
+        sendData();
+    }
+    public void attachHarmony(int slot) { setHarmony(slot, 1); }
+    public void toggleHarmony(int slot) { if(harmony[slot]!=0) setHarmony(slot, 3-harmony[slot]); }
     public CRH2PartEntity(BlockPos pos, BlockState state) { super(BlockEntitiesInit.CRH2A_PART.get(), pos, state); }
     @Override public void addBehaviours(List<BlockEntityBehaviour> behaviours) {}
     public String[] fields() { return fields.clone(); }

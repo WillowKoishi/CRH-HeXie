@@ -430,7 +430,7 @@ public class CarriageTypeSignEditScreen extends AbstractContainerScreen<Carriage
                                                                     No.getValue()
                                                                 });
                                                     }
-                                                    entity.markUpdated(true);
+                                                    LegacySignScreenSubmission.submit(menu);
                                                     onClose();
                                                 }
                                             }

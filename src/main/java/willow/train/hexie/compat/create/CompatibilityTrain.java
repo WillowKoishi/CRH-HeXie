@@ -117,6 +117,14 @@ public final class CompatibilityTrain extends Train {
         runtime.destinationReached();
     }
 
+    /** An observed physical arrival is independent of which desk supplies traction. */
+    void arrivePhysicallyAt(GlobalStation station) {
+        var observingCab = currentCabTimetable;
+        currentCabTimetable = null;
+        try { super.arriveAt(station); }
+        finally { currentCabTimetable = observingCab; }
+    }
+
     @Override public void leaveStation() {
         if (currentCabTimetable == null || currentCabTimetable.publishing()) super.leaveStation();
     }

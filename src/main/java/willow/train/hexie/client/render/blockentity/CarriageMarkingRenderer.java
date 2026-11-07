@@ -21,7 +21,7 @@ public final class CarriageMarkingRenderer implements BlockEntityRenderer<CRH2Pa
         var state=entity.getBlockState();
         if(!(state.getBlock() instanceof willow.train.hexie.blocks.parts.VehicleMarkingSurface block)
                 ||!block.markingRoot(entity.getLevel(),entity.getBlockPos(),state).equals(entity.getBlockPos()))return;
-        PassengerPanelRenderer.draw(entity, pose, buffers, partialTick);
+        PassengerPanelRenderer.draw(entity, pose, buffers, partialTick, light);
         var fields=entity.fields();
         if(java.util.Arrays.stream(fields).allMatch(String::isBlank)&&entity.harmony(0)==0&&entity.harmony(1)==0
                 &&entity.panelText(0).text().isEmpty()&&entity.panelText(1).text().isEmpty())return;

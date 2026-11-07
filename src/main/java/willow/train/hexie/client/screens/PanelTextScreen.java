@@ -44,12 +44,15 @@ public final class PanelTextScreen extends AbstractContainerScreen<PanelTextMenu
         addRenderableWidget(line);
         for (int i = 0; i < SETTINGS.length; i++) {
             int row = i, y = topPos + 38 + i * 21;
-            addRenderableWidget(new Button(leftPos + 108, y, 20, 18, Component.literal("−"), b -> step(row, -1)));
-            addRenderableWidget(new Button(leftPos + CONTROL_WIDTH - 20, y, 20, 18, Component.literal("+"), b -> step(row, 1)));
+            boolean editable = !menu.contentOnly() || i == 0 || i == 3;
+            addRenderableWidget(new Button(leftPos + 108, y, 20, 18, Component.literal("−"), b -> step(row, -1))).active = editable;
+            addRenderableWidget(new Button(leftPos + CONTROL_WIDTH - 20, y, 20, 18, Component.literal("+"), b -> step(row, 1))).active = editable;
             String value = fields[i] == null ? initialValue(i) : fields[i].getValue();
             fields[i] = new EditBox(font, leftPos + 130, y, 60, 18,
                     Component.translatable("gui.hexie.panel_text." + SETTINGS[i]));
             fields[i].setValue(value);
+            fields[i].setEditable(editable);
+            fields[i].active = editable;
             addRenderableWidget(fields[i]);
         }
         addRenderableWidget(new Button(leftPos + 68, topPos + 123, CONTROL_WIDTH - 68, 18, fontName(), b -> {
@@ -65,6 +68,7 @@ public final class PanelTextScreen extends AbstractContainerScreen<PanelTextMenu
         addRenderableWidget(new Button(leftPos + 112, topPos + 150, 100, 18,
                 Component.translatable("container.hexie.carriage_type_sign_edit_menu.cancel"), b -> onClose()));
         for (EditBox field : fields) field.setResponder(value -> confirm.active = draft() != null);
+        line.setResponder(value -> confirm.active = draft() != null);
         confirm.active = draft() != null;
         setInitialFocus(line);
     }
@@ -92,10 +96,11 @@ public final class PanelTextScreen extends AbstractContainerScreen<PanelTextMenu
 
     private PanelText draft() {
         try {
+            if (menu.contentOnly() && line.getValue().isBlank()) return null;
             float size = Float.parseFloat(fields[0].getValue());
             if (!Float.isFinite(size) || size <= 0) return null;
-            int x = quarterUnits(fields[1].getValue());
-            int y = quarterUnits(fields[2].getValue());
+            int x = menu.contentOnly() ? menu.initial.x() : quarterUnits(fields[1].getValue());
+            int y = menu.contentOnly() ? menu.initial.y() : quarterUnits(fields[2].getValue());
             int spacing = new BigDecimal(fields[3].getValue()).intValueExact();
             return new PanelText(line.getValue(), size, x, y, FONTS.get(fontIndex), spacing);
         } catch (NumberFormatException | ArithmeticException ignored) {

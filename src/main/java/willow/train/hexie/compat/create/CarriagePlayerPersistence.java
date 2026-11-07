@@ -21,6 +21,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import willow.train.hexie.network.s2c.ContraptionSeatPositionPacket;
+import willow.train.hexie.network.s2c.CarriagePlayerStatePacket;
 import willow.train.hexie.blocks.seats.HardSeatPositionRequest;
 import willow.train.hexie.blocks.seats.HardSeatPosition;
 import willow.train.hexie.vehicle.assembly.CarriageSnapshotStore;
@@ -57,11 +58,15 @@ public final class CarriagePlayerPersistence {
 
     static void save(ServerPlayer player) {
         if (PENDING.containsKey(player)) return;
-        var car = CarriagePlayerSupport.mountedOrStanding(player);
+        var car = CarriagePlayerSupport.attachedCarriage(player);
         if (car == null) { player.getPersistentData().remove(KEY); return; }
         BlockPos seat = player.getVehicle() == car
                 ? car.getContraption().getSeatOf(player.getUUID()) : null;
-        Vec3 local = seat == null ? CarriagePlayerSupport.localPosition(player)
+        // A disconnect can precede the first client report after leaving a seat. Keep
+        // the carriage identity and save its last known position instead of erasing it.
+        // This save-only conversion never places or advances the server-side player.
+        Vec3 local = seat == null && CarriagePlayerSupport.carriage(player) == car
+                ? CarriagePlayerSupport.localPosition(player)
                 : CarriagePlayerSupport.frame(car, 1).local(player.position());
         var tag = new CompoundTag();
         if (seat != null) {
@@ -188,8 +193,18 @@ public final class CarriagePlayerPersistence {
                 }
             }
         }
-        CarriagePlayerSupport.placeAndSync(player, car, local);
+        restoreStanding(player, car, local);
         cancel(player);
+    }
+
+    /** Saved standing positions need a login placement; seat exits are resolved by the client. */
+    private static void restoreStanding(ServerPlayer player, SnapshotCarriageEntity car, Vec3 local) {
+        CarriagePlayerSupport.placeStanding(player, car, local);
+        player.connection.resetPosition();
+        long token = player.connection instanceof CarriedPlayerConnection connection
+                ? connection.hexie$beginCarriageRestore(car.getId(), car.getUUID()) : 0;
+        PacketDistributor.sendToPlayer(player, new CarriagePlayerStatePacket(
+                player.getId(), car.getId(), car.getUUID(), local, true, -1, token));
     }
 
     private static void finish(ServerPlayer player) {

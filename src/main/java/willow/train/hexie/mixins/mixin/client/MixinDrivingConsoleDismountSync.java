@@ -12,8 +12,9 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import willow.train.hexie.compat.create.TrainSeatDismount;
 import willow.train.hexie.compat.create.SnapshotCarriageEntity;
+import willow.train.hexie.client.events.CarriageStandingClient;
 
-/** Snapshot exits use the server's local placement packet; other cabs retain their exit rule. */
+/** Capture the local seat exit before Create replaces its mapping, then hand it to client following. */
 @Mixin(value = ContraptionSeatMappingPacket.class, remap = false)
 public abstract class MixinDrivingConsoleDismountSync {
     @WrapOperation(method = "handle", at = @At(value = "INVOKE",
@@ -23,9 +24,20 @@ public abstract class MixinDrivingConsoleDismountSync {
                                          float partialTicks, Operation<Vec3> original) {
         // The packet reaches this call only for the local dismounting player,
         // before it replaces the old seat mapping with the post-dismount mapping.
-        // Snapshot's local placement follows this mapping packet. Do not queue a
-        // second placement or preserve Create's one-shot world-coordinate exit.
-        if (vehicle instanceof SnapshotCarriageEntity && passenger instanceof Player) return null;
+        if (vehicle instanceof SnapshotCarriageEntity car && passenger instanceof Player player) {
+            var contraption = car.getContraption();
+            var seat = contraption == null ? null : contraption.getSeatOf(player.getUUID());
+            Vec3 local = seat == null ? null : TrainSeatDismount.localBehind(car, seat);
+            if (local == null) {
+                Vec3 nativeExit = original.call(vehicle, passenger, partialTicks);
+                // The native exit uses toGlobalVector's anchor, not the render-adjusted
+                // standing frame. Invert that same transform before the body moves again.
+                if (nativeExit != null) local = car.toLocalVector(nativeExit, partialTicks);
+            }
+            CarriageStandingClient.dismount(player, car, local);
+            // No stale world exit may later overwrite the client-resolved local feet.
+            return null;
+        }
         if (vehicle.getContraption() instanceof CarriageContraption contraption) {
             var seat = contraption.getSeatOf(passenger.getUUID());
             if (seat != null) {

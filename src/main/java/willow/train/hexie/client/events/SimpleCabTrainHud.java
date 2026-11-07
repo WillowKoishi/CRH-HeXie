@@ -3,6 +3,7 @@ package willow.train.hexie.client.events;
 import com.simibubi.create.Create;
 import com.simibubi.create.content.contraptions.AbstractContraptionEntity;
 import com.simibubi.create.content.contraptions.actors.trainControls.ControlsHandler;
+import com.simibubi.create.content.trains.TrainHUD;
 import com.simibubi.create.content.trains.entity.CarriageContraptionEntity;
 import com.simibubi.create.foundation.gui.AllGuiTextures;
 import com.simibubi.create.infrastructure.config.AllConfigs;
@@ -21,12 +22,13 @@ import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
 import willow.train.hexie.api.cab.DrivingConsoleContext;
 import willow.train.hexie.vehicle.control.SimpleCabControls;
 
-/** Draws Create's train instruments for a seat that drives through CabControlHost. */
+/** Shares Create's approach prompts across cab modes, with its instruments only in shunting mode. */
 @EventBusSubscriber(modid = "hexie", value = Dist.CLIENT)
 public final class SimpleCabTrainHud {
     private static final ResourceLocation TRAIN_HUD = Create.asResource("train_hud");
     private static final LerpedFloat speed = LerpedFloat.linear();
     private static final LerpedFloat throttle = LerpedFloat.linear();
+    private static final LerpedFloat promptSize = LerpedFloat.linear();
     private static DrivingConsoleContext active;
 
     private SimpleCabTrainHud() {}
@@ -34,6 +36,7 @@ public final class SimpleCabTrainHud {
     static void tick(DrivingConsoleContext cab) {
         if (cab == null) {
             active = null;
+            promptSize.startWithValue(0);
             return;
         }
         float speedTarget = 0, throttleTarget = 1;
@@ -54,6 +57,10 @@ public final class SimpleCabTrainHud {
         throttle.chase(throttleTarget, .75f, LerpedFloat.Chaser.EXP);
         speed.tickChaser();
         throttle.tickChaser();
+        // Create still owns the packet state and expiry when its native controls are not active.
+        promptSize.chase(TrainHUD.currentPrompt == null ? 0
+                : Minecraft.getInstance().font.width(TrainHUD.currentPrompt) + 17, .5f, LerpedFloat.Chaser.EXP);
+        promptSize.tickChaser();
     }
 
     @SubscribeEvent
@@ -61,7 +68,7 @@ public final class SimpleCabTrainHud {
         if (!TRAIN_HUD.equals(event.getName()) || active == null) return;
         var mc = Minecraft.getInstance();
         var cab = DrivingConsoleClient.occupiedCab();
-        if (!active.equals(cab) || !cab.simple() || mc.options.hideGui
+        if (!active.equals(cab) || mc.options.hideGui
                 || mc.gameMode == null || mc.gameMode.getPlayerMode() == GameType.SPECTATOR
                 || mc.getCameraEntity() == null) return;
         // If the native controls already drew this layer, leave their instruments in charge.
@@ -73,6 +80,36 @@ public final class SimpleCabTrainHud {
         var pose = graphics.pose();
         pose.pushPose();
         pose.translate(graphics.guiWidth() / 2 - 91, graphics.guiHeight() - 29, 0);
+        renderPrompt(graphics, partial);
+        if (cab.simple()) renderInstruments(graphics, cab, partial);
+        pose.popPose();
+    }
+
+    private static void renderPrompt(GuiGraphics graphics, float partial) {
+        int width = (int) promptSize.getValue(partial);
+        if (width <= 1) return;
+        var pose = graphics.pose();
+        pose.pushPose();
+        pose.translate(width / -2f + 91, -27, 0);
+        AllGuiTextures.TRAIN_PROMPT_L.render(graphics, -3, 0);
+        AllGuiTextures.TRAIN_PROMPT_R.render(graphics, width, 0);
+        var texture = AllGuiTextures.TRAIN_PROMPT;
+        graphics.blit(texture.location, 0, 0, 0, texture.getStartX() + (128 - width / 2f),
+                texture.getStartY(), width, texture.getHeight(), 256, 256);
+        pose.popPose();
+
+        var prompt = TrainHUD.currentPrompt;
+        var font = Minecraft.getInstance().font;
+        if (prompt == null || font.width(prompt) >= width - 10) return;
+        pose.pushPose();
+        pose.translate(font.width(prompt) / -2f + 82, -27, 100);
+        graphics.drawString(font, prompt, 9, 4, 0x544D45, TrainHUD.currentPromptShadow);
+        pose.popPose();
+    }
+
+    private static void renderInstruments(GuiGraphics graphics, DrivingConsoleContext cab, float partial) {
+        var pose = graphics.pose();
+        pose.pushPose();
         AllGuiTextures.TRAIN_HUD_FRAME.render(graphics, -2, 1);
         AllGuiTextures.TRAIN_HUD_SPEED_BG.render(graphics, 0, 0);
         var bar = AllGuiTextures.TRAIN_HUD_SPEED;
@@ -87,7 +124,7 @@ public final class SimpleCabTrainHud {
         pose.translate(91, -9, 0);
         pose.scale(.925f, .925f, 1);
         PlacementClient.textured(pose, 0, 0, 1, directionAngle(cab, partial,
-                mc.getCameraEntity().getYRot(), DrivingConsoleClient.cabKeyboardMask()));
+                Minecraft.getInstance().getCameraEntity().getYRot(), DrivingConsoleClient.cabKeyboardMask()));
         pose.popPose();
     }
 

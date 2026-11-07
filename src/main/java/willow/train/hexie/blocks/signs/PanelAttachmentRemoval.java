@@ -1,7 +1,5 @@
 package willow.train.hexie.blocks.signs;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -15,15 +13,18 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import willow.train.hexie.Main;
-import willow.train.hexie.blockentity.CRH2PartEntity;
+import willow.train.hexie.api.display.PassengerDisplayHost;
 import willow.train.hexie.blocks.carriage.PanelConversion;
 import willow.train.hexie.blocks.parts.PartInstallation;
 import willow.train.hexie.blocks.parts.PartStructure;
 import willow.train.hexie.blocks.parts.PartStructures;
+import willow.train.hexie.blocks.parts.PanelText;
+import willow.train.hexie.blocks.parts.VehicleMarkings;
+import willow.train.hexie.init.block.BlockInit;
 import willow.train.hexie.init.item.EditablePanelItemInit;
 import willow.train.hexie.init.item.LogoItemInit;
 
-/** White-brush removal is one transaction on the complete, unassembled panel. */
+/** Remove only the clicked attachment, as one transaction on the unassembled panel. */
 @EventBusSubscriber(modid = "hexie")
 public final class PanelAttachmentRemoval {
     private PanelAttachmentRemoval() {}
@@ -56,15 +57,47 @@ public final class PanelAttachmentRemoval {
         var level = context.getLevel();
         if (player == null || player.level() != level || player.isSpectator() || !player.mayBuild())
             return InteractionResult.FAIL;
-        var root = PartStructures.resolve(level, context.getClickedPos());
-        var pos = root == null ? context.getClickedPos() : root.pos();
-        var state = root == null ? level.getBlockState(pos) : root.state();
-        var next = plainPanel(state);
-        var markings = level.getBlockEntity(pos) instanceof CRH2PartEntity panel ? panel : null;
-        boolean hasMarkings = markings != null && markings.hasMarkings();
-        if (next == state && !hasMarkings) return InteractionResult.PASS;
-
-        var recovered = recoverable(state, markings);
+        var hit = new net.minecraft.world.phys.BlockHitResult(context.getClickLocation(),
+                context.getClickedFace(), context.getClickedPos(), false);
+        var target = PanelAttachmentHit.resolve(level, context.getClickedPos(), hit);
+        if (target.kind() == PanelAttachmentHit.Kind.NONE) return InteractionResult.PASS;
+        var pos = target.pos();
+        var state = target.state();
+        var root = PartStructures.resolve(level, pos);
+        var markings = level.getBlockEntity(pos) instanceof VehicleMarkings content ? content : null;
+        var next = state;
+        ItemStack recovered = ItemStack.EMPTY;
+        switch (target.kind()) {
+            case SIGN, NUMBER -> {
+                boolean number = target.kind() == PanelAttachmentHit.Kind.NUMBER;
+                var mount = state.getValue(PanelDisplayMount.PROPERTY).remove(number);
+                next = state.setValue(PanelDisplayMount.PROPERTY, mount);
+                if (mount == PanelDisplayMount.NONE)
+                    next = next.setValue(PanelDisplayColumn.PROPERTY, PanelDisplayColumn.ROOT);
+                recovered = (number ? BlockInit.CRH2A_CARRIAGE_NUMBER_DISPLAY : BlockInit.CRH2A_ELECTRONIC_SIGNAGE)
+                        .get().asItem().getDefaultInstance();
+            }
+            case LEGACY -> {
+                next = plainPanel(state);
+                if (next.equals(state)) return InteractionResult.PASS;
+                if (state.getBlock() instanceof LacqueredBoardBlock)
+                    recovered = EditablePanelItemInit.LACQUERED_BOARD.get().getDefaultInstance();
+                else if (state.getBlock() instanceof TrainNoBlock)
+                    recovered = EditablePanelItemInit.Sticker.get().getDefaultInstance();
+            }
+            case PANEL_TEXT -> {
+                if (markings == null) return InteractionResult.PASS;
+                recovered = LogoItemInit.PANEL_TEXT.get().getDefaultInstance();
+            }
+            case HARMONY -> {
+                if (markings == null) return InteractionResult.PASS;
+                recovered = LogoItemInit.HARMONY_LOGO.get().getDefaultInstance();
+            }
+            case MARKING_FIELDS -> {
+                if (markings == null) return InteractionResult.PASS;
+            }
+            default -> { return InteractionResult.PASS; }
+        }
         var previousCells = root == null ? Map.of(pos, state) : root.structure().partCells(level, pos, state);
         var nextCells = next.getBlock() instanceof PartStructure part
                 ? part.partCells(level, pos, next) : Map.of(pos, next);
@@ -72,14 +105,21 @@ public final class PanelAttachmentRemoval {
                 at -> level.mayInteract(player, at)
                         && player.mayUseItemAt(at, context.getClickedFace(), context.getItemInHand()),
                 () -> {
-                    if (markings != null) markings.clearMarkings();
-                    if (level.getBlockEntity(pos) instanceof willow.train.hexie.api.display.PassengerDisplayHost host)
-                        host.setCarriageNumber("");
+                    switch (target.kind()) {
+                        case NUMBER -> {
+                            if (level.getBlockEntity(pos) instanceof PassengerDisplayHost host)
+                                host.setCarriageNumber("");
+                        }
+                        case PANEL_TEXT -> markings.setPanelText(target.slot(), PanelText.EMPTY);
+                        case HARMONY -> markings.setHarmony(target.slot(), 0);
+                        case MARKING_FIELDS -> markings.update(new String[]{"", "", ""}, false);
+                        default -> {}
+                    }
                 });
         if (!changed) return InteractionResult.FAIL;
         if (!level.isClientSide) {
-            if (!player.isCreative()) for (var stack : recovered)
-                if (!player.addItem(stack)) player.drop(stack, false);
+            if (!player.isCreative() && !recovered.isEmpty() && !player.addItem(recovered))
+                player.drop(recovered, false);
             level.playSound(null, pos, SoundEvents.ITEM_FRAME_REMOVE_ITEM, SoundSource.BLOCKS, .6f, 1);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
@@ -95,25 +135,6 @@ public final class PanelAttachmentRemoval {
             plain = Main.PANEL_TYPE_UTIL.matchUpperPanel2Block(state.getValue(TrainNoBlock.TYPE)).defaultBlockState();
         else if (state.getBlock() instanceof TrainSpeedSignBlock)
             plain = Main.PANEL_TYPE_UTIL.matchSlabPanel2Block(state.getValue(TrainSpeedSignBlock.TYPE)).defaultBlockState();
-        plain = PanelConversion.preservePlacement(state, plain);
-        if (PassengerDisplayPanel.supports(plain.getBlock()) && plain.hasProperty(PanelDisplayMount.PROPERTY)) {
-            plain = plain.setValue(PanelDisplayMount.PROPERTY, PanelDisplayMount.NONE);
-            if (plain.hasProperty(PanelDisplayColumn.PROPERTY))
-                plain = plain.setValue(PanelDisplayColumn.PROPERTY, PanelDisplayColumn.ROOT);
-        }
-        return plain;
-    }
-
-    private static List<ItemStack> recoverable(BlockState state, CRH2PartEntity markings) {
-        var result = new ArrayList<>(PassengerDisplayPanel.withDisplayDrops(state, List.of()));
-        if (state.getBlock() instanceof LacqueredBoardBlock)
-            result.add(EditablePanelItemInit.LACQUERED_BOARD.get().getDefaultInstance());
-        if (state.getBlock() instanceof TrainNoBlock)
-            result.add(EditablePanelItemInit.Sticker.get().getDefaultInstance());
-        if (markings != null) for (int slot = 0; slot < 2; slot++) {
-            if (markings.harmony(slot) != 0) result.add(LogoItemInit.HARMONY_LOGO.get().getDefaultInstance());
-            if (!markings.panelText(slot).text().isEmpty()) result.add(LogoItemInit.PANEL_TEXT.get().getDefaultInstance());
-        }
-        return result;
+        return PanelConversion.preservePlacement(state, plain);
     }
 }

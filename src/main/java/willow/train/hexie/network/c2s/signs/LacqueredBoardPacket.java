@@ -9,6 +9,8 @@ import willow.train.hexie.network.c2s.HexiePacket;
 import willow.train.hexie.blockentity.LacqueredBoardEntity;
 
 public class LacqueredBoardPacket implements HexiePacket {
+    private int menuId = -1;
+    public LacqueredBoardPacket withMenuId(int id) { menuId = id; return this; }
 
     int[] colors;
     String[] contents;
@@ -44,13 +46,14 @@ public class LacqueredBoardPacket implements HexiePacket {
         for (int i = 0; i < cLength; i++) {
             this.colors[i] = buf.readInt();
         }
+        if (buf.isReadable()) menuId = buf.readVarInt();
     }
 
     @Override
     public boolean handle(IPayloadContext context) {
         context.enqueueWork(() -> {
             if (contents.length > 16 || colors.length != 3 || !Double.isFinite(x_offset)) return;
-            SignEditSubmission.commit(context.player(), pos, LacqueredBoardEntity.class, entity -> {
+            SignEditSubmission.commit(context.player(), pos, menuId, LacqueredBoardEntity.class, entity -> {
                 entity.setMessages(contents);
                 entity.setColors(colors);
                 entity.setXOffset(x_offset);
@@ -71,5 +74,6 @@ public class LacqueredBoardPacket implements HexiePacket {
         for (int c : colors) {
             var1.writeInt(c);
         }
+        var1.writeVarInt(menuId);
     }
 }

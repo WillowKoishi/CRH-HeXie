@@ -10,7 +10,6 @@ import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
@@ -292,16 +291,10 @@ public abstract class MixinAbstractContraptionEntity extends Entity {
             if ((Object) this instanceof willow.train.hexie.compat.create.SnapshotCarriageEntity car
                     && passenger instanceof ServerPlayer player && player.isAlive() && !player.isRemoved()
                     && !car.isRemoved() && player.connection.isAcceptingMessages()) {
-                Vec3 local = willow.train.hexie.compat.create.TrainSeatDismount.localBehind(car, dismountSeat);
-                if (local == null && player.getPersistentData().contains("ContraptionDismountLocation", Tag.TAG_LIST)) {
-                    // Create already selected the seat's world exit before removing
-                    // its mapping. Reuse it, including custom seat offsets, once.
-                    Vec3 nativeFeet = net.createmod.catnip.math.VecHelper.readNBT(
-                            player.getPersistentData().getList("ContraptionDismountLocation", Tag.TAG_DOUBLE));
-                    local = willow.train.hexie.compat.create.CarriagePlayerSupport.frame(car, 1).local(nativeFeet);
+                if (player.connection instanceof willow.train.hexie.vehicle.player.CarriedPlayerConnection connection) {
+                    willow.train.hexie.compat.create.CarriagePlayerSupport.beginDismount(player, car);
+                    connection.hexie$beginCarriageDismount(car.getId(), car.getUUID());
                 }
-                if (local != null)
-                    feet = willow.train.hexie.compat.create.CarriagePlayerSupport.placeAndSync(player, car, local);
             } else if (!((Object) this instanceof willow.train.hexie.compat.create.SnapshotCarriageEntity)) {
                 feet = willow.train.hexie.compat.create.TrainSeatDismount.behind(
                         (AbstractContraptionEntity) (Object) this, dismountSeat);

@@ -16,6 +16,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock;
 import willow.train.hexie.blockentity.CustomRenderedDoorEntity;
 import willow.train.hexie.init.client.PartialModelInit;
+import willow.train.hexie.client.render.carriage.CarriageBlockVisual;
+import willow.train.hexie.client.render.carriage.CarriageTransparencyCompat;
 
 public class CustomRenderedDoorRenderer implements BlockEntityRenderer<CustomRenderedDoorEntity> {
 
@@ -32,12 +34,16 @@ public class CustomRenderedDoorRenderer implements BlockEntityRenderer<CustomRen
         BlockState state = entity.getBlockState();
         if (!entity.isLowerSide(state)) return;
         boolean shell = state.getBlock() instanceof CRH2DoorBlock;
+        boolean glassOnly = CarriageBlockVisual.ownsParts(entity);
         MultiBufferSource materials = shell ? shellBuffers(entity, pose, buffer) : buffer;
         pose.pushPose();
         drawParts(entity, entity.crh2Progress(partial), pose, (model, layer, transform) -> {
+            if (glassOnly && layer != RenderType.translucent()) return;
             SuperByteBuffer part = CachedBuffers.partial(model, state);
             if (shell) part.disableDiffuse();
-            part.light(light).overlay(overlay).renderInto(transform, materials.getBuffer(layer));
+            RenderType output = layer == RenderType.translucent() && CarriageTransparencyCompat.required()
+                    ? CarriageTransparencyCompat.glassLayer() : layer;
+            part.light(light).overlay(overlay).renderInto(transform, materials.getBuffer(output));
         });
         pose.popPose();
     }

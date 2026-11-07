@@ -45,7 +45,7 @@ public final class CarriageMarkingScreen extends AbstractContainerScreen<Carriag
                 Component.translatable("container.hexie.carriage_type_sign_edit_menu.confirm"), button -> {
                     String[] edited = values();
                     HexieNetworkHandler.sendToServer(new CarriageMarkingUpdatePacket(
-                            menu.pos, edited[0], edited[1], edited[2], menu.initialLeft));
+                            menu.pos, edited[0], edited[1], edited[2], menu.initialLeft).withMenuId(menu.containerId));
                     onClose();
                 }));
         addRenderableWidget(new Button(x + EDIT_BOX_WIDTH / 3 + 5, 200,
