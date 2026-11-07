@@ -7,8 +7,8 @@
       "shape": "zo"
     }
   },
-  "front_gap": 0,
-  "rear_gap": 0,
+  "front_gap": 0.5,
+  "rear_gap": 0.5,
   "exterior": "exterior.nbt",
   "interior": "interior.nbt",
   "schematic": "25z_original_color_yz_cart.nbt",
