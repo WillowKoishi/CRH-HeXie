@@ -19,27 +19,27 @@
       "hexie:carport_25bgzk_air_condition_side"
     ],
     "hexie:carriage/bogeys": [
-      "hexie:hx_standard_bogey"
+      "hexie:pk209p_no_motor_bogey"
     ],
     "hexie:carriage/boilers": [
       "hexie:boiling_water_place"
     ],
+    "hexie:carriage/controls": [
+      "create:controls"
+    ],
     "hexie:carriage/doors": [
-      "hexie:original_25k_door",
-      "hexie:original_25k_sliding_door"
+      "hexie:original_25g_door",
+      "hexie:original_25z_door"
     ],
     "hexie:carriage/ends": [
       "hexie:end_face_25g_original",
-      "hexie:end_face_25g_original_upper"
+      "hexie:end_face_25g_original_upper_2"
     ],
     "hexie:carriage/floors": [
-      "hexie:slab_25k_original_top"
+      "hexie:slab_25g_original_top"
     ],
     "hexie:carriage/ladders": [
-      "hexie:ladder_25k_original_sliding"
-    ],
-    "hexie:carriage/luggage_racks": [
-      "hexie:ceilin_shelf"
+      "hexie:ladder_25g_original"
     ],
     "hexie:carriage/panels": [
       "hexie:panel_25g_original_bottom",
@@ -56,23 +56,17 @@
     "hexie:carriage/seats": [
       "hexie:seat_yz"
     ],
-    "hexie:carriage/signs": [
-      "hexie:laquered_board_block",
-      "hexie:train_bottom_panel_block",
-      "hexie:train_no_block",
-      "hexie:train_speed_block"
-    ],
     "hexie:carriage/tables": [
       "hexie:yz_table"
     ],
     "hexie:carriage/toilets": [
-      "hexie:direct_drainage_toilet_original_25k"
+      "hexie:direct_drainage_toilet_original_25g"
     ],
-    "hexie:carriage/water_tanks": [
-      "hexie:carport_25bgzkt_water_tank"
+    "hexie:carriage/ventilation": [
+      "hexie:ventiduct_25b"
     ],
     "hexie:carriage/windows": [
-      "hexie:original_color_window_25g_small",
+      "hexie:original_color_window_25g_small_2",
       "hexie:original_color_window_25g_toilet",
       "hexie:original_color_window_25g_wide",
       "hexie:original_color_window_25g_wide_sealed"
