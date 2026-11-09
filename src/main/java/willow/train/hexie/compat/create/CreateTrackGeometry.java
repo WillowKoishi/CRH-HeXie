@@ -3,12 +3,14 @@ package willow.train.hexie.compat.create;
 import com.simibubi.create.content.trains.graph.TrackEdge;
 import com.simibubi.create.content.trains.graph.TrackGraph;
 import net.minecraft.world.phys.Vec3;
-import willow.train.hexie.init.track.TrackMaterialInit;
+import willow.train.hexie.compat.create.track.CreateRailwayBackend;
 import willow.train.hexie.vehicle.track.TrackGeometry;
 
 import java.util.Objects;
 import net.createmod.catnip.data.Couple;
 import com.simibubi.create.content.trains.track.BezierConnection;
+import org.joml.Quaterniond;
+import org.joml.Vector3d;
 
 /** Read on the owning game thread; resolve again after a graph edit. Never owns Create's graph. */
 public final class CreateTrackGeometry implements TrackGeometry {
@@ -27,10 +29,9 @@ public final class CreateTrackGeometry implements TrackGeometry {
         this.graph = Objects.requireNonNull(graph);
         this.edge = Objects.requireNonNull(edge);
         this.analyticTangent = analyticTangent;
-        // Accept exactly our registered materials, not Create STANDARD or a third-party track.
+        // Accept only materials registered through HeXie's railway definitions.
         var material = edge.getTrackMaterial();
-        if (material != TrackMaterialInit.STANDARD && material != TrackMaterialInit.BALLASTLESS
-                && material != TrackMaterialInit.TIELESS)
+        if (!CreateRailwayBackend.supports(material))
             throw new IllegalArgumentException("Not a HeXie track edge");
         if (edge.isInterDimensional() || !Double.isFinite(edge.getLength()) || edge.getLength() <= 0)
             throw new IllegalArgumentException("A spatial edge with positive length is required");
@@ -68,7 +69,9 @@ public final class CreateTrackGeometry implements TrackGeometry {
     }
 
     private TrackRailSurface.Section straightSection(boolean first, Joint joint, Joint opposite) {
-        if (joint != null) return TrackRailSurface.endpoint(joint.curve, joint.first);
+        double surfaceHeight = CreateRailwayBackend.surfaceHeight(edge.getTrackMaterial());
+        // Adjacent curves supply the joint orientation, not this straight's material height.
+        if (joint != null) return TrackRailSurface.endpoint(joint.curve, joint.first, surfaceHeight);
         Vec3 p = first ? straightStart : straightEnd;
         if (opposite != null && TrackRailSurface.flexibleEnd(opposite.curve, opposite.first)) {
             // The other node is often the centre or the far end of this same one-block
@@ -78,7 +81,7 @@ public final class CreateTrackGeometry implements TrackGeometry {
             Vec3 axis = curve.axes.get(opposite.first);
             double along = Math.rint(p.subtract(base).dot(axis) * 2) / 2;
             if (Math.abs(along) <= .5 && p.distanceToSqr(base.add(axis.scale(along))) < .0002)
-                return CreateTrackCompatibility.flexibleSection(base, axis, curve.normals.get(opposite.first), along);
+                return CreateTrackCompatibility.flexibleSection(base, axis, curve.normals.get(opposite.first), along, surfaceHeight);
         }
 
         Vec3 tangent = straightEnd.subtract(straightStart).normalize();
@@ -90,8 +93,8 @@ public final class CreateTrackGeometry implements TrackGeometry {
                 && (Math.abs(p.y - Math.floor(p.y) - .5) < 1e-9 || p.y == Math.rint(p.y)
                 && (p.x == Math.rint(p.x) || p.z == Math.rint(p.z)));
         if (!blockSlope && CreateTrackCompatibility.hasRailx())
-            return CreateTrackCompatibility.flexibleSection(p, tangent, (first ? edge.node1 : edge.node2).getNormal(), 0);
-        return new TrackRailSurface.Section(p.add(0, TrackMaterialInit.RAIL_SURFACE_HEIGHT, 0),
+            return CreateTrackCompatibility.flexibleSection(p, tangent, (first ? edge.node1 : edge.node2).getNormal(), 0, surfaceHeight);
+        return new TrackRailSurface.Section(p.add(0, surfaceHeight, 0),
                 up.cross(tangent).normalize(), up);
     }
 
@@ -113,6 +116,22 @@ public final class CreateTrackGeometry implements TrackGeometry {
         // No cant is introduced into existing tracks. No render-height offset is applied here.
         return new Sample(vector(position(parameter)), vector(tangent),
                 vector(edge.getNormal(graph, parameter)), 0);
+    }
+
+    /** Display orientation uses the authored up direction and the same precise curve derivative. */
+    Sample animationSample(double parameter) {
+        if (!edge.isTurn()) return sample(parameter);
+        var normals = edge.getTurn().normals;
+        Vec3 first = normals.getFirst(), second = normals.getSecond();
+        Vec3 normal = first;
+        if (!first.equals(second)) {
+            var rotation = new Quaterniond().rotationTo(first.x, first.y, first.z, second.x, second.y, second.z);
+            var up = new Quaterniond().slerp(rotation, parameter).transform(new Vector3d(first.x, first.y, first.z));
+            normal = new Vec3(up.x, up.y, up.z);
+        }
+        // Native getNormal differentiates absolute control points with float coefficients.
+        // Project the authored normal against our double derivative instead, especially far from origin.
+        return new Sample(vector(position(parameter)), vector(tangent(parameter)), vector(normal), 0);
     }
 
     private Vec3 tangent(double parameter) {

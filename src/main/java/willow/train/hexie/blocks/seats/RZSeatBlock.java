@@ -6,6 +6,7 @@ import com.simibubi.create.content.equipment.wrench.IWrenchable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
@@ -70,6 +71,13 @@ public class RZSeatBlock extends SeatBlock implements IWrenchable {
         return this.defaultBlockState()
                 .setValue(FACING, ConsoleSeatPlacement.facing(ctx))
                 .setValue(WATERLOGGED, false);
+    }
+
+    @Override protected net.minecraft.world.ItemInteractionResult useItemOn(ItemStack stack, BlockState state,
+            net.minecraft.world.level.Level level, BlockPos pos, net.minecraft.world.entity.player.Player player,
+            net.minecraft.world.InteractionHand hand, net.minecraft.world.phys.BlockHitResult hit) {
+        // Retain native mounting/occupancy without replacing the chair with a dyed Create seat.
+        return super.useItemOn(ItemStack.EMPTY, state, level, pos, player, hand, hit);
     }
 
     @Override

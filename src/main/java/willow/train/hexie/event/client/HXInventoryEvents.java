@@ -15,7 +15,7 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 
 import willow.train.hexie.Main;
-import willow.train.hexie.client.carriage.browser.CarriageBrowserClient;
+import willow.train.hexie.client.carriage.flow.CarriageFlowClient;
 import willow.train.hexie.client.screens.widget.ImageButton;
 import willow.train.hexie.client.screens.widget.ItemIconButton;
 import willow.train.hexie.client.carriage.*;
@@ -55,8 +55,8 @@ public class HXInventoryEvents {
 
 
     public static void captureLegacyScroll(CreativeModeInventoryScreen screen) {
-        if (instance == null || screen instanceof willow.train.hexie.client.carriage.browser.CarriagePaletteScreen
-                || CarriageBrowserClient.previewMode()) return;
+        if (instance == null || screen instanceof willow.train.hexie.client.carriage.flow.CarriageFlowPaletteScreen
+                || CarriageFlowClient.previewMode()) return;
         var accessor = (CreativeModeInventoryScreenAccessor) screen;
         if (isCarriageTab(accessor.hexie$getSelectedTab()) && instance.hasAppliedFilter(screen.getMenu()))
             groupScroll[carriageType] = accessor.hexie$getScrollOffs();
@@ -72,7 +72,7 @@ public class HXInventoryEvents {
         var accessor = (CreativeModeInventoryScreenAccessor) screen;
         currentCreativeTab = accessor.hexie$getSelectedTab();
         boolean visible = isCarriageTab(currentCreativeTab);
-        boolean preview = CarriageBrowserClient.previewMode();
+        boolean preview = CarriageFlowClient.previewMode();
         if (visible && !preview) {
             if (onChanged || !hasAppliedFilter(screen.getMenu())) {
                 updateMenuItem(screen.getMenu());
@@ -109,7 +109,7 @@ public class HXInventoryEvents {
     @SubscribeEvent
     @SuppressWarnings({"resource"})
     public void onScreenInit(ScreenEvent.Init.Post event) {
-        if (event.getScreen() instanceof willow.train.hexie.client.carriage.browser.CarriagePaletteScreen) return;
+        if (event.getScreen() instanceof willow.train.hexie.client.carriage.flow.CarriageFlowPaletteScreen) return;
         if (!(event.getScreen() instanceof CreativeModeInventoryScreen)) return;
         this.guiLeft = ((CreativeModeInventoryScreen) event.getScreen()).getGuiLeft();
         this.guiTop = ((CreativeModeInventoryScreen) event.getScreen()).getGuiTop();
@@ -185,7 +185,7 @@ public class HXInventoryEvents {
                                 Screen activeScreen = Minecraft.getInstance().screen;
                                 if (!(activeScreen instanceof CreativeModeInventoryScreen creativeScreen)) return;
                                 if (b == imgBtn[0]) {
-                                    CarriageBrowserClient.toggleMode(creativeScreen);
+                                    CarriageFlowClient.toggleMode(creativeScreen);
                                     return;
                                 }
                                 captureLegacyScroll(creativeScreen);
@@ -216,19 +216,19 @@ public class HXInventoryEvents {
         boolean visible = isCarriageTab(tab);
         if (imgBtn[0] != null) {
             imgBtn[0].visible = visible && Minecraft.getInstance().screen instanceof CreativeModeInventoryScreen screen
-                    && CarriageBrowserClient.canSwitchMode(screen);
+                    && CarriageFlowClient.canSwitchMode(screen);
             imgBtn[0].setY(guiTop + 14);
         }
         for (int i = 1; i < imgBtn.length; i++) if (imgBtn[i] != null) {
             imgBtn[i].setY(guiTop + 36 + (i - 1 - btn_location) * 22);
-            imgBtn[i].visible = visible && !CarriageBrowserClient.previewMode()
+            imgBtn[i].visible = visible && !CarriageFlowClient.previewMode()
                     && i > btn_location && i < btn_location + showBtnNumber;
         }
     }
 
     @SubscribeEvent
     public void onRender(ScreenEvent.Render.Pre event) {
-        if (event.getScreen() instanceof willow.train.hexie.client.carriage.browser.CarriagePaletteScreen) return;
+        if (event.getScreen() instanceof willow.train.hexie.client.carriage.flow.CarriageFlowPaletteScreen) return;
         if (event.getScreen() instanceof CreativeModeInventoryScreen screen) {
             syncMenu(screen);
             if (currentCreativeTab == Main.HEXIE_MAIN.getId()) addSchematicToTab(screen.getMenu());

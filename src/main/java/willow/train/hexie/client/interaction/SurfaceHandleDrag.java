@@ -21,10 +21,16 @@ final class SurfaceHandleDrag {
     private final int guiWidth, guiHeight;
     private final SurfaceControlCaption.Box caption;
     private final CabSliderTrack track;
+    private final int trackCross;
     private final double originalX, originalY;
     private final double[] mouseX = new double[1], mouseY = new double[1];
     private int notch;
     private boolean ended;
+    private long lastSentTick = Long.MIN_VALUE;
+
+    static boolean canStart(BlockControl.Handle handle) {
+        return !CabSliderTrack.interactiveNotches(handle).isEmpty();
+    }
 
     SurfaceHandleDrag(Minecraft mc, SurfaceInteraction.Context context, BlockControl.Handle handle, int button, boolean pointer) {
         this.button = button;
@@ -39,17 +45,30 @@ final class SurfaceHandleDrag {
         originalX = pointer ? mc.mouseHandler.xpos() / window.getScreenWidth() : .5;
         originalY = pointer ? mc.mouseHandler.ypos() / window.getScreenHeight() : .5;
         caption = SurfaceControlCaption.at(mc.font, handle, guiWidth, guiHeight, (int) (originalX * guiWidth), (int) (originalY * guiHeight));
-        track = CabSliderTrack.at(handle, notch, caption.y() + caption.height() / 2d, guiHeight);
+        boolean horizontal = handle.dragSpec().axis() == BlockControl.Handle.DragAxis.HORIZONTAL;
+        track = CabSliderTrack.at(handle, notch,
+                horizontal ? caption.x() + caption.width() / 2d : caption.y() + caption.height() / 2d,
+                horizontal ? guiWidth : guiHeight);
+        if (!track.notches().contains(notch)) notch = track.notches().getFirst();
+        if (horizontal) {
+            int below = caption.y() + caption.height() + 14;
+            int margin = Math.min(8, guiHeight / 2);
+            trackCross = Math.clamp(below < guiHeight - margin ? below : caption.y() - 14,
+                    margin, Math.max(margin, guiHeight - 1 - margin));
+        } else trackCross = caption.trackX();
         mc.mouseHandler.releaseMouse();
         // Shift the thumb and cursor together when the full track would extend beyond the screen.
-        GLFW.glfwSetCursorPos(window.getWindow(), caption.trackX() * (double) window.getScreenWidth() / guiWidth,
-                track.y(notch) * window.getScreenHeight() / guiHeight);
+        double x = horizontal ? track.coordinate(notch) : trackCross;
+        double y = horizontal ? trackCross : track.coordinate(notch);
+        GLFW.glfwSetCursorPos(window.getWindow(), x * window.getScreenWidth() / guiWidth,
+                y * window.getScreenHeight() / guiHeight);
     }
 
     boolean fits(Window window) {
         if (!context.valid() || guiWidth != window.getGuiScaledWidth() || guiHeight != window.getGuiScaledHeight())
             return false;
-        return context.control(handle.id()) instanceof BlockControl.Handle;
+        return context.control(handle.id()) instanceof BlockControl.Handle current
+                && current.accepts(notch) && current.dragSpec().equals(handle.dragSpec());
     }
 
     void restorePointer(Window window) {
@@ -64,32 +83,44 @@ final class SurfaceHandleDrag {
 
     void update(Window window) {
         GLFW.glfwGetCursorPos(window.getWindow(), mouseX, mouseY);
-        double y = mouseY[0] * guiHeight / window.getScreenHeight();
-        int next = track.nearest(y);
-        if (next == notch) return;
+        double coordinate = track.axis() == BlockControl.Handle.DragAxis.HORIZONTAL
+                ? mouseX[0] * guiWidth / window.getScreenWidth()
+                : mouseY[0] * guiHeight / window.getScreenHeight();
+        int next = track.nearest(coordinate);
+        var level = Minecraft.getInstance().level;
+        long now = level == null ? 0 : level.getGameTime();
+        if (next == notch && lastSentTick != Long.MIN_VALUE && now - lastSentTick < 10) return;
         notch = next;
+        lastSentTick = now;
         context.submit(handle, notch);
     }
 
     void render(Minecraft mc, GuiGraphics graphics) {
         update(mc.getWindow());
-        renderTrack(graphics, caption.trackX(), track, notch);
-        caption.render(mc.font, graphics, SurfaceControlCaption.label(handle, handle.notchText(notch)));
+        renderTrack(graphics, trackCross, track, notch);
+        if (handle.showTooltip())
+            caption.render(mc.font, graphics, SurfaceControlCaption.label(handle, handle.notchText(notch)));
     }
 
-    static void renderTrack(GuiGraphics graphics, int x, CabSliderTrack track, int notch) {
+    static void renderTrack(GuiGraphics graphics, int cross, CabSliderTrack track, int notch) {
         var pose = graphics.pose();
         int bottom = track.top() + track.travel();
-        int thumb = (int) Math.round(track.y(notch));
+        int thumb = (int) Math.round(track.coordinate(notch));
+        boolean horizontal = track.axis() == BlockControl.Handle.DragAxis.HORIZONTAL;
         pose.pushPose();
-        pose.translate(x - 6, bottom + 4, 0);
-        pose.mulPose(Axis.ZP.rotationDegrees(-90));
+        if (horizontal) pose.translate(track.top() - 4, cross - 6, 0);
+        else {
+            pose.translate(cross - 6, bottom + 4, 0);
+            pose.mulPose(Axis.ZP.rotationDegrees(-90));
+        }
         graphics.blitSprite(TRACK, 0, 0, track.travel() + 8, 12);
-        graphics.blitSprite(THUMB, bottom - thumb, 0, 8, 12);
+        graphics.blitSprite(THUMB, horizontal ? thumb - track.top() : bottom - thumb, 0, 8, 12);
         pose.popPose();
-        for (int i = track.handle().minNotch(); i <= track.handle().maxNotch(); i++) {
-            int y = (int) Math.round(track.y(i));
-            graphics.fill(x - 6, y, x - 3, y + 1, i == notch ? 0xFFFFFFFF : 0xFF9A9A9A);
+        for (int value : track.notches()) {
+            int point = (int) Math.round(track.coordinate(value));
+            int color = value == notch ? 0xFFFFFFFF : 0xFF9A9A9A;
+            if (horizontal) graphics.fill(point, cross - 6, point + 1, cross - 3, color);
+            else graphics.fill(cross - 6, point, cross - 3, point + 1, color);
         }
     }
 }

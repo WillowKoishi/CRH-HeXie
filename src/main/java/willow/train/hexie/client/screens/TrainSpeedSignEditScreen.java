@@ -7,7 +7,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractOptionSliderButton;
 import willow.train.hexie.client.util.gui.Button;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -20,7 +19,7 @@ import willow.train.hexie.blockentity.TrainSpeedSignEntity;
 import java.awt.*;
 import java.util.Locale;
 
-public class TrainSpeedSignEditScreen extends AbstractContainerScreen<TrainSpeedSignEditMenu> {
+public class TrainSpeedSignEditScreen extends TextInputScreen<TrainSpeedSignEditMenu> {
     private static final Component[] TEXT =
             new Component[] {
                 Component.translatable(
@@ -278,18 +277,6 @@ public class TrainSpeedSignEditScreen extends AbstractContainerScreen<TrainSpeed
 
     public boolean isPauseScreen() {
         return false;
-    }
-
-    @Override
-    public boolean keyReleased(int pKeyCode, int pScanCode, int pModifiers) {
-        if (pKeyCode == 69) return false;
-        return super.keyReleased(pKeyCode, pScanCode, pModifiers);
-    }
-
-    @Override
-    public boolean keyPressed(int pKeyCode, int pScanCode, int pModifiers) {
-        if (pKeyCode == 69) return false;
-        return super.keyPressed(pKeyCode, pScanCode, pModifiers);
     }
 
     class SildingBarButton extends AbstractOptionSliderButton {

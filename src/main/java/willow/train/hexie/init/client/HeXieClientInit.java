@@ -16,7 +16,8 @@ import willow.train.hexie.client.screens.*;
 import willow.train.hexie.event.client.HXInventoryEvents;
 import willow.train.hexie.init.BlockEntitiesInit;
 import willow.train.hexie.init.EntityInit;
-import willow.train.hexie.init.track.TrackBlockInit;
+import willow.train.hexie.api.railway.RailwayRegistry;
+import net.minecraft.world.level.block.Block;
 import willow.train.hexie.init.bogeys.BogeyEntityInit;
 import willow.train.hexie.init.semaphore.SemaphoreEntityInit;
 import willow.train.hexie.client.render.blockentity.ThroughSignalRenderer;
@@ -32,11 +33,12 @@ public class HeXieClientInit {
         willow.train.hexie.client.render.display.PassengerPanelModels.register();
         willow.train.hexie.client.render.CRH2StaticSections.register();
         Main.bus.addListener(willow.train.hexie.client.render.bogey.BogeyTopModel::register);
+        Main.bus.addListener(willow.train.hexie.compat.create.bogey.CreateAddonBogeyClient::registerAdditional);
         willow.train.hexie.client.render.track.BallastCurveBuffers.register();
         willow.train.hexie.compat.HeXieSimulatedClientCompat.register(Main.bus);
         willow.train.hexie.client.render.carriage.CarriageTransparencyCompat.register(Main.bus);
         willow.train.hexie.client.sign.SignTextClient.register(Main.bus);
-        willow.train.hexie.client.carriage.browser.CarriageBrowserClient.register(Main.bus);
+        willow.train.hexie.client.carriage.flow.CarriageFlowClient.register(Main.bus);
         Main.bus.addListener(HeXieClientInit::registerBlockExtensions);
         Main.bus.addListener(HeXieClientInit::registerMenus);
         Main.bus.addListener(willow.train.hexie.client.interaction.SurfaceControlCaption::register);
@@ -51,9 +53,7 @@ public class HeXieClientInit {
     public static void registerBlockExtensions(RegisterClientExtensionsEvent event) {
         // Register directly: the track builders are declared before Registrate is attached to the mod bus.
         event.registerBlock(new StandardTrackRenderProperties(),
-                TrackBlockInit.STANDARD_TRACK.get(),
-                TrackBlockInit.BALLASTLESS_TRACK.get(),
-                TrackBlockInit.TIELESS_TRACK.get());
+                RailwayRegistry.entries().stream().map(railway -> railway.block().get()).toArray(Block[]::new));
     }
 
     private static final Map<ModelLayerLocation, Supplier<LayerDefinition>> modelLayers =
@@ -71,6 +71,7 @@ public class HeXieClientInit {
     }
 
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        willow.train.hexie.compat.create.bogey.CreateAddonBogeyClient.registerRenderers(event);
         event.registerBlockEntityRenderer(BlockEntitiesInit.PASSENGER_PANEL.get(),
                 willow.train.hexie.client.render.blockentity.PassengerPanelRenderer::new);
         event.registerBlockEntityRenderer(BlockEntitiesInit.CRH2A_PART.get(), CarriageMarkingRenderer::new);

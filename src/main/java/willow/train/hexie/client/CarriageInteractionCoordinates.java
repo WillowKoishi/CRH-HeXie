@@ -2,6 +2,7 @@ package willow.train.hexie.client;
 
 import com.simibubi.create.content.contraptions.AbstractContraptionEntity;
 import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import willow.train.hexie.compat.create.CarriagePlayerSupport;
 import willow.train.hexie.compat.create.SnapshotCarriageEntity;
@@ -16,6 +17,19 @@ public final class CarriageInteractionCoordinates {
         var camera = minecraft.gameRenderer.getMainCamera();
         return camera.getEntity() == null ? minecraft.getTimer().getGameTimeDeltaPartialTick(true)
                 : camera.getPartialTickTime();
+    }
+
+    /** The standing body's render displacement, composed outside the base player's eye interpolation. */
+    public static Vec3 renderEyeOffset(Player player, float partial) {
+        Vec3 offset = CarriagePlayerSupport.renderOffset(player, partial);
+        if (offset.lengthSqr() == 0) return Vec3.ZERO;
+        var carriage = CarriagePlayerSupport.attachedCarriage(player);
+        if (carriage == null) return Vec3.ZERO;
+        if (!SableInteractionCoordinates.contains(carriage.level(), carriage.blockPosition())) return offset;
+        // The support frame is in the carrier's storage level; only its displacement is transformed.
+        var frame = SableInteractionCoordinates.render(carriage.level(), carriage.blockPosition(), partial);
+        Vec3 origin = carriage.position();
+        return frame.toWorld(origin.add(offset)).subtract(frame.toWorld(origin));
     }
 
     public static net.minecraft.world.phys.BlockHitResult pick(net.minecraft.world.entity.player.Player player,

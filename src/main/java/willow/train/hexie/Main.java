@@ -105,6 +105,9 @@ public class Main {
 
         modSetup();
 
+        willow.train.hexie.railway.RailwayResourcePack.register(bus,
+                willow.train.hexie.compat.create.track.CreateRailwayResources::resources);
+
         if (ModList.get().isLoaded("railx")) {
             willow.train.hexie.compat.create.railx.RailxTracks.register(bus);
         }
@@ -134,6 +137,10 @@ public class Main {
     protected void setup(final FMLCommonSetupEvent event) {
         if (ModList.get().isLoaded("create")) {
             event.enqueueWork(willow.train.hexie.compat.create.CreateDrivingConsoleSeats::register);
+            event.enqueueWork(willow.train.hexie.compat.create.CreateControlInputTargets::register);
+        }
+        if (ModList.get().isLoaded("sable")) {
+            event.enqueueWork(willow.train.hexie.compat.sable.SableControlInputCoordinates::register);
         }
         event.enqueueWork(InteractionBehaviourInit::register);
         event.enqueueWork(willow.train.hexie.blocks.carriage.TrainPanelPlacement::register);

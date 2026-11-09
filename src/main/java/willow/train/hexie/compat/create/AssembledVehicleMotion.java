@@ -667,6 +667,11 @@ public final class AssembledVehicleMotion {
         return driver == null ? null : driver.cabTimetable;
     }
 
+    CabModule.State cabState(ControlKey key) {
+        var driver = controllers.get(key);
+        return driver == null || driver.cabControls == null ? null : driver.cabControls.state();
+    }
+
     Map<ControlKey, CabModule.State> cabStates(UUID carriage) {
         var result = new LinkedHashMap<ControlKey, CabModule.State>();
         controllers.forEach((key, driver) -> {
@@ -908,6 +913,15 @@ public final class AssembledVehicleMotion {
                 CabModule.operateControls(host, block, controlId, value, previous, speed));
     }
 
+    /** The input transport validated this physical target; operating it grants no seated keyboard bindings. */
+    public boolean operateCabControl(SnapshotCarriageEntity car, BlockPos position,
+                                     Player player, String controlId, int value) {
+        var info = car.getContraption() == null ? null : car.getContraption().getBlocks().get(position);
+        if (info == null || !(info.state().getBlock() instanceof willow.train.hexie.api.cab.CabControlHost host)) return false;
+        return updateCabControls(car, position, player, (previous, speed) ->
+                CabModule.operateControls(host, info.state(), controlId, value, previous, speed), -1, false);
+    }
+
     public boolean updateCabControls(SnapshotCarriageEntity car, DrivingConsoleContext cab,
             Player player, java.util.function.BiFunction<willow.train.hexie.vehicle.control.CabModule.State, Double,
                     willow.train.hexie.vehicle.control.CabModule.State> input) {
@@ -916,20 +930,28 @@ public final class AssembledVehicleMotion {
 
     private boolean updateCabControls(SnapshotCarriageEntity car, DrivingConsoleContext cab,
             Player player, java.util.function.BiFunction<CabModule.State, Double, CabModule.State> input, int keyboardMask) {
-        var state = cab.seatAccess().blockState(cab.console());
+        if (player.getVehicle() != car || cab.seatAccess().vehicle() != car) return false;
+        return updateCabControls(car, cab.console(), player, input, keyboardMask, true);
+    }
+
+    private boolean updateCabControls(SnapshotCarriageEntity car, BlockPos position,
+            Player player, java.util.function.BiFunction<CabModule.State, Double, CabModule.State> input,
+            int keyboardMask, boolean seated) {
+        var info = car.getContraption() == null ? null : car.getContraption().getBlocks().get(position);
+        var state = info == null ? null : info.state();
         if (!owns(car.getUUID()) || !player.isAlive() || player.isSpectator() || player.level() != level
-                || player.getVehicle() != car || cab.seatAccess().vehicle() != car
+                || car.level() != level || car.isRemoved()
                 || state == null || !(state.getBlock() instanceof willow.train.hexie.api.cab.CabControlHost host)
                 || isDerailed(car.getUUID())) return false;
         var facing = host.cabFacing(state);
         if (facing == null || !facing.getAxis().isHorizontal()) return false;
-        var key = new ControlKey(car.getUUID(), cab.console());
+        var key = new ControlKey(car.getUUID(), position);
         var driver = controllers.get(key);
         if (driver != null && (driver.cabControls == null
-                || driver.attended && !driver.player.equals(player.getUUID()))) return false;
+                || !driver.player.equals(player.getUUID()) && occupiesCab(level.getPlayerByUUID(driver.player),
+                        car.getUUID(), position))) return false;
         if (driver == null) {
-            driver = new Controller(player.getUUID(), cab.console(), level.getGameTime());
-            var info = car.getContraption().getBlocks().get(cab.console());
+            driver = new Controller(player.getUUID(), position, level.getGameTime());
             var data = info == null ? null : info.nbt();
             driver.cabControls = data != null && (data.contains("CabControls") || data.contains("TestControls"))
                     ? willow.train.hexie.vehicle.control.CabModule.read(data.getCompound(data.contains("CabControls") ? "CabControls" : "TestControls"))
@@ -938,15 +960,16 @@ public final class AssembledVehicleMotion {
         }
         var converted = input.apply(driver.cabControls.state(), runtime.speed(car.getUUID()));
         if (converted == null) return false;
+        if (!seated) converted = converted.withApproach(false);
         boolean wasAutomatic = driver.cabControls.state().automatic();
         boolean wasSimple = driver.cabControls.state().simple();
         controllers.put(key, driver);
         driver.cabConverter = host.trainControl(state);
-        driver.player = player.getUUID(); driver.attended = true;
+        driver.player = player.getUUID(); driver.attended = seated;
         driver.cabFacing = facing; driver.lastInput = level.getGameTime();
         SimpleCabControls.submitAndNotify(player, driver.cabControls, converted);
         if (wasAutomatic != converted.automatic()) releaseCabApproach(car.getUUID(), driver);
-        if (wasAutomatic != converted.automatic() || wasSimple != converted.simple()) {
+        if (!seated || wasAutomatic != converted.automatic() || wasSimple != converted.simple()) {
             driver.cabControls.keyboard(0);
         }
         if (keyboardMask >= 0) {
@@ -970,6 +993,12 @@ public final class AssembledVehicleMotion {
         }
         applyControls(car.getUUID());
         return true;
+    }
+
+    private static boolean occupiesCab(Player player, UUID carriage, BlockPos position) {
+        var cab = DrivingConsoleContext.find(player);
+        return cab != null && cab.console().equals(position)
+                && cab.seatAccess().vehicle().getUUID().equals(carriage);
     }
 
     private void releaseCabApproach(UUID member, Controller driver) {

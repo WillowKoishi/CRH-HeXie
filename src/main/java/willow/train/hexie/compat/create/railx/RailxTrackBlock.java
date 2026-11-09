@@ -20,6 +20,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import willow.train.hexie.init.track.TrackMaterialInit;
+import willow.train.hexie.compat.create.track.CreateRailwayBackend;
 import willow.train.hexie.blocks.track.standard.TrackBallast;
 
 /** RailX owns flexible placement and connections; the original material owns the rail models. */
@@ -59,7 +60,7 @@ public final class RailxTrackBlock extends FlexiTrackBlock {
         if (curvePoint != null && track != null) {
             var curve = track.getConnections().get(curvePoint.curveTarget());
             if (curve != null) offset = curve.getNormal(curve.getSegmentT(curvePoint.segment() + 1))
-                    .scale(TrackMaterialInit.RAIL_HEIGHT_INCREASE);
+                    .scale(heightIncrease(curve.getMaterial()));
         }
         transform.translate(offset);
         return super.prepareTrackOverlay(transform, world, pos, state, curvePoint, direction, type);
@@ -72,9 +73,14 @@ public final class RailxTrackBlock extends FlexiTrackBlock {
             // Match the same rotation as RailX's model and first-axis selection box,
             // including combined gradient and cant, rather than deriving another rotation.
             var offset = track.getState().getShapeCache().getFirst().getRotationValueDouble()
-                    .transform(new org.joml.Vector3d(0, TrackMaterialInit.RAIL_HEIGHT_INCREASE, 0));
+                    .transform(new org.joml.Vector3d(0, heightIncrease(getMaterial()), 0));
             return new Vec3(offset.x, offset.y, offset.z);
         }
-        return getUpNormal(world, pos, state).scale(TrackMaterialInit.RAIL_HEIGHT_INCREASE);
+        return getUpNormal(world, pos, state).scale(heightIncrease(getMaterial()));
+    }
+
+    private static double heightIncrease(TrackMaterial material) {
+        return CreateRailwayBackend.supports(material) ? CreateRailwayBackend.heightIncrease(material)
+                : TrackMaterialInit.RAIL_HEIGHT_INCREASE;
     }
 }

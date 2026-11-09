@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -12,11 +13,13 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import org.joml.Quaternionf;
+import org.joml.Quaterniond;
 import org.joml.Vector3f;
 import willow.train.hexie.vehicle.assembly.CarriageSnapshot;
 import willow.train.hexie.vehicle.kinematics.VehicleConstraintSolver.BodyPose;
 import willow.train.hexie.vehicle.runtime.CouplingEndpoint.Point;
 import willow.train.hexie.vehicle.runtime.VehicleRuntime;
+import willow.train.hexie.vehicle.track.TrackGeometry;
 
 /** Compact, body-local animation for every support, independent of Create's two-bogey facade. */
 public final class SnapshotBogeyAnimation {
@@ -97,6 +100,13 @@ public final class SnapshotBogeyAnimation {
 
     public void update(VehicleRuntime runtime, CarriageSnapshot snapshot, Direction forward, long gameTime,
                        boolean derailed, Direction modelForward) {
+        update(runtime, snapshot, forward, gameTime, derailed, modelForward, null);
+    }
+
+    /** The adapter may provide a continuous visual frame without changing the physics solution. */
+    public void update(VehicleRuntime runtime, CarriageSnapshot snapshot, Direction forward, long gameTime,
+                       boolean derailed, Direction modelForward,
+                       BiFunction<Double, TrackGeometry.Sample, TrackGeometry.Sample> trackAnimation) {
         if (snapshot == null) return;
         var definition = runtime.definition(snapshot.id());
         var solution = runtime.placement();
@@ -116,7 +126,8 @@ public final class SnapshotBogeyAnimation {
             var definitionBogey = definition.bogeys().get(index);
             var position = snapshot.supports().get(index);
             var support = solution.bogeys().get(definitionBogey.id());
-            var sample = support.track();
+            var sample = trackAnimation == null || derailed ? support.track()
+                    : trackAnimation.apply(support.distance(), support.track());
             var tangent = sample.tangent();
             double yaw = Math.atan2(-tangent.x(), -tangent.z());
             double pitch = Math.asin(Math.clamp(tangent.y(), -1, 1));
@@ -155,7 +166,12 @@ public final class SnapshotBogeyAnimation {
                 if (derailDegrees == 0) derailDegrees = 1;
                 bogeyRotation = new Quaternionf().rotationY((float) body.yaw())
                         .rotateY(modelYaw + (float) Math.toRadians(derailDegrees));
-            } else bogeyRotation = orientation(trackFrame).rotateY(modelYaw);
+            } else {
+                // Float half-angle sin/cos loses small steering changes near 180 degrees.
+                // Keep the body basis consistent with its packet format; refine only the track orientation.
+                bogeyRotation = new Quaternionf(new Quaterniond().rotationY(yaw).rotateX(pitch).rotateZ(roll))
+                        .rotateY(modelYaw);
+            }
             Quaternionf relative = new Quaternionf(inverseBody).mul(bogeyRotation);
             double speed = runtime.bogeySpeed(definitionBogey.id());
             double angle = index < current.size() && current.get(index).position().equals(position)

@@ -5,7 +5,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.Minecraft;
 import willow.train.hexie.client.util.gui.Button;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 
@@ -15,7 +14,7 @@ import willow.train.hexie.blockentity.LacqueredBoardEntity;
 
 import java.util.Locale;
 
-public class LacqueredBoardEditScreen extends AbstractContainerScreen<LacqueredBoardEditMenu> {
+public class LacqueredBoardEditScreen extends TextInputScreen<LacqueredBoardEditMenu> {
 
     private static final Component[] TEXT =
             new Component[] {
@@ -415,15 +414,4 @@ public class LacqueredBoardEditScreen extends AbstractContainerScreen<LacqueredB
         return true;
     }
 
-    @Override
-    public boolean keyReleased(int pKeyCode, int pScanCode, int pModifiers) {
-        if (pKeyCode == 69) return false;
-        return super.keyReleased(pKeyCode, pScanCode, pModifiers);
-    }
-
-    @Override
-    public boolean keyPressed(int pKeyCode, int pScanCode, int pModifiers) {
-        if (pKeyCode == 69) return false;
-        return super.keyPressed(pKeyCode, pScanCode, pModifiers);
-    }
 }

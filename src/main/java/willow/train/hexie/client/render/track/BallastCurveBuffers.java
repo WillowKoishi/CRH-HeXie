@@ -26,7 +26,8 @@ import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import willow.train.hexie.Main;
 import willow.train.hexie.blocks.track.standard.BallastData;
-import willow.train.hexie.init.track.TrackMaterialInit;
+import willow.train.hexie.api.railway.RailwayDefinition.Bed;
+import willow.train.hexie.compat.create.track.CreateRailwayBackend;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -152,8 +153,8 @@ public final class BallastCurveBuffers {
             for (var curve : be.getConnections().values()) {
                 current.add(curve);
                 OWNERS.put(curve, be);
-                boolean slab = curve.getMaterial() == TrackMaterialInit.BALLASTLESS;
-                if (!curve.isPrimary() || !slab && curve.getMaterial() != TrackMaterialInit.STANDARD) {
+                boolean slab = CreateRailwayBackend.bed(curve.getMaterial()) == Bed.SLAB;
+                if (!curve.isPrimary() || !slab && CreateRailwayBackend.bed(curve.getMaterial()) != Bed.BALLAST) {
                     var entry = CURVES.remove(curve);
                     if (entry != null) remove(entry);
                     continue;

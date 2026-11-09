@@ -32,7 +32,8 @@ final class VehicleContactPreparation {
             var a = owners.get(first.carriage);
             var b = owners.get(second.carriage);
             if (a == null || b == null || a.level() != b.level()
-                    || a.route().graph() != b.route().graph() || !nearby(first, second)) continue;
+                    || !CreateTrackCompatibility.sameNetwork(a.route().graph(), b.route().graph())
+                    || !nearby(first, second)) continue;
             if (a == b && a.runtime().connected(first.carriage, second.carriage)) continue;
             candidates.add(new Pair(first, second));
             var members = new HashSet<>(a.runtime().state(first.carriage).consist());

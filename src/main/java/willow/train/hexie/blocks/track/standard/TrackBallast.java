@@ -11,12 +11,13 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
-import willow.train.hexie.init.track.TrackMaterialInit;
+import willow.train.hexie.api.railway.RailwayDefinition.Bed;
+import willow.train.hexie.compat.create.track.CreateRailwayBackend;
 
 public final class TrackBallast {
     private TrackBallast() {}
     public static boolean enabled(BlockState state) {
-        return state.getBlock() instanceof TrackBlock track && track.getMaterial() == TrackMaterialInit.STANDARD;
+        return state.getBlock() instanceof TrackBlock track && CreateRailwayBackend.bed(track.getMaterial()) == Bed.BALLAST;
     }
     public static boolean canPaint(Player player, ItemStack stack) {
         return fillState(player, stack) != null;
@@ -45,7 +46,7 @@ public final class TrackBallast {
             if (level.getBlockEntity(pos) instanceof TrackBlockEntity track) {
                 paint(track, null, texture);
                 for (var curve : track.getConnections().values())
-                    if (curve.getMaterial() == TrackMaterialInit.STANDARD) paint(track, curve.getKey(), texture);
+                    if (CreateRailwayBackend.bed(curve.getMaterial()) == Bed.BALLAST) paint(track, curve.getKey(), texture);
             }
         }
         return true;

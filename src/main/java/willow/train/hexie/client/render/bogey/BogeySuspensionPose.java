@@ -40,8 +40,12 @@ public final class BogeySuspensionPose {
         }
     }
 
-    /** Convert the body attachment into the exported frame's coordinate system. */
-    static Matrix4f inModelSpace(CompoundTag data, double frameOffset) {
+    /**
+     * Read the current mechanical top in the exported frame's coordinates. The returned matrix
+     * is a copy; model reversal and frame offset are already included. Outside a moving render
+     * scope this returns the resting identity pose. No part animation is calculated here.
+     */
+    public static Matrix4f inModelSpace(CompoundTag data, double frameOffset) {
         Matrix4fc current = CURRENT.get();
         // A floor setting moves the carriage floor, not the suspension's resting attachment points.
         Matrix4f relative = current == null ? new Matrix4f() : new Matrix4f(current);

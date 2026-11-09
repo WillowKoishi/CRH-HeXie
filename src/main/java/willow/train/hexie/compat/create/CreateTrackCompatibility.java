@@ -25,8 +25,8 @@ public final class CreateTrackCompatibility {
 
     static boolean hasRailx() { return railx(); }
 
-    static TrackRailSurface.Section flexibleSection(Vec3 base, Vec3 tangent, Vec3 normal, double along) {
-        return RailxTrackCompatibility.flexibleSection(base, tangent, normal, along);
+    static TrackRailSurface.Section flexibleSection(Vec3 base, Vec3 tangent, Vec3 normal, double along, double surfaceHeight) {
+        return RailxTrackCompatibility.flexibleSection(base, tangent, normal, along, surfaceHeight);
     }
 
     public static TrackGraph routeGraph(TrackGraph graph) {

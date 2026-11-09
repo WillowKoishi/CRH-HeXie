@@ -5,6 +5,7 @@ import willow.train.hexie.api.interaction.ControlSurface;
 import willow.train.hexie.api.interaction.ControlState;
 
 import willow.train.hexie.api.interaction.BlockControl;
+import willow.train.hexie.api.interaction.BlockControlContext;
 
 import java.util.List;
 import java.util.Objects;
@@ -26,6 +27,10 @@ public record DrivingConsoleContext(SeatAccess seatAccess, BlockPos console) {
         Entity vehicle();
         BlockPos seat();
         BlockState blockState(BlockPos position);
+        /** The block container may differ from the entity carrying a stationary seat. */
+        default BlockControlContext controlTarget(BlockPos position, float partialTick) {
+            return new BlockControlContext(vehicle().level(), position, null, partialTick);
+        }
         /** Let another provider take this seat when its surface needs a different backend. */
         default boolean supportsSurface(BlockPos position) { return true; }
         default ControlState surfaceState(BlockPos position) { return ControlState.EMPTY; }
@@ -34,6 +39,8 @@ public record DrivingConsoleContext(SeatAccess seatAccess, BlockPos console) {
         default boolean simple(BlockPos position) { return false; }
         /** The server has checked occupancy, control membership and the requested detent. */
         default void operateControl(DrivingConsoleContext cab, Player player, BlockControl control, int value) {}
+        /** Submit the desk's interpreted keyboard state to its existing control owner. */
+        default void updateKeyboard(DrivingConsoleContext cab, Player player, boolean toggleSimple, int mask) {}
         /** World coordinates to the coordinate system containing seat and console. */
         Vec3 toLocal(Vec3 world, float partialTick);
         /** Transform both endpoints with the same sampled carrier pose. */
@@ -52,6 +59,12 @@ public record DrivingConsoleContext(SeatAccess seatAccess, BlockPos console) {
     public BlockPos seat() { return seatAccess.seat(); }
     public boolean simple() { return seatAccess.simple(console); }
     public ControlState surfaceState() { return seatAccess.surfaceState(console); }
+
+    public boolean matchesTarget(BlockControlContext target) {
+        if (target == null || !console.equals(target.position())) return false;
+        var own = seatAccess.controlTarget(console, target.partialTick());
+        return own != null && own.blocks() == target.blocks() && own.carrier() == target.carrier();
+    }
 
     public Vec3 toConsoleLocal(Vec3 world, float partialTick) {
         return seatAccess.toLocal(world, partialTick).subtract(Vec3.atLowerCornerOf(console));

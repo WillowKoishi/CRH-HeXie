@@ -10,6 +10,9 @@ public interface TrackGeometry {
 
     Sample sample(double parameter);
 
+    /** Backend-owned access policy for this segment; existing geometry allows every bogey model. */
+    default boolean allowsBogey(String modelId) { return true; }
+
     /** Exact linear spans, when the backend supplies a polyline. */
     default int linearSpanCount() { return 0; }
     default double linearSpanEnd(int index) { throw new IndexOutOfBoundsException(index); }

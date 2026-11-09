@@ -13,7 +13,11 @@ public final class TrackParticleGeometry {
     private TrackParticleGeometry() {}
 
     public static void hit(VoxelShape outline, BlockHitResult hit, ParticleConsumer output) {
-        VoxelShape shape = Shapes.join(outline, Shapes.block(), BooleanOp.AND);
+        hit(outline, hit, 0, output);
+    }
+
+    public static void hit(VoxelShape outline, BlockHitResult hit, double verticalOffset, ParticleConsumer output) {
+        VoxelShape shape = Shapes.join(outline, Shapes.block().move(0, verticalOffset, 0), BooleanOp.AND);
         if (shape.isEmpty())
             return;
 

@@ -3,9 +3,12 @@ package willow.train.hexie.client.cab;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
 import willow.train.hexie.api.interaction.BlockControl;
+import willow.train.hexie.api.interaction.BlockControlHost;
 import willow.train.hexie.api.cab.CabSurfaceHost;
 import willow.train.hexie.api.interaction.ControlSurface;
 import willow.train.hexie.api.cab.DrivingConsoleContext;
+import willow.train.hexie.client.interaction.SurfaceInputSources;
+import willow.train.hexie.interaction.ControlInputTargets;
 
 /** Rendering and hit testing both sample the same per-desk animation at the world render time. */
 public final class CabPresentation {
@@ -24,12 +27,16 @@ public final class CabPresentation {
     }
 
     public static ControlSurface.Pick pick(DrivingConsoleContext context, Vec3 origin, Vec3 direction) {
-        var seat = context.seatAccess();
-        var state = seat.blockState(context.console());
-        if (state == null || !(state.getBlock() instanceof CabSurfaceHost host)) return null;
-        var surface = host.surfaceGeometry(state);
-        if (surface.parts().isEmpty()) return null;
-        var animation = animation(seat.animationSource(context.console()));
-        return surface.pick(host.surfaceFacing(state), origin, direction, 4, context.surfaceState(), animation);
+        double length = direction.length();
+        if (!Double.isFinite(origin.lengthSqr()) || !Double.isFinite(length) || length == 0) return null;
+        var target = ControlInputTargets.seated(context, SurfaceInputSources.partialTick());
+        var host = target == null ? null : BlockControlHost.find(target.state());
+        if (!(host instanceof CabSurfaceHost)) return null;
+        var offset = Vec3.atLowerCornerOf(context.console());
+        var from = origin.add(offset);
+        var hit = host.pickControl(target, from, from.add(direction.scale(4 / length)));
+        if (hit == null) return null;
+        var point = hit.blockHit().getLocation().subtract(offset);
+        return new ControlSurface.Pick(hit.control(), point.distanceTo(origin), point);
     }
 }

@@ -39,7 +39,7 @@ public final class CarriageCamera {
 
     public static boolean followsSeat(Player player) {
         return isViewer(player) && player.isPassenger() && (player.getVehicle() instanceof SnapshotCarriageEntity
-                || DrivingConsoleClient.occupiedCab() != null);
+                || DrivingConsoleClient.cameraCab() != null);
     }
 
     private static Quaternionf track(float partial) {
@@ -47,7 +47,7 @@ public final class CarriageCamera {
         DrivingConsoleContext nextCab = null;
         Entity next = null;
         if (isViewer(player)) {
-            nextCab = DrivingConsoleClient.occupiedCab();
+            nextCab = DrivingConsoleClient.cameraCab();
             next = nextCab != null ? nextCab.seatAccess().vehicle() : CarriagePlayerSupport.mountedOrStanding(player);
         }
         if (next == null) {
@@ -122,7 +122,7 @@ public final class CarriageCamera {
             applyLook(rotation);
             return false;
         }
-        if (cab == null || !DrivingConsoleClient.draggingHandle()) look.turn(horizontal, vertical);
+        if (!DrivingConsoleClient.draggingHandle()) look.turn(horizontal, vertical);
         applyLook(rotation);
         return true;
     }

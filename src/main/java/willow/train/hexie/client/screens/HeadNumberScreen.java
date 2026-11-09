@@ -3,7 +3,6 @@ package willow.train.hexie.client.screens;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -16,7 +15,7 @@ import willow.train.hexie.menu.HeadNumberMenu;
 import willow.train.hexie.network.HexieNetworkHandler;
 import willow.train.hexie.network.c2s.signs.HeadNumberUpdatePacket;
 
-public final class HeadNumberScreen extends AbstractContainerScreen<HeadNumberMenu> {
+public final class HeadNumberScreen extends TextInputScreen<HeadNumberMenu> {
     private static final int EDIT_BOX_WIDTH = 200;
     private static final int EDIT_BOX_HEIGHT = 20;
     private static final int OFFSET_X = 70;
@@ -75,10 +74,4 @@ public final class HeadNumberScreen extends AbstractContainerScreen<HeadNumberMe
         return true;
     }
 
-    @Override
-    public boolean keyPressed(int key, int scanCode, int modifiers) {
-        if (key != 256 && getFocused() instanceof EditBox box && box.keyPressed(key, scanCode, modifiers)) return true;
-        if (key != 256 && getFocused() instanceof EditBox && minecraft.options.keyInventory.matches(key, scanCode)) return true;
-        return super.keyPressed(key, scanCode, modifiers);
-    }
 }

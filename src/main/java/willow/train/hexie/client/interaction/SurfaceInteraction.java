@@ -43,6 +43,7 @@ public final class SurfaceInteraction {
         if (context == null || hit == null || drag != null || !context.valid()) return false;
         var control = context.control(hit.control().id());
         if (control instanceof BlockControl.Handle handle) {
+            if (!SurfaceHandleDrag.canStart(handle)) return false;
             if (mouseButton < 0 || mouseButton > GLFW.GLFW_MOUSE_BUTTON_LAST
                     || GLFW.glfwGetMouseButton(Minecraft.getInstance().getWindow().getWindow(), mouseButton) != GLFW.GLFW_PRESS)
                 return false;
@@ -73,7 +74,7 @@ public final class SurfaceInteraction {
     }
 
     public static void hover(ControlSurface.Pick hit, ControlState state, GuiGraphics graphics, boolean pointer) {
-        if (drag == null && hit != null)
+        if (drag == null && hit != null && hit.control().showTooltip())
             SurfaceControlCaption.hover(Minecraft.getInstance(), graphics, hit.control(), state, pointer);
     }
 

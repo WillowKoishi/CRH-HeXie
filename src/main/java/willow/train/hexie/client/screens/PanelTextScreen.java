@@ -2,7 +2,6 @@ package willow.train.hexie.client.screens;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import willow.train.hexie.blocks.parts.PanelText;
@@ -15,7 +14,7 @@ import willow.train.hexie.network.c2s.signs.PanelTextUpdatePacket;
 import java.util.List;
 import java.math.BigDecimal;
 
-public final class PanelTextScreen extends AbstractContainerScreen<PanelTextMenu> {
+public final class PanelTextScreen extends TextInputScreen<PanelTextMenu> {
     private static final List<String> FONTS = List.of("hexie:carriage_marking_chinese", "hexie:route_service",
             "hexie:station_name_serif", "hexie:head_number", "hexie:vehicle_code", "minecraft:default");
     private static final String[] SETTINGS = {"size", "x", "y", "spacing"};
@@ -151,9 +150,4 @@ public final class PanelTextScreen extends AbstractContainerScreen<PanelTextMenu
         GuiText.draw(graphics, font, Component.translatable("gui.hexie.panel_text.font"), 0, 128, 0xffffff);
     }
 
-    @Override public boolean keyPressed(int key, int scanCode, int modifiers) {
-        if (key != 256 && getFocused() instanceof EditBox field && field.keyPressed(key, scanCode, modifiers)) return true;
-        if (key != 256 && getFocused() instanceof EditBox && minecraft.options.keyInventory.matches(key, scanCode)) return true;
-        return super.keyPressed(key, scanCode, modifiers);
-    }
 }

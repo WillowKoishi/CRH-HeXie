@@ -36,7 +36,7 @@ import willow.train.hexie.network.s2c.ContraptionSeatPositionPacket;
 import java.util.UUID;
 
 /**
- * Adds HeXie's four hard-seat positions and custom cab/soft-seat eye heights while
+ * Adds HeXie's four hard-seat positions and custom seat eye heights while
  * leaving Create's normal contraption seat implementation intact for other seats.
  */
 @Mixin(AbstractContraptionEntity.class)
@@ -255,18 +255,12 @@ public abstract class MixinAbstractContraptionEntity extends Entity {
         if (position < 0)
             return original.call(passenger, partialTicks);
 
-        double passengerHeight = passenger.getBoundingBox().getYsize();
         Vec3 seatOffset = SeatYZBlock.getSeatCoordinates(state, position);
-        double customSeatOffset = SeatEntity.getCustomEntitySeatOffset(passenger);
-        Vec3 localPosition = Vec3.atLowerCornerOf(seatPos)
-                .add(
-                        seatOffset.x,
-                        -passenger.getVehicleAttachmentPoint(this).y
-                                + passengerHeight + .125 - customSeatOffset,
-                        seatOffset.z);
-        return ((AbstractContraptionEntity) (Object) this).toGlobalVector(localPosition, partialTicks)
-                .add(.5, .5, .5)
-                .subtract(.5, passengerHeight, .5);
+        Vec3 eye = Vec3.atLowerCornerOf(seatPos)
+                .add(seatOffset.x, SeatYZBlock.EYE_HEIGHT, seatOffset.z);
+        // Native positionRider adds the custom seat offset minus 1/8 block.
+        return ((AbstractContraptionEntity) (Object) this).toGlobalVector(eye, partialTicks)
+                .add(0, .125 - SeatEntity.getCustomEntitySeatOffset(passenger) - passenger.getEyeHeight(), 0);
     }
 
     @WrapMethod(method = "removePassenger(Lnet/minecraft/world/entity/Entity;)V")

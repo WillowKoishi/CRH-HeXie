@@ -1370,7 +1370,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             if (owner != null) {
                 double oldFloor = couplerAnimation.floorOffset();
                 bogeyAnimation.update(owner.runtime(), snapshot, forward, level().getGameTime(),
-                        owner.isDerailed(getUUID()), modelForward);
+                        owner.isDerailed(getUUID()), modelForward, owner.route()::animationSample);
                 JanneyCouplingState.sync(this, owner.runtime(), forward);
                 couplerAnimation.update(owner.runtime(), snapshot, forward);
                 if (oldFloor != couplerAnimation.floorOffset() && contraption != null) {

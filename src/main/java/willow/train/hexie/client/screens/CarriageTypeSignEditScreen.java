@@ -6,7 +6,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.Minecraft;
 import willow.train.hexie.client.util.gui.Button;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -22,7 +21,7 @@ import willow.train.hexie.client.util.RenderablePicture;
 import java.util.Locale;
 import java.util.Random;
 
-public class CarriageTypeSignEditScreen extends AbstractContainerScreen<CarriageTypeSignEditMenu> {
+public class CarriageTypeSignEditScreen extends TextInputScreen<CarriageTypeSignEditMenu> {
 
     private static final Component[] TEXT =
             new Component[] {
@@ -708,18 +707,6 @@ public class CarriageTypeSignEditScreen extends AbstractContainerScreen<Carriage
 
     public boolean isPauseScreen() {
         return true;
-    }
-
-    @Override
-    public boolean keyReleased(int pKeyCode, int pScanCode, int pModifiers) {
-        if (pKeyCode == 69) return false;
-        return super.keyReleased(pKeyCode, pScanCode, pModifiers);
-    }
-
-    @Override
-    public boolean keyPressed(int pKeyCode, int pScanCode, int pModifiers) {
-        if (pKeyCode == 69) return false;
-        return super.keyPressed(pKeyCode, pScanCode, pModifiers);
     }
 
     private boolean isEmpty(EditBox... boxes) {

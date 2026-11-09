@@ -58,6 +58,14 @@ public final class TrackRoute implements TrackPath {
         return locate(distance).sample();
     }
 
+    @Override public boolean allowsBogeyTravel(String modelId, double from, double to) {
+        int first = segmentIndex(Math.min(from, to));
+        int last = segmentIndex(Math.max(from, to));
+        for (int i = first; i <= last; i++)
+            if (!spans.get(i).map.geometry.allowsBogey(modelId)) return false;
+        return true;
+    }
+
     /**
      * Segment index follows this route's order. Parameter follows the original geometry for ordinary
      * segments, or the selected edge direction for directed segments. Reversing a route preserves it.

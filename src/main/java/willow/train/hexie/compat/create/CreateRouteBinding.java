@@ -23,6 +23,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.Vec3;
+import willow.train.hexie.compat.create.track.CreateRailwayBackend;
 import willow.train.hexie.init.track.TrackMaterialInit;
 import willow.train.hexie.vehicle.assembly.VehicleAssemblyPreparer;
 import willow.train.hexie.vehicle.kinematics.VehicleConstraintSolver;
@@ -797,6 +798,24 @@ public final class CreateRouteBinding {
     public double originDistance() { return originDistance; }
     public TrackPath path() { return route; }
 
+    /** Continuous steering frame for animation; the solved rail contact and route distances stay authoritative. */
+    public TrackGeometry.Sample animationSample(double distance, TrackGeometry.Sample solved) {
+        final TrackRoute.Location location;
+        try {
+            location = route.locate(distance);
+        } catch (RouteInvalidException unavailable) {
+            // A carrier may still display its last solved pose while the graph is being rebound.
+            return solved;
+        }
+        BoundGeometry segment = segments.get(location.segmentIndex());
+        if (segment.surface == null) return solved;
+        double parameter = segment.reversed ? 1 - location.parameter() : location.parameter();
+        var frame = segment.geometry.animationSample(parameter);
+        return new TrackGeometry.Sample(solved.position(),
+                segment.reversed ? frame.tangent().scale(-1) : frame.tangent(), frame.normal(),
+                segment.reversed ? -frame.cantRadians() : frame.cantRadians());
+    }
+
     public TravellingPoint pointAt(double distance) { return pointAt(distance, true); }
 
     /**
@@ -1075,8 +1094,7 @@ public final class CreateRouteBinding {
 
     static boolean isOwnTrack(TrackEdge edge) {
         var material = edge.getTrackMaterial();
-        return material == TrackMaterialInit.STANDARD || material == TrackMaterialInit.BALLASTLESS
-                || material == TrackMaterialInit.TIELESS;
+        return CreateRailwayBackend.supports(material);
     }
 
     private static final class BoundGeometry implements TrackGeometry {
@@ -1136,6 +1154,10 @@ public final class CreateRouteBinding {
         }
 
         @Override public double length() { return geometry.length(); }
+
+        @Override public boolean allowsBogey(String modelId) {
+            return willow.train.hexie.api.railway.BogeyRailwayRegistry.allows(modelId, edge.getTrackMaterial().id);
+        }
 
         private static boolean orderedAfter(TrackNode first, TrackNode second) {
             var a = first.getLocation().getLocation();

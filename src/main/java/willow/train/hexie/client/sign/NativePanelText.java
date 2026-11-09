@@ -12,7 +12,9 @@ import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
+import net.neoforged.fml.ModList;
 import org.joml.Matrix4f;
+import willow.train.hexie.compat.iris.client.PassengerPanelTextLayer;
 
 /** Native font atlas quads, uniformly scaled and clipped to a recessed display row. */
 public final class NativePanelText {
@@ -56,6 +58,7 @@ public final class NativePanelText {
                 : -width / 2 - scroll(textWidth - width, height, seconds);
         float top = centerY + (maxY - minY) * scale / 2;
         Matrix4f matrix = pose.last().pose();
+        boolean iris = ModList.get().isLoaded("iris");
         for (Quad quad : capture.quads) {
             float x0 = left + (quad.left - minX) * scale, x1 = left + (quad.right - minX) * scale;
             float y0 = top - (quad.top - minY) * scale, y1 = top - (quad.bottom - minY) * scale;
@@ -67,7 +70,7 @@ public final class NativePanelText {
             float u1 = lerp(quad.u0, quad.u1, (clippedRight - x0) / (x1 - x0));
             float v0 = lerp(quad.v0, quad.v1, (y0 - clippedTop) / (y0 - y1));
             float v1 = lerp(quad.v0, quad.v1, (y0 - clippedBottom) / (y0 - y1));
-            VertexConsumer out = buffers.getBuffer(quad.type);
+            VertexConsumer out = buffers.getBuffer(iris ? PassengerPanelTextLayer.of(quad.type) : quad.type);
             // Flipping the native font's downward Y also gives the panel its outward winding.
             vertex(out, matrix, clippedLeft, clippedTop, u0, v0, color);
             vertex(out, matrix, clippedLeft, clippedBottom, u0, v1, color);

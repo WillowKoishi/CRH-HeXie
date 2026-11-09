@@ -33,6 +33,16 @@ public final class SableInteractionCoordinates {
 
     public record Ray(Vec3 from, Vec3 to) {}
 
+    /** Whether this storage block is owned by an actual plot, including an identity-pose plot. */
+    public static boolean contains(Level level, BlockPos owner) {
+        return loaded() && Loaded.contains(level, owner);
+    }
+
+    /** Whether this storage-space position belongs to a plot; no transform comparison is needed. */
+    public static boolean contains(Level level, Vec3 position) {
+        return loaded() && Loaded.contains(level, position);
+    }
+
     /** Server validation and other logical queries use the target block's current physics pose. */
     public static Frame logical(Level level, BlockPos owner) {
         return loaded() ? Loaded.logical(level, owner) : WORLD;
@@ -72,6 +82,14 @@ public final class SableInteractionCoordinates {
     /** Resolve the verified Sable API once, and only after its mod guard succeeds. */
     private static final class Loaded {
         private static final Api API = new Api();
+
+        private static boolean contains(Level level, BlockPos owner) {
+            return invoke(API.containingBlock, API.helper, level, owner) != null;
+        }
+
+        private static boolean contains(Level level, Vec3 position) {
+            return invoke(API.containingPosition, API.helper, level, position) != null;
+        }
 
         private static Frame logical(Level level, BlockPos owner) {
             var subLevel = invoke(API.containingBlock, API.helper, level, owner);

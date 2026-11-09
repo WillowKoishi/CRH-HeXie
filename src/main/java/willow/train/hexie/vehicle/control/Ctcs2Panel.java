@@ -22,6 +22,7 @@ public enum Ctcs2Panel implements ControlSurface.Module, CabTrainControl {
         DISPLAY_SWITCH;
 
         @Override public String id() { return "ctcs2_display_switch"; }
+        @Override public boolean showTooltip() { return true; }
         @Override public Component nameText() { return Component.translatable("gui.hexie.cab.mode"); }
         @Override public Component valueText(ControlState state) {
             return Component.translatable(state.getOrDefault(AUTOMATIC, 0) == 1

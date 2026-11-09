@@ -6,6 +6,9 @@ public interface TrackPath {
     default double minimumDistance() { return Double.NEGATIVE_INFINITY; }
     default double maximumDistance() { return Double.POSITIVE_INFINITY; }
 
+    /** Check the entire travelled interval, including its endpoints, after a placement has been solved. */
+    default boolean allowsBogeyTravel(String modelId, double from, double to) { return true; }
+
     /** An unbounded straight reference path, also useful for isolated runtime acceptance. */
     static TrackPath straight() {
         return distance -> new TrackGeometry.Sample(new TrackGeometry.Vector(0, 0, distance),

@@ -3,7 +3,6 @@ package willow.train.hexie.client.screens;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -15,7 +14,7 @@ import willow.train.hexie.menu.CarriageMarkingMenu;
 import willow.train.hexie.network.HexieNetworkHandler;
 import willow.train.hexie.network.c2s.signs.CarriageMarkingUpdatePacket;
 
-public final class CarriageMarkingScreen extends AbstractContainerScreen<CarriageMarkingMenu> {
+public final class CarriageMarkingScreen extends TextInputScreen<CarriageMarkingMenu> {
     // Match CarriageTypeSignEditScreen's editor geometry and controls.
     private static final int EDIT_BOX_WIDTH = 200;
     private static final int EDIT_BOX_HEIGHT = 20;
@@ -96,10 +95,4 @@ public final class CarriageMarkingScreen extends AbstractContainerScreen<Carriag
         return true;
     }
 
-    @Override
-    public boolean keyPressed(int key, int scanCode, int modifiers) {
-        if (key != 256 && getFocused() instanceof EditBox box && box.keyPressed(key, scanCode, modifiers)) return true;
-        if (key != 256 && getFocused() instanceof EditBox && minecraft.options.keyInventory.matches(key, scanCode)) return true;
-        return super.keyPressed(key, scanCode, modifiers);
-    }
 }

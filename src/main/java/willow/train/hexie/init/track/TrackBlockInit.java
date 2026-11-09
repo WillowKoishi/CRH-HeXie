@@ -3,18 +3,12 @@ package willow.train.hexie.init.track;
 import static com.simibubi.create.foundation.data.TagGen.axeOrPickaxe;
 import static com.simibubi.create.foundation.data.TagGen.pickaxeOnly;
 
-import com.simibubi.create.AllTags;
 import com.simibubi.create.AllBlocks;
 import com.simibubi.create.api.stress.BlockStressValues;
 import com.simibubi.create.content.trains.bogey.BogeySizes;
 import com.simibubi.create.content.trains.track.TrackBlock;
-import willow.train.hexie.item.track.StandardTrackItem;
-import com.simibubi.create.content.trains.track.TrackMaterial;
-import com.simibubi.create.content.trains.track.TrackShape;
 import com.simibubi.create.foundation.data.CreateRegistrate;
 import com.simibubi.create.foundation.data.SharedProperties;
-import com.tterrag.registrate.providers.DataGenContext;
-import com.tterrag.registrate.providers.RegistrateBlockstateProvider;
 import com.tterrag.registrate.util.entry.BlockEntry;
 import com.tterrag.registrate.builders.BlockBuilder;
 import com.tterrag.registrate.util.nullness.NonNullUnaryOperator;
@@ -22,7 +16,6 @@ import com.tterrag.registrate.util.nullness.NonNullUnaryOperator;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -31,6 +24,10 @@ import net.neoforged.neoforge.client.model.generators.ModelFile;
 import net.minecraft.world.level.material.MapColor;
 
 import willow.train.hexie.Main;
+import willow.train.hexie.api.railway.RailwayDefinition;
+import willow.train.hexie.api.railway.RailwayRegistry;
+import willow.train.hexie.compat.create.track.CreateRailwayBackend;
+import willow.train.hexie.railway.BuiltinRailways;
 import willow.train.hexie.blocks.bogeys.df11g.DF11GBogeyBlock;
 import willow.train.hexie.blocks.bogeys.standard.HXStandardBogeyBlock;
 import willow.train.hexie.blocks.bogeys.CRH.CRHBogeyBlock;
@@ -38,63 +35,13 @@ import willow.train.hexie.blocks.locos.df11g.DF11GFrontBlock;
 import willow.train.hexie.init.bogeys.BogeySizesInit;
 import willow.train.hexie.item.ToolTipsItemHelper;
 
-import java.util.Set;
 
 public class TrackBlockInit {
     private static final CreateRegistrate REGISTRATE =
             Main.registrate().setCreativeTab(Main.HEXIE_MAIN.holder());
 
-    private static final Set<String> BALLASTLESS_GEOMETRY =
-            Set.of("x_ortho", "z_ortho", "diag", "diag_2", "ascending", "teleport");
-    private static final Set<String> TIELESS_GEOMETRY =
-            Set.of("x_ortho", "z_ortho", "diag", "diag_2", "ascending", "teleport",
-                    "cross_d1_xo", "cross_d1_zo", "cross_d2_xo", "cross_d2_zo");
-
-    private static BlockEntry<TrackBlock> makeTrack(TrackMaterial material) {
-        return REGISTRATE.block(material.resourceName() + "_track", material::createBlock)
-                .initialProperties(() -> Blocks.STONE)
-                .properties(properties -> properties.mapColor(MapColor.METAL)
-                        .strength(0.8F).sound(SoundType.METAL).noOcclusion().forceSolidOn())
-                .transform(pickaxeOnly())
-                .blockstate(TrackBlockInit::generateTrackBlockstate)
-                .tag(AllTags.AllBlockTags.TRACKS.tag)
-                .tag(AllTags.AllBlockTags.GIRDABLE_TRACKS.tag)
-                .tag(net.neoforged.neoforge.common.Tags.Blocks.RELOCATION_NOT_SUPPORTED)
-                .lang(material.langName + " Train Track")
-                .onRegister(CreateRegistrate.blockModel(() ->
-                        willow.train.hexie.client.render.track.BallastTrackModel::create))
-                .item(StandardTrackItem::new)
-                .tag(AllTags.AllItemTags.TRACKS.tag)
-                .model((context, provider) -> provider.generated(context,
-                        Main.asResource("item/track/" + context.getName())))
-                .build().register();
-    }
-
-    private static void generateTrackBlockstate(
-            DataGenContext<Block, TrackBlock> context, RegistrateBlockstateProvider provider) {
-        TrackMaterial material = context.getEntry().getMaterial();
-        provider.getVariantBuilder(context.getEntry()).forAllStates(state -> {
-            TrackShape shape = state.getValue(TrackBlock.SHAPE);
-            ModelFile model;
-            if (shape == TrackShape.NONE) {
-                model = provider.models().getExistingFile(provider.mcLoc("block/air"));
-            } else {
-                String materialName = material.resourceName();
-                String shapeName = shape.getModel();
-                boolean localGeometry = switch (materialName) {
-                    case "ballastless" -> BALLASTLESS_GEOMETRY.contains(shapeName);
-                    case "tieless" -> TIELESS_GEOMETRY.contains(shapeName);
-                    default -> false;
-                };
-                String sourceMaterial = localGeometry ? materialName : "standard";
-                model = provider.models()
-                        .withExistingParent("block/track/generated/" + materialName + "/" + shapeName,
-                                Main.asResource("block/track/" + sourceMaterial + "/" + shapeName))
-                        .texture("particle", material.particle);
-            }
-            return ConfiguredModel.builder().modelFile(model)
-                    .rotationY(Math.floorMod(shape.getModelRotation(), 360)).build();
-        });
+    private static BlockEntry<TrackBlock> makeTrack(ResourceLocation id, RailwayDefinition definition) {
+        return CreateRailwayBackend.blockEntry(RailwayRegistry.register(Main.bus, id, definition));
     }
 
     private static <B extends Block, P> NonNullUnaryOperator<BlockBuilder<B, P>> bogeyModel(String modelPath) {
@@ -114,13 +61,13 @@ public class TrackBlockInit {
     }
 
     public static final BlockEntry<TrackBlock> STANDARD_TRACK =
-            makeTrack(TrackMaterialInit.STANDARD);
+            makeTrack(BuiltinRailways.STANDARD_ID, BuiltinRailways.STANDARD);
 
     public static final BlockEntry<TrackBlock> BALLASTLESS_TRACK =
-            makeTrack(TrackMaterialInit.BALLASTLESS);
+            makeTrack(BuiltinRailways.BALLASTLESS_ID, BuiltinRailways.BALLASTLESS);
 
     public static final BlockEntry<TrackBlock> TIELESS_TRACK =
-            makeTrack(TrackMaterialInit.TIELESS);
+            makeTrack(BuiltinRailways.TIELESS_ID, BuiltinRailways.TIELESS);
 
     public static final BlockEntry<HXStandardBogeyBlock> HX_STANDARD_BOGEY =
             REGISTRATE

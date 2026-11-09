@@ -49,6 +49,9 @@ public final class PanelConversion {
     }
     public static InteractionResult apply(Level level,BlockPos pos,BlockState old,BlockState target,Player player,InteractionHand hand,BlockHitResult hit,boolean brush) {
         if(!player.mayBuild()||player.isSpectator()||!player.mayUseItemAt(pos,hit.getDirection(),player.getItemInHand(hand)))return InteractionResult.FAIL;
+        // A different block type would discard the display host and its number. Remove the displays first.
+        if(!old.is(target.getBlock())&&old.hasProperty(PanelDisplayMount.PROPERTY)
+                &&old.getValue(PanelDisplayMount.PROPERTY)!=PanelDisplayMount.NONE)return InteractionResult.FAIL;
         target=preservePlacement(old,target);
         var previous=old.getBlock() instanceof PartStructure part?part.partCells(level,pos,old):Map.of(pos,old);
         var next=target.getBlock() instanceof PartStructure part?part.partCells(level,pos,target):Map.of(pos,target);

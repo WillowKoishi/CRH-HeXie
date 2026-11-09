@@ -14,10 +14,12 @@ import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
+import org.joml.Vector3f;
 
 /** Layout in north-facing block coordinates. Picking uses the same posed parts as rendering. */
 public final class ControlSurface {
@@ -60,7 +62,8 @@ public final class ControlSurface {
                     var pose = new Matrix4f(mount.transform());
                     return part.pose() == null ? pose : pose.mul(part.pose().at(state, animation));
                 };
-                combined.add(new Part(part.control(), part.model(), part.shape(), mountedPose));
+                combined.add(new Part(part.control(), part.model(), part.shape(), mountedPose,
+                        transformBounds(part.bounds(), mount.transform())));
             }
         }
         this.parts = List.copyOf(combined);
@@ -83,6 +86,7 @@ public final class ControlSurface {
     }
 
     public List<Part> parts() { return parts; }
+    public Shape body() { return body; }
     public List<BlockControl> controls() { return controls; }
     /** Resolve a declared control without scanning its parts; returns null for an unknown ID. */
     public BlockControl control(String id) { return controlsById.get(id); }
@@ -114,18 +118,50 @@ public final class ControlSurface {
     @FunctionalInterface
     public interface Shape {
         double hit(Vec3 from, Vec3 ray, double limit);
+        /** Static bounds in this shape's own coordinates, or null when not declared. */
+        default AABB bounds() { return null; }
     }
 
-    public record Part(BlockControl control, ResourceLocation model, Shape shape, Pose pose) {}
+    /**
+     * Bounds conservatively cover this part after its pose, for every control state and animation time,
+     * in the surface's north-facing coordinates. A module declares bounds in its own coordinates;
+     * its fixed mount transforms them when attached. Null keeps the part on the exact-test fallback.
+     */
+    public record Part(BlockControl control, ResourceLocation model, Shape shape, Pose pose, AABB bounds) {
+        /** Only an unposed shape can supply its own full-motion bounds automatically. */
+        public Part(BlockControl control, ResourceLocation model, Shape shape, Pose pose) {
+            this(control, model, shape, pose, pose == null ? shape.bounds() : null);
+        }
+    }
+
+    private static AABB transformBounds(AABB bounds, Matrix4fc transform) {
+        if (bounds == null) return null;
+        double minX = Double.POSITIVE_INFINITY, minY = minX, minZ = minX;
+        double maxX = Double.NEGATIVE_INFINITY, maxY = maxX, maxZ = maxX;
+        for (double x : new double[] {bounds.minX, bounds.maxX})
+            for (double y : new double[] {bounds.minY, bounds.maxY})
+                for (double z : new double[] {bounds.minZ, bounds.maxZ}) {
+                    var point = transform.transformPosition(new Vector3f((float) x, (float) y, (float) z));
+                    minX = Math.min(minX, point.x); maxX = Math.max(maxX, point.x);
+                    minY = Math.min(minY, point.y); maxY = Math.max(maxY, point.y);
+                    minZ = Math.min(minZ, point.z); maxZ = Math.max(maxZ, point.z);
+                }
+        // Exact picking uses float pose matrices and float ray conversion too.
+        return new AABB(minX, minY, minZ, maxX, maxY, maxZ).inflate(1e-5);
+    }
 
     /** A stationary rectangular button facing along the local Z axis, including its edges. */
     public static Part button(BlockControl control, double minX, double maxX, double minY, double maxY, double z) {
-        Shape rectangle = (from, ray, limit) -> {
-            if (Math.abs(ray.z) < EPSILON) return limit;
-            double distance = (z - from.z) / ray.z;
-            if (distance < 0 || distance >= limit) return limit;
-            double x = from.x + ray.x * distance, y = from.y + ray.y * distance;
-            return x >= minX && x <= maxX && y >= minY && y <= maxY ? distance : limit;
+        Shape rectangle = new Shape() {
+            private final AABB bounds = new AABB(minX, minY, z, maxX, maxY, z);
+            @Override public AABB bounds() { return bounds; }
+            @Override public double hit(Vec3 from, Vec3 ray, double limit) {
+                if (Math.abs(ray.z) < EPSILON) return limit;
+                double distance = (z - from.z) / ray.z;
+                if (distance < 0 || distance >= limit) return limit;
+                double x = from.x + ray.x * distance, y = from.y + ray.y * distance;
+                return x >= minX && x <= maxX && y >= minY && y <= maxY ? distance : limit;
+            }
         };
         return new Part(control, null, rectangle, null);
     }
@@ -133,13 +169,17 @@ public final class ControlSurface {
     /** Adapts a block-local voxel shape without changing the ray parameter under a part pose. */
     public static Shape voxelShape(VoxelShape shape) {
         Objects.requireNonNull(shape);
-        return (from, ray, limit) -> {
-            double lengthSquared = ray.lengthSqr();
-            if (lengthSquared == 0 || !Double.isFinite(lengthSquared) || limit <= 0) return limit;
-            var hit = shape.clip(from, from.add(ray.scale(limit)), BlockPos.ZERO);
-            if (hit == null) return limit;
-            double distance = hit.getLocation().subtract(from).dot(ray) / lengthSquared;
-            return distance >= 0 && distance < limit ? distance : limit;
+        return new Shape() {
+            private final AABB bounds = shape.isEmpty() ? null : shape.bounds();
+            @Override public AABB bounds() { return bounds; }
+            @Override public double hit(Vec3 from, Vec3 ray, double limit) {
+                double lengthSquared = ray.lengthSqr();
+                if (lengthSquared == 0 || !Double.isFinite(lengthSquared) || limit <= 0) return limit;
+                var hit = shape.clip(from, from.add(ray.scale(limit)), BlockPos.ZERO);
+                if (hit == null) return limit;
+                double distance = hit.getLocation().subtract(from).dot(ray) / lengthSquared;
+                return distance >= 0 && distance < limit ? distance : limit;
+            }
         };
     }
 
@@ -151,21 +191,31 @@ public final class ControlSurface {
             var a = point(face[0]);
             return new Triangle(a, point(face[1]).subtract(a), point(face[2]).subtract(a));
         }).toList();
-        return (from, ray, limit) -> {
-            for (var face : triangles) {
-                var p = ray.cross(face.ac);
-                double det = face.ab.dot(p);
-                if (Math.abs(det) < EPSILON) continue;
-                var offset = from.subtract(face.a);
-                double u = offset.dot(p) / det;
-                if (u < 0 || u > 1) continue;
-                var q = offset.cross(face.ab);
-                double v = ray.dot(q) / det;
-                if (v < 0 || u + v > 1) continue;
-                double distance = face.ac.dot(q) / det;
-                if (distance >= 0 && distance < limit) limit = distance;
+        AABB bounds = null;
+        for (var face : faces) for (int i = 0; i < 3; i++) {
+            var vertex = point(face[i]);
+            var vertexBounds = new AABB(vertex, vertex);
+            bounds = bounds == null ? vertexBounds : bounds.minmax(vertexBounds);
+        }
+        final AABB meshBounds = bounds;
+        return new Shape() {
+            @Override public AABB bounds() { return meshBounds; }
+            @Override public double hit(Vec3 from, Vec3 ray, double limit) {
+                for (var face : triangles) {
+                    var p = ray.cross(face.ac);
+                    double det = face.ab.dot(p);
+                    if (Math.abs(det) < EPSILON) continue;
+                    var offset = from.subtract(face.a);
+                    double u = offset.dot(p) / det;
+                    if (u < 0 || u > 1) continue;
+                    var q = offset.cross(face.ab);
+                    double v = ray.dot(q) / det;
+                    if (v < 0 || u + v > 1) continue;
+                    double distance = face.ac.dot(q) / det;
+                    if (distance >= 0 && distance < limit) limit = distance;
+                }
+                return limit;
             }
-            return limit;
         };
     }
 

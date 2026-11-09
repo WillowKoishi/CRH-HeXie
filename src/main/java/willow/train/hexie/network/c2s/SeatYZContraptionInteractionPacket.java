@@ -73,7 +73,7 @@ public record SeatYZContraptionInteractionPacket(
                 return;
 
             AABB bounds = contraptionEntity.getBoundingBox();
-            double maxExtra = Math.max(bounds.getXsize(), bounds.getYsize());
+            double maxExtra = Math.max(Math.max(bounds.getXsize(), bounds.getYsize()), bounds.getZsize());
             double allowedDistance = sender.getAttributeValue(Attributes.BLOCK_INTERACTION_RANGE)
                     + 10 + maxExtra;
             if (!sender.hasLineOfSight(entity))

@@ -28,6 +28,7 @@ public enum Crh2CabHandle implements BlockControl.Handle {
     @Override public int minNotch() { return minNotch; }
     @Override public int maxNotch() { return maxNotch; }
     @Override public Component nameText() { return Component.translatable("gui.hexie.cab." + id); }
+    @Override public boolean showTooltip() { return true; }
 
     @Override public Component notchText(int notch) {
         return switch (this) {

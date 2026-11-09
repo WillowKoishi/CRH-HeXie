@@ -11,6 +11,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import willow.train.hexie.blocks.track.standard.TrackParticleGeometry;
+import willow.train.hexie.api.railway.RailwayDefinition;
+import willow.train.hexie.compat.create.track.CreateRailwayBackend;
 
 /** Uses Create's full-width destruction effects and connected-track overlays. */
 public final class StandardTrackRenderProperties extends TrackBlock.RenderProperties {
@@ -20,7 +22,10 @@ public final class StandardTrackRenderProperties extends TrackBlock.RenderProper
                 && state.getRenderShape() != RenderShape.INVISIBLE
                 && state.shouldSpawnTerrainParticles()) {
             BlockPos pos = hit.getBlockPos();
-            TrackParticleGeometry.hit(state.getShape(client, pos), hit,
+            double verticalOffset = state.getBlock() instanceof TrackBlock track
+                    && CreateRailwayBackend.supports(track.getMaterial())
+                    ? CreateRailwayBackend.surfaceHeight(track.getMaterial()) - RailwayDefinition.STANDARD_SURFACE_HEIGHT : 0;
+            TrackParticleGeometry.hit(state.getShape(client, pos), hit, verticalOffset,
                     (x, y, z, vx, vy, vz) -> particles.add(
                             new TerrainParticle(client, x, y, z, vx, vy, vz, state, pos)
                                     .updateSprite(state, pos).setPower(0.2F).scale(0.6F)));

@@ -53,8 +53,10 @@ final class CRH2ShellVisual implements EffectVisual<CRH2ShellVisual.Shell>, Shad
     private final TransformedInstance instance;
     private final LongSet lightSections;
 
+    static Model model(BlockState state) { return MODELS.get(state); }
+
     private CRH2ShellVisual(VisualizationContext context, Shell shell) {
-        Model model = MODELS.get(shell.state());
+        Model model = model(shell.state());
         instance = context.instancerProvider().instancer(InstanceTypes.TRANSFORMED, model).createInstance();
         var origin = context.renderOrigin();
         instance.setIdentityTransform().translate(shell.pos().getX() - origin.getX(),

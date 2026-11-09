@@ -23,7 +23,7 @@ import net.neoforged.neoforge.client.model.data.ModelData;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import willow.train.hexie.compat.create.TrackRailSurface;
-import willow.train.hexie.init.track.TrackMaterialInit;
+import willow.train.hexie.compat.create.track.CreateRailwayBackend;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,8 +46,7 @@ public final class CurveRailModel extends BakedModelWrapper<BakedModel> {
 
     public static boolean applies(BezierConnection curve) {
         var material = curve.getMaterial();
-        return material == TrackMaterialInit.STANDARD || material == TrackMaterialInit.BALLASTLESS
-                || material == TrackMaterialInit.TIELESS;
+        return CreateRailwayBackend.supports(material);
     }
 
     public static synchronized CurveRailModel get(BezierConnection curve, int index, boolean first) {

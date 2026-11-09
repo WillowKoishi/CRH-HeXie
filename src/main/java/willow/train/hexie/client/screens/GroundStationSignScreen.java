@@ -3,14 +3,13 @@ package willow.train.hexie.client.screens;
 import net.minecraft.client.gui.GuiGraphics;
 import willow.train.hexie.client.util.gui.Button;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import willow.train.hexie.menu.GroundStationSignMenu;
 import willow.train.hexie.network.HexieNetworkHandler;
 import willow.train.hexie.network.c2s.signs.GroundStationSignUpdatePacket;
 
-public class GroundStationSignScreen extends AbstractContainerScreen<GroundStationSignMenu> {
+public class GroundStationSignScreen extends TextInputScreen<GroundStationSignMenu> {
     private static final String[] LABELS = {"station_name", "pinyin", "previous", "next"};
     private int fieldWidth = 200;
     private final EditBox[] fields = new EditBox[4];
@@ -80,11 +79,5 @@ public class GroundStationSignScreen extends AbstractContainerScreen<GroundStati
             willow.train.hexie.client.util.gui.GuiText.draw(graphics, font, label,
                     fieldWidth / 2f - font.width(label) / 2f, 6 + i * 30, 0xFFFFFF);
         }
-    }
-    @Override public boolean keyPressed(int key, int scanCode, int modifiers) {
-        // Text fields get inventory-key input before the container closes on that key.
-        if (key != 256 && getFocused() instanceof EditBox box && box.keyPressed(key, scanCode, modifiers)) return true;
-        if (key != 256 && getFocused() instanceof EditBox && minecraft.options.keyInventory.matches(key, scanCode)) return true;
-        return super.keyPressed(key, scanCode, modifiers);
     }
 }

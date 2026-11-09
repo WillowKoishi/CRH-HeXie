@@ -11,7 +11,8 @@ import net.minecraft.world.phys.HitResult;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import willow.train.hexie.Main;
 import willow.train.hexie.blocks.track.standard.TrackBallast;
-import willow.train.hexie.init.track.TrackMaterialInit;
+import willow.train.hexie.api.railway.RailwayDefinition.Bed;
+import willow.train.hexie.compat.create.track.CreateRailwayBackend;
 
 public record TrackBallastPacket(BlockPos origin,BlockPos target,int segment) implements CustomPacketPayload {
     public static final Type<TrackBallastPacket> TYPE=new Type<>(Main.asResource("track_ballast"));
@@ -27,8 +28,8 @@ public record TrackBallastPacket(BlockPos origin,BlockPos target,int segment) im
                     ||!level.mayInteract(player,origin)||!level.mayInteract(player,target)
                     ||!(level.getBlockEntity(origin) instanceof TrackBlockEntity track))return;
             var curve=track.getConnections().get(target);
-            if(curve==null||curve.getMaterial()!=TrackMaterialInit.STANDARD||segment<0||segment>curve.getSegmentCount())return;
-            var hit=curve.getPosition(curve.getSegmentT(segment)).add(0,TrackMaterialInit.RAIL_SURFACE_HEIGHT,0);
+            if(curve==null||CreateRailwayBackend.bed(curve.getMaterial())!=Bed.BALLAST||segment<0||segment>curve.getSegmentCount())return;
+            var hit=curve.getPosition(curve.getSegmentT(segment)).add(0,CreateRailwayBackend.surfaceHeight(curve.getMaterial()),0);
             if(!player.canInteractWithBlock(BlockPos.containing(hit),1))return;
             var eye=player.getEyePosition();var delta=hit.subtract(eye);
             if(delta.lengthSqr()>1e-6&&player.getLookAngle().dot(delta.normalize())<.7)return;

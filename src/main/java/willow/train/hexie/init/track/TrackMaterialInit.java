@@ -1,13 +1,10 @@
 package willow.train.hexie.init.track;
 
-import static com.simibubi.create.content.trains.track.TrackMaterialFactory.make;
 
-import com.simibubi.create.Create;
 import com.simibubi.create.content.trains.track.TrackMaterial;
-import dev.engine_room.flywheel.lib.model.baked.PartialModel;
-import net.minecraft.world.level.block.Blocks;
-import willow.train.hexie.Main;
-import willow.train.hexie.blocks.track.standard.StandardTrackBlock;
+import willow.train.hexie.compat.create.track.CreateRailwayBackend;
+import willow.train.hexie.compat.create.track.CreateRailwayTrackType;
+import willow.train.hexie.railway.BuiltinRailways;
 
 public class TrackMaterialInit {
 
@@ -17,41 +14,14 @@ public class TrackMaterialInit {
     // All three materials share one Create track type. Bogeys for this type cannot
     // travel on Create's own STANDARD track type.
     public static final TrackMaterial.TrackType HEXIE_STANDARD =
-            new TrackMaterial.TrackType(Main.asResource("standard"), StandardTrackBlock::new);
+            CreateRailwayTrackType.STANDARD;
 
-    // The curve partials are authored relative to the centre of each rail head.
-    public static final TrackMaterial STANDARD = make(Main.asResource("standard"))
-            .lang("Standard")
-            .block(() -> TrackBlockInit.STANDARD_TRACK)
-            .particle(Create.asResource("block/palettes/stone_types/polished/andesite_cut_polished"))
-            .trackType(HEXIE_STANDARD)
-            .sleeper(Blocks.ANDESITE_SLAB)
-            .standardModels()
-            .build();
-
-    public static final TrackMaterial BALLASTLESS = make(Main.asResource("ballastless"))
-            .lang("Ballastless")
-            .block(() -> TrackBlockInit.BALLASTLESS_TRACK)
-            .particle(Create.asResource("block/palettes/stone_types/polished/andesite_cut_polished"))
-            .trackType(HEXIE_STANDARD)
-            .sleeper(Blocks.ANDESITE_SLAB)
-            .customModels(
-                    () -> () -> PartialModel.of(Main.asResource("block/track/ballastless/tie")),
-                    () -> () -> PartialModel.of(Main.asResource("block/track/standard/segment_left")),
-                    () -> () -> PartialModel.of(Main.asResource("block/track/standard/segment_right")))
-            .build();
-
-    public static final TrackMaterial TIELESS = make(Main.asResource("tieless"))
-            .lang("Tieless")
-            .block(() -> TrackBlockInit.TIELESS_TRACK)
-            .particle(Create.asResource("block/palettes/stone_types/polished/andesite_cut_polished"))
-            .trackType(HEXIE_STANDARD)
-            .sleeper(Blocks.ANDESITE_SLAB)
-            .customModels(
-                    () -> () -> PartialModel.of(Main.asResource("block/track/standard/vacuum")),
-                    () -> () -> PartialModel.of(Main.asResource("block/track/standard/segment_left")),
-                    () -> () -> PartialModel.of(Main.asResource("block/track/standard/segment_right")))
-            .build();
+    public static final TrackMaterial STANDARD = CreateRailwayBackend.material(
+            BuiltinRailways.STANDARD_ID, BuiltinRailways.STANDARD);
+    public static final TrackMaterial BALLASTLESS = CreateRailwayBackend.material(
+            BuiltinRailways.BALLASTLESS_ID, BuiltinRailways.BALLASTLESS);
+    public static final TrackMaterial TIELESS = CreateRailwayBackend.material(
+            BuiltinRailways.TIELESS_ID, BuiltinRailways.TIELESS);
 
     public static void register() {}
 }

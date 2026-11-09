@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import dev.engine_room.flywheel.api.visual.Effect;
 import dev.engine_room.flywheel.api.visualization.VisualizationManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -26,6 +27,7 @@ import net.neoforged.neoforge.event.level.LevelEvent;
 import willow.train.hexie.Main;
 import willow.train.hexie.blocks.emu.head.CRH2HeadBlock;
 import willow.train.hexie.blocks.emu.crh2a.CRH2PartBlock;
+import willow.train.hexie.compat.sable.SableRenderEmbedding;
 
 /** Shared world-shell index: Flywheel instances with vanilla/Sodium section meshes as fallback. */
 public final class CRH2StaticSections {
@@ -36,7 +38,8 @@ public final class CRH2StaticSections {
     private static ClientLevel observedLevel;
     private static Models observedModels;
     private static VisualizationManager visualizationManager;
-    private static final Map<BlockPos, CRH2ShellVisual.Shell> shells = new HashMap<>();
+    private static final Map<BlockPos, Effect> shells = new HashMap<>();
+    private static final Map<SableRenderEmbedding.Handle, CRH2PlotShellVisual.Parts> plotShells = new HashMap<>();
     private static final Map<BlockPos, Map<BlockPos, BlockState>> observed = new HashMap<>();
     private static final Set<BlockPos> dirty = new HashSet<>();
     // Geometry membership changes only when owners/chunks/models change, never for lighting.
@@ -84,23 +87,22 @@ public final class CRH2StaticSections {
             clear();
             observedLevel = level;
             observedModels = models;
-        } else if (observedModels != models) {
-            // Resource reload changes mesh membership, including owners outside the view.
-            dirty.addAll(destinations.keySet());
-            destinations.clear(); ownerDestinations.clear();
-            observedModels = models;
-            for (var roots : observed.values()) roots.forEach(CRH2StaticSections::index);
         }
         // Manager identity also changes on renderer/resource reload and backend switches.
         var manager = VisualizationManager.get(level);
-        if (manager != visualizationManager) {
+        if (manager != visualizationManager || observedModels != models) {
             clearVisuals();
             visualizationManager = manager;
+            observedModels = models;
             dirty.addAll(destinations.keySet());
-            if (manager != null)
-                for (var roots : observed.values()) roots.forEach(CRH2StaticSections::addVisual);
+            destinations.clear(); ownerDestinations.clear();
+            // Switching off builds the fallback index; switching on discards it.
+            for (var roots : observed.values()) roots.forEach(CRH2StaticSections::index);
         }
     }
+
+    /** Render-thread query for Sable's separate single-block model path. */
+    public static boolean instanced(BlockPos root) { return shells.containsKey(root); }
 
     private static void clear() {
         clearVisuals();
@@ -110,13 +112,28 @@ public final class CRH2StaticSections {
 
     private static void clearVisuals() {
         if (visualizationManager != null)
-            shells.values().forEach(visualizationManager.effects()::queueRemove);
+            new HashSet<>(shells.values()).forEach(visualizationManager.effects()::queueRemove);
         shells.clear();
+        plotShells.clear();
         visualizationManager = null;
     }
 
     private static void addVisual(BlockPos root, BlockState state) {
         if (visualizationManager == null || !models.meshes.containsKey(state)) return;
+        var plot = SableRenderEmbedding.find(observedLevel, root);
+        if (plot != null) {
+            var parts = plotShells.get(plot);
+            if (parts == null) {
+                parts = new CRH2PlotShellVisual.Parts(observedLevel, plot);
+                plotShells.put(plot, parts);
+                parts.put(root, state);
+                visualizationManager.effects().queueAdd(parts);
+            } else if (parts.put(root, state)) {
+                visualizationManager.effects().queueUpdate(parts);
+            }
+            shells.put(root, parts);
+            return;
+        }
         var shell = new CRH2ShellVisual.Shell(observedLevel, root.immutable(), state);
         shells.put(root, shell);
         visualizationManager.effects().queueAdd(shell);
@@ -126,10 +143,24 @@ public final class CRH2StaticSections {
         return new BlockPos(p.getX() >> 4, p.getY() >> 4, p.getZ() >> 4);
     }
 
-    private static void index(BlockPos root, BlockState state) {
+    private static void removeVisual(BlockPos root) {
         var oldShell = shells.remove(root);
-        if (oldShell != null && visualizationManager != null)
+        if (oldShell == null || visualizationManager == null) return;
+        if (oldShell instanceof CRH2PlotShellVisual.Parts parts) {
+            boolean update = parts.remove(root);
+            if (parts.isEmpty()) {
+                plotShells.remove(parts.plot);
+                visualizationManager.effects().queueRemove(parts);
+            } else if (update) {
+                visualizationManager.effects().queueUpdate(parts);
+            }
+        } else {
             visualizationManager.effects().queueRemove(oldShell);
+        }
+    }
+
+    private static void index(BlockPos root, BlockState state) {
+        removeVisual(root);
         var previous = ownerDestinations.remove(root);
         if (previous != null) for (var target : previous) {
             var entries = destinations.get(target);
@@ -142,9 +173,15 @@ public final class CRH2StaticSections {
         var mesh = models.meshes.get(state);
         if (mesh == null) return;
         addVisual(root, state);
+        // An instance needs no per-owner copies of the clipped fallback face lists.
+        if (shells.containsKey(root)) return;
+        // Plots only allocate render sections inside their block bounds. Keep even
+        // boundary faces in the owner's section; their cell offsets stay unchanged.
+        var plotSection = SableRenderEmbedding.find(observedLevel, root) != null ? section(root) : null;
         var groups = new HashMap<BlockPos, List<CRH2StaticMesh.Face>>();
         for (var face : mesh.faces)
-            groups.computeIfAbsent(section(root.offset(face.cell())), ignored -> new ArrayList<>()).add(face);
+            groups.computeIfAbsent(plotSection != null ? plotSection : section(root.offset(face.cell())),
+                    ignored -> new ArrayList<>()).add(face);
         groups.forEach((target, faces) -> {
             destinations.computeIfAbsent(target, ignored -> new HashMap<>()).put(root, List.copyOf(faces));
             dirty.add(target);
@@ -187,14 +224,14 @@ public final class CRH2StaticSections {
         var destination = section(origin);
         var entries = destinations.get(destination);
         dirty.remove(destination);
-        // The baked-model wrapper still suppresses owner quads. Only one shell path emits
-        // geometry: Flywheel instances when available, these existing section meshes otherwise.
-        if (visualizationManager != null) return;
         // Ordinary terrain sections do no train lookups or lighting work.
         if (entries == null) return;
         var draws = new ArrayList<Draw>();
         var lights = new HashMap<BlockPos, Integer>();
         for (var entry : entries.entrySet()) {
+            // World and plot effects own the instanced path. Section geometry is only
+            // the fallback for owners without a Flywheel effect.
+            if (shells.containsKey(entry.getKey())) continue;
             for (var face : entry.getValue()) {
                 var cell = entry.getKey().offset(face.cell());
                 int[] light = new int[4];

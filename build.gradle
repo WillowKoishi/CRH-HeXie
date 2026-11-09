@@ -258,3 +258,109 @@ idea.module {
     downloadSources = true
     downloadJavadoc = true
 }
+
+// Focused interaction contracts run without launching a game or adding test mods to releases.
+sourceSets {
+    interactionTest {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+}
+
+tasks.register('runInteractionTests', JavaExec) {
+    group = 'verification'
+    description = 'Checks declared block controls, input transitions and takeover contracts.'
+    dependsOn tasks.named('interactionTestClasses')
+    classpath = sourceSets.interactionTest.runtimeClasspath
+    mainClass = 'willow.train.hexie.interaction.InteractionContractTest'
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+    timeout = java.time.Duration.ofSeconds(60)
+}
+
+tasks.register('checkInteractionDependencies', JavaExec) {
+    group = 'verification'
+    description = 'Rejects concrete backend dependencies in generic interaction source code.'
+    dependsOn tasks.named('interactionTestClasses')
+    classpath = sourceSets.interactionTest.output
+    mainClass = 'willow.train.hexie.interaction.InteractionDependencyBoundaryTest'
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+    jvmArgs '--add-modules=jdk.compiler'
+    args layout.projectDirectory.dir('src/main/java').asFile.absolutePath
+    inputs.files(sourceSets.main.allJava)
+    timeout = java.time.Duration.ofSeconds(30)
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('runInteractionTests')
+    dependsOn tasks.named('checkInteractionDependencies')
+}
+
+// Railway declarations and resource regressions do not require a running game.
+sourceSets {
+    railwayTest {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+}
+
+tasks.register('runRailwayTests', JavaExec) {
+    group = 'verification'
+    description = 'Checks backend-independent railway registration contracts.'
+    dependsOn tasks.named('railwayTestClasses')
+    classpath = sourceSets.railwayTest.runtimeClasspath
+    mainClass = 'willow.train.hexie.railway.RailwayContractTest'
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+    timeout = java.time.Duration.ofSeconds(60)
+}
+
+tasks.register('checkRailwayDependencies', JavaExec) {
+    group = 'verification'
+    description = 'Rejects concrete backend dependencies in the public railway API and catalog.'
+    dependsOn tasks.named('railwayTestClasses')
+    classpath = sourceSets.railwayTest.output
+    mainClass = 'willow.train.hexie.railway.RailwayDependencyBoundaryTest'
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+    jvmArgs '--add-modules=jdk.compiler'
+    args layout.projectDirectory.dir('src/main/java').asFile.absolutePath
+    inputs.files(sourceSets.main.allJava)
+    timeout = java.time.Duration.ofSeconds(30)
+}
+
+tasks.register('checkRailwayResources', JavaExec) {
+    group = 'verification'
+    description = 'Compares generated railway defaults against existing built-in resources.'
+    dependsOn tasks.named('railwayTestClasses')
+    classpath = sourceSets.railwayTest.runtimeClasspath
+    mainClass = 'willow.train.hexie.railway.RailwayResourcesTest'
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+    args layout.projectDirectory.dir('src/generated/resources').asFile.absolutePath
+    timeout = java.time.Duration.ofSeconds(60)
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('runRailwayTests'), tasks.named('checkRailwayDependencies'), tasks.named('checkRailwayResources')
+}
+
+tasks.register('checkRailwayTravel', JavaExec) {
+    group = 'verification'
+    description = 'Checks per-bogey railway permissions across movement, restore and route changes.'
+    dependsOn tasks.named('railwayTestClasses')
+    classpath = sourceSets.railwayTest.runtimeClasspath
+    mainClass = 'willow.train.hexie.railway.RailwayTravelTest'
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+    timeout = java.time.Duration.ofSeconds(60)
+}
+
+tasks.named('check') { dependsOn tasks.named('checkRailwayTravel') }
+
+tasks.register('checkBogeyContracts', JavaExec) {
+    group = 'verification'
+    description = 'Checks addon bogey registration identity, lifecycle and backend independence.'
+    dependsOn tasks.named('railwayTestClasses')
+    classpath = sourceSets.railwayTest.runtimeClasspath
+    mainClass = 'willow.train.hexie.railway.BogeyContractTest'
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+    timeout = java.time.Duration.ofSeconds(60)
+}
+
+tasks.named('check') { dependsOn tasks.named('checkBogeyContracts') }

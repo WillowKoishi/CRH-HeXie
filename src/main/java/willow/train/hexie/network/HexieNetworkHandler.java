@@ -37,7 +37,10 @@ public final class HexieNetworkHandler {
         register(CabKeyboardPacket.class, CabKeyboardPacket::new);
         register(ReleaseNativeControlsPacket.class, ReleaseNativeControlsPacket::new);
         register(CarriageNumberUpdatePacket.class, CarriageNumberUpdatePacket::new);
-        var registrar = event.registrar("14");
+        register(ControlInputPacket.class, ControlInputPacket::new);
+        var registrar = event.registrar("15");
+        registrar.playToClient(willow.train.hexie.network.s2c.ControlCapturePacket.TYPE,
+                willow.train.hexie.network.s2c.ControlCapturePacket.CODEC, (packet, context) -> packet.handle(context));
         registrar.playToClient(willow.train.hexie.network.s2c.PassengerDisplayPacket.TYPE,
                 willow.train.hexie.network.s2c.PassengerDisplayPacket.CODEC, (packet, context) -> packet.handle(context));
         registrar.playToClient(willow.train.hexie.network.s2c.CarriageNumberPacket.TYPE,

@@ -13,6 +13,10 @@ public final class TestDrivingConsoleBlock extends DrivingConsoleBlock {
     public TestDrivingConsoleBlock(Properties properties) {
         super(properties, TestCabInteraction::surface, TestCabControls.INSTANCE, TestCabControls.NEUTRAL_POSITIONS);
     }
+    @Override public net.minecraft.world.phys.AABB controlBounds(BlockState state) {
+        return getShape(state, net.minecraft.world.level.EmptyBlockGetter.INSTANCE, BlockPos.ZERO,
+                CollisionContext.empty()).bounds();
+    }
     @Override public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         var panel = switch (state.getValue(FACING)) {
             case EAST -> box(1.12, 16, .32, 5.76, 27.52, 15.68);

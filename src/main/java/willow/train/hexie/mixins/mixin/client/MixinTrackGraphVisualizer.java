@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import willow.train.hexie.init.track.TrackMaterialInit;
+import willow.train.hexie.compat.create.track.CreateRailwayBackend;
 
 @Mixin(value = TrackGraphVisualizer.class, remap = false)
 public abstract class MixinTrackGraphVisualizer {
@@ -17,8 +18,10 @@ public abstract class MixinTrackGraphVisualizer {
             require = 1)
     private static Vec3 hexie$raiseSignalSection(TrackEdge edge, TrackGraph graph, double position) {
         Vec3 point = edge.getPosition(graph, position);
-        return edge.getTrackMaterial().trackType == TrackMaterialInit.HEXIE_STANDARD
-                ? point.add(0, TrackMaterialInit.RAIL_HEIGHT_INCREASE, 0)
+        var material = edge.getTrackMaterial();
+        return material.trackType == TrackMaterialInit.HEXIE_STANDARD
+                ? point.add(0, CreateRailwayBackend.supports(material)
+                        ? CreateRailwayBackend.heightIncrease(material) : TrackMaterialInit.RAIL_HEIGHT_INCREASE, 0)
                 : point;
     }
 }

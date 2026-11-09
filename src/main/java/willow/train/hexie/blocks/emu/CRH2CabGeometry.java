@@ -24,6 +24,7 @@ import static willow.train.hexie.vehicle.control.Crh2CabHandle.REVERSER;
 
 /** Authored parts, pivots and handle travel of the non-standard CRH2A desk. */
 public final class CRH2CabGeometry {
+    private static final float BRAKE_LIFT = .028f;
     private record Mesh(float[] pivot, float[] rest, float[][][] faces) {
         Matrix4f mount() { return CRH2CabGeometry.mount(pivot, rest); }
     }
@@ -59,18 +60,21 @@ public final class CRH2CabGeometry {
             var parts = new ArrayList<ControlSurface.Part>();
             var power = geometry.handles.get("power");
             parts.add(part(POWER, "power", power.faces, (controls, animation) ->
-                    power.mount().rotateX(radians(65f * POWER.notch(controls) / POWER.maxNotch()))));
+                    power.mount().rotateX(radians(65f * POWER.notch(controls) / POWER.maxNotch())),
+                    rotationBounds(power.faces, power.pivot, 0)));
             var brake = geometry.handles.get("brake");
             parts.add(part(BRAKE, "brake_dome", geometry.brakeDome, (controls, animation) ->
-                    swivel(brake, brakePosition(controls, animation))));
+                    swivel(brake, brakePosition(controls, animation)),
+                    rotationBounds(geometry.brakeDome, brake.pivot, 0)));
             parts.add(part(BRAKE, "brake", brake.faces, (controls, animation) -> {
                 float notch = brakePosition(controls, animation);
-                float lift = Math.clamp((notch - 8f) / .4f, 0f, 1f) * .028f;
+                float lift = Math.clamp((notch - 8f) / .4f, 0f, 1f) * BRAKE_LIFT;
                 return swivel(brake, notch).translate(0, lift, 0);
-            }));
+            }, rotationBounds(brake.faces, brake.pivot, BRAKE_LIFT)));
             var reverser = geometry.handles.get("reverser");
             parts.add(part(REVERSER, "reverser", reverser.faces, (controls, animation) ->
-                    reverser.mount().rotateX(radians(-28f * REVERSER.notch(controls)))));
+                    reverser.mount().rotateX(radians(-28f * REVERSER.notch(controls))),
+                    rotationBounds(reverser.faces, reverser.pivot, 0)));
             return new ControlSurface(parts, ControlSurface.mesh(geometry.body),
                     List.of(new ControlSurface.Mount(Ctcs2Panel.INSTANCE, mount(geometry.dmi.front, geometry.dmi.rotation))));
         } catch (IOException error) {
@@ -79,9 +83,22 @@ public final class CRH2CabGeometry {
     }
 
     private static ControlSurface.Part part(Crh2CabHandle handle, String model, float[][][] faces,
-                                                ControlSurface.Pose pose) {
+                                                ControlSurface.Pose pose, AABB bounds) {
         var path = ResourceLocation.fromNamespaceAndPath("hexie", "block/crh2a/nonstandard_driving_console/" + model);
-        return new ControlSurface.Part(handle, path, ControlSurface.mesh(faces), pose);
+        return new ControlSurface.Part(handle, path, ControlSurface.mesh(faces), pose, bounds);
+    }
+
+    /** Rotation preserves radius; the brake lift adds at most its declared travel to that radius. */
+    private static AABB rotationBounds(float[][][] faces, float[] pivot, double lift) {
+        double squaredRadius = 0;
+        for (var face : faces) for (var vertex : face) {
+            double x = vertex[0], y = vertex[1], z = vertex[2];
+            squaredRadius = Math.max(squaredRadius, x * x + y * y + z * z);
+        }
+        double radius = Math.sqrt(squaredRadius) + lift;
+        // Include roundoff from the float pose matrices used by both picking and rendering.
+        return new AABB(pivot[0] - radius, pivot[1] - radius, pivot[2] - radius,
+                pivot[0] + radius, pivot[1] + radius, pivot[2] + radius).inflate(1e-5);
     }
 
     /** Six ticks of travel from rapid to removal, including the lift before the final swivel. */

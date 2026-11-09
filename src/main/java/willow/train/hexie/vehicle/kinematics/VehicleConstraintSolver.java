@@ -93,6 +93,23 @@ public final class VehicleConstraintSolver {
     public Solution solve(List<CarriageDefinition> definitions, List<VehicleRuntime.Connection> connections,
                           Map<UUID, Double> proposedDistances, Map<UUID, Double> pinnedDistances,
                           Solution previous) {
+        Solution solved = solveUnchecked(definitions, connections, proposedDistances, pinnedDistances, previous);
+        for (CarriageDefinition carriage : definitions) {
+            for (BogeyDefinition bogey : carriage.bogeys()) {
+                BogeyPosition next = solved.bogeys().get(bogey.id());
+                BogeyPosition before = previous == null ? null : previous.bogeys().get(bogey.id());
+                double from = before == null ? next.distance() : before.distance();
+                if (!path.allowsBogeyTravel(bogey.modelId(), from, next.distance()))
+                    throw new ConstraintFailure("Bogey model " + bogey.modelId()
+                            + " is not allowed on the travelled railway. No position was committed.");
+            }
+        }
+        return solved;
+    }
+
+    private Solution solveUnchecked(List<CarriageDefinition> definitions, List<VehicleRuntime.Connection> connections,
+                                    Map<UUID, Double> proposedDistances, Map<UUID, Double> pinnedDistances,
+                                    Solution previous) {
         if (definitions.isEmpty()) return new Solution(Map.of(), Map.of(), Map.of());
         if (definitions.size() == 1)
             return solveCarriage(definitions.getFirst(), connections, proposedDistances, pinnedDistances, previous, null);

@@ -3,7 +3,6 @@ package willow.train.hexie.client.screens;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -17,7 +16,7 @@ import willow.train.hexie.network.HexieNetworkHandler;
 import willow.train.hexie.network.c2s.signs.CarriageNumberUpdatePacket;
 
 /** Edit the local coach identifier without changing the attachment or timetable. */
-public final class CarriageNumberScreen extends AbstractContainerScreen<CarriageNumberMenu> {
+public final class CarriageNumberScreen extends TextInputScreen<CarriageNumberMenu> {
     // Use the existing single-field HeadNumberScreen editor geometry and shared background.
     private static final int EDIT_BOX_WIDTH = 200;
     private static final int EDIT_BOX_HEIGHT = 20;
@@ -75,8 +74,6 @@ public final class CarriageNumberScreen extends AbstractContainerScreen<Carriage
 
     @Override public boolean keyPressed(int key, int scanCode, int modifiers) {
         if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) { save(); return true; }
-        if (key != GLFW.GLFW_KEY_ESCAPE && getFocused() instanceof EditBox box && box.keyPressed(key, scanCode, modifiers)) return true;
-        if (key != GLFW.GLFW_KEY_ESCAPE && getFocused() instanceof EditBox && minecraft.options.keyInventory.matches(key, scanCode)) return true;
         return super.keyPressed(key, scanCode, modifiers);
     }
 }

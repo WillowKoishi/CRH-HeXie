@@ -16,6 +16,7 @@ import net.neoforged.neoforge.client.model.data.ModelData;
 import net.neoforged.neoforge.client.model.data.ModelProperty;
 import willow.train.hexie.blocks.bogeys.*;
 import willow.train.hexie.blocks.bogeys.CRH.CRHBogeyBlock;
+import willow.train.hexie.compat.create.bogey.RegisteredBogeyBlock;
 import willow.train.hexie.init.track.TrackMaterialInit;
 
 /** The bolster keeps its rail-height reference. Only the floor follows configured floor height. */
@@ -55,7 +56,7 @@ public final class BogeyTopModel extends BakedModelWrapper<BakedModel> {
     @Override public List<BakedQuad> getQuads(BlockState state, Direction side, RandomSource random, ModelData data, RenderType layer) {
         var offset = data.get(OFFSET);
         if (offset == null) offset = restOffset(state);
-        if (state != null && state.getBlock() instanceof CRHBogeyBlock
+        if (hasSeparateFloor(state)
                 && originalModel instanceof net.neoforged.neoforge.client.model.CompositeModel.Baked assembly) {
             var shift = offset == null ? Vec3.ZERO : offset;
             var result = new ArrayList<>(bolsterQuads(assembly.getPart("bolster"), state, side, random, data, layer, shift));
@@ -68,8 +69,13 @@ public final class BogeyTopModel extends BakedModelWrapper<BakedModel> {
     }
 
     private static Vec3 restOffset(BlockState state) {
-        return state != null && !(state.getBlock() instanceof CRHBogeyBlock)
+        return state != null && !hasSeparateFloor(state)
                 ? new Vec3(0, TrackMaterialInit.RAIL_HEIGHT_INCREASE, 0) : Vec3.ZERO;
+    }
+
+    private static boolean hasSeparateFloor(BlockState state) {
+        return state != null && (state.getBlock() instanceof CRHBogeyBlock
+                || state.getBlock() instanceof RegisteredBogeyBlock);
     }
 
     private static List<BakedQuad> bolsterQuads(BakedModel model, BlockState state, Direction side, RandomSource random,

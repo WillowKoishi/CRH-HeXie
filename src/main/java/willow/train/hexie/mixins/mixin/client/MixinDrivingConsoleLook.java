@@ -11,6 +11,12 @@ import willow.train.hexie.client.events.CarriageCamera;
 public abstract class MixinDrivingConsoleLook {
     @Inject(method = "turn", at = @At("HEAD"), cancellable = true)
     private void hexie$cabRelativeLook(double horizontal, double vertical, CallbackInfo ci) {
+        // A direct slider drag owns only this pointer gesture, without entering cab camera mode.
+        if ((Object) this == net.minecraft.client.Minecraft.getInstance().player
+                && willow.train.hexie.client.interaction.SurfaceInputClient.dragging()) {
+            ci.cancel();
+            return;
+        }
         if (CarriageCamera.turn((Entity) (Object) this, horizontal, vertical)) ci.cancel();
     }
 }

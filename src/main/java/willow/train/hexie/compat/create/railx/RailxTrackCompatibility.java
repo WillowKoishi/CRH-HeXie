@@ -106,13 +106,13 @@ public final class RailxTrackCompatibility {
         throw new CreateRouteBinding.RouteInvalidException();
     }
 
-    public static TrackRailSurface.Section flexibleSection(Vec3 base, Vec3 tangent, Vec3 normal, double along) {
+    public static TrackRailSurface.Section flexibleSection(Vec3 base, Vec3 tangent, Vec3 normal, double along, double surfaceHeight) {
         var direction = new com.lhwdev.minecraft.railx.flexiTrack.FlexiDirection.Two(tangent.normalize(), normal.normalize());
         var rotation = com.lhwdev.minecraft.railx.flexiTrack.rotate.RotationUtils.rotationValue(direction);
         Vec3 forward = vector(rotation.transform(new org.joml.Vector3d(1, 0, 0)));
         Vec3 side = vector(rotation.transform(new org.joml.Vector3d(0, 0, -1)));
         Vec3 up = vector(rotation.transform(new org.joml.Vector3d(0, 1, 0)));
-        return TrackRailSurface.rotatedSection(base, forward, side, up, along);
+        return TrackRailSurface.rotatedSection(base, forward, side, up, along, surfaceHeight);
     }
 
     private static Vec3 vector(org.joml.Vector3d v) { return new Vec3(v.x, v.y, v.z); }

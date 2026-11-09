@@ -11,7 +11,8 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.model.data.ModelProperty;
-import willow.train.hexie.init.track.TrackMaterialInit;
+import willow.train.hexie.api.railway.RailwayDefinition.Bed;
+import willow.train.hexie.compat.create.track.CreateRailwayBackend;
 
 import java.util.List;
 
@@ -29,7 +30,7 @@ public final class SlabTrackModels {
     private static final Cache<Key, List<BakedQuad>> STRAIGHTS = CacheBuilder.newBuilder().maximumSize(256).build();
 
     public static boolean applies(BlockState state) {
-        return state.getBlock() instanceof TrackBlock track && track.getMaterial() == TrackMaterialInit.BALLASTLESS;
+        return state.getBlock() instanceof TrackBlock track && CreateRailwayBackend.bed(track.getMaterial()) == Bed.SLAB;
     }
 
     static void clear() { STRAIGHTS.invalidateAll(); }

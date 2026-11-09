@@ -36,6 +36,8 @@ import java.util.List;
 public class SeatYZBlock extends SeatBlock implements IWrenchable {
 
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    /** Passenger eye height above the seat block's base, in blocks (metres). */
+    public static final double EYE_HEIGHT = 1.2;
     protected static final VoxelShape BASE_AABB = Block.box(0, 4, 0, 16, 8, 16);
     protected static final VoxelShape SN_AABB = Block.box(0, 8, 6, 16, 23, 10);
     protected static final VoxelShape WE_AABB = Block.box(6, 8, 0, 10, 23, 16);

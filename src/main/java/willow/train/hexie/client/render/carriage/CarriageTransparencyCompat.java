@@ -40,8 +40,9 @@ public final class CarriageTransparencyCompat {
     public static RenderType glassLayer() { return GlassRenderType.INSTANCE; }
 
     private static final class GlassRenderType extends RenderType {
-        // Keep the native moving-block shader, depth test and fabulous target. A fixed buffer
-        // is submitted after opaque geometry and text, with all its glass quads sorted together.
+        // Keep the native moving-block shader, depth test and fabulous target. Vanilla uses
+        // this fixed buffer after text; Iris orders the display's dedicated text layer before
+        // transparency, since its batching replaces the fixed-buffer submission order.
         private static final RenderType INSTANCE = create("hexie_door_display_glass", DefaultVertexFormat.BLOCK,
                 VertexFormat.Mode.QUADS, 1536, false, true,
                 CompositeState.builder().setShaderState(RENDERTYPE_TRANSLUCENT_MOVING_BLOCK_SHADER)

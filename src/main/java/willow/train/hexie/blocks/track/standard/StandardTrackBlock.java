@@ -2,6 +2,7 @@ package willow.train.hexie.blocks.track.standard;
 
 import com.simibubi.create.content.trains.track.TrackBlock;
 import com.simibubi.create.content.trains.track.TrackMaterial;
+import com.simibubi.create.content.trains.track.TrackBlockEntity;
 import com.simibubi.create.content.trains.track.BezierTrackPointLocation;
 import com.simibubi.create.content.trains.track.TrackTargetingBehaviour.RenderedTrackOverlayType;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -14,6 +15,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import willow.train.hexie.init.track.TrackBlockInit;
 import willow.train.hexie.init.track.TrackMaterialInit;
+import willow.train.hexie.compat.create.track.CreateRailwayBackend;
 
 public class StandardTrackBlock extends TrackBlock {
 
@@ -36,14 +38,19 @@ public class StandardTrackBlock extends TrackBlock {
             BlockGetter world, BlockPos pos, BlockState state, BezierTrackPointLocation curvePoint,
             Direction.AxisDirection direction, RenderedTrackOverlayType type) {
         // Apply before Create's slope/curve rotations so the offset remains vertical.
-        transform.translate(0, (float) TrackMaterialInit.RAIL_HEIGHT_INCREASE, 0);
+        TrackMaterial material = getMaterial();
+        if (curvePoint != null && world.getBlockEntity(pos) instanceof TrackBlockEntity track) {
+            var curve = track.getConnections().get(curvePoint.curveTarget());
+            if (curve != null) material = curve.getMaterial();
+        }
+        transform.translate(0, (float) heightIncrease(material), 0);
         return super.prepareTrackOverlay(transform, world, pos, state, curvePoint, direction, type);
     }
 
     @Override
     public PartialModel prepareAssemblyOverlay(BlockGetter world, BlockPos pos, BlockState state,
             Direction direction, PoseStack pose) {
-        pose.translate(0, TrackMaterialInit.RAIL_HEIGHT_INCREASE, 0);
+        pose.translate(0, heightIncrease(getMaterial()), 0);
         return super.prepareAssemblyOverlay(world, pos, state, direction, pose);
     }
 
@@ -51,21 +58,27 @@ public class StandardTrackBlock extends TrackBlock {
     public net.minecraft.world.phys.shapes.VoxelShape getShape(BlockState state, BlockGetter world,
             BlockPos pos, net.minecraft.world.phys.shapes.CollisionContext context) {
         return super.getShape(state, world, pos, context).move(0,
-                willow.train.hexie.init.track.TrackMaterialInit.RAIL_HEIGHT_INCREASE, 0);
+                heightIncrease(getMaterial()), 0);
     }
 
     @Override
     public net.minecraft.world.phys.shapes.VoxelShape getInteractionShape(BlockState state,
             BlockGetter world, BlockPos pos) {
         return super.getInteractionShape(state, world, pos).move(0,
-                willow.train.hexie.init.track.TrackMaterialInit.RAIL_HEIGHT_INCREASE, 0);
+                heightIncrease(getMaterial()), 0);
     }
 
     @Override
     public net.minecraft.world.phys.shapes.VoxelShape getCollisionShape(BlockState state, BlockGetter world,
             BlockPos pos, net.minecraft.world.phys.shapes.CollisionContext context) {
         return super.getCollisionShape(state, world, pos, context).move(0,
-                willow.train.hexie.init.track.TrackMaterialInit.RAIL_HEIGHT_INCREASE, 0);
+                heightIncrease(getMaterial()), 0);
+    }
+
+    private static double heightIncrease(TrackMaterial material) {
+        // Existing subclasses/materials that did not use the registry retain their original height.
+        return CreateRailwayBackend.supports(material) ? CreateRailwayBackend.heightIncrease(material)
+                : TrackMaterialInit.RAIL_HEIGHT_INCREASE;
     }
 
     @Override

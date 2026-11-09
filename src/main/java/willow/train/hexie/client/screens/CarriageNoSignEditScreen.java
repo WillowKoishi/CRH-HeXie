@@ -7,7 +7,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.Minecraft;
 import willow.train.hexie.client.util.gui.Button;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -19,7 +18,7 @@ import willow.train.hexie.blockentity.CarriageNoSignEntity;
 
 import java.util.Locale;
 
-public class CarriageNoSignEditScreen extends AbstractContainerScreen<CarriageNoSignEditMenu> {
+public class CarriageNoSignEditScreen extends TextInputScreen<CarriageNoSignEditMenu> {
     private static final Component[] TEXT =
             new Component[] {
                 Component.translatable(
@@ -190,15 +189,4 @@ public class CarriageNoSignEditScreen extends AbstractContainerScreen<CarriageNo
         return true;
     }
 
-    @Override
-    public boolean keyReleased(int pKeyCode, int pScanCode, int pModifiers) {
-        if (pKeyCode == 69) return false;
-        return super.keyReleased(pKeyCode, pScanCode, pModifiers);
-    }
-
-    @Override
-    public boolean keyPressed(int pKeyCode, int pScanCode, int pModifiers) {
-        if (pKeyCode == 69) return false;
-        return super.keyPressed(pKeyCode, pScanCode, pModifiers);
-    }
 }

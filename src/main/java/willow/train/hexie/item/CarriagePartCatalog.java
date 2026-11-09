@@ -9,7 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
 /** Packaged, stable item declarations. The creative tab and legacy pickers retain independent ordering.
- * This catalog does not register blocks or replace the resource-pack carriage browser API.
+ * This catalog does not register blocks or replace the resource-pack carriage flow API.
  */
 public final class CarriagePartCatalog {
     private record Entry(ResourceLocation item, int creativeOrder, Map<String, Integer> palettes) {}

@@ -6,6 +6,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
 
+import willow.train.hexie.blocks.seats.SeatYZBlock;
 import willow.train.hexie.init.EntityInit;
 
 import java.util.Set;
@@ -21,7 +22,10 @@ public class HexieSeatEntity extends SeatEntity {
     }
 
     @Override
-    public void tick() {}
+    protected void positionRider(Entity passenger, Entity.MoveFunction move) {
+        if (!hasPassenger(passenger)) return;
+        move.accept(passenger, getX(), getY() + SeatYZBlock.EYE_HEIGHT - passenger.getEyeHeight(), getZ());
+    }
 
     @Override
     protected void removePassenger(Entity entity) {

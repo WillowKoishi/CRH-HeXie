@@ -11,6 +11,7 @@ import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent
 import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FormattedText;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.ItemStack;
@@ -18,6 +19,7 @@ import net.neoforged.neoforge.client.event.RegisterClientTooltipComponentFactori
 import org.joml.Matrix4f;
 import willow.train.hexie.api.interaction.BlockControl;
 import willow.train.hexie.api.interaction.ControlState;
+import willow.train.hexie.client.cab.CabSliderTrack;
 
 /** Fixed native tooltip bounds. Only the text changes while a handle is held. */
 public final class SurfaceControlCaption {
@@ -37,8 +39,10 @@ public final class SurfaceControlCaption {
     static Box at(Font font, BlockControl.Handle handle, int screenWidth, int screenHeight, int mouseX, int mouseY) {
         int leftMargin = Math.min(GAP + 8, screenWidth / 2);
         int available = Math.max(1, screenWidth - leftMargin - 4);
-        int width = 1, lines = 1;
-        for (int n = handle.minNotch(); n <= handle.maxNotch(); n++) {
+        var title = label(handle, Component.empty());
+        int width = Math.max(1, Math.min(font.width(title), available));
+        int lines = Math.max(1, font.split(title, available).size());
+        for (int n : CabSliderTrack.interactiveNotches(handle)) {
             var row = label(handle, handle.notchText(n));
             int natural = font.width(row);
             width = Math.max(width, Math.min(natural, available));
@@ -57,10 +61,19 @@ public final class SurfaceControlCaption {
         var window = mc.getWindow();
         int x = pointer ? (int) (mc.mouseHandler.xpos() / window.getScreenWidth() * graphics.guiWidth()) : graphics.guiWidth() / 2;
         int y = pointer ? (int) (mc.mouseHandler.ypos() / window.getScreenHeight() * graphics.guiHeight()) : graphics.guiHeight() / 2;
-        var row = label(control, control.valueText(state));
+        var row = control instanceof BlockControl.Handle handle && CabSliderTrack.interactiveNotches(handle).isEmpty()
+                ? label(control, Component.empty()) : label(control, control.valueText(state));
         if (control instanceof BlockControl.Handle handle)
             at(mc.font, handle, graphics.guiWidth(), graphics.guiHeight(), x, y).render(mc.font, graphics, row);
         else graphics.renderTooltip(mc.font, row, x, y);
+    }
+
+    /** Content, including key labels, comes from the block. An empty declaration has no prompt. */
+    static void entry(Minecraft mc, GuiGraphics graphics, List<Component> lines) {
+        if (lines.isEmpty()) return;
+        var elements = lines.stream().map(line -> Either.<FormattedText, TooltipComponent>left(line)).toList();
+        graphics.renderComponentTooltipFromElements(mc.font, elements,
+                graphics.guiWidth() / 2, graphics.guiHeight() / 2, ItemStack.EMPTY);
     }
 
     static Box position(int screenWidth, int screenHeight, int mouseX, int mouseY, int width, int height) {

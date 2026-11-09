@@ -11,7 +11,8 @@ import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import willow.train.hexie.Main;
 import willow.train.hexie.blocks.track.standard.TrackBallast;
-import willow.train.hexie.init.track.TrackMaterialInit;
+import willow.train.hexie.api.railway.RailwayDefinition.Bed;
+import willow.train.hexie.compat.create.track.CreateRailwayBackend;
 import willow.train.hexie.network.c2s.TrackBallastPacket;
 
 /** Runs after the cab's HIGHEST input capture and before Create's NORMAL curve interaction. */
@@ -27,7 +28,7 @@ public final class CurvedBallastInteraction {
         if (minecraft.screen != null || !event.isUseItem() || selection == null || player == null
                 || !TrackBallast.canPaint(player, player.getMainHandItem())) return;
         var curve = selection.blockEntity().getConnections().get(selection.loc().curveTarget());
-        if (curve == null || curve.getMaterial() != TrackMaterialInit.STANDARD) return;
+        if (curve == null || CreateRailwayBackend.bed(curve.getMaterial()) != Bed.BALLAST) return;
         PacketDistributor.sendToServer(new TrackBallastPacket(selection.blockEntity().getBlockPos(),
                 selection.loc().curveTarget(), selection.loc().segment()));
         player.swing(InteractionHand.MAIN_HAND);

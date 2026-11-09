@@ -58,7 +58,9 @@ public final class SnapshotCarriageRenderer extends ContraptionEntityRenderer<Sn
                     || !(be.getBlockState().getBlock() instanceof AbstractBogeyBlock<?> block)) continue;
             poseStack.pushPose();
             transform(poseStack, frame);
-            try (var suspension = suspensionPose(be, frame)) {
+            try (var suspension = suspensionPose(be, frame);
+                 var sample = willow.train.hexie.compat.create.bogey.CreateAddonBogeyRenderer.snapshotSample(
+                         frame.wheelAngle(), frame.speed(), partialTick)) {
                 be.getStyle().render(block.getSize(), partialTick, poseStack, buffers,
                         light(entity, frame, partialTick), overlay, (float) (frame.wheelAngle() % 360),
                         data(entity, be, frame), true);
