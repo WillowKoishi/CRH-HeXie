@@ -12,6 +12,7 @@
   "exterior": "exterior.nbt",
   "interior": "interior.nbt",
   "schematic": "25z_original_color_yz_cart.nbt",
+  "schematic_icon": "schematic_25z.png",
   "groups": {
     "hexie:carriage/air_conditioners": [
       "hexie:carport_25bgzk_air_condition_all",

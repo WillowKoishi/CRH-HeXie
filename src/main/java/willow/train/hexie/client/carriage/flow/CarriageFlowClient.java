@@ -104,6 +104,7 @@ public final class CarriageFlowClient {
     private static final Map<CreativeModeInventoryScreen, CarriageFlowView> VIEWS = new IdentityHashMap<>();
 
     public static void register(IEventBus bus) {
+        CarriageFlowSchematicIcons.register(bus);
         bus.addListener(CarriageFlowClient::shaders);
         bus.addListener(CarriageFlowClient::reloads);
         NeoForge.EVENT_BUS.addListener(CarriageFlowClient::tickCache);
@@ -111,6 +112,8 @@ public final class CarriageFlowClient {
         NeoForge.EVENT_BUS.addListener(CarriageFlowClient::beforeRender);
         NeoForge.EVENT_BUS.addListener(CarriageFlowClient::key);
         NeoForge.EVENT_BUS.addListener(CarriageFlowClient::click);
+        NeoForge.EVENT_BUS.addListener(CarriageFlowClient::drag);
+        NeoForge.EVENT_BUS.addListener(CarriageFlowClient::releaseMouse);
         NeoForge.EVENT_BUS.addListener(CarriageFlowClient::scroll);
     }
 
@@ -227,6 +230,19 @@ public final class CarriageFlowClient {
             view.mouseClicked(x, y, event.getButton());
             event.setCanceled(true);
         }
+    }
+
+    private static void drag(ScreenEvent.MouseDragged.Pre event) {
+        if (!active(event.getScreen())) return;
+        var view = VIEWS.get(event.getScreen());
+        // Keep the captured gesture while the pointer leaves the preview or crosses the carriage.
+        if (view != null && view.mouseDragged(event.getMouseButton(), event.getDragX(), event.getDragY()))
+            event.setCanceled(true);
+    }
+
+    private static void releaseMouse(ScreenEvent.MouseButtonReleased.Pre event) {
+        var view = VIEWS.get(event.getScreen());
+        if (view != null && view.mouseReleased(event.getButton())) event.setCanceled(true);
     }
 
     private static void scroll(ScreenEvent.MouseScrolled.Pre event) {

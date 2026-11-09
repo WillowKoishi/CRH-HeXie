@@ -6,6 +6,8 @@ import java.util.Map;
 
 /** Client asset declarations. Register during mod construction, before opening the carriage flow.
  * The directory is relative to assets/<namespace>/ and contains carriage.json and structures.
+ * Optional schematic_icon names a PNG relative to that directory; title names the portable blueprint.
+ * PNGs under carriage_ui/models are included in the item atlas, including resource-pack additions.
  * Resource-pack declarations in carriage_ui/types/*.json can override these registrations.
  */
 public final class CarriageFlowRegistry {

@@ -3,6 +3,7 @@ package willow.train.hexie.client.carriage.flow;
 import com.google.gson.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.*;
 import net.minecraft.network.chat.Component;
@@ -96,7 +97,7 @@ public final class CarriageFlowAssets {
                 Component title = json.has("title_key") ? Component.translatable(json.get("title_key").getAsString())
                         : Component.literal(json.get("title").getAsString());
                 BlockState track = readTrack(json.getAsJsonObject("track"));
-                ItemStack schematic = readSchematic(resources, directory, json, errors);
+                ItemStack schematic = readSchematic(resources, directory, json, title, errors);
                 assignments.replaceAll((block, memberships) -> List.copyOf(memberships));
                 models.add(new Model(id, title, front, rear, bounds[0], bounds[1], bounds[2], List.copyOf(cells),
                         Map.copyOf(assignments), Map.copyOf(localGroups), track, schematic));
@@ -106,15 +107,25 @@ public final class CarriageFlowAssets {
     }
 
     private static ItemStack readSchematic(ResourceManager resources, ResourceLocation directory,
-                                           JsonObject json, List<String> errors) {
+                                           JsonObject json, Component title, List<String> errors) {
         if (!json.has("schematic")) return ItemStack.EMPTY;
         try {
             String name = json.get("schematic").getAsString();
             if (name.isBlank()) return ItemStack.EMPTY;
             ResourceLocation resource = child(directory, name);
             if (!name.endsWith(".nbt")) throw new IOException("Schematic must be a compressed .nbt file: " + name);
+            ResourceLocation icon = null;
+            if (json.has("schematic_icon")) {
+                String iconName = json.get("schematic_icon").getAsString();
+                if (!iconName.endsWith(".png")) throw new IOException("Schematic icon must be a .png file: " + iconName);
+                icon = child(directory, iconName);
+                resources.getResourceOrThrow(icon);
+            }
             try (InputStream stream = resources.getResourceOrThrow(resource).open()) {
-                return PrefabSchematic.create(resource, stream.readNBytes(PrefabSchematic.MAX_COMPRESSED_BYTES + 1));
+                ItemStack schematic = PrefabSchematic.create(resource, stream.readNBytes(PrefabSchematic.MAX_COMPRESSED_BYTES + 1));
+                schematic.set(DataComponents.ITEM_NAME, title.copy());
+                if (icon != null) PrefabSchematic.setIcon(schematic, icon);
+                return schematic;
             }
         } catch (Exception e) {
             // An optional blueprint must not prevent the carriage itself from being browsed.

@@ -1,1 +1,12 @@
-{"sources":[{"type":"minecraft:single","resource":"hexie:component/dmi/dmi_palette"}]}
+{
+  "sources": [
+    {
+      "type": "minecraft:single",
+      "resource": "hexie:component/dmi/dmi_palette"
+    },
+    {
+      "type": "hexie:carriage_icons",
+      "directory": "carriage_ui/models"
+    }
+  ]
+}

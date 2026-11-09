@@ -38,6 +38,7 @@ public final class CarriageFlowView implements AutoCloseable {
     private long phase;
     // Camera-only track offset; never applied to the train motion or the upper strip.
     private double panZ, panTarget;
+    private boolean draggingPan;
     private Matrix4f selectedTransform;
     private double yaw = FRONT_YAW, fromYaw = FRONT_YAW, targetYaw = FRONT_YAW, viewStarted;
     private float shell = 1, fromShell = 1, targetShell = 1;
@@ -107,6 +108,7 @@ public final class CarriageFlowView implements AutoCloseable {
             }
         }
         lastFrame = now();
+        draggingPan = false;
         hovered = null;
     }
 
@@ -129,6 +131,7 @@ public final class CarriageFlowView implements AutoCloseable {
     private void select(long index) {
         if (layout == null) return;
         animate();
+        draggingPan = false;
         if (selected != index) panZ = panTarget = 0;
         selected = index;
         targetPosition = layout.center(index);
@@ -298,7 +301,7 @@ public final class CarriageFlowView implements AutoCloseable {
                         (float) (layout.center(index) - position - model.length() / 2.0));
                 if (index == selected) selectedTransform = new Matrix4f(transform);
                 previews.get(modelIndex).render(transform, index == selected ? 1 : neighborVisibility, index == selected ? shell : 1);
-                if (index == selected && mouseX >= 9 && mouseX < 169 && mouseY >= PREVIEW_TOP && mouseY < bottom
+                if (!draggingPan && index == selected && mouseX >= 9 && mouseX < 169 && mouseY >= PREVIEW_TOP && mouseY < bottom
                         && Math.abs(position - targetPosition) < .02 && (shell > .995 || shell < .005)) {
                     hovered = previews.get(modelIndex).pick(transform, mouseX + host.getGuiLeft(), mouseY + host.getGuiTop(), shell > .5);
                     hoveredTransform = transform;
@@ -412,6 +415,11 @@ public final class CarriageFlowView implements AutoCloseable {
         BufferUploader.drawWithShader(builder.buildOrThrow());
     }
 
+    private boolean overCarriage(double x, double y) {
+        return layout != null && selectedTransform != null && previews.get(layout.model(selected)).pick(
+                selectedTransform, x + host.getGuiLeft(), y + host.getGuiTop(), shell > .5) != null;
+    }
+
     public boolean mouseScrolled(double x, double y, double horizontal, double vertical) {
         double delta = vertical != 0 ? vertical : horizontal;
         if (delta == 0) return false;
@@ -419,9 +427,7 @@ public final class CarriageFlowView implements AutoCloseable {
         if (x >= 9 && x < 169 && y >= STRIP_Y && y <= STRIP_Y + STRIP_HEIGHT) select(selected + step);
         else if (x >= 9 && x < 169 && y >= PREVIEW_TOP && y < 106 && layout != null) {
             // Use the same block shapes as hover picking; empty gaps belong to camera panning.
-            boolean overCar = selectedTransform != null && previews.get(layout.model(selected)).pick(
-                    selectedTransform, x + host.getGuiLeft(), y + host.getGuiTop(), shell > .5) != null;
-            if (overCar) cycle(step);
+            if (overCarriage(x, y)) cycle(step);
             else panTarget = clampPan(panTarget + step * .5);
         }
         else return false;
@@ -450,7 +456,36 @@ public final class CarriageFlowView implements AutoCloseable {
             }
             return true;
         }
+        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && layout != null
+                && x >= 9 && x < 169 && y >= PREVIEW_TOP && y < 106 && !overCarriage(x, y)) {
+            animate();
+            // Take over the current camera position without finishing a queued pan first.
+            panTarget = panZ;
+            draggingPan = true;
+            hovered = null;
+            return true;
+        }
         return false;
+    }
+
+    public boolean mouseDragged(int button, double dragX, double dragY) {
+        if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT || !draggingPan || layout == null) return false;
+        animate();
+        var direction = localCamera(0).transformDirection(new org.joml.Vector3f(0, 0, -1));
+        double lengthSquared = (double) direction.x * direction.x + (double) direction.y * direction.y;
+        if (lengthSquared > 1e-8) {
+            // Project the pointer movement onto the visible track so every view follows the mouse.
+            double delta = (dragX * direction.x + dragY * direction.y) / lengthSquared;
+            panZ = panTarget = clampPan(panZ + delta);
+        }
+        hovered = null;
+        return true;
+    }
+
+    public boolean mouseReleased(int button) {
+        if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT || !draggingPan) return false;
+        draggingPan = false;
+        return true;
     }
 
     public boolean keyPressed(int key, int scan, int modifiers) {
@@ -462,6 +497,7 @@ public final class CarriageFlowView implements AutoCloseable {
     public boolean contains(double x, double y) { return x >= 8 && x < 188 && y >= 17 && y < 107; }
     private void closeMeshes() { previews.clear(); }
     @Override public void close() {
+        draggingPan = false;
         restoreSchematicSlot();
         if (layout != null) {
             SAVED.put(tab, new Saved(catalog.models().get(layout.model(selected)).id(), selected, phase, targetShell < .5f, panTarget,

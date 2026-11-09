@@ -1,5 +1,6 @@
 package willow.train.hexie.compat.create;
 
+import com.mojang.serialization.MapCodec;
 import com.simibubi.create.AllDataComponents;
 import com.simibubi.create.AllItems;
 import java.io.ByteArrayInputStream;
@@ -33,6 +34,8 @@ public final class PrefabSchematic {
     public static final int MAX_COMPRESSED_BYTES = 512 * 1024;
     private static final long MAX_NBT_BYTES = 32L * 1024 * 1024;
     private static final String DATA_KEY = "hexie:prefab_schematic";
+    private static final String ICON_KEY = "hexie:schematic_icon";
+    private static final MapCodec<ResourceLocation> ICON_CODEC = ResourceLocation.CODEC.fieldOf(ICON_KEY);
     private static final AtomicBoolean WARNED_INVALID_DATA = new AtomicBoolean();
 
     private PrefabSchematic() {}
@@ -63,6 +66,18 @@ public final class PrefabSchematic {
         data.putByteArray(DATA_KEY, compressed.clone());
         blueprint.set(DataComponents.CUSTOM_DATA, CustomData.of(data));
         return blueprint;
+    }
+
+    /** The resource ID travels with the stack through creative pickup, inventory sync and saving. */
+    public static void setIcon(ItemStack blueprint, ResourceLocation icon) {
+        CustomData.update(DataComponents.CUSTOM_DATA, blueprint, data -> data.putString(ICON_KEY, icon.toString()));
+    }
+
+    @Nullable
+    public static ResourceLocation icon(ItemStack blueprint) {
+        CustomData data = blueprint.get(DataComponents.CUSTOM_DATA);
+        // Decode only the icon field; copying the tag here would duplicate the embedded NBT every frame.
+        return data == null ? null : data.read(ICON_CODEC).result().orElse(null);
     }
 
     /** Null delegates ordinary schematics to Create; malformed embedded data must never fall back to disk. */
