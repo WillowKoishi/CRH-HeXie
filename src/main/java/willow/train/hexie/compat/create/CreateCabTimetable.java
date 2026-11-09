@@ -68,6 +68,39 @@ final class CreateCabTimetable {
     boolean publishing() { return publishing; }
     boolean hasTimetable() { return runtime.getSchedule() != null; }
 
+    /** Track invalidation interrupts this execution, without removing its timetable or changing another cab. */
+    void invalidateNavigation() {
+        pendingNavigation = null;
+        pendingDimensions = null;
+        newConsistEnds = false;
+        boolean before = publishing;
+        publishing = false;
+        try { navigation.cancelNavigation(); }
+        finally { publishing = before; }
+        // An unresolved saved destination can be absent from the live Navigation already.
+        runtime.transitInterrupted();
+        navigation.waitingForSignal = null;
+        navigation.ticksWaitingForSignal = 0;
+        navigation.distanceToSignal = Double.MAX_VALUE;
+        automaticRouteAvailable = false;
+        controlObservationsReady = false;
+        waypointTransitionTicks = 0;
+        waypointTransitionActive = false;
+        displayRoute = TrainDisplayReadings.Route.unavailable();
+    }
+
+    /** The same invalidation before saved console executions have been materialized. */
+    static void invalidateSavedNavigation(CompoundTag data) {
+        var stored = data.getCompound(CabTimetableHost.PENDING_TIMETABLE);
+        var execution = stored.contains(EXECUTION) ? stored.getCompound(EXECUTION) : data.getCompound(EXECUTION);
+        execution.remove("Navigation");
+        execution.remove("NewConsistEnds");
+        execution.remove("WaypointTransitionTicks");
+        var runtime = execution.getCompound("Runtime");
+        if (ScheduleRuntime.State.IN_TRANSIT.name().equals(runtime.getString("State")))
+            runtime.putString("State", ScheduleRuntime.State.PRE_TRANSIT.name());
+    }
+
     /** Rebinding retains the execution objects and their native/RailX extensions. */
     void bind(CompatibilityTrain train) {
         if (runtime.train instanceof CompatibilityTrain previous && !previous.carriageIds.equals(train.carriageIds))
@@ -193,13 +226,18 @@ final class CreateCabTimetable {
     }
 
     <T> T with(CompatibilityTrain train, boolean publish, Supplier<T> action) {
+        long navigationRevision = train.navigationInvalidation;
         if (train.currentCabTimetable == this) {
             boolean before = publishing;
             var reservations = train.reservedSignalBlocks;
             if (!publish && before) train.reservedSignalBlocks = new HashSet<>(reservations);
             publishing = before && publish;
             try { return action.get(); }
-            finally { publishing = before; train.reservedSignalBlocks = reservations; }
+            finally {
+                publishing = before;
+                if (navigationRevision != train.navigationInvalidation) reservations.clear();
+                train.reservedSignalBlocks = reservations;
+            }
         }
         bind(train);
         var previous = train.currentCabTimetable;
@@ -249,6 +287,13 @@ final class CreateCabTimetable {
             train.waypointTransitionActive = originalTransition;
             train.currentCabTimetable = previous;
             publishing = previousPublish;
+            if (navigationRevision != train.navigationInvalidation) {
+                // Native detach may run while a cab temporarily hides the backend execution.
+                // Cancel it only after restoring its matching runtime, and do not resurrect observations.
+                if (train.navigation.destination != null) train.navigation.cancelNavigation();
+                train.reservedSignalBlocks.clear();
+                CreateConsoleTimetable.invalidateNavigationObservations(train);
+            }
         }
     }
 

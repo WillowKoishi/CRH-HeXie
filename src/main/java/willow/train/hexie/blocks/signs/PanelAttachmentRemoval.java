@@ -91,7 +91,7 @@ public final class PanelAttachmentRemoval {
             }
             case HARMONY -> {
                 if (markings == null) return InteractionResult.PASS;
-                recovered = LogoItemInit.HARMONY_LOGO.get().getDefaultInstance();
+                recovered = LogoItemInit.CRH_LOGO.get().getDefaultInstance();
             }
             case MARKING_FIELDS -> {
                 if (markings == null) return InteractionResult.PASS;

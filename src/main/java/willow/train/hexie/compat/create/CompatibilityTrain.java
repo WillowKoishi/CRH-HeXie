@@ -46,6 +46,7 @@ public final class CompatibilityTrain extends Train {
     public final List<UUID> carriageIds;
     CreateTrainBridge bridge;
     CreateCabTimetable currentCabTimetable;
+    long navigationInvalidation;
     private com.simibubi.create.content.trains.entity.Navigation reservationRoute;
     private GlobalStation reservedDestination;
 
@@ -80,6 +81,7 @@ public final class CompatibilityTrain extends Train {
     private long retryAt;
     private long pendingTick = Long.MIN_VALUE;
     private PendingVehicleRelocation pendingRelocation;
+    private boolean pendingCabNavigationInvalidation;
     boolean importedWithoutRoute;
     boolean hasLifecycleData() { return bridge != null || savedMotionOwner != null || importedWithoutRoute; }
 
@@ -135,10 +137,8 @@ public final class CompatibilityTrain extends Train {
 
     /** A temporarily unavailable graph still has an authoritative saved cab for item exchanges. */
     CompoundTag pendingCabModule(AssembledVehicleMotion.ControlKey key) {
-        var saved = savedMotion;
-        if (saved == null && savedMotionOwner != null
-                && Create.RAILWAYS.trains.get(savedMotionOwner) instanceof CompatibilityTrain ownerTrain)
-            saved = ownerTrain.savedMotion;
+        invalidatePendingCabNavigation();
+        var saved = pendingMotionState();
         if (saved == null) return null;
         for (var value : saved.getList("CabModules", Tag.TAG_COMPOUND)) {
             var cab = (CompoundTag) value;
@@ -146,6 +146,26 @@ public final class CompatibilityTrain extends Train {
                 return cab;
         }
         return null;
+    }
+
+    private CompoundTag pendingMotionState() {
+        if (savedMotion != null) return savedMotion;
+        return savedMotionOwner != null && Create.RAILWAYS.trains.get(savedMotionOwner) instanceof CompatibilityTrain owner
+                ? owner.savedMotion : null;
+    }
+
+    private void invalidatePendingCabNavigation() {
+        if (!pendingCabNavigationInvalidation) return;
+        var saved = pendingMotionState();
+        if (saved == null) return;
+        for (String list : List.of("CabModules", "AutomaticCabs")) {
+            for (var value : saved.getList(list, Tag.TAG_COMPOUND)) {
+                var module = (CompoundTag) value;
+                if (carriageIds.contains(module.getUUID("Carriage")))
+                    CreateCabTimetable.invalidateSavedNavigation(module.getCompound("TimetableExecution"));
+            }
+        }
+        pendingCabNavigationInvalidation = false;
     }
 
     CompatibilityTrain(UUID id, UUID owner, UUID assembly, List<UUID> ids, TrackGraph graph,
@@ -303,6 +323,11 @@ public final class CompatibilityTrain extends Train {
 
     private void restoreMotion(ServerLevel server) {
         if (bridge != null || savedMotion == null) return;
+        invalidatePendingCabNavigation();
+        // A fragment can detach before the shared motion owner finishes loading.
+        for (var candidate : Create.RAILWAYS.trains.values())
+            if (candidate instanceof CompatibilityTrain pending && id.equals(pending.savedMotionOwner))
+                pending.invalidatePendingCabNavigation();
         var dimension = ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(motionDimension));
         var world = server.getServer().getLevel(dimension);
         if (world == null) return;
@@ -404,6 +429,13 @@ public final class CompatibilityTrain extends Train {
     @Override public void detachFromTracks() {
         unresolvedGraphId = null;
         super.detachFromTracks();
+        navigationInvalidation++;
+        usingReservationRoute(null);
+        CreateConsoleTimetable.invalidateNavigation(this);
+        if (bridge == null) {
+            pendingCabNavigationInvalidation = true;
+            invalidatePendingCabNavigation();
+        }
     }
 
     /** World restoration always remains in the snapshot transaction. */
@@ -416,6 +448,7 @@ public final class CompatibilityTrain extends Train {
         CompoundTag tag = super.write(dimensions, registries);
         if (graph == null && unresolvedGraphId != null) tag.putUUID("Graph", unresolvedGraphId);
         tag.putUUID(ASSEMBLY_KEY, assemblyId);
+        if (pendingCabNavigationInvalidation) tag.putBoolean("HeXieCabNavigationInvalidated", true);
         // A pending legacy carriage may still have old wheels after its controls have been converted.
         tag.putBoolean(NATIVE_WHEEL_ORDER, nativeWheelOrder);
         if (importedWithoutRoute) {
@@ -500,6 +533,7 @@ public final class CompatibilityTrain extends Train {
         }
         result.savedMotionOwner = tag.hasUUID("HeXieMotionOwner") ? tag.getUUID("HeXieMotionOwner") : null;
         result.savedMotion = tag.contains("HeXieMotion") ? tag.getCompound("HeXieMotion").copy() : null;
+        result.pendingCabNavigationInvalidation = tag.getBoolean("HeXieCabNavigationInvalidated");
         result.motionDimension = tag.getString("HeXieMotionDimension");
         CreateTrackCompatibility.restoreTrain(source, result, tag);
         var station = result.getCurrentStation();

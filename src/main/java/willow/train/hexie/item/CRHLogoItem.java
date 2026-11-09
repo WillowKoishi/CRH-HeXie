@@ -5,8 +5,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.context.UseOnContext;
 import willow.train.hexie.blocks.emu.crh2a.HarmonyMarking;
 
-public final class HarmonyLogoItem extends Item {
-    public HarmonyLogoItem(Properties properties) { super(properties); }
+public final class CRHLogoItem extends Item {
+    public CRHLogoItem(Properties properties) { super(properties); }
     @Override public InteractionResult useOn(UseOnContext context) {
         var level=context.getLevel(); var player=context.getPlayer();
         var state=level.getBlockState(context.getClickedPos());

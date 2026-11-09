@@ -11,6 +11,6 @@ public final class EMUTab extends CreativeTabGroup {
 
     @Override
     public ItemStack makeIcon() {
-        return new ItemStack(LogoItemInit.HARMONY_LOGO.get());
+        return new ItemStack(LogoItemInit.CRH_LOGO.get());
     }
 }

@@ -39,7 +39,7 @@ import willow.train.hexie.blocks.signs.PassengerDisplayPanel;
 public final class CreatePanelClipboard {
     public static final String MARKING_KEY = "hexie_carriage_marking";
     public static final String TEXT_KEY = "hexie_panel_text";
-    public static final String HARMONY_KEY = "hexie_harmony_logo";
+    public static final String CRH_LOGO_KEY = "hexie_crh_logo";
 
     private CreatePanelClipboard() {}
 
@@ -181,7 +181,7 @@ public final class CreatePanelClipboard {
             return switch (target.kind()) {
                 case MARKING_FIELDS -> MARKING_KEY;
                 case PANEL_TEXT -> TEXT_KEY;
-                case HARMONY -> HARMONY_KEY;
+                case HARMONY -> CRH_LOGO_KEY;
                 default -> throw new IllegalStateException("Not a marking attachment");
             };
         }
