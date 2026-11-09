@@ -1,10 +1,14 @@
 package willow.train.hexie.blocks.emu;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
@@ -12,13 +16,18 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import willow.train.hexie.api.cab.CabNeutralPositions;
+import willow.train.hexie.api.cab.CabTargetView;
+import willow.train.hexie.api.interaction.BlockControlContext;
+import willow.train.hexie.api.interaction.ControlInputLayout;
 import willow.train.hexie.api.interaction.ControlSurface;
 import willow.train.hexie.api.traincontrol.CabTrainControl;
 import willow.train.hexie.blocks.DrivingConsoleBlock;
 import willow.train.hexie.vehicle.control.Crh2CabControls;
+import willow.train.hexie.vehicle.control.Crh2CabHandle;
 
 public class CRH2DrivingConsoleBlock extends DrivingConsoleBlock {
     private static final Map<Direction, VoxelShape> SHAPES = createShapes();
+    private final Map<BlockState, ControlInputLayout> handleLayouts = new ConcurrentHashMap<>();
 
     public CRH2DrivingConsoleBlock(Properties properties) {
         super(properties, () -> ControlSurface.EMPTY, CabTrainControl.NONE);
@@ -32,6 +41,42 @@ public class CRH2DrivingConsoleBlock extends DrivingConsoleBlock {
     private CRH2DrivingConsoleBlock(Properties properties, Supplier<ControlSurface> geometry, CabTrainControl trainControl,
                                    CabNeutralPositions neutralPositions) {
         super(properties, geometry, trainControl, neutralPositions);
+    }
+
+    @Override public ControlInputLayout inputLayout(BlockControlContext target) {
+        var base = super.inputLayout(target);
+        var state = target.state();
+        if (trainControl(state) != Crh2CabControls.INSTANCE || CabTargetView.find(target).controls().simple())
+            return base;
+        return handleLayouts.computeIfAbsent(state, ignored -> {
+            var bindings = new ArrayList<>(base.bindings());
+            bindings.add(handleKey('W', Crh2CabHandle.REVERSER, 1));
+            bindings.add(handleKey('S', Crh2CabHandle.REVERSER, -1));
+            bindings.add(handleKey(';', Crh2CabHandle.BRAKE, -1));
+            bindings.add(handleKey('\'', Crh2CabHandle.BRAKE, 1));
+            bindings.add(handleKey('D', Crh2CabHandle.POWER, -1));
+            bindings.add(handleKey('A', Crh2CabHandle.POWER, 1));
+            return new ControlInputLayout(base.seatedCapture(), base.pointedEntries(), bindings, base.view());
+        });
+    }
+
+    private static ControlInputLayout.Binding handleKey(int key, Crh2CabHandle handle, int direction) {
+        return new ControlInputLayout.Binding(ControlInputLayout.Device.KEY, key,
+                ControlInputLayout.Action.STEP_HOLD, handle.id(), direction).seated();
+    }
+
+    public Component keyboardHint(BlockState state) {
+        return trainControl(state) == Crh2CabControls.INSTANCE
+                ? Component.translatable("gui.hexie.cab.handle_keys", hintKeys("W", "S"),
+                        hintKeys(";", "'"), hintKeys("A", "D"))
+                : Component.empty();
+    }
+
+    private static Component hintKeys(String first, String second) {
+        return Component.empty()
+                .append(Component.literal("[" + first + "]").withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD))
+                .append(Component.literal("/").withStyle(ChatFormatting.GRAY))
+                .append(Component.literal("[" + second + "]").withStyle(ChatFormatting.YELLOW, ChatFormatting.BOLD));
     }
 
     private static Map<Direction, VoxelShape> createShapes() {

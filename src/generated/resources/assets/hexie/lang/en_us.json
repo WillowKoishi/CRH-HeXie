@@ -29,6 +29,7 @@
   "gui.hexie.cab.brake_up": "Increase braking",
   "gui.hexie.cab.brake_down": "Decrease braking",
   "gui.hexie.cab.mode": "Switch driving mode",
+  "gui.hexie.cab.handle_keys": "Reverser F/R %s  Brake -/+ %s  Power +/- %s",
   "gui.hexie.cab.capture_hint": "Press %s to take control of the console",
   "gui.hexie.cab.switched_to_shunting": "Switched to shunting mode",
   "gui.hexie.cab.switched_to_driving": "Switched to driving mode",

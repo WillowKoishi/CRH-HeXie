@@ -68,6 +68,12 @@ public final class SurfaceControlCaption {
         else graphics.renderTooltip(mc.font, row, x, y);
     }
 
+    /** Held keyboard gestures use the same native labels as a mouse-operated handle. */
+    static void held(Minecraft mc, GuiGraphics graphics, List<BlockControl> controls, ControlState state) {
+        var rows = controls.stream().map(control -> label(control, control.valueText(state))).toList();
+        graphics.renderComponentTooltip(mc.font, rows, graphics.guiWidth() / 2, graphics.guiHeight() / 2);
+    }
+
     /** Content, including key labels, comes from the block. An empty declaration has no prompt. */
     static void entry(Minecraft mc, GuiGraphics graphics, List<Component> lines) {
         if (lines.isEmpty()) return;

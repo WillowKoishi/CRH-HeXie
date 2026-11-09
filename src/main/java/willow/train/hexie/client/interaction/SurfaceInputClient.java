@@ -2,6 +2,7 @@ package willow.train.hexie.client.interaction;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Set;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -28,6 +29,7 @@ public final class SurfaceInputClient {
     private static final Set<InputConstants.Key> captured = new HashSet<>();
     private static final Set<InputConstants.Key> suppressed = new HashSet<>();
     private static Set<String> lastHeld = Set.of();
+    private static final ControlStepRepeater stepRepeater = new ControlStepRepeater();
     private static boolean pointer;
     private static double zoom = 1, renderedFov = 70;
     private static int inputTicks;
@@ -89,6 +91,10 @@ public final class SurfaceInputClient {
         }
         var holds = heldBindings();
         if (!holds.equals(lastHeld) || ++inputTicks % 10 == 0) send(new ControlInput("", 0, ControlInput.Kind.NONE, holds));
+        for (var binding : stepRepeater.tick(active.layout().bindings(active.cab != null), binding -> {
+            var key = key(binding);
+            return key != null && physicallyDown(key);
+        })) send(new ControlInput(binding.controlId(), binding.value(), ControlInput.Kind.STEP, holds));
         var claimed = new HashSet<InputConstants.Key>();
         for (var binding : active.layout().bindings(active.cab != null)) {
             var key = key(binding);
@@ -147,6 +153,7 @@ public final class SurfaceInputClient {
         }
         active = null;
         lastHeld = Set.of();
+        stepRepeater.reset();
         pointer = false; zoom = 1;
         releaseMappings();
         var mc = Minecraft.getInstance();
@@ -320,6 +327,18 @@ public final class SurfaceInputClient {
             }
             var entry = SurfaceInputTarget.pointedEntry();
             if (entry != null) SurfaceControlCaption.entry(mc, event.getGuiGraphics(), entry.entry().hint());
+            return;
+        }
+        var pushed = new LinkedHashMap<String, BlockControl>();
+        for (var binding : active.layout().bindings(active.cab != null)) {
+            if (binding.action() != Action.STEP_HOLD) continue;
+            var key = key(binding);
+            if (key == null || !physicallyDown(key)) continue;
+            var control = active.control(binding.controlId());
+            if (control != null && control.showTooltip()) pushed.putIfAbsent(control.id(), control);
+        }
+        if (!pushed.isEmpty()) {
+            SurfaceControlCaption.held(mc, event.getGuiGraphics(), pushed.values().stream().toList(), active.state());
             return;
         }
         var ray = ray(pointer);

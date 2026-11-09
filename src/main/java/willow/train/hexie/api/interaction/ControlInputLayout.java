@@ -13,7 +13,7 @@ import net.minecraft.world.phys.AABB;
 /** Input ownership belongs to the block. Key codes use GLFW/ASCII; scroll codes are -1 or +1. */
 public final class ControlInputLayout {
     public enum Device { KEY, MOUSE, SCROLL }
-    public enum Action { PRESS, SET, STEP, HOLD, INTERACT, POINTER, EXIT, ZOOM }
+    public enum Action { PRESS, SET, STEP, STEP_HOLD, HOLD, INTERACT, POINTER, EXIT, ZOOM }
     /**
      * Bounds are block-local, already oriented for the current state, and contained by the host's controlBounds.
      * Hint lines are entirely block-defined, including key names; an empty list displays no hint.
@@ -35,12 +35,13 @@ public final class ControlInputLayout {
         }
         public Binding {
             Objects.requireNonNull(device); Objects.requireNonNull(action); Objects.requireNonNull(controlId);
-            boolean command = action == Action.PRESS || action == Action.SET || action == Action.STEP || action == Action.HOLD;
+            boolean command = action == Action.PRESS || action == Action.SET || action == Action.STEP
+                    || action == Action.STEP_HOLD || action == Action.HOLD;
             if (command == controlId.isEmpty() || controlId.length() > 256)
                 throw new IllegalArgumentException("Invalid input binding");
             if (device == Device.KEY && !keyCode(code) || device == Device.MOUSE && (code < 0 || code > 7)
-                    || device == Device.SCROLL && (Math.abs((long) code) != 1 || action == Action.HOLD)
-                    || action == Action.STEP && Math.abs((long) value) != 1)
+                    || device == Device.SCROLL && (Math.abs((long) code) != 1 || action == Action.HOLD || action == Action.STEP_HOLD)
+                    || (action == Action.STEP || action == Action.STEP_HOLD) && Math.abs((long) value) != 1)
                 throw new IllegalArgumentException("Unsupported input binding");
         }
         public Binding seated() { return new Binding(device, code, action, controlId, value, true); }
@@ -86,8 +87,10 @@ public final class ControlInputLayout {
                     worldHolds.add(binding);
                     worldHeld.add(binding.controlId());
                 }
-            } else if (binding.action() == Action.PRESS || binding.action() == Action.SET || binding.action() == Action.STEP) {
-                var command = new Command(binding.action(), binding.controlId(), binding.value());
+            } else if (binding.action() == Action.PRESS || binding.action() == Action.SET
+                    || binding.action() == Action.STEP || binding.action() == Action.STEP_HOLD) {
+                var action = binding.action() == Action.STEP_HOLD ? Action.STEP : binding.action();
+                var command = new Command(action, binding.controlId(), binding.value());
                 commands.add(command);
                 if (!binding.seatedOnly()) worldCommands.add(command);
             }

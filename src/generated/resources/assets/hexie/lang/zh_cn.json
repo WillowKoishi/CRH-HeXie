@@ -29,6 +29,7 @@
   "gui.hexie.cab.brake_up": "增加制动力",
   "gui.hexie.cab.brake_down": "减小制动力",
   "gui.hexie.cab.mode": "切换驾驶模式",
+  "gui.hexie.cab.handle_keys": "换向前/后 %s  制动减/加 %s  功率加/减 %s",
   "gui.hexie.cab.capture_hint": "按 %s 接管驾驶台",
   "gui.hexie.cab.switched_to_shunting": "切换到调车模式",
   "gui.hexie.cab.switched_to_driving": "切换到行车模式",
