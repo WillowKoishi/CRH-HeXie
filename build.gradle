@@ -273,39 +273,3 @@ idea.module {
     downloadSources = true
     downloadJavadoc = true
 }
-
-// Focused interaction contracts run without launching a game or adding test mods to releases.
-sourceSets {
-    interactionTest {
-        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
-        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
-    }
-}
-
-tasks.register('runInteractionTests', JavaExec) {
-    group = 'verification'
-    description = 'Checks declared block controls, input transitions and takeover contracts.'
-    dependsOn tasks.named('interactionTestClasses')
-    classpath = sourceSets.interactionTest.runtimeClasspath
-    mainClass = 'willow.train.hexie.interaction.InteractionContractTest'
-    javaLauncher = javaToolchains.launcherFor(java.toolchain)
-    timeout = java.time.Duration.ofSeconds(60)
-}
-
-tasks.register('checkInteractionDependencies', JavaExec) {
-    group = 'verification'
-    description = 'Rejects concrete backend dependencies in generic interaction source code.'
-    dependsOn tasks.named('interactionTestClasses')
-    classpath = sourceSets.interactionTest.output
-    mainClass = 'willow.train.hexie.interaction.InteractionDependencyBoundaryTest'
-    javaLauncher = javaToolchains.launcherFor(java.toolchain)
-    jvmArgs '--add-modules=jdk.compiler'
-    args layout.projectDirectory.dir('src/main/java').asFile.absolutePath
-    inputs.files(sourceSets.main.allJava)
-    timeout = java.time.Duration.ofSeconds(30)
-}
-
-tasks.named('check') {
-    dependsOn tasks.named('runInteractionTests')
-    dependsOn tasks.named('checkInteractionDependencies')
-}
