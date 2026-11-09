@@ -27,6 +27,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -153,7 +154,15 @@ public final class PhysicalCouplerBlockEntity extends CouplerBlockEntity
 
     private boolean isRealEntity() {
         return !carriageView && !isRemoved() && level != null
-                && level.getBlockEntity(getBlockPos()) == this;
+                && loadedBlockEntity(getBlockPos()) == this;
+    }
+
+    /** Cleanup must not request loading a missing or unloading chunk. */
+    private BlockEntity loadedBlockEntity(BlockPos pos) {
+        if (level == null) return null;
+        var chunk = level.getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4);
+        var entity = chunk == null ? null : chunk.getBlockEntity(pos);
+        return entity == null || entity.isRemoved() ? null : entity;
     }
 
     private boolean isPhysicalActor() {
@@ -226,8 +235,7 @@ public final class PhysicalCouplerBlockEntity extends CouplerBlockEntity
     }
 
     private AutomaticCoupler partner() {
-        return level != null && partnerPos != null && level.isLoaded(partnerPos)
-                && level.getBlockEntity(partnerPos) instanceof AutomaticCoupler other ? other : null;
+        return partnerPos != null && loadedBlockEntity(partnerPos) instanceof AutomaticCoupler other ? other : null;
     }
 
     private UUID subLevelId(BlockPos pos) {
@@ -448,8 +456,10 @@ public final class PhysicalCouplerBlockEntity extends CouplerBlockEntity
     }
 
     @Override public void setRemoved() {
-        if (!carriageView && level != null && !level.isClientSide
-                && level.getBlockState(getBlockPos()).getBlock() != getBlockState().getBlock())
+        // A disappearing chunk may already be absent from the world's chunk map here.
+        var chunk = !carriageView && level != null && !level.isClientSide
+                ? level.getChunkSource().getChunkNow(getBlockPos().getX() >> 4, getBlockPos().getZ() >> 4) : null;
+        if (chunk != null && chunk.getBlockState(getBlockPos()).getBlock() != getBlockState().getBlock())
             removeCouplerPartner();
         else removeCouplerJoint();
         super.setRemoved();
