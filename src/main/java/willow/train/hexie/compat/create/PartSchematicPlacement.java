@@ -20,6 +20,7 @@ public final class PartSchematicPlacement {
     private PartSchematicPlacement() {}
     public static boolean member(BlockState state) {
         return state.getBlock() instanceof HeadFloorBlock||state.getBlock() instanceof PartMemberBlock
+                ||state.getBlock() instanceof PartStructure part&&part.isPartMember()
                 ||state.getBlock() instanceof CRH2PartBlock&&state.getValue(CRH2PartBlock.PART)!=0;
     }
     public static boolean root(BlockState state) {

@@ -41,6 +41,7 @@ import net.minecraft.world.level.block.state.properties.ChestType;
 import net.minecraft.world.level.block.state.properties.PistonType;
 import net.minecraft.world.level.material.PushReaction;
 import willow.train.hexie.vehicle.assembly.AssemblyRegion;
+import willow.train.hexie.vehicle.assembly.AssemblyBogeySupport;
 import willow.train.hexie.vehicle.assembly.AssemblyTraversal;
 import willow.train.hexie.blocks.bogeys.HexieBogeyBlock;
 
@@ -75,11 +76,11 @@ final class CreateAssemblyWorld implements AssemblyTraversal.Source<BlockPos> {
     @Override
     public AssemblyTraversal.Cell cell(BlockPos pos) {
         BlockState state = stateAt(pos);
-        // A head-mounted bogey is a real assembly support even though the head owns
-        // its floor collision. Create's generic empty-collider rule must not drop it.
-        boolean mountedBogey = state.getBlock() instanceof HexieBogeyBlock<?>
-                && state.getValue(HexieBogeyBlock.HEAD_MOUNTED);
-        if (!mountedBogey && !BlockMovementChecks.isMovementNecessary(state, world, pos))
+        // Supports owned by a larger part may have no collider of their own.
+        boolean support = state.getBlock() instanceof HexieBogeyBlock<?>
+                || state.getBlock() instanceof willow.train.hexie.blocks.emu.head.HeadFloorBlock
+                    && AssemblyBogeySupport.isSupport(world, pos);
+        if (!support && !BlockMovementChecks.isMovementNecessary(state, world, pos))
             return AssemblyTraversal.Cell.EMPTY;
         return BlockMovementChecks.isMovementAllowed(state, world, pos)
                 ? AssemblyTraversal.Cell.MOVABLE : AssemblyTraversal.Cell.BLOCKED;
@@ -147,8 +148,10 @@ final class CreateAssemblyWorld implements AssemblyTraversal.Source<BlockPos> {
         if (state.hasProperty(ChestBlock.TYPE) && state.hasProperty(ChestBlock.FACING)
                 && state.getValue(ChestBlock.TYPE) != ChestType.SINGLE)
             frontier.add(pos.relative(ChestBlock.getConnectedDirection(state)));
-        if (state.getBlock() instanceof AbstractBogeyBlock<?> bogey)
-            for (Direction direction : bogey.getStickySurfaces(world, pos, state))
+        var support = AssemblyBogeySupport.resolve(world, pos);
+        var supportState = support == null ? state : support.state();
+        if (supportState.getBlock() instanceof AbstractBogeyBlock<?> bogey)
+            for (Direction direction : bogey.getStickySurfaces(world, pos, supportState))
                 frontier.add(pos.relative(direction));
 
         // Train structures carry the attached blocks of both stationary bearing types.

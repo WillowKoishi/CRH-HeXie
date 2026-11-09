@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.state.BlockState;
@@ -36,16 +37,22 @@ public final class BogeyTopModel extends BakedModelWrapper<BakedModel> {
     }
     @Override public ModelData getModelData(BlockAndTintGetter world, BlockPos pos, BlockState state, ModelData data) {
         var inherited = super.getModelData(world, pos, state, data);
-        boolean reversed = false;
+        if (world.getBlockEntity(pos) instanceof HexieBogeyBlockEntity be)
+            return withBogeyData(inherited, state, be.getBogeyData(), be.isCarriageView());
+        return withBogeyData(inherited, state, null, false);
+    }
+
+    /** Supplies the same bolster mesh for a head-owned bogey without a world block entity. */
+    public static ModelData withBogeyData(ModelData inherited, BlockState state, CompoundTag data, boolean carriageView) {
+        boolean reversed = data != null && data.getBoolean(BogeyFloorData.REVERSED);
         Vec3 offset = restOffset(state);
         Vec3 floorOffset = Vec3.ZERO;
-        if (world.getBlockEntity(pos) instanceof HexieBogeyBlockEntity be) {
-            reversed = be.getBogeyData().getBoolean(BogeyFloorData.REVERSED);
-            offset = offset.add(BogeyFloorData.displacement(state, BogeyFloorData.longitudinal(be.getBogeyData())));
-            double height = BogeyFloorData.offset(BogeyFloorData.get(be));
+        if (data != null) {
+            offset = offset.add(BogeyFloorData.displacement(state, BogeyFloorData.longitudinal(data)));
+            double height = BogeyFloorData.offset(BogeyFloorData.heightFromBogeyData(data));
             // Snapshot body poses already include this height; their mechanical top must compensate it.
             // Original non-EMU tops rise with the rail; EMU tops were already calibrated to that rail.
-            if (be.isCarriageView()) offset = offset.add(0, -height, 0);
+            if (carriageView) offset = offset.add(0, -height, 0);
             else floorOffset = new Vec3(0, height, 0);
         }
         return inherited.derive().with(OFFSET, offset).with(FLOOR_OFFSET, floorOffset).with(REVERSED, reversed).build();

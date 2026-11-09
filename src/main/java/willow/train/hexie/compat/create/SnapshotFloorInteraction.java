@@ -10,23 +10,33 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 import willow.train.hexie.blocks.bogeys.BogeyFloorData;
 import willow.train.hexie.blocks.bogeys.HexieBogeyBlock;
 import willow.train.hexie.item.FloorSwitcherItem;
+import willow.train.hexie.vehicle.assembly.AssemblyBogeySupport;
 
 /** One assembled carriage always changes floor setting as a whole. */
 public final class SnapshotFloorInteraction {
     private SnapshotFloorInteraction() {}
 
+    private static AssemblyBogeySupport support(SnapshotCarriageEntity entity, BlockPos position) {
+        return AssemblyBogeySupport.resolve(entity.getContraption().getBlocks(), position);
+    }
+
+    private static void write(SnapshotCarriageEntity entity, AssemblyBogeySupport support, CompoundTag data) {
+        var owner = entity.getContraption().getBlocks().get(support.owner());
+        entity.setBlock(support.owner(), new StructureBlockInfo(support.owner(), owner.state(), data));
+    }
+
     static boolean handle(SnapshotCarriageEntity entity, Player player, BlockPos position, InteractionHand hand) {
         if (!(player.getItemInHand(hand).getItem() instanceof FloorSwitcherItem)
                 || player.isSpectator() || !player.mayBuild() || entity.getContraption() == null) return false;
-        var info = entity.getContraption().getBlocks().get(position);
-        if (info == null || !(info.state().getBlock() instanceof HexieBogeyBlock<?>)
+        var support = support(entity, position);
+        if (support == null
                 || !entity.canInteractWithBlock(player, position, 4)) return false;
         if (player.isShiftKeyDown()) { FloorSwitcherItem.switchMode(player, hand); return true; }
         if (FloorSwitcherItem.mode(player.getItemInHand(hand)) == FloorSwitcherItem.Mode.REVERSE) {
             if (!entity.level().isClientSide) {
-                var data = info.nbt() == null ? new CompoundTag() : info.nbt().copy();
+                var data = support.entityData() == null ? new CompoundTag() : support.entityData();
                 BogeyFloorData.writeReversed(data, !BogeyFloorData.reversedFromEntity(data));
-                entity.setBlock(position, new StructureBlockInfo(position, info.state(), data));
+                write(entity, support, data);
                 entity.syncCarriage();
             }
             return true;
@@ -36,7 +46,7 @@ public final class SnapshotFloorInteraction {
         int height = BogeyFloorData.heightFromOffset(offset);
         FloorSwitcherItem.beginUsing(player, hand, entity.getUUID(), position,
                 FloorSwitcherItem.mode(player.getItemInHand(hand)) == FloorSwitcherItem.Mode.HEIGHT ? height
-                        : BogeyFloorData.longitudinalFromEntity(info.nbt()));
+                        : BogeyFloorData.longitudinalFromEntity(support.entityData()));
         return true;
     }
 
@@ -48,17 +58,16 @@ public final class SnapshotFloorInteraction {
                 || !(level.getEntity(carriage) instanceof SnapshotCarriageEntity entity)
                 || entity.isRemoved() || entity.getContraption() == null
                 || !entity.canInteractWithBlock(player, position, 4)) return;
-        var info = entity.getContraption().getBlocks().get(position);
-        if (info == null || !(info.state().getBlock() instanceof HexieBogeyBlock<?>)) return;
+        if (support(entity, position) == null) return;
         var motion = entity.motion();
         if (motion == null) return;
         motion.runtime().setFloorOffset(entity.getUUID(), BogeyFloorData.offset(height));
-        for (var block : entity.getContraption().getBlocks().values().stream()
-                .filter(b -> b.state().getBlock() instanceof HexieBogeyBlock<?>).toList()) {
-            BlockPos local = block.pos();
-            CompoundTag data = block.nbt() == null ? new CompoundTag() : block.nbt().copy();
+        for (var local : ContraptionInteractionTargets.bogeys(entity.getContraption())) {
+            var support = support(entity, local);
+            if (support == null) continue;
+            CompoundTag data = support.entityData() == null ? new CompoundTag() : support.entityData();
             BogeyFloorData.write(data, height);
-            entity.setBlock(local, new StructureBlockInfo(local, block.state(), data));
+            write(entity, support, data);
         }
         motion.applyCurrent(entity);
         entity.syncCarriage();
@@ -71,15 +80,15 @@ public final class SnapshotFloorInteraction {
                 || !(player.getItemInHand(hand).getItem() instanceof FloorSwitcherItem)
                 || !(level.getEntity(carriage) instanceof SnapshotCarriageEntity entity)
                 || entity.isRemoved() || entity.getContraption() == null || !entity.canInteractWithBlock(player, position, 4)) return;
-        var info = entity.getContraption().getBlocks().get(position);
-        if (info == null || !(info.state().getBlock() instanceof HexieBogeyBlock<?>)) return;
+        var support = support(entity, position);
+        if (support == null) return;
         var motion = entity.motion();
         var snapshot = willow.train.hexie.vehicle.assembly.CarriageSnapshotStore.get(level).find(carriage).orElse(null);
         if (motion == null || snapshot == null) return;
         int index = snapshot.supports().indexOf(position);
         if (index < 0) return;
-        int previous = BogeyFloorData.longitudinalFromEntity(info.nbt());
-        var shift = BogeyFloorData.displacement(info.state(), value).subtract(BogeyFloorData.displacement(info.state(), previous));
+        int previous = BogeyFloorData.longitudinalFromEntity(support.entityData());
+        var shift = BogeyFloorData.displacement(support.state(), value).subtract(BogeyFloorData.displacement(support.state(), previous));
         try {
             motion.runtime().shiftBogeyMount(carriage, index,
                     willow.train.hexie.vehicle.assembly.VehicleAssemblyPreparer.northForward(shift, motion.forward(carriage)));
@@ -87,9 +96,9 @@ public final class SnapshotFloorInteraction {
             player.displayClientMessage(net.minecraft.network.chat.Component.translatable("gui.hexie.bogey_offset.failed"), true);
             return;
         }
-        var data = info.nbt() == null ? new CompoundTag() : info.nbt().copy();
+        var data = support.entityData() == null ? new CompoundTag() : support.entityData();
         BogeyFloorData.writeLongitudinal(data, value);
-        entity.setBlock(position, new StructureBlockInfo(position, info.state(), data));
+        write(entity, support, data);
         motion.applyCurrent(entity); entity.syncCarriage();
         player.displayClientMessage(net.minecraft.network.chat.Component.translatable("gui.hexie.bogey_offset.value", value), true);
     }

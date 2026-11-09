@@ -2,8 +2,6 @@ package willow.train.hexie.client.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.simibubi.create.content.contraptions.render.ContraptionEntityRenderer;
-import com.simibubi.create.content.trains.bogey.AbstractBogeyBlock;
-import com.simibubi.create.content.trains.bogey.AbstractBogeyBlockEntity;
 import dev.engine_room.flywheel.api.visualization.VisualizationManager;
 import net.createmod.catnip.nbt.NBTHelper;
 import net.minecraft.client.renderer.LightTexture;
@@ -17,6 +15,7 @@ import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.phys.Vec3;
 import willow.train.hexie.client.render.bogey.DF11GBogeyRenderer;
 import willow.train.hexie.client.render.bogey.BogeySuspensionPose;
+import willow.train.hexie.client.render.bogey.BogeyRenderData;
 import willow.train.hexie.blocks.bogeys.BogeyFloorData;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import org.joml.Vector3f;
@@ -54,16 +53,16 @@ public final class SnapshotCarriageRenderer extends ContraptionEntityRenderer<Sn
         entity.applyLocalTransforms(poseStack, partialTick);
         for (int i = 0; i < animation.frames().size(); i++) {
             var frame = animation.frame(i, partialTick);
-            if (!(client.getBlockEntity(frame.position()) instanceof AbstractBogeyBlockEntity be)
-                    || !(be.getBlockState().getBlock() instanceof AbstractBogeyBlock<?> block)) continue;
+            var bogey = BogeyRenderData.resolve(client.getRenderLevel(), frame.position());
+            if (bogey == null) continue;
             poseStack.pushPose();
             transform(poseStack, frame);
-            try (var suspension = suspensionPose(be, frame);
+            try (var suspension = suspensionPose(bogey, frame);
                  var sample = willow.train.hexie.compat.create.bogey.CreateAddonBogeyRenderer.snapshotSample(
                          frame.wheelAngle(), frame.speed(), partialTick)) {
-                be.getStyle().render(block.getSize(), partialTick, poseStack, buffers,
+                bogey.style().render(bogey.block().getSize(), partialTick, poseStack, buffers,
                         light(entity, frame, partialTick), overlay, (float) (frame.wheelAngle() % 360),
-                        data(entity, be, frame), true);
+                        data(bogey, frame), true);
             }
             poseStack.popPose();
         }
@@ -75,11 +74,11 @@ public final class SnapshotCarriageRenderer extends ContraptionEntityRenderer<Sn
         stack.mulPose(frame.rotation());
     }
 
-    static BogeySuspensionPose.Scope suspensionPose(AbstractBogeyBlockEntity be, SnapshotBogeyAnimation.Frame frame) {
-        var position = be.getBlockPos();
-        var shift = BogeyFloorData.displacement(be.getBlockState(), BogeyFloorData.longitudinal(be.getBogeyData()));
-        float floorHeight = (float) BogeyFloorData.offset(BogeyFloorData.heightFromBogeyData(be.getBogeyData()));
-        boolean xAxis = be.getBlockState().getOptionalValue(BlockStateProperties.HORIZONTAL_AXIS)
+    static BogeySuspensionPose.Scope suspensionPose(BogeyRenderData bogey, SnapshotBogeyAnimation.Frame frame) {
+        var position = bogey.position();
+        var shift = BogeyFloorData.displacement(bogey.state(), BogeyFloorData.longitudinal(bogey.data()));
+        float floorHeight = (float) BogeyFloorData.offset(BogeyFloorData.heightFromBogeyData(bogey.data()));
+        boolean xAxis = bogey.state().getOptionalValue(BlockStateProperties.HORIZONTAL_AXIS)
                 .orElse(Direction.Axis.Z) == Direction.Axis.X;
         return BogeySuspensionPose.push(BogeySuspensionPose.relative(
                 new Vector3f(frame.x(), frame.y(), frame.z()), frame.rotation(),
@@ -89,9 +88,8 @@ public final class SnapshotCarriageRenderer extends ContraptionEntityRenderer<Sn
                 new Quaternionf().rotationY(xAxis ? (float) Math.PI / 2 : 0)));
     }
 
-    static CompoundTag data(SnapshotCarriageEntity entity, AbstractBogeyBlockEntity be,
-                            SnapshotBogeyAnimation.Frame frame) {
-        CompoundTag data = be.getBogeyData();
+    static CompoundTag data(BogeyRenderData bogey, SnapshotBogeyAnimation.Frame frame) {
+        CompoundTag data = bogey.data();
         // The complete model orientation is already in the support transform. Keep renderer-local
         // forward/backward variants, but don't apply Create's assembly-direction correction twice.
         NBTHelper.writeEnum(data, Constants.BOGEY_ASSEMBLY_DIRECTION_KEY, Direction.NORTH);

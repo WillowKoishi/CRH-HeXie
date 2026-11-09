@@ -44,7 +44,9 @@ public final class ContraptionInteractionTargets {
             if (adapter != null) bounds = willow.train.hexie.blocks.coupler.CouplerAdapterGeometry.bounds(state, adapter);
         }
         boolean shell = state.getBlock() instanceof CRH2HeadBlock || state.getBlock() instanceof CRH2EndFaceBlock;
-        boolean bogey = state.getBlock() instanceof HexieBogeyBlock<?>;
+        boolean bogey = state.getBlock() instanceof HexieBogeyBlock<?>
+                || state.getBlock() instanceof willow.train.hexie.blocks.emu.head.HeadFloorBlock
+                    && state.getValue(willow.train.hexie.blocks.emu.head.HeadFloorBlock.PART) == HeadGeometry.BOGEY_PART;
         boolean sign = PassengerDisplayPanel.supports(state.getBlock()) && state.hasProperty(PanelDisplayMount.PROPERTY)
                 && state.getValue(PanelDisplayMount.PROPERTY).hasSign();
         synchronized (TARGETS) {

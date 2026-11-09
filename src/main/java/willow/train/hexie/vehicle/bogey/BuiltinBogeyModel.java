@@ -1,6 +1,7 @@
 package willow.train.hexie.vehicle.bogey;
 
 import net.minecraft.resources.ResourceLocation;
+import willow.train.hexie.bogey.BogeyStyleMigration;
 
 /** One model/profile mapping shared by assembly and optional model adapters. */
 public enum BuiltinBogeyModel {
@@ -11,10 +12,10 @@ public enum BuiltinBogeyModel {
     SW220K("sw220k", "hxstandardbogey", "hexie:sw220k", BuiltinBogeyProfile.SW220K),
     SW220K_BACKWARD("sw220k_backward", "hxstandardbogey", "hexie:sw220k_backward", BuiltinBogeyProfile.SW220K),
     SW160("sw160", "hxstandardbogey", "hexie:sw160", BuiltinBogeyProfile.SW160),
-    DF11G("df11g", "df11gbogey", "create:small", BuiltinBogeyProfile.DF11G),
-    DF11G_BACKWARD("df11g_backward", "df11gbogey", "hexie:backward", BuiltinBogeyProfile.DF11G),
-    QJ("qj", "df11gbogey", "hexie:qj", BuiltinBogeyProfile.QJ),
-    QJ_BACKWARD("qj_backward", "df11gbogey", "hexie:qj_backward", BuiltinBogeyProfile.QJ),
+    DF11G("df11g", "loco", "create:small", BuiltinBogeyProfile.DF11G),
+    DF11G_BACKWARD("df11g_backward", "loco", "hexie:backward", BuiltinBogeyProfile.DF11G),
+    QJ("qj", "steambogey", "hexie:qj", BuiltinBogeyProfile.QJ),
+    QJ_BACKWARD("qj_backward", "steambogey", "hexie:qj_backward", BuiltinBogeyProfile.QJ),
     DT206("dt206", "crhbogey", "hexie:dt206", BuiltinBogeyProfile.DT206),
     SKTB200("sktb200", "crhbogey", "hexie:sktb200", BuiltinBogeyProfile.SKTB200);
 
@@ -34,6 +35,7 @@ public enum BuiltinBogeyModel {
     public BuiltinBogeyProfile profile() { return profile; }
 
     public static BuiltinBogeyModel find(ResourceLocation style, ResourceLocation size) {
+        style = BogeyStyleMigration.normalizeStyle(style, size);
         for (var model : values()) if (model.style.equals(style) && model.size.equals(size)) return model;
         return null;
     }

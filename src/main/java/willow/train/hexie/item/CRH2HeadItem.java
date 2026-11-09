@@ -11,6 +11,9 @@ import willow.train.hexie.init.block.BlockInit;
 
 public final class CRH2HeadItem extends BlockItem {
     public CRH2HeadItem(Block b,Properties p) { super(b,p); }
+    @Override public BlockPlaceContext updatePlacementContext(BlockPlaceContext context) {
+        return ((CRH2HeadBlock) getBlock()).placementContext(context);
+    }
     @Override protected boolean placeBlock(BlockPlaceContext c,BlockState s) {
         var w=c.getLevel();var root=c.getClickedPos();
         return willow.train.hexie.blocks.parts.PartInstallation.install(w,((CRH2HeadBlock)getBlock()).partCells(w,root,s),

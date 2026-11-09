@@ -4,7 +4,6 @@ import java.util.List;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.IEventBus;
 import willow.train.hexie.railway.RailwayCatalog;
-import willow.train.hexie.railway.RailwayBackendLoader;
 
 /**
  * HeXie-owned railway registration. Call during the contributing mod's constructor,
@@ -12,7 +11,7 @@ import willow.train.hexie.railway.RailwayBackendLoader;
  * Registration creates the active backend's blocks, items and railway binding internally.
  */
 public final class RailwayRegistry {
-    private static final RailwayCatalog CATALOG = new RailwayCatalog(RailwayBackendLoader::get);
+    private static final RailwayCatalog CATALOG = new RailwayCatalog();
     private RailwayRegistry() {}
 
     public static RailwayHandle register(IEventBus modBus, ResourceLocation id, RailwayDefinition definition) {

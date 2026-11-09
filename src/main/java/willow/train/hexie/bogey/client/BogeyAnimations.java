@@ -4,13 +4,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeSet;
 import net.minecraft.resources.ResourceLocation;
 import willow.train.hexie.api.bogey.client.BogeyAnimator;
+import willow.train.hexie.compat.create.bogey.CreateBogeyAnimationBackend;
 
-/** Owns callback identity and model declarations independently of the rendering backend. */
+/** Stores addon callbacks and prepares their models using the current renderer. */
 public final class BogeyAnimations {
     public record Registration(Set<ResourceLocation> models, BogeyAnimator animator) {
         public Registration { models = Set.copyOf(models); Objects.requireNonNull(animator); }
@@ -25,7 +25,7 @@ public final class BogeyAnimations {
         var registration = new Registration(models, callback);
         if (frozen) throw new IllegalStateException("Register bogey animations during client construction, before model baking");
         if (REGISTRATIONS.containsKey(id)) throw new IllegalArgumentException("Bogey animation already registered: " + id);
-        Backend.INSTANCE.register(id, registration.models());
+        CreateBogeyAnimationBackend.register(id, registration.models());
         REGISTRATIONS.put(id, registration);
     }
 
@@ -49,14 +49,4 @@ public final class BogeyAnimations {
                     + missing + ", unknown=" + unknown);
     }
 
-    private static final class Backend {
-        private static final BogeyAnimationBackend INSTANCE = load();
-        private static BogeyAnimationBackend load() {
-            var providers = ServiceLoader.load(BogeyAnimationBackend.class,
-                    BogeyAnimationBackend.class.getClassLoader()).stream().toList();
-            if (providers.size() != 1)
-                throw new IllegalStateException("HeXie requires exactly one bogey animation backend, found " + providers.size());
-            return providers.getFirst().get();
-        }
-    }
 }

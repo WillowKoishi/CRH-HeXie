@@ -3,12 +3,11 @@ package willow.train.hexie.api.bogey;
 import java.util.List;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.IEventBus;
-import willow.train.hexie.bogey.BogeyBackendLoader;
 import willow.train.hexie.bogey.BogeyCatalog;
 
 /** HeXie owns backend blocks, block entities, styles, assembly and compatibility. */
 public final class BogeyRegistry {
-    private static final BogeyCatalog CATALOG = new BogeyCatalog(BogeyBackendLoader::get);
+    private static final BogeyCatalog CATALOG = new BogeyCatalog();
     private BogeyRegistry() {}
 
     /**

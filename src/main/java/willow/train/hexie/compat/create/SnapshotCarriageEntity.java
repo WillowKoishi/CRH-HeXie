@@ -328,12 +328,13 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             frame.put("Bogeys", bogeyAnimation.write()); frame.put("Couplers", couplerAnimation.write());
             var settings = new ListTag();
             if (contraption != null) for (var pos : ContraptionInteractionTargets.bogeys(contraption)) {
-                var info = contraption.getBlocks().get(pos);
-                if (info == null || !(info.state().getBlock() instanceof willow.train.hexie.blocks.bogeys.HexieBogeyBlock<?>)) continue;
-                var entry = new CompoundTag(); entry.putLong("Pos", info.pos().asLong());
-                entry.putInt("Height", willow.train.hexie.blocks.bogeys.BogeyFloorData.value(info.nbt()));
-                entry.putInt("Longitudinal", willow.train.hexie.blocks.bogeys.BogeyFloorData.longitudinalFromEntity(info.nbt()));
-                entry.putBoolean("Reversed", willow.train.hexie.blocks.bogeys.BogeyFloorData.reversedFromEntity(info.nbt()));
+                var support = willow.train.hexie.vehicle.assembly.AssemblyBogeySupport.resolve(contraption.getBlocks(), pos);
+                if (support == null) continue;
+                var data = support.entityData();
+                var entry = new CompoundTag(); entry.putLong("Pos", pos.asLong());
+                entry.putInt("Height", willow.train.hexie.blocks.bogeys.BogeyFloorData.value(data));
+                entry.putInt("Longitudinal", willow.train.hexie.blocks.bogeys.BogeyFloorData.longitudinalFromEntity(data));
+                entry.putBoolean("Reversed", willow.train.hexie.blocks.bogeys.BogeyFloorData.reversedFromEntity(data));
                 settings.add(entry);
             }
             frame.put("BogeySettings", settings);
@@ -1050,6 +1051,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         // Decode the complete update before installing it; malformed later actors must not leave
         // half of the structure replaced. Reuse the snapshot's block/property/type contract.
         var blocks = view.copyBlocks();
+        tag = willow.train.hexie.blocks.emu.head.HeadBogeyMigration.working(tag, blocks, registryAccess());
         var changedPositions = new HashSet<BlockPos>();
         for (var element : workingList(tag, "ChangedBlocks")) {
             var data = (CompoundTag) element;
@@ -1387,8 +1389,9 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         for (int i = 0; i < settings.size(); i++) {
             var entry = settings.getCompound(i);
             var pos = BlockPos.of(entry.getLong("Pos"));
-            var info = contraption.getBlocks().get(pos);
-            if (info == null || !(info.state().getBlock() instanceof willow.train.hexie.blocks.bogeys.HexieBogeyBlock<?>)) continue;
+            var support = willow.train.hexie.vehicle.assembly.AssemblyBogeySupport.resolve(contraption.getBlocks(), pos);
+            if (support == null) continue;
+            var info = contraption.getBlocks().get(support.owner());
             int height = entry.getInt("Height"), offset = entry.getInt("Longitudinal");
             if (!willow.train.hexie.blocks.bogeys.BogeyFloorData.valid(height)
                     || !willow.train.hexie.blocks.bogeys.BogeyFloorData.validLongitudinal(offset)) continue;
@@ -1399,13 +1402,17 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             willow.train.hexie.blocks.bogeys.BogeyFloorData.writeReversed(data, entry.getBoolean("Reversed"));
             willow.train.hexie.blocks.bogeys.BogeyFloorData.write(data, height);
             willow.train.hexie.blocks.bogeys.BogeyFloorData.writeLongitudinal(data, offset);
-            setBlock(pos, new StructureBlockInfo(pos, info.state(), data));
+            setBlock(support.owner(), new StructureBlockInfo(support.owner(), info.state(), data));
             // Invalidating the mesh does not reload ClientContraption's virtual BEs.
             // The top model reads its offset from that live BE, not the saved block map.
-            var rendered = contraption.getBlockEntityClientSide(pos);
+            var rendered = contraption.getBlockEntityClientSide(support.owner());
             if (rendered instanceof willow.train.hexie.blocks.bogeys.HexieBogeyBlockEntity bogey) {
                 bogey.setBogeyData(data.getCompound("BogeyData").copy());
                 bogey.markCarriageView();
+            }
+            if (rendered instanceof willow.train.hexie.blockentity.CRH2HeadEntity head) {
+                head.updateBogey(true, data.getCompound("BogeyData"));
+                head.markCarriageView();
             }
             changed = true;
         }
@@ -1899,6 +1906,8 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
                         boolean legacy) {
                     var be = super.readBlockEntity(level, info, legacy);
                     if (be instanceof willow.train.hexie.blocks.bogeys.HexieBogeyBlockEntity bogey) bogey.markCarriageView();
+                    if (be instanceof willow.train.hexie.blockentity.CRH2HeadEntity head) head.markCarriageView();
+                    if (be instanceof willow.train.hexie.blocks.base.CarriageViewBlockEntity view) view.markCarriageView();
                     // ClientContraption's constructor creates BEs without calling resetRenderLevel.
                     // Bind at creation so the first render and every rebuild read live state.
                     if (be instanceof willow.train.hexie.api.cab.CabDisplayHost console)

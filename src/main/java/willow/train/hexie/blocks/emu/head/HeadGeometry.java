@@ -77,7 +77,9 @@ public final class HeadGeometry {
         if (state.getBlock() instanceof HeadFloorBlock) {
             var root=pos.subtract(offset(state.getValue(HeadFloorBlock.PART),state.getValue(CRH2HeadBlock.FACING)));
             if(world instanceof Level level&&!level.hasChunkAt(root))return null;
-            return world.getBlockState(root).getBlock() instanceof CRH2HeadBlock ? root : null;
+            var rootState=world.getBlockState(root);
+            return rootState.getBlock() instanceof CRH2HeadBlock
+                    && rootState.getValue(CRH2HeadBlock.FACING)==state.getValue(CRH2HeadBlock.FACING) ? root : null;
         }
         if (state.getBlock() instanceof HexieBogeyBlock<?> && state.getValue(HexieBogeyBlock.HEAD_MOUNTED)) {
             for (var d:Direction.Plane.HORIZONTAL) {

@@ -24,6 +24,14 @@ public class CouplerBlockEntity extends BlockEntity implements willow.train.hexi
     private CouplerAdapter rescueAnimationAdapter;
     private String rescueAnimationBaseModel = "";
 
+    /** Optional backends choose their supported blocks after mod loading. */
+    public static CouplerBlockEntity create(BlockPos pos, BlockState state) {
+        var mods = net.neoforged.fml.ModList.get();
+        if (mods.isLoaded("simurail") && mods.isLoaded("sable"))
+            return willow.train.hexie.compat.simurail.SimurailCouplerFactory.create(pos, state);
+        return new CouplerBlockEntity(pos, state);
+    }
+
     public CouplerBlockEntity(BlockPos pos, BlockState state) {
         this(BlockEntitiesInit.COUPLER.get(), pos, state);
     }
@@ -63,6 +71,22 @@ public class CouplerBlockEntity extends BlockEntity implements willow.train.hexi
     }
 
     public CouplerAdapter adapter() { return adapter; }
+
+    /** Ordinary placed blocks and captured carriage views do not have physical connections. */
+    public boolean uncouplePhysical() { return false; }
+
+    /** Physical connections drive the same persisted knuckle state as the carriage runtime. */
+    protected void updatePhysicalCouplingAnimation(boolean coupled) {
+        if (level == null || level.isClientSide || !(getBlockState().getBlock() instanceof CouplerBlock hook)) return;
+        if (adapter == null && getBlockState().getBlock() instanceof willow.train.hexie.blocks.coupler.JanneyCouplerBlock) {
+            var open = net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN;
+            if (getBlockState().getValue(open) == coupled)
+                level.setBlock(worldPosition, getBlockState().setValue(open, !coupled), Block.UPDATE_ALL);
+        }
+        rescueKnuckle = RescueCouplerState.sync(rescueKnuckle, adapter, hook.model(), coupled, level.getGameTime());
+        readRescueAnimationTarget();
+        sync();
+    }
     public boolean hasRescueCoupler() { return RescueCouplerState.installed(adapter); }
     public boolean rescueKnuckleOpen() { return rescueTargetOpen; }
     public float rescueKnuckleProgress(float partialTick) {

@@ -79,10 +79,8 @@ public final class TrainBogeyClientSync {
         Direction assemblyDirection = Direction.fromYRot(entity.getInitialOrientation().toYRot() + 90);
 
         float signedSpeed = 0;
-        boolean firstNeedsSpeed = updateFirst && BogeyStylesInit.DF11GBOGEY.equals(firstBogey.getStyle())
-                && isQJSize(firstBogey);
-        boolean secondNeedsSpeed = updateSecond && BogeyStylesInit.DF11GBOGEY.equals(secondBogey.getStyle())
-                && isQJSize(secondBogey);
+        boolean firstNeedsSpeed = updateFirst && isQJSize(firstBogey);
+        boolean secondNeedsSpeed = updateSecond && isQJSize(secondBogey);
         if (firstNeedsSpeed || secondNeedsSpeed) {
             Vec3 difference = entity.getPrevPositionVec()
                     .subtract(entity.getX(), entity.getY(), entity.getZ());
@@ -107,7 +105,8 @@ public final class TrainBogeyClientSync {
         if (bogey == null || bogey.bogeyData == null)
             return false;
         var style = bogey.getStyle();
-        return BogeyStylesInit.HXSTANDARDBOGEY.equals(style) || BogeyStylesInit.DF11GBOGEY.equals(style);
+        return BogeyStylesInit.HXSTANDARDBOGEY.equals(style) || BogeyStylesInit.LOCOBOGEY.equals(style)
+                || BogeyStylesInit.STEAMBOGEY.equals(style);
     }
 
     private static void updateBogey(CarriageBogey bogey, Direction direction, float trainSpeed,

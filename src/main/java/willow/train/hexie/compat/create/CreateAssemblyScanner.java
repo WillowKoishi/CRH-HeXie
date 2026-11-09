@@ -7,7 +7,7 @@ import com.simibubi.create.content.contraptions.glue.SuperGlueEntity;
 import com.simibubi.create.infrastructure.config.AllConfigs;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import willow.train.hexie.blocks.bogeys.HexieBogeyBlock;
+import willow.train.hexie.vehicle.assembly.AssemblyBogeySupport;
 import willow.train.hexie.vehicle.assembly.AssemblyRequest;
 import willow.train.hexie.vehicle.assembly.AssemblyScanner;
 import willow.train.hexie.vehicle.assembly.AssemblySelection;
@@ -25,7 +25,7 @@ public final class CreateAssemblyScanner implements AssemblyScanner {
         capturedGlue = Set.of();
         for (BlockPos support : request.supports()) {
             if (!level.isLoaded(support)) throw new ScanException("Unloaded support: " + support);
-            if (!(level.getBlockState(support).getBlock() instanceof HexieBogeyBlock<?>))
+            if (!AssemblyBogeySupport.isSupport(level, support))
                 throw new ScanException("Not a HeXie assembly support: " + support);
         }
         var source = new CreateAssemblyWorld(level, request.region());
@@ -41,7 +41,7 @@ public final class CreateAssemblyScanner implements AssemblyScanner {
                     if (claimed.contains(block)) throw new ScanException("Overlapping structures at " + block);
                 claimed.addAll(blocks);
                 var supports = blocks.stream()
-                        .filter(pos -> level.getBlockState(pos).getBlock() instanceof HexieBogeyBlock<?>).toList();
+                        .filter(pos -> AssemblyBogeySupport.isSupport(level, pos)).toList();
                 components.add(new AssemblySelection.Component(root, blocks, supports));
             }
         } catch (IllegalStateException exception) {

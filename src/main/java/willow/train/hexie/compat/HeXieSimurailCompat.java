@@ -33,22 +33,25 @@ public final class HeXieSimurailCompat {
     public static final BogeyEntry SW220K = entry("sw220k", BogeyStylesInit.HXSTANDARDBOGEY, BogeySizesInit.SW220K);
     public static final BogeyEntry SW220K_BACKWARD = entry("sw220k_backward", BogeyStylesInit.HXSTANDARDBOGEY, BogeySizesInit.SW220K_BACKWARD);
     public static final BogeyEntry SW160 = entry("sw160", BogeyStylesInit.HXSTANDARDBOGEY, BogeySizesInit.SW160);
-    public static final BogeyEntry DF11G = entry("df11g", BogeyStylesInit.DF11GBOGEY, BogeySizes.SMALL);
-    public static final BogeyEntry DF11G_BACKWARD = entry("df11g_backward", BogeyStylesInit.DF11GBOGEY, BogeySizesInit.BACKWARD);
-    public static final BogeyEntry QJ = entry("qj", BogeyStylesInit.DF11GBOGEY, BogeySizesInit.QJ);
-    public static final BogeyEntry QJ_BACKWARD = entry("qj_backward", BogeyStylesInit.DF11GBOGEY, BogeySizesInit.QJ_BACKWARD);
+    public static final BogeyEntry DF11G = entry("df11g", BogeyStylesInit.LOCOBOGEY, BogeySizes.SMALL);
+    public static final BogeyEntry DF11G_BACKWARD = entry("df11g_backward", BogeyStylesInit.LOCOBOGEY, BogeySizesInit.BACKWARD);
+    public static final BogeyEntry QJ = entry("qj", BogeyStylesInit.STEAMBOGEY, BogeySizesInit.QJ);
+    public static final BogeyEntry QJ_BACKWARD = entry("qj_backward", BogeyStylesInit.STEAMBOGEY, BogeySizesInit.QJ_BACKWARD);
 
     public static final BogeyEntryCategory PASSENGER = new BogeyEntryCategory(
             Component.translatable("simurail_bogey_category.hexie.passenger"),
             List.of(CW2, PK209P, PK209P_NO_MOTOR, PK209P_BACKWARD, SW220K, SW220K_BACKWARD, SW160));
-    public static final BogeyEntryCategory LOCOMOTIVE = new BogeyEntryCategory(
-            Component.translatable("simurail_bogey_category.hexie.locomotive"),
-            List.of(DF11G, DF11G_BACKWARD, QJ, QJ_BACKWARD));
+    public static final BogeyEntryCategory LOCO = new BogeyEntryCategory(
+            Component.translatable("simurail_bogey_category.hexie.loco"),
+            List.of(DF11G, DF11G_BACKWARD));
+    public static final BogeyEntryCategory STEAM = new BogeyEntryCategory(
+            Component.translatable("simurail_bogey_category.hexie.steam"),
+            List.of(QJ, QJ_BACKWARD));
     public static final BogeyEntryCategory EMU = new BogeyEntryCategory(
             Component.translatable("simurail_bogey_category.hexie.emu"), List.of(DT206, SKTB200));
     public static final BogeyParentCategory HEXIE = new BogeyParentCategory(
             Component.translatable("simurail_bogey_category.hexie"),
-            List.of(PASSENGER, LOCOMOTIVE, EMU));
+            List.of(PASSENGER, LOCO, STEAM, EMU));
 
     private HeXieSimurailCompat() {}
 

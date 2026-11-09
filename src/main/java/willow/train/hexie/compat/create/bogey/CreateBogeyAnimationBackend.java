@@ -8,13 +8,13 @@ import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLEnvironment;
-import willow.train.hexie.bogey.client.BogeyAnimationBackend;
 
 /** Pre-bakes add-on models without exposing Flywheel to the add-on animation contract. */
-public final class CreateBogeyAnimationBackend implements BogeyAnimationBackend {
+public final class CreateBogeyAnimationBackend {
+    private CreateBogeyAnimationBackend() {}
     private static final Map<ResourceLocation, PartialModel> MODELS = new ConcurrentHashMap<>();
 
-    @Override public void register(ResourceLocation bogeyId, Set<ResourceLocation> models) {
+    public static void register(ResourceLocation bogeyId, Set<ResourceLocation> models) {
         if (FMLEnvironment.dist != Dist.CLIENT)
             throw new IllegalStateException("Register bogey animation callbacks only on the client");
         ModList.get().getModContainerById(bogeyId.getNamespace())

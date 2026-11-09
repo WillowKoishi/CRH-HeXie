@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.simibubi.create.content.contraptions.AssemblyException;
 import com.simibubi.create.content.trains.bogey.AbstractBogeyBlock;
 import com.simibubi.create.content.trains.station.StationBlockEntity;
@@ -32,6 +34,7 @@ import willow.train.hexie.compat.create.CreateStationAssemblyRequest;
 import willow.train.hexie.compat.create.CreateVehicleAssembly;
 import willow.train.hexie.compat.create.CompatibilityTrain;
 import willow.train.hexie.vehicle.assembly.AssemblyRegion;
+import willow.train.hexie.vehicle.assembly.AssemblyBogeySupport;
 import willow.train.hexie.vehicle.assembly.CarriageSnapshotStore;
 
 /** Uses the existing station action and rail scan; HeXie owns the subsequent structure lifecycle. */
@@ -95,6 +98,16 @@ public abstract class MixinVehicleAssemblyStation extends SmartBlockEntity imple
             result.add(trackPosition.relative(station.getAssemblyDirection(), bogeyLocations[i] + 1).offset(bogeyOffset));
         }
         return Optional.of(List.copyOf(result));
+    }
+
+    /** Let Create's existing rail scan see an enabled integral support without placing a bogey block. */
+    @WrapOperation(method = "refreshAssemblyInfo", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/world/level/Level;getBlockState(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/block/state/BlockState;"))
+    private BlockState hexie$integralSupport(Level world, BlockPos pos, Operation<BlockState> original) {
+        var state = original.call(world, pos);
+        if (!(state.getBlock() instanceof willow.train.hexie.blocks.emu.head.HeadFloorBlock)) return state;
+        var support = AssemblyBogeySupport.resolve(world, pos);
+        return support == null ? state : support.state();
     }
 
     @Inject(method = "assemble", at = @At(value = "INVOKE",

@@ -71,6 +71,8 @@
 
   "simurail_bogey_category.hexie.passenger": "客车转向架",
   "simurail_bogey_category.hexie.locomotive": "机车转向架",
+  "simurail_bogey_category.hexie.loco": "机车转向架",
+  "simurail_bogey_category.hexie.steam": "蒸汽转向架",
 
   "simurail_bogey_category.hexie.emu": "动车转向架",
   "simurail_bogey_entry.hexie.dt206": "DT-206",
@@ -98,6 +100,8 @@
   "block.hexie.CRH_bogey": "动车转向架",
   "hexie.bogeys.styles.hxstandardbogey": "客车转向架",
   "hexie.bogeys.styles.df11gbogey": "机车转向架",
+  "hexie.bogeys.styles.loco": "机车转向架",
+  "hexie.bogeys.styles.steambogey": "蒸汽转向架",
   "hexie.bogeys.styles.crhbogey": "动车转向架",
   "simurail_bogey_category.hexie": "CRH mod",
   "simurail_bogey_entry.hexie.cw2": "CW-2",
@@ -635,9 +639,21 @@
   "container.hexie.bogey_check_overlay.hexie_df11gbogey.create_small.bogey.name": "DF11G",
   "container.hexie.bogey_check_overlay.hexie_df11gbogey.create_small.bogey.speed": "最高运营速度: 170km/h",
   "container.hexie.bogey_check_overlay.hexie_df11gbogey.create_small.bogey.cart": "适用机车: 东风11供电,型(DF11G)",
+  "container.hexie.bogey_check_overlay.hexie_loco.create_small.bogey.name": "DF11G",
+  "container.hexie.bogey_check_overlay.hexie_loco.create_small.bogey.speed": "最高运营速度: 170km/h",
+  "container.hexie.bogey_check_overlay.hexie_loco.create_small.bogey.cart": "适用机车: 东风11供电,型(DF11G)",
+  "container.hexie.bogey_check_overlay.hexie_loco.hexie_backward.bogey.name": "DF11G（反向）",
+  "container.hexie.bogey_check_overlay.hexie_loco.hexie_backward.bogey.speed": "最高运营速度: 170km/h",
+  "container.hexie.bogey_check_overlay.hexie_loco.hexie_backward.bogey.cart": "适用机车: 东风11供电,型(DF11G)",
   "container.hexie.bogey_check_overlay.hexie_df11gbogey.hexie_qj.bogey.name": "前进型动轮",
   "container.hexie.bogey_check_overlay.hexie_df11gbogey.hexie_qj.bogey.speed": "构造速度: 80km/h",
   "container.hexie.bogey_check_overlay.hexie_df11gbogey.hexie_qj.bogey.cart": "适用机车: 前进型, (QJ)",
+  "container.hexie.bogey_check_overlay.hexie_steambogey.hexie_qj.bogey.name": "前进型动轮",
+  "container.hexie.bogey_check_overlay.hexie_steambogey.hexie_qj.bogey.speed": "构造速度: 80km/h",
+  "container.hexie.bogey_check_overlay.hexie_steambogey.hexie_qj.bogey.cart": "适用机车: 前进型, (QJ)",
+  "container.hexie.bogey_check_overlay.hexie_steambogey.hexie_qj_backward.bogey.name": "前进型动轮（反向）",
+  "container.hexie.bogey_check_overlay.hexie_steambogey.hexie_qj_backward.bogey.speed": "构造速度: 80km/h",
+  "container.hexie.bogey_check_overlay.hexie_steambogey.hexie_qj_backward.bogey.cart": "适用机车: 前进型, (QJ)",
 
 
   "tips.patchouli": "--------------------------------帕秋莉辞典内容--------------------------------",
@@ -685,5 +701,8 @@
   "block.hexie.crh2a_electronic_signage": "CRH2A 电子水牌",
   "block.hexie.crh2a_carriage_number_display": "CRH2A 车厢号显示屏",
   "gui.hexie.carriage_number.title": "车厢号显示屏",
-  "gui.hexie.carriage_number.hint": "输入 1–2 位数字，留空清屏"
+  "gui.hexie.carriage_number.hint": "输入 1–2 位数字，留空清屏",
+  "block.hexie.crh2a_physical_head": "CRH2A 物理化鱼头",
+  "block.hexie.crh2a_physical_head_bogey": "CRH2A 鱼头物理转向架控制块",
+  "hexie.command.physical_head.incomplete": "%s 处的物理化鱼头结构不完整，或尚未完全加载。"
 }

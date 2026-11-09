@@ -21,6 +21,7 @@ public abstract class MixinPartSchematicPreflight {
     @Unique private Set<BlockPos> hexie$partMembers=Set.of();
     @Inject(method="loadSchematic",at=@At("RETURN"))
     private void hexie$readPartLayout(ItemStack schematic,Level level,boolean processNBT,CallbackInfo ci) {
+        willow.train.hexie.blocks.emu.head.HeadBogeyMigration.schematic(blockReader);
         hexie$partMembers=willow.train.hexie.compat.create.PartSchematicPlacement.targetMembers(blockReader);
     }
     @Inject(method="shouldPlaceBlock",at=@At("RETURN"),cancellable=true)

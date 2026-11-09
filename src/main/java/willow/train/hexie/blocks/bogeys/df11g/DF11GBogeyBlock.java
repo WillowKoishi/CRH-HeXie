@@ -5,6 +5,7 @@ import com.simibubi.create.content.trains.bogey.BogeyStyle;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import willow.train.hexie.blocks.bogeys.HexieBogeyBlock;
 import willow.train.hexie.init.bogeys.BogeyEntityInit;
+import willow.train.hexie.init.bogeys.BogeySizesInit;
 import willow.train.hexie.init.bogeys.BogeyStylesInit;
 
 public class DF11GBogeyBlock extends HexieBogeyBlock<DF11GBogeyBlockEntity> {
@@ -14,7 +15,8 @@ public class DF11GBogeyBlock extends HexieBogeyBlock<DF11GBogeyBlockEntity> {
 
     @Override
     public BogeyStyle getDefaultStyle() {
-        return BogeyStylesInit.DF11GBOGEY;
+        return BogeySizesInit.QJ.equals(getSize()) || BogeySizesInit.QJ_BACKWARD.equals(getSize())
+                ? BogeyStylesInit.STEAMBOGEY : BogeyStylesInit.LOCOBOGEY;
     }
 
     @Override

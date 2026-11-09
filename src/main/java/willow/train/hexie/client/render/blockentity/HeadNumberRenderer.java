@@ -10,6 +10,8 @@ import net.minecraft.world.phys.AABB;
 import willow.train.hexie.blockentity.CRH2HeadEntity;
 import willow.train.hexie.blocks.emu.head.CRH2HeadBlock;
 import willow.train.hexie.blocks.emu.head.HeadGeometry;
+import willow.train.hexie.blocks.emu.head.HeadBogey;
+import willow.train.hexie.client.render.bogey.HeadBogeyRenderer;
 import willow.train.hexie.client.sign.SignTextRenderer;
 
 /** Decals on the authored lower side panels, below the blue stripe and ahead of the cab doors. */
@@ -43,6 +45,7 @@ public final class HeadNumberRenderer implements BlockEntityRenderer<CRH2HeadEnt
     public HeadNumberRenderer(BlockEntityRendererProvider.Context context) {}
     @Override public void render(CRH2HeadEntity head, float partialTick, PoseStack pose,
                                  MultiBufferSource buffers, int light, int overlay) {
+        HeadBogeyRenderer.render(head, partialTick, pose, buffers, light, overlay);
         if (head.number().isBlank()) return;
         pose.pushPose();
         pose.translate(.5, 0, .5);
@@ -67,7 +70,10 @@ public final class HeadNumberRenderer implements BlockEntityRenderer<CRH2HeadEnt
         pose.popPose();
     }
     @Override public AABB getRenderBoundingBox(CRH2HeadEntity head) {
-        return HeadGeometry.bounds(head.getBlockState().getValue(CRH2HeadBlock.FACING)).move(head.getBlockPos());
+        var facing = head.getBlockState().getValue(CRH2HeadBlock.FACING);
+        var bounds = HeadGeometry.bounds(facing).move(head.getBlockPos());
+        return head.bogeyEnabled()
+                ? bounds.minmax(new AABB(HeadBogey.mount(head.getBlockPos(), facing)).inflate(2)) : bounds;
     }
     @Override public boolean shouldRenderOffScreen(CRH2HeadEntity head) { return true; }
 }

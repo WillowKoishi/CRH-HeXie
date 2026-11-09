@@ -26,6 +26,7 @@ import willow.train.hexie.blocks.bogeys.BogeyFloorData;
 import willow.train.hexie.blocks.bogeys.HexieBogeyBlock;
 import willow.train.hexie.blocks.bogeys.HexieBogeyBlockEntity;
 import willow.train.hexie.compat.create.SnapshotFloorInteraction;
+import willow.train.hexie.vehicle.assembly.AssemblyBogeySupport;
 
 /** Keeps short-release and slider actions bound to the target where the wrench press began. */
 public final class FloorSwitcherItem extends Item {
@@ -93,9 +94,10 @@ public final class FloorSwitcherItem extends Item {
     }
 
     public static void beginUsing(Player player, InteractionHand hand, UUID carriage, BlockPos position) {
-        int current = player.level().getBlockEntity(position) instanceof HexieBogeyBlockEntity bogey
-                ? mode(player.getItemInHand(hand)) == Mode.HEIGHT ? BogeyFloorData.get(bogey)
-                : BogeyFloorData.longitudinal(bogey.getBogeyData()) : height(player.getItemInHand(hand));
+        var support = AssemblyBogeySupport.resolve(player.level(), position);
+        int current = support != null
+                ? mode(player.getItemInHand(hand)) == Mode.HEIGHT ? BogeyFloorData.value(support.entityData())
+                : BogeyFloorData.longitudinalFromEntity(support.entityData()) : height(player.getItemInHand(hand));
         beginUsing(player, hand, carriage, position, current);
     }
 
@@ -180,16 +182,15 @@ public final class FloorSwitcherItem extends Item {
         }
         var level = context.getLevel();
         var pos = context.getClickedPos();
-        if (!(level.getBlockState(pos).getBlock() instanceof HexieBogeyBlock<?>)
-                || !(level.getBlockEntity(pos) instanceof HexieBogeyBlockEntity bogey)) return InteractionResult.PASS;
+        var support = AssemblyBogeySupport.resolve(level, pos);
+        if (support == null) return InteractionResult.PASS;
         var player = context.getPlayer();
         if (player == null || player.isSpectator() || !player.mayBuild()) return InteractionResult.FAIL;
         if (mode(context.getItemInHand()) == Mode.REVERSE) {
-            if (!level.isClientSide && level.mayInteract(player, pos)) {
-                var data = bogey.getBogeyData();
-                data.putBoolean(BogeyFloorData.REVERSED, !data.getBoolean(BogeyFloorData.REVERSED));
-                bogey.setChanged();
-                bogey.sendData();
+            if (!level.isClientSide && level.mayInteract(player, pos) && level.mayInteract(player, support.owner())) {
+                var data = support.entityData();
+                BogeyFloorData.writeReversed(data, !BogeyFloorData.reversedFromEntity(data));
+                writeSupport(level, support, data);
             }
             return InteractionResult.sidedSuccess(level.isClientSide);
         }
@@ -254,12 +255,25 @@ public final class FloorSwitcherItem extends Item {
             return;
         }
         BlockPos pos = target.position();
-        if (!level.hasChunkAt(pos) || !level.mayInteract(player, pos) || !player.canInteractWithBlock(pos, 1)
-                || !(level.getBlockState(pos).getBlock() instanceof HexieBogeyBlock<?>)
-                || !(level.getBlockEntity(pos) instanceof HexieBogeyBlockEntity bogey)) return;
-        if (target.slider().mode() == Mode.HEIGHT) BogeyFloorData.set(bogey, height);
-        else BogeyFloorData.setLongitudinal(bogey, height);
+        if (!level.hasChunkAt(pos) || !level.mayInteract(player, pos) || !player.canInteractWithBlock(pos, 1)) return;
+        var support = AssemblyBogeySupport.resolve(level, pos);
+        if (support == null || !level.mayInteract(player, support.owner())) return;
+        var data = support.entityData();
+        if (target.slider().mode() == Mode.HEIGHT) BogeyFloorData.write(data, height);
+        else BogeyFloorData.writeLongitudinal(data, height);
+        writeSupport(level, support, data);
         player.displayClientMessage(target.slider().mode() == Mode.HEIGHT ? message(height)
                 : Component.translatable("gui.hexie.bogey_offset.value", height), true);
+    }
+
+    private static void writeSupport(Level level, AssemblyBogeySupport support, CompoundTag data) {
+        var owner = level.getBlockEntity(support.owner());
+        if (owner instanceof willow.train.hexie.blockentity.CRH2HeadEntity head)
+            head.updateBogey(true, data.getCompound("BogeyData"));
+        else if (owner instanceof HexieBogeyBlockEntity bogey) {
+            bogey.setBogeyData(data.getCompound("BogeyData"));
+            bogey.setChanged();
+            bogey.sendData();
+        }
     }
 }

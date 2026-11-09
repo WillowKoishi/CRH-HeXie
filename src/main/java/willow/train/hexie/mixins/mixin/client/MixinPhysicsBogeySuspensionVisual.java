@@ -14,6 +14,8 @@ import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
 import willow.train.hexie.client.render.bogey.BogeySuspensionPose;
 import willow.train.hexie.client.render.bogey.SimurailBogeySuspensionPose;
+import willow.train.hexie.blocks.bogeys.BogeyFloorData;
+import willow.train.hexie.compat.simurail.PhysicalHeadBogeyBlockEntity;
 
 @Pseudo
 @Mixin(targets = "com.crystaelix.simurail.content.bogey.PhysicsBogeyVisual", remap = false)
@@ -27,6 +29,10 @@ public abstract class MixinPhysicsBogeySuspensionVisual extends AbstractBlockEnt
             target = "Lcom/simibubi/create/content/trains/bogey/BogeyVisual;update(Lnet/minecraft/nbt/CompoundTag;FLcom/mojang/blaze3d/vertex/PoseStack;)V"), require = 1)
     private void hexie$bodyMountedSuspension(BogeyVisual visual, CompoundTag data, float angle, PoseStack pose,
             Operation<Void> original, DynamicVisual.Context context) {
+        if (blockEntity instanceof PhysicalHeadBogeyBlockEntity) {
+            data = data.copy();
+            data.putInt(BogeyFloorData.LONGITUDINAL_KEY, 0);
+        }
         try (var scope = BogeySuspensionPose.push(SimurailBogeySuspensionPose.relative(blockEntity, context.partialTick()))) {
             original.call(visual, data, angle, pose);
         }

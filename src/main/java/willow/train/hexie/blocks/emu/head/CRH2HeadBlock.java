@@ -17,16 +17,19 @@ import net.minecraft.world.level.block.state.*;
 import net.minecraft.world.level.block.state.properties.*;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.phys.shapes.*;
-import com.simibubi.create.content.trains.track.ITrackBlock;
 import willow.train.hexie.blocks.bogeys.*;
 import willow.train.hexie.init.block.BlockInit;
-import willow.train.hexie.init.track.TrackBlockInit;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 @EventBusSubscriber(modid = willow.train.hexie.Main.MOD_ID)
-public final class CRH2HeadBlock extends Block implements EntityBlock, willow.train.hexie.blocks.parts.PartStructure {
+public class CRH2HeadBlock extends Block implements EntityBlock, willow.train.hexie.blocks.parts.PartStructure {
+    /** Optional backends keep their own moving bogey while sharing the complete head structure. */
+    public boolean hasPhysicalBogey() { return false; }
+    public boolean requiresTrackForBogey() { return true; }
+    public boolean preserveBogeyState(Level level, BlockPos root) { return false; }
+    public void bogeyChanged(willow.train.hexie.blockentity.CRH2HeadEntity head) {}
     @Override public BlockPos partRoot(BlockGetter level,BlockPos pos,BlockState state) { return pos; }
     @Override public Map<BlockPos,BlockState> partCells(BlockGetter level,BlockPos root,BlockState state) {
         var cells=new java.util.LinkedHashMap<BlockPos,BlockState>();
@@ -35,11 +38,7 @@ public final class CRH2HeadBlock extends Block implements EntityBlock, willow.tr
         for(int i=0;i<HeadGeometry.PARTS;i++) {
             if(i==HeadGeometry.ROOT_PART)continue;
             var pos=root.offset(HeadGeometry.offset(i,facing));
-            var old=i==HeadGeometry.BOGEY_PART && (!(level instanceof Level world)||world.hasChunkAt(pos))
-                    ? level.getBlockState(pos) : net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
-            if(i==HeadGeometry.BOGEY_PART && old.getBlock() instanceof HexieBogeyBlock<?> && old.getValue(HexieBogeyBlock.HEAD_MOUNTED)
-                    && root.equals(HeadGeometry.owner(level,pos)))cells.put(pos,old);
-            else cells.put(pos,BlockInit.CRH2A_HEAD_FLOOR.get().defaultBlockState().setValue(FACING,facing).setValue(HeadFloorBlock.PART,i));
+            cells.put(pos,BlockInit.CRH2A_HEAD_FLOOR.get().defaultBlockState().setValue(FACING,facing).setValue(HeadFloorBlock.PART,i));
         }
         return cells;
     }
@@ -47,12 +46,14 @@ public final class CRH2HeadBlock extends Block implements EntityBlock, willow.tr
         return new willow.train.hexie.blockentity.CRH2HeadEntity(pos, state);
     }
     public static final DirectionProperty FACING=BlockStateProperties.HORIZONTAL_FACING;
-    private static final Map<ServerLevel, Map<BlockPos, Direction>> MOVED_HEADS = new WeakHashMap<>();
+    private record RemovedHead(BlockState state, Map<BlockPos, BlockState> cells) {}
+    private static final Map<ServerLevel, Map<BlockPos, RemovedHead>> MOVED_HEADS = new WeakHashMap<>();
     public CRH2HeadBlock(Properties properties) {
         super(properties.dynamicShape());
         registerDefaultState(stateDefinition.any().setValue(FACING,Direction.NORTH));
     }
     @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> builder) { builder.add(FACING); }
+    public BlockPlaceContext placementContext(BlockPlaceContext context) { return context; }
     @Override public BlockState getStateForPlacement(BlockPlaceContext c) {
         Direction face = c.getClickedFace();
         Direction facing = face.getAxis().isHorizontal() ? face : c.getHorizontalDirection();
@@ -64,53 +65,51 @@ public final class CRH2HeadBlock extends Block implements EntityBlock, willow.tr
     @Override public void onBlockStateChange(LevelReader world, BlockPos pos, BlockState oldState, BlockState newState) {
         if (world instanceof Level level && level.isClientSide)
             willow.train.hexie.client.render.CRH2StaticSections.changed(world, pos, oldState, newState);
+        if (world instanceof ServerLevel level && oldState.is(this) && newState.is(this)
+                && oldState.getValue(FACING) != newState.getValue(FACING)) {
+            if (level.getBlockEntity(pos) instanceof willow.train.hexie.blockentity.CRH2HeadEntity head)
+                head.reorientBogey(oldState.getValue(FACING), newState.getValue(FACING));
+            level.scheduleTick(pos, this, 1);
+        }
     }
     @Override public VoxelShape getShape(BlockState s,BlockGetter w,BlockPos p,CollisionContext c) { return HeadGeometry.floor(HeadGeometry.ROOT_PART,s.getValue(FACING)); }
     @Override public VoxelShape getCollisionShape(BlockState s,BlockGetter w,BlockPos p,CollisionContext c) { return getShape(s,w,p,c); }
     @Override public List<ItemStack> getDrops(BlockState s,LootParams.Builder b) { return List.of(asItem().getDefaultInstance()); }
     @Override public void setPlacedBy(Level w,BlockPos p,BlockState s,LivingEntity who,ItemStack stack) {
         super.setPlacedBy(w,p,s,who,stack);
-        if (!w.isClientSide) w.scheduleTick(p,this,1);
+        if (!w.isClientSide) {
+            HeadBogey.placed(w,p);
+            w.scheduleTick(p,this,1);
+        }
     }
     @Override protected void neighborChanged(BlockState s,Level w,BlockPos p,Block block,BlockPos from,boolean moving) {
         if (!w.isClientSide) w.scheduleTick(p,this,1);
     }
     @Override protected void tick(BlockState s,ServerLevel w,BlockPos p,RandomSource random) {
         var facing=s.getValue(FACING);
-        for(int i=0;i<HeadGeometry.PARTS;i++) {
-            var at=p.offset(HeadGeometry.offset(i,facing));
+        HeadBogey.refresh(w,p);
+        for(var cell:partCells(w,p,s).entrySet()) {
+            var at=cell.getKey();
             if (!w.hasChunkAt(at)) return;
-            if (!p.equals(HeadGeometry.owner(w,at))) {
-                willow.train.hexie.blocks.parts.PartInstallation.install(w,partCells(w,p,s),ignored->false,ignored->true);
+            if (!ownsCell(w,p,s,at,cell.getValue())) {
+                willow.train.hexie.blocks.parts.PartInstallation.install(w,partCells(w,p,s),ignored->false,ignored->true,
+                        () -> HeadBogey.refresh(w,p));
                 return;
             }
         }
         placeBogey(w,p,facing);
     }
     public static void placeBogey(Level w,BlockPos root,Direction facing) {
-        if (w.isClientSide) return;
-        var pos=root.offset(HeadGeometry.offset(HeadGeometry.BOGEY_PART,facing));
-        if (!(w.getBlockState(pos).getBlock() instanceof HeadFloorBlock)) return;
-        var rail=w.getBlockState(pos.below());
-        if (!(rail.getBlock() instanceof ITrackBlock track)) return;
-        var normal=track.getUpNormal(w,pos.below(),rail);
-        var axes=track.getTrackAxes(w,pos.below(),rail);
-        if (Math.abs(normal.y-1)>1e-6 || axes.size()!=1) return;
-        var axis=axes.getFirst();
-        if (Math.abs(axis.y)>1e-6 || (facing.getAxis()==Direction.Axis.X ? Math.abs(axis.z)>1e-6 : Math.abs(axis.x)>1e-6)) return;
-        var state=TrackBlockInit.DT206_BOGEY.getDefaultState()
-                .setValue(BlockStateProperties.HORIZONTAL_AXIS,facing.getAxis()).setValue(HexieBogeyBlock.HEAD_MOUNTED,true);
-        if (!w.setBlock(pos,state,Block.UPDATE_ALL)) return;
-        if (w.getBlockEntity(pos) instanceof HexieBogeyBlockEntity bogey)
-            BogeyFloorData.setLongitudinal(bogey,3*facing.getAxisDirection().getStep());
+        HeadBogey.refresh(w,root);
     }
     @Override protected void onRemove(BlockState s,Level w,BlockPos p,BlockState replacement,boolean moved) {
         if (!w.isClientSide && !s.is(replacement.getBlock()) && !willow.train.hexie.blocks.parts.PartInstallation.mutating()) {
             var facing=s.getValue(FACING);
             if (moved && w instanceof ServerLevel server)
-                MOVED_HEADS.computeIfAbsent(server, ignored -> new HashMap<>()).put(p.immutable(), facing);
+                MOVED_HEADS.computeIfAbsent(server, ignored -> new HashMap<>())
+                        .put(p.immutable(), new RemovedHead(s, partCells(w,p,s)));
             else if (!moved)
-                removeRemainingParts(w,p,facing);
+                removeRemainingParts(w,p,s,partCells(w,p,s));
         }
         super.onRemove(s,w,p,replacement,moved);
     }
@@ -122,14 +121,16 @@ public final class CRH2HeadBlock extends Block implements EntityBlock, willow.tr
         if (pending == null) return;
         // Assembly removes the complete snapshot synchronously. Wait until it has
         // finished so source cleanup cannot delete blocks still being captured.
-        pending.forEach((root, facing) -> {
+        pending.forEach((root, removed) -> {
             // A rollback or reinstallation owns its parts again.
             if (!(world.getBlockState(root).getBlock() instanceof CRH2HeadBlock))
-                removeRemainingParts(world,root,facing);
+                removeRemainingParts(world,root,removed.state(),removed.cells());
         });
     }
 
-    private static void removeRemainingParts(Level w,BlockPos root,Direction facing) {
+    private static void removeRemainingParts(Level w,BlockPos root,BlockState state,Map<BlockPos,BlockState> cells) {
+        willow.train.hexie.blocks.parts.PartInstallation.removeOtherCells(w,root,cells);
+        var facing=state.getValue(FACING);
         for(int i=0;i<HeadGeometry.PARTS;i++) {
             if(i==HeadGeometry.ROOT_PART) continue;
             var at=root.offset(HeadGeometry.offset(i,facing));var part=w.getBlockState(at);

@@ -48,6 +48,10 @@ public final class VehicleAssemblyPreparer {
         for (var snapshot : snapshots) {
             var byPosition = new java.util.HashMap<BlockPos, CarriageSnapshot.Block>();
             for (var block : snapshot.blocks()) byPosition.put(block.position(), block);
+            for (var position : snapshot.supports()) {
+                var support = AssemblyBogeySupport.resolve(snapshot, position);
+                if (support != null) byPosition.put(position, support.capturedBlock());
+            }
             int floorHeight = BogeyFloorData.value(byPosition.get(snapshot.supports().getFirst()).entityData());
             for (var position : snapshot.supports())
                 if (BogeyFloorData.value(byPosition.get(position).entityData()) != floorHeight)

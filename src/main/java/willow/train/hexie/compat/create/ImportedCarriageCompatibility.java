@@ -56,6 +56,8 @@ final class ImportedCarriageCompatibility {
         var position = carriage.structure().supports().get(index);
         var block = carriage.structure().blocks().stream().filter(value -> value.position().equals(position))
                 .findFirst().orElseThrow();
+        var support = willow.train.hexie.vehicle.assembly.AssemblyBogeySupport.resolve(carriage.structure(), position);
+        if (support != null) block = support.capturedBlock();
         AbstractBogeyBlock<?> type = block.state().isAir() ? com.simibubi.create.AllBlocks.SMALL_BOGEY.get()
                 : block.state().getBlock() instanceof AbstractBogeyBlock<?> value ? value : null;
         if (type == null) throw new IllegalStateException("Imported bogey has no registered Create block");

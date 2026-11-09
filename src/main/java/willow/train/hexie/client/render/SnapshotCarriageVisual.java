@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.simibubi.create.content.contraptions.render.ContraptionVisual;
-import com.simibubi.create.content.trains.bogey.AbstractBogeyBlock;
 import com.simibubi.create.content.trains.bogey.AbstractBogeyBlockEntity;
 import com.simibubi.create.content.trains.bogey.BogeyStyle;
 import com.simibubi.create.content.trains.bogey.BogeyVisual;
@@ -13,12 +12,14 @@ import dev.engine_room.flywheel.api.visualization.VisualizationContext;
 import dev.engine_room.flywheel.lib.instance.InstanceTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import willow.train.hexie.client.render.bogey.BogeyRenderData;
 import willow.train.hexie.compat.create.SnapshotCarriageEntity;
 import willow.train.hexie.client.render.carriage.CompatibleCarriageVisual;
 
 /** Dynamic support parts share the same body embedding and existing registered Flywheel models. */
 public final class SnapshotCarriageVisual extends ContraptionVisual<SnapshotCarriageEntity> {
-    private record Entry(BlockPos position, AbstractBogeyBlockEntity blockEntity, BogeyStyle style, BogeyVisual visual) {}
+    private record Entry(BlockPos position, BlockEntity source, BlockState state, BogeyStyle style, BogeyVisual visual) {}
     private final List<Entry> bogeys = new ArrayList<>();
     private final PoseStack pose = new PoseStack();
     private final SnapshotCouplerVisual couplers;
@@ -67,15 +68,17 @@ public final class SnapshotCarriageVisual extends ContraptionVisual<SnapshotCarr
         var animation = entity.bogeyAnimation();
         for (int i = 0; i < animation.frames().size(); i++) {
             var frame = animation.frame(i, partialTick);
-            var raw = client.getBlockEntity(frame.position());
-            AbstractBogeyBlockEntity be = raw instanceof AbstractBogeyBlockEntity bogey ? bogey : null;
-            BogeyStyle style = be == null ? null : be.getStyle();
+            var bogey = BogeyRenderData.resolve(client.getRenderLevel(), frame.position());
+            var source = bogey == null ? null : bogey.source();
+            var state = bogey == null ? null : bogey.state();
+            BogeyStyle style = bogey == null ? null : bogey.style();
             Entry entry = i < bogeys.size() ? bogeys.get(i) : null;
-            if (entry == null || !entry.position.equals(frame.position()) || entry.blockEntity != be || entry.style != style) {
+            if (entry == null || !entry.position.equals(frame.position()) || entry.source != source
+                    || entry.state != state || entry.style != style) {
                 if (entry != null && entry.visual != null) entry.visual.delete();
-                BogeyVisual visual = be != null && be.getBlockState().getBlock() instanceof AbstractBogeyBlock<?> block
-                        ? style.createVisual(block.getSize(), embedding, partialTick, true) : null;
-                entry = new Entry(frame.position(), be, style, visual);
+                BogeyVisual visual = bogey == null ? null
+                        : style.createVisual(bogey.block().getSize(), embedding, partialTick, true);
+                entry = new Entry(frame.position(), source, state, style, visual);
                 if (i < bogeys.size()) bogeys.set(i, entry);
                 else bogeys.add(entry);
             }
@@ -85,10 +88,10 @@ public final class SnapshotCarriageVisual extends ContraptionVisual<SnapshotCarr
             // BogeyStyle.render supplies this translation in the non-instanced path.
             pose.translate(0, -1.5 - 1 / 128f, 0);
             entry.visual.updateLight(SnapshotCarriageRenderer.light(entity, frame, partialTick));
-            try (var suspension = SnapshotCarriageRenderer.suspensionPose(be, frame);
+            try (var suspension = SnapshotCarriageRenderer.suspensionPose(bogey, frame);
                  var sample = willow.train.hexie.compat.create.bogey.CreateAddonBogeyRenderer.snapshotSample(
                          frame.wheelAngle(), frame.speed(), partialTick)) {
-                entry.visual.update(SnapshotCarriageRenderer.data(entity, be, frame),
+                entry.visual.update(SnapshotCarriageRenderer.data(bogey, frame),
                         (float) (frame.wheelAngle() % 360), pose);
             }
         }

@@ -30,10 +30,10 @@ import willow.train.hexie.api.railway.RailwayHandle;
 import net.neoforged.neoforge.client.model.generators.ConfiguredModel;
 import net.neoforged.neoforge.client.model.generators.ModelFile;
 import willow.train.hexie.item.track.StandardTrackItem;
-import willow.train.hexie.railway.RailwayBackend;
 
 /** The active backend owns all Create registration and optional compatibility details. */
-public final class CreateRailwayBackend implements RailwayBackend {
+public final class CreateRailwayBackend {
+    private CreateRailwayBackend() {}
     private static final Map<ResourceLocation, TrackMaterial> MATERIALS = new HashMap<>();
     private static final Map<TrackMaterial, RailwayDefinition> DEFINITIONS = new IdentityHashMap<>();
     private static final Map<ResourceLocation, BlockEntry<TrackBlock>> BLOCKS = new HashMap<>();
@@ -99,7 +99,7 @@ public final class CreateRailwayBackend implements RailwayBackend {
         return java.util.Objects.requireNonNull(BLOCKS.get(handle.id()));
     }
 
-    @Override public synchronized RailwayHandle register(IEventBus bus, ResourceLocation id, RailwayDefinition definition) {
+    public static synchronized RailwayHandle register(IEventBus bus, ResourceLocation id, RailwayDefinition definition) {
         var owner = ModList.get().getModContainerById(id.getNamespace())
                 .orElseThrow(() -> new IllegalArgumentException("Railway namespace is not a loaded mod: " + id.getNamespace()));
         if (owner.getEventBus() != bus)

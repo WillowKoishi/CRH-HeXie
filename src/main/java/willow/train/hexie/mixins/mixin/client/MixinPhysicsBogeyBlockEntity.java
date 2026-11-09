@@ -20,7 +20,9 @@ public abstract class MixinPhysicsBogeyBlockEntity {
     @Inject(method = "getBogeyData", at = @At("RETURN"), remap = false, require = 1)
     private void hexie$updateQJAnimationData(CallbackInfoReturnable<CompoundTag> callback) {
         CompoundTag data = callback.getReturnValue();
-        if (!(Main.MOD_ID + ":df11gbogey").equals(data.getString("BogeyStyle")))
+        String style = data.getString("BogeyStyle");
+        if (!(Main.MOD_ID + ":loco").equals(style)
+                && !(Main.MOD_ID + ":steambogey").equals(style))
             return;
 
         // This tag belongs to the physical block entity; menu previews use separate tags.

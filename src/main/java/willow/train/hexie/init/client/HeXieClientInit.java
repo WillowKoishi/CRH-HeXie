@@ -71,6 +71,8 @@ public class HeXieClientInit {
     }
 
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        if (net.neoforged.fml.ModList.get().isLoaded("simurail"))
+            willow.train.hexie.compat.simurail.client.PhysicalHeadClient.registerRenderers(event);
         willow.train.hexie.compat.create.bogey.CreateAddonBogeyClient.registerRenderers(event);
         event.registerBlockEntityRenderer(BlockEntitiesInit.PASSENGER_PANEL.get(),
                 willow.train.hexie.client.render.blockentity.PassengerPanelRenderer::new);
@@ -116,6 +118,8 @@ public class HeXieClientInit {
     }
 
     public static void registerEntityVisuals(FMLClientSetupEvent event) {
+        if (net.neoforged.fml.ModList.get().isLoaded("simurail"))
+            event.enqueueWork(willow.train.hexie.compat.simurail.client.PhysicalHeadClient::registerVisuals);
         event.enqueueWork(() -> {
             willow.train.hexie.client.render.SnapshotCouplerRenderer.register(
                     willow.train.hexie.init.block.BlockInit.GENERAL_JANNEY_COUPLER.get(),

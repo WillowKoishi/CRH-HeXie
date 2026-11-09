@@ -644,6 +644,8 @@ public final class CreateTrainBridge {
         int index = car.bogeys().indexOf(definition);
         var pos = snapshot.supports().get(index);
         var block = snapshot.blocks().stream().filter(b -> b.position().equals(pos)).findFirst().orElseThrow();
+        var support = willow.train.hexie.vehicle.assembly.AssemblyBogeySupport.resolve(snapshot, pos);
+        if (support != null) block = support.capturedBlock();
         // A removed support keeps its saved motion parameters and an air position in the body.
         // Create still requires a bogey type for its invisible compatibility carriage.
         AbstractBogeyBlock<?> type = block.state().isAir() ? com.simibubi.create.AllBlocks.SMALL_BOGEY.get()

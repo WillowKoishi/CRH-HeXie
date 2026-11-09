@@ -28,7 +28,9 @@ public class BlockEntitiesInit {
     // Shell geometry remains static. These entities retain editable vehicle markings and legacy IDs.
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CRH2HeadEntity>> CRH2A_HEAD =
             BLOCK_ENTITIES.register("crh2a_head", () -> BlockEntityType.Builder.of(
-                    CRH2HeadEntity::new, BlockInit.CRH2A_HEAD.get()).build(null));
+                    CRH2HeadEntity::new, BuiltInRegistries.BLOCK.stream()
+                            .filter(willow.train.hexie.blocks.emu.head.CRH2HeadBlock.class::isInstance)
+                            .toArray(Block[]::new)).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CRH2PartEntity>> CRH2A_PART =
             BLOCK_ENTITIES.register("crh2a_part", () -> BlockEntityType.Builder.of(CRH2PartEntity::new,
@@ -42,7 +44,7 @@ public class BlockEntitiesInit {
 
     /** Blocks are registered before entity types; add-on CouplerBlocks may reuse this entity. */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CouplerBlockEntity>> COUPLER =
-            BLOCK_ENTITIES.register("coupler", () -> BlockEntityType.Builder.of(CouplerBlockEntity::new,
+            BLOCK_ENTITIES.register("coupler", () -> BlockEntityType.Builder.of(CouplerBlockEntity::create,
                     BuiltInRegistries.BLOCK.stream()
                             .filter(block -> block instanceof willow.train.hexie.blocks.coupler.CouplerBlock
                                     && block instanceof EntityBlock)

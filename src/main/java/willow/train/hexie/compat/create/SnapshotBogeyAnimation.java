@@ -16,6 +16,7 @@ import org.joml.Quaternionf;
 import org.joml.Quaterniond;
 import org.joml.Vector3f;
 import willow.train.hexie.vehicle.assembly.CarriageSnapshot;
+import willow.train.hexie.vehicle.assembly.AssemblyBogeySupport;
 import willow.train.hexie.vehicle.kinematics.VehicleConstraintSolver.BodyPose;
 import willow.train.hexie.vehicle.runtime.CouplingEndpoint.Point;
 import willow.train.hexie.vehicle.runtime.VehicleRuntime;
@@ -116,8 +117,12 @@ public final class SnapshotBogeyAnimation {
         boolean advance = sourceRuntime == runtime && previousDistances.length == definition.bogeys().size();
         if (sourceSnapshot != snapshot) {
             supportStates.clear();
-            for (var block : snapshot.blocks())
-                if (snapshot.supports().contains(block.position())) supportStates.put(block.position(), block.state());
+            for (var position : snapshot.supports()) {
+                var support = AssemblyBogeySupport.resolve(snapshot, position);
+                if (support != null) supportStates.put(position, support.state());
+                else snapshot.blocks().stream().filter(block -> block.position().equals(position)).findFirst()
+                        .ifPresent(block -> supportStates.put(position, block.state()));
+            }
             sourceSnapshot = snapshot;
         }
         if (previousDistances.length != definition.bogeys().size()) previousDistances = new double[definition.bogeys().size()];

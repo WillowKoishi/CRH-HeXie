@@ -25,16 +25,16 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import willow.train.hexie.api.bogey.BogeyDefinition;
 import willow.train.hexie.api.bogey.BogeyHandle;
 import willow.train.hexie.api.railway.BogeyRailwayRegistry;
-import willow.train.hexie.bogey.BogeyBackend;
 import willow.train.hexie.compat.create.CreateBlockReservations;
 import willow.train.hexie.vehicle.assembly.BogeyModelCatalog;
 
 /** Creates the active backend's style/block/entity plumbing without exposing it to add-ons. */
-public final class CreateBogeyBackend implements BogeyBackend {
+public final class CreateBogeyBackend {
+    private CreateBogeyBackend() {}
     private static final Map<String, Registers> REGISTERS = new LinkedHashMap<>();
     private static final Map<ResourceLocation, Registration> ENTRIES = new LinkedHashMap<>();
 
-    @Override public synchronized BogeyHandle register(IEventBus bus, ResourceLocation id, BogeyDefinition definition) {
+    public static synchronized BogeyHandle register(IEventBus bus, ResourceLocation id, BogeyDefinition definition) {
         var owner = ModList.get().getModContainerById(id.getNamespace()).orElseThrow(() ->
                 new IllegalArgumentException("Bogey namespace is not a loaded mod: " + id.getNamespace()));
         if (owner.getEventBus() != bus)

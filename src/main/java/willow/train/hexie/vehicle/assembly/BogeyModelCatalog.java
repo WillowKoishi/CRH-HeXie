@@ -8,6 +8,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import willow.train.hexie.blocks.bogeys.HexieBogeyBlock;
+import willow.train.hexie.bogey.BogeyStyleMigration;
 import willow.train.hexie.init.track.TrackMaterialInit;
 import willow.train.hexie.vehicle.bogey.BogeyGeometry;
 import willow.train.hexie.vehicle.bogey.BuiltinBogeyModel;
@@ -84,7 +85,8 @@ public final class BogeyModelCatalog {
                         throw new IllegalArgumentException("Invalid saved bogey data");
                     var saved = nbt.getCompound("BogeyData");
                     if (saved.contains("BogeyStyle") && (!saved.contains("BogeyStyle", Tag.TAG_STRING)
-                            || !saved.getString("BogeyStyle").equals(bogey.getDefaultStyle().id.toString())))
+                            || !bogey.getDefaultStyle().id.equals(BogeyStyleMigration.normalizeStyle(
+                                    ResourceLocation.tryParse(saved.getString("BogeyStyle")), bogey.getSize().id()))))
                         throw new IllegalArgumentException("转向架样式不匹配："
                                 + BuiltInRegistries.BLOCK.getKey(block) + "，位置 "
                                 + nbt.getInt("x") + ", " + nbt.getInt("y") + ", " + nbt.getInt("z")

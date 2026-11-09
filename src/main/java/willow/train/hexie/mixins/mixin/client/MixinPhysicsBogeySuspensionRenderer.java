@@ -14,6 +14,8 @@ import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
 import willow.train.hexie.client.render.bogey.BogeySuspensionPose;
 import willow.train.hexie.client.render.bogey.SimurailBogeySuspensionPose;
+import willow.train.hexie.blocks.bogeys.BogeyFloorData;
+import willow.train.hexie.compat.simurail.PhysicalHeadBogeyBlockEntity;
 
 @Pseudo
 @Mixin(targets = "com.crystaelix.simurail.content.bogey.PhysicsBogeyRenderer", remap = false)
@@ -23,6 +25,12 @@ public abstract class MixinPhysicsBogeySuspensionRenderer {
     private void hexie$bodyMountedSuspension(BogeyStyle style, BogeySizes.BogeySize size, float partialTick,
             PoseStack pose, MultiBufferSource buffers, int light, int overlay, float angle, CompoundTag data,
             boolean inContraption, Operation<Void> original, @Local(argsOnly = true) PhysicsBogeyBlockEntity bogey) {
+        if (bogey instanceof PhysicalHeadBogeyBlockEntity) {
+            // The physical attachment already includes this displacement, before suspension is solved.
+            data = data.copy();
+            data.putInt(BogeyFloorData.LONGITUDINAL_KEY, 0);
+            light = willow.train.hexie.compat.simurail.client.PhysicalHeadClient.wheelLight(bogey, light);
+        }
         try (var scope = BogeySuspensionPose.push(SimurailBogeySuspensionPose.relative(bogey, partialTick))) {
             original.call(style, size, partialTick, pose, buffers, light, overlay, angle, data, inContraption);
         }

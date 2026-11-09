@@ -71,6 +71,8 @@
 
   "simurail_bogey_category.hexie.passenger": "Passenger Car Bogeys",
   "simurail_bogey_category.hexie.locomotive": "Locomotive Bogeys",
+  "simurail_bogey_category.hexie.loco": "Locomotive Bogeys",
+  "simurail_bogey_category.hexie.steam": "Steam Bogeys",
 
   "simurail_bogey_category.hexie.emu": "EMU Bogeys",
   "simurail_bogey_entry.hexie.dt206": "DT-206",
@@ -97,7 +99,9 @@
   "block.hexie.qj_backward_bogey": "QJ Backward Bogey",
   "block.hexie.CRH_bogey": "High-Speed Bogey",
   "hexie.bogeys.styles.hxstandardbogey": "Passanger Cart Bogey",
-  "hexie.bogeys.styles.df11gbogey": "Loco Bogey",
+  "hexie.bogeys.styles.df11gbogey": "Locomotive Bogeys",
+  "hexie.bogeys.styles.loco": "Locomotive Bogeys",
+  "hexie.bogeys.styles.steambogey": "Steam Bogeys",
   "hexie.bogeys.styles.crhbogey": "High-Speed Bogey",
   "simurail_bogey_category.hexie": "CRH mod",
   "simurail_bogey_entry.hexie.cw2": "CW-2",
@@ -632,9 +636,21 @@
   "container.hexie.bogey_check_overlay.hexie_df11gbogey.create_small.bogey.name": "DF11G",
   "container.hexie.bogey_check_overlay.hexie_df11gbogey.create_small.bogey.speed": "Max speed: 170km/h",
   "container.hexie.bogey_check_overlay.hexie_df11gbogey.create_small.bogey.cart": "Loco: DF11G",
+  "container.hexie.bogey_check_overlay.hexie_loco.create_small.bogey.name": "DF11G",
+  "container.hexie.bogey_check_overlay.hexie_loco.create_small.bogey.speed": "Max speed: 170km/h",
+  "container.hexie.bogey_check_overlay.hexie_loco.create_small.bogey.cart": "Loco: DF11G",
+  "container.hexie.bogey_check_overlay.hexie_loco.hexie_backward.bogey.name": "DF11G (Backward)",
+  "container.hexie.bogey_check_overlay.hexie_loco.hexie_backward.bogey.speed": "Max speed: 170km/h",
+  "container.hexie.bogey_check_overlay.hexie_loco.hexie_backward.bogey.cart": "Loco: DF11G",
   "container.hexie.bogey_check_overlay.hexie_df11gbogey.hexie_qj.bogey.name": "QianJin Main",
   "container.hexie.bogey_check_overlay.hexie_df11gbogey.hexie_qj.bogey.speed": "Max speed: 80km/h",
   "container.hexie.bogey_check_overlay.hexie_df11gbogey.hexie_qj.bogey.cart": "Loco: QianJin(QJ)",
+  "container.hexie.bogey_check_overlay.hexie_steambogey.hexie_qj.bogey.name": "QianJin Main",
+  "container.hexie.bogey_check_overlay.hexie_steambogey.hexie_qj.bogey.speed": "Max speed: 80km/h",
+  "container.hexie.bogey_check_overlay.hexie_steambogey.hexie_qj.bogey.cart": "Loco: QianJin(QJ)",
+  "container.hexie.bogey_check_overlay.hexie_steambogey.hexie_qj_backward.bogey.name": "QJ Driving Wheels (Backward)",
+  "container.hexie.bogey_check_overlay.hexie_steambogey.hexie_qj_backward.bogey.speed": "Max speed: 80km/h",
+  "container.hexie.bogey_check_overlay.hexie_steambogey.hexie_qj_backward.bogey.cart": "Loco: QianJin(QJ)",
 
 
   "tips.patchouli": "--------------------------------all entity above here-------------------------------------------",
@@ -681,5 +697,8 @@
   "block.hexie.crh2a_electronic_signage": "CRH2A Electronic Destination Display",
   "block.hexie.crh2a_carriage_number_display": "CRH2A Carriage Number Display",
   "gui.hexie.carriage_number.title": "Coach Number Display",
-  "gui.hexie.carriage_number.hint": "Enter 1–2 digits, or leave blank to clear"
+  "gui.hexie.carriage_number.hint": "Enter 1–2 digits, or leave blank to clear",
+  "block.hexie.crh2a_physical_head": "CRH2A Physical Head",
+  "block.hexie.crh2a_physical_head_bogey": "CRH2A Head Physics Bogey Control",
+  "hexie.command.physical_head.incomplete": "The physical fishhead at %s is incomplete or not fully loaded."
 }

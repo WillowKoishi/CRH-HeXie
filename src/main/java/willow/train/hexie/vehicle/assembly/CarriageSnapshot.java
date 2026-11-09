@@ -50,7 +50,7 @@ public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos o
             }
             upgradedBlocks.add(block);
         }
-        blocks = List.copyOf(upgradedBlocks);
+        blocks = List.copyOf(willow.train.hexie.blocks.emu.head.HeadBogeyMigration.snapshot(upgradedBlocks));
         supports = supports.stream().map(BlockPos::immutable).toList();
         glue = List.copyOf(glue);
         for (AABB box : glue)

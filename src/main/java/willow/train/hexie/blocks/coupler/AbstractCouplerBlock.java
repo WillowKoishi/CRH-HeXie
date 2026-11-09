@@ -77,7 +77,7 @@ public abstract class AbstractCouplerBlock extends HorizontalDirectionalBlock im
     @Override public boolean assembled(BlockState state) { return state.getValue(ASSEMBLED); }
 
     @Override public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        return new CouplerBlockEntity(pos, state);
+        return CouplerBlockEntity.create(pos, state);
     }
 
     @Override public <T extends BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(
@@ -138,6 +138,8 @@ public abstract class AbstractCouplerBlock extends HorizontalDirectionalBlock im
         if (!player.isShiftKeyDown() || !player.getMainHandItem().isEmpty() || player.isSpectator() || !player.mayBuild()
                 || state.getValue(ASSEMBLED) || !(level.getBlockEntity(pos) instanceof CouplerBlockEntity entity))
             return net.minecraft.world.InteractionResult.PASS;
+        if (entity.uncouplePhysical())
+            return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide);
         if (!level.isClientSide) {
             var removed = entity.removeOuter();
             if (removed != null) {

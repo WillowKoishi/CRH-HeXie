@@ -33,11 +33,16 @@ public class BogeyStylesInit {
                     .soundEvent(AllSoundEvents.TRAIN2::getMainEvent)
                     .build();
 
-    public static final BogeyStyle DF11GBOGEY =
-            create("df11gbogey", HEXIE_CYCLE_GROUP)
-                    .displayName(Component.translatable("hexie.bogeys.styles.df11gbogey"))
+    public static final BogeyStyle LOCOBOGEY =
+            create("loco", HEXIE_CYCLE_GROUP)
+                    .displayName(Component.translatable("hexie.bogeys.styles.loco"))
                     .size(BogeySizes.SMALL, TrackBlockInit.DF11G_BOGEY, () -> () -> { var renderer = new DF11GBogeyRenderer.SmallDF11GBogeyRenderer(); return new BogeyStyle.SizeRenderer(renderer, renderer::createVisual); })
                     .size(BogeySizesInit.BACKWARD, TrackBlockInit.DF11G_BACKWARD_BOGEY, () -> () -> { var renderer = new DF11GBogeyRenderer.BackwardDF11GBogeyRenderer(); return new BogeyStyle.SizeRenderer(renderer, renderer::createVisual); })
+                    .build();
+
+    public static final BogeyStyle STEAMBOGEY =
+            create("steambogey", HEXIE_CYCLE_GROUP)
+                    .displayName(Component.translatable("hexie.bogeys.styles.steambogey"))
                     .size(BogeySizesInit.QJ, TrackBlockInit.QJ_BOGEY, () -> () -> { var renderer = new DF11GBogeyRenderer.QJBogeyRenderer(); return new BogeyStyle.SizeRenderer(renderer, renderer::createVisual); })
                     .size(BogeySizesInit.QJ_BACKWARD, TrackBlockInit.QJ_BACKWARD_BOGEY, () -> () -> { var renderer = new DF11GBogeyRenderer.QJBackwardBogeyRenderer(); return new BogeyStyle.SizeRenderer(renderer, renderer::createVisual); })
                     .build();
