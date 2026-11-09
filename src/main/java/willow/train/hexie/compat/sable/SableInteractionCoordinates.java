@@ -53,6 +53,11 @@ public final class SableInteractionCoordinates {
         return loaded() ? Loaded.renderEye(viewer, partialTick) : viewer.getEyePosition(partialTick);
     }
 
+    /** True when the block lives in a Sable storage plot, i.e. it sits on a physics structure. */
+    public static boolean inSubLevel(Level level, BlockPos pos) {
+        return level != null && loaded() && Loaded.containing(level, pos) != null;
+    }
+
     /** Compare a block-local/storage hit against an eye position in logical world space. */
     public static double logicalDistanceSquared(Level level, Vec3 eye, BlockPos owner, Vec3 storageHit) {
         return logicalWorld(level, eye).distanceToSqr(logical(level, owner).toWorld(storageHit));
@@ -72,6 +77,10 @@ public final class SableInteractionCoordinates {
     /** Resolve the verified Sable API once, and only after its mod guard succeeds. */
     private static final class Loaded {
         private static final Api API = new Api();
+
+        private static Object containing(Level level, BlockPos pos) {
+            return invoke(API.containingBlock, API.helper, level, pos);
+        }
 
         private static Frame logical(Level level, BlockPos owner) {
             var subLevel = invoke(API.containingBlock, API.helper, level, owner);
