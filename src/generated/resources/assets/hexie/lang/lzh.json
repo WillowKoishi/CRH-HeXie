@@ -29,6 +29,7 @@
   "gui.hexie.cab.brake_up": "增止轮之力",
   "gui.hexie.cab.brake_down": "减止轮之力",
   "gui.hexie.cab.mode": "更易御车之法",
+  "gui.hexie.cab.handle_keys": "行向前/后 %s  止轮减/增 %s  曳力增/减 %s",
   "gui.hexie.cab.switched_to_shunting": "已改为调车式",
   "gui.hexie.cab.switched_to_driving": "已改为行车式",
   "gui.hexie.cab.shunting_reset_power": "请先将曳力柄归零",
