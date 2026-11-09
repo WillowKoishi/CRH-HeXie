@@ -2,6 +2,114 @@
 
 
 ---
+
+# 开发日志
+
+---
+### version 0.9.3-Plana-bata
+##### 2026.11.9
+
+修改名称:
+
+- “和谐号标识”更名为“CRH 标识”，同步动车组分类图标、创造物品栏及相关工具引用（WillowKoishi）
+
+新增 / 修改美术资源:
+
+- 添加 CRH 标识的物品图标及配套贴图（WillowKoishi）
+
+其他:
+
+- 添加文言文语言文件（lzh）（WillowKoishi）
+
+---
+### version 0.9.0-Plana-bata
+##### 2026.11.8
+
+添加方块（组）:
+
+- 通用自动车钩（詹氏车钩）（HachimiYang, WillowKoishi）
+- CRH2A 电子水牌（HachimiYang, WillowKoishi）
+- CRH2A 车厢号显示屏（HachimiYang, WillowKoishi）
+
+添加物品:
+
+- CRH2 救援车钩转接器，可用于 CRH2 自动车钩与标准詹氏车钩之间的转换（HachimiYang, WillowKoishi）
+
+添加功能:
+
+- CRH2A 端面支持原版、倾斜式连接器、水平带线及水平不带线四种样式，使用和谐扳手切换（HachimiYang, WillowKoishi）
+- 相容端面连挂后显示车间电缆，并随两节车厢的相对位置与姿态变形（HachimiYang, WillowKoishi）
+- 补充 CRH2A 中部车顶的平顶、天线及带线缆变体（HachimiYang, WillowKoishi）
+- 电子水牌与车厢号屏可作为附件安装到车厢板上，并调整显示位置（HachimiYang）
+- 电子水牌读取当前列车名称 / 车次，以及启用驾驶台运行图中的始发、终到信息（HachimiYang）
+- 使用和谐扳手编辑车厢号屏，支持 1–2 位数字、保留前导零及留空清屏（HachimiYang）
+- 通用自动车钩及救援转接器添加钩舌状态、开合动画与连挂状态联动（HachimiYang）
+- 支持在车厢浏览器中取用车型配置提供的预制蓝图，蓝图随物品携带结构数据（HachimiYang）
+- 接入机械动力剪贴板，按选中的文字、车身标记及标志复制粘贴（HachimiYang）
+- 白刷子改为只移除点击到的附件，分别处理文本、标志、电子屏及车身标记（HachimiYang）
+- 完善运行中车厢上文字贴纸、车号及标牌的编辑与数据提交（HachimiYang）
+
+修改机制:
+
+- 为 CW-2、209P、SW160、SW220K、DT206、SKTB-200 补充摇枕、空气弹簧或连杆等部件的随动渲染（HachimiYang）
+- 适配 Create 与 Simurail 的转向架悬挂姿态，并处理反转及地板高度调整后的模型关系（HachimiYang）
+- 统一驾驶台、车门、车钩等操作部件在世界、组装载具及 Sable 子世界中的表面选取与交互（HachimiYang）
+- 地板调节工具注册名由 floor_switcher 改为 harmony_wrench，保留旧 ID 别名以兼容已有物品（HachimiYang）
+- 整理乘客上下车、跨维度、区块加载及远端玩家位置插值，调整车厢运动中的地形碰撞与同步（HachimiYang）
+
+修复问题:
+
+- 修正道岔前方已缓存路线的重新选择，使手动转向与导航能在进入分岔前更新路线（HachimiYang）
+- 修正列车脱轨或脱离轨道后的导航、信号预留及驾驶台运行图执行状态清理（HachimiYang）
+- 修正标牌编辑界面的提交时序，以及组装车厢上编辑目标的定位与同步（HachimiYang）
+
+新增 / 修改美术资源:
+
+- 补充通用自动车钩、救援转接器、电子水牌、车厢号屏及端面变体的游戏模型与材质（HachimiYang, WillowKoishi）
+- 更新 25B、25G、25K、25T、25Z 车厢的内外预览车模，并调整车厢前后间距（WillowKoishi, AlpacaEgg）
+- 提亮老式站牌表面，修复模型中的纹理冲突；本次提交为美术源模型调整（AlpacaEgg）
+
+---
+### version 0.4.14-A.R.O.N.A.
+##### 2026.11.7
+
+添加方块（组）:
+
+- 实装 SKTB-200 转向架，接入转向架样式切换、渲染与 Simurail 兼容（HachimiYang, WillowKoishi）
+
+添加物品:
+
+- 车厢板文本贴纸（HachimiYang）
+
+添加功能:
+
+- 文本贴纸支持编辑内容、字号、水平 / 垂直偏移、字体及字距，并提供编辑预览（HachimiYang）
+- 和谐扳手支持调整 CRH2A 客室门的移动方向（HachimiYang）
+- 和谐扳手添加转向架反转模式（HachimiYang）
+- 完善行车 / 调车模式切换，切换前检查功率手柄零位及换向器切出位（HachimiYang）
+- 简易驾驶模式显示速度、牵引及转向提示 HUD（HachimiYang）
+- 补充 CTCS2 DMI 软键标签，整理驾驶台手柄、按钮及键盘操作的映射（HachimiYang）
+
+修改机制:
+
+- 拆分驾驶台控制面板、操作状态与列车控制请求，统一驾驶台接口及手柄档位恢复（HachimiYang）
+- 调整多驾驶台控制仲裁，汇总各驾驶台的制动请求并限制冲突的牵引输入（HachimiYang）
+- 调整曲线道床纹理与渲染路径，接入 Iris 的 PBR 法线、高光贴图（HachimiYang）
+
+修复问题:
+
+- 修正轨面采样、曲线轨道模型及转向架对齐关系（HachimiYang）
+- 修正驾驶位视角、上下车位置及车内行走同步（HachimiYang）
+- 调整组装车厢的门体、透明部件及旧式车厢部件的渲染与选取（HachimiYang）
+
+新增 / 修改美术资源:
+
+- 添加 CRH2A 带线缆车顶及 7 号车厢 FM 天线模型与贴图（WillowKoishi）
+- 补充 CRH2A 端面连接器、电缆及电子显示牌素材，修正连接器贴图（WillowKoishi）
+- 添加并调整通用詹氏车钩、CRH2 救援车钩模型及贴图；本阶段为美术资源（WillowKoishi）
+
+----
+
 ### version 0.4.13-A.R.O.N.A.
 ##### 2026.11.5
 
