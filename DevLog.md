@@ -1,6 +1,58 @@
 
 # 开发日志
 
+
+version 0.9.5-Plana-bata
+##### 2026.11.10
+
+其他:
+
+- 更新开发版本号至 0.9.5-Plana-bata；本次提交仅修改版本配置（HachimiYang）
+
+---
+### version 0.9.4-Plana-bata
+##### 2026.11.10
+
+添加方块（组）:
+
+- CRH2A 物理化鱼头，用于 Simurail / Sable 物理化车辆（HachimiYang）
+
+添加功能:
+
+- 非统型 CRH2A 驾驶台详细驾驶模式添加键盘操作：W / S 调整换向，A / D 增减牵引功率，分号 / 单引号减小或增加制动力（HachimiYang）
+- 驾驶台手柄支持长按按键逐档调整，同时按下相反方向按键时停止步进，并显示按键与当前档位提示（HachimiYang）
+- Simulated 及 Sable 普通组装自动包含完整的物理化头车；结构损坏或未完全加载时阻止组装（HachimiYang）
+- 既有车钩接入 Simurail 物理连挂与约束，支持红石信号及手动解钩控制（HachimiYang）
+- 物理化头车的转向架控制块接入 ComputerCraft 外围设备接口，安装对应模组时启用（HachimiYang）
+- 车窗流预览区域支持在空白处按住鼠标左键拖拽平移，并按当前视角沿可见轨道方向移动（WillowKoishi）
+- 预制蓝图支持配置独立图标及车型名称，取出到物品栏后保留图标数据（WillowKoishi）
+
+修改机制:
+
+- 将普通 CRH2A 头车的内置转向架设置归入头车数据，并迁移旧头车挂载 DT206 的蓝图及车辆快照（HachimiYang）
+- 拆分机车与蒸汽转向架样式分类，兼容旧 DF11G、前进型及反向样式的存档数据（HachimiYang）
+- 整理转向架、轨道的公共注册与渲染接口，调整 Create、RailX 及 Simurail 的适配实现（HachimiYang）
+- 统一操作部件声明的键盘、鼠标与滚轮输入，完善世界、Create 载具及 Sable 子世界中的驾驶台接管与退出（HachimiYang）
+- 调整物理化头车侧面放置及朝向变化时的结构定位，保留控制块设置（HachimiYang）
+- 补充 Sable 子世界中渲染特效的空间变换与实例共享（HachimiYang）
+
+修复问题:
+
+- 修复物理车钩清理时触发未加载或正在卸载区块的重新加载，导致保存世界卡住的问题（HachimiYang）
+- 修正 25B、25G、25K、25T、25Z 预制蓝图内容，以及车窗流中转向架、车门、地板、座椅等部件分组（WillowKoishi）
+- 修正文本编辑界面的输入焦点处理，避免界面输入触发游戏或容器快捷操作（HachimiYang）
+- 修正 Iris 下电子水牌文字与玻璃的绘制顺序（HachimiYang）
+
+新增 / 修改美术资源:
+
+- 添加 25B、25G、25K、25T、25Z 蓝图图标，并调整 25K 车厢内外预览结构（WillowKoishi）
+
+其他:
+
+- 整理 Gradle 构建配置，补充 Simulated、Sable Companion 及 ComputerCraft 等兼容模块的编译依赖（HachimiYang）
+- 迁移并更新车窗流（Carriage Flow）资源包配置文档（HachimiYang）
+
+
 ---
 ### version 0.9.3-Plana-bata
 ##### 2026.11.9
