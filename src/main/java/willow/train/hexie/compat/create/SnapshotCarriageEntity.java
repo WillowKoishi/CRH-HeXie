@@ -42,6 +42,7 @@ import com.simibubi.create.content.contraptions.actors.psi.PortableStorageInterf
 import com.simibubi.create.content.contraptions.minecart.TrainCargoManager;
 import com.simibubi.create.content.contraptions.render.ClientContraption;
 import com.simibubi.create.content.contraptions.render.ClientContraption.RenderedBlocks;
+import com.simibubi.create.content.decoration.slidingDoor.SlidingDoorBlock;
 import com.simibubi.create.content.trains.entity.Carriage;
 import com.simibubi.create.content.trains.entity.CarriageContraption;
 import com.simibubi.create.content.trains.entity.CarriageContraptionEntity;
@@ -74,6 +75,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -694,6 +696,8 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
 
     @Override public void setBlock(BlockPos localPos, StructureBlockInfo info) {
         if (contraption == null || !contraption.getBlocks().containsKey(localPos)) return;
+        var state = SnapshotView.movingState(info.state());
+        if (state != info.state()) info = new StructureBlockInfo(info.pos(), state, info.nbt());
         contraption.getBlocks().put(localPos, info);
         ContraptionInteractionTargets.update(contraption, localPos, info.state());
         if (contraption instanceof SnapshotView view) view.refreshDisplayTag(level(), info);
@@ -701,7 +705,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         if (actor != null && actor.left.state().getBlock() == info.state().getBlock()) {
             actor.left = info;
             actor.right.state = info.state();
-            actor.right.blockEntityData = info.nbt() == null ? new CompoundTag() : info.nbt().copy();
+            actor.right.blockEntityData = info.nbt() == null ? null : info.nbt().copy();
         }
         contraption.invalidateColliders();
         if (!level().isClientSide)
@@ -717,16 +721,17 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         view.setGlue(snapshot.glue());
         AABB bounds = null;
         for (var block : snapshot.blocks()) {
+            var state = SnapshotView.movingState(block.state());
             var data = block.entityData();
-            var info = new StructureBlockInfo(block.position(), block.state(), data);
+            var info = new StructureBlockInfo(block.position(), state, data);
             view.getBlocks().put(block.position(), info);
-            ContraptionInteractionTargets.update(view, block.position(), block.state());
+            ContraptionInteractionTargets.update(view, block.position(), state);
             if (mountStorage)
-                view.getStorage().addBlock(level(), block.state(), snapshot.origin().offset(block.position()),
+                view.getStorage().addBlock(level(), state, snapshot.origin().offset(block.position()),
                         block.position(), level().getBlockEntity(snapshot.origin().offset(block.position())));
-            var interaction = MovingInteractionBehaviour.REGISTRY.get(block.state());
+            var interaction = MovingInteractionBehaviour.REGISTRY.get(state);
             if (interaction != null) view.getInteractors().put(block.position(), interaction);
-            if (block.state().getBlock() instanceof SeatBlock) {
+            if (state.getBlock() instanceof SeatBlock) {
                 view.getSeats().add(block.position());
                 if (mountStorage) {
                     // Same local seat lookup as Create's moveSeat, only for seats already captured by our scanner.
@@ -741,7 +746,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             if (data != null) {
                 // Match Create's ordinary spawn payload: send the visual update tag,
                 // not inventories/full block entity saves to every tracking client.
-                var blockEntity = BlockEntity.loadStatic(snapshot.origin().offset(block.position()), block.state(), data,
+                var blockEntity = BlockEntity.loadStatic(snapshot.origin().offset(block.position()), state, data,
                         level().registryAccess());
                 if (blockEntity == null) throw new IllegalStateException("Could not restore carriage block entity");
                 blockEntity.setLevel(level());
@@ -750,12 +755,12 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             }
             view.addDisplayActor(level(), info);
             var box = new AABB(block.position());
-            if (block.state().getBlock() instanceof willow.train.hexie.blocks.emu.head.CRH2HeadBlock)
+            if (state.getBlock() instanceof willow.train.hexie.blocks.emu.head.CRH2HeadBlock)
                 box = box.minmax(willow.train.hexie.blocks.emu.head.HeadGeometry.bounds(
-                        block.state().getValue(willow.train.hexie.blocks.emu.head.CRH2HeadBlock.FACING)).move(block.position()));
-            var hook = willow.train.hexie.blocks.coupler.CouplerBlock.of(block.state());
+                        state.getValue(willow.train.hexie.blocks.emu.head.CRH2HeadBlock.FACING)).move(block.position()));
+            var hook = willow.train.hexie.blocks.coupler.CouplerBlock.of(state);
             if (hook != null && hook.geometry() != null)
-                box = box.minmax(hook.geometry().bounds(hook.facing(block.state())).move(block.position()));
+                box = box.minmax(hook.geometry().bounds(hook.facing(state)).move(block.position()));
             bounds = bounds == null ? box : bounds.minmax(box);
         }
         view.bounds = bounds;
@@ -967,7 +972,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
                     data.put("Controller", NbtUtils.writeBlockPos(snapshot.origin().offset(NBTHelper.readBlockPos(data, "Controller"))));
                 if (data.contains("LastKnownPos")) data.put("LastKnownPos", NbtUtils.writeBlockPos(world));
             }
-            result.put(info.pos(), new StructureBlockInfo(info.pos(), info.state(), data));
+            result.put(info.pos(), new StructureBlockInfo(info.pos(), SnapshotView.placedState(info.state()), data));
         }
         return result;
     }
@@ -1059,7 +1064,7 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             var previous = blocks.get(pos);
             if (previous == null || !changedPositions.add(pos))
                 throw new IllegalArgumentException("Unknown or duplicate working block " + pos);
-            var state = CarriageSnapshot.readState(data.getCompound("State"), registryAccess());
+            var state = SnapshotView.movingState(CarriageSnapshot.readState(data.getCompound("State"), registryAccess()));
             if (state.getBlock() != previous.state().getBlock())
                 throw new IllegalArgumentException("Working state cannot replace a captured block type " + pos);
             CompoundTag entityData = data.contains("BlockEntity") ? data.getCompound("BlockEntity").copy() : null;
@@ -1081,7 +1086,8 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             var info = blocks.get(pos);
             if (info == null || !actorPositions.add(pos) || MovementBehaviour.REGISTRY.get(info.state()) == null)
                 throw new IllegalArgumentException("Unknown working actor " + pos);
-            if (data.contains("BlockEntity")) {
+            // Older setBlock synthesized empty actor NBT even when the captured block had no entity.
+            if (data.contains("BlockEntity") && (info.nbt() != null || !data.getCompound("BlockEntity").isEmpty())) {
                 var changed = new StructureBlockInfo(pos, info.state(), data.getCompound("BlockEntity").copy());
                 validateWorkingBlock(changed, info);
                 info = changed;
@@ -1784,6 +1790,19 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         private boolean backwardControls;
         private final Map<BlockPos, Entity> initialSeatPassengers = new HashMap<>();
         SnapshotView() { storage = new SnapshotCargoManager(); }
+
+        // Match Create's capture/placement rules for every sliding or folding door, without block-ID lists.
+        static BlockState movingState(BlockState state) {
+            return state.hasProperty(SlidingDoorBlock.VISIBLE) ? state.setValue(SlidingDoorBlock.VISIBLE, false) : state;
+        }
+
+        static BlockState placedState(BlockState state) {
+            return state.hasProperty(SlidingDoorBlock.VISIBLE)
+                    ? state.setValue(SlidingDoorBlock.VISIBLE, !state.getValue(SlidingDoorBlock.OPEN))
+                        .setValue(SlidingDoorBlock.POWERED, false)
+                    : state;
+        }
+
         @Override public ContraptionWorld getContraptionWorld() {
             if (!(collisionLevel instanceof FloorWorld)) collisionLevel = new FloorWorld(entity.level(), this);
             return collisionLevel;

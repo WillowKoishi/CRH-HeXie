@@ -11,6 +11,7 @@ import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.level.block.state.BlockState;
 
 import willow.train.hexie.blocks.signs.TrainPanelBlock;
+import willow.train.hexie.blocks.signs.TrainSpeedSignBlock;
 import willow.train.hexie.blockentity.TrainSpeedSignEntity;
 
 import java.util.List;
@@ -51,7 +52,12 @@ public TrainSpeedSignEntityRenderer(BlockEntityRendererProvider.Context pContext
         pPoseStack.translate(0.5d, 0.5d, 0.5d);
         float f = -blockState.getValue(TrainPanelBlock.FACING).getOpposite().toYRot();
         pPoseStack.mulPose(Axis.YP.rotationDegrees(f));
-        pPoseStack.translate(0.0d, 0.1d, 0.501d);
+        // Center lettering on the y=12..16 slab face after the initial 0.5 translation.
+        double textYOffset = switch (blockState.getValue(TrainSpeedSignBlock.TYPE)) {
+            case S25B, S25G, S25Z, S25K, S25T, S25M -> 6.0d / 16.0d;
+            default -> 0.1d;
+        };
+        pPoseStack.translate(0.0d, textYOffset, 0.501d);
 
         pPoseStack.scale(1.0f, -1.0f, 1.0f);
 

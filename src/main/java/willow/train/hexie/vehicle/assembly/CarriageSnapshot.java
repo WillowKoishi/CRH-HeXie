@@ -85,11 +85,9 @@ public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos o
         public Block {
             position = Objects.requireNonNull(position, "position").immutable();
             Objects.requireNonNull(state, "state");
-            // Air may retain a removed block's local position during saved-data migration.
-            if (state.hasBlockEntity() != (entityData != null)
-                    && !(entityData == null && (canInitializeEntity(state)
-                        // Unsupported subclasses inherit EntityBlock, but deliberately have no entity.
-                        || state.getBlock() instanceof PassengerDisplayPanel && !PassengerDisplayPanel.supports(state.getBlock()))))
+            // EntityBlock factories may omit entities for individual states, such as upper door halves.
+            // Capture records actual world entities; validate supplied data without requiring it to exist.
+            if (entityData != null && !state.hasBlockEntity())
                 throw new IllegalArgumentException("Block entity data does not match block state");
             if (entityData != null) {
                 require(entityData, "id", Tag.TAG_STRING);

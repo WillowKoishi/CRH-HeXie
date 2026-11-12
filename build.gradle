@@ -229,6 +229,7 @@ dependencies {
     aeronauticsRuntimeOnly "com.crystaelix:simurail:${simurail_version}"
     aeronauticsRuntimeOnly "maven.modrinth:create-aeronautics:${aeronautics_version}"
     aeronauticsRuntimeOnly "maven.modrinth:sable:${sable_version}"
+    aeronauticsRuntimeOnly("maven.modrinth:copycats:${copycats_version}") { transitive = false }
     aeronauticsRailxRuntimeOnly "com.lhwdev.minecraft.railx:railx:${railx_version}"
     aeronauticsRailxRuntimeOnly "thedarkcolour:kotlinforforge-neoforge:${railx_kotlinforforge_version}"
 }
