@@ -1,0 +1,98 @@
+{
+  "source_frame": "crh1_bogie_frame_motorl.bbmodel",
+  "source_wheel": "crh1_bogie_wheel.bbmodel",
+  "units_per_block": 16,
+  "axle_positions": [
+    -1.35,
+    1.35
+  ],
+  "tread_half_height": 0.458,
+  "excluded_reference_meshes": {
+    "wheel": 5,
+    "wheel2": 5,
+    "rails": 1
+  },
+  "restored_brake_discs": [],
+  "parts": {
+    "air_spring_left": {
+      "meshes": 1,
+      "faces": 30
+    },
+    "air_spring_right": {
+      "meshes": 1,
+      "faces": 30
+    },
+    "anti_roll_bar": {
+      "meshes": 3,
+      "faces": 18
+    },
+    "anti_roll_link_left": {
+      "meshes": 1,
+      "faces": 6
+    },
+    "anti_roll_link_right": {
+      "meshes": 1,
+      "faces": 6
+    },
+    "bolster": {
+      "meshes": 3,
+      "faces": 20
+    },
+    "brakes": {
+      "meshes": 16,
+      "faces": 204
+    },
+    "frame": {
+      "meshes": 13,
+      "faces": 422
+    },
+    "motors": {
+      "meshes": 20,
+      "faces": 292
+    },
+    "primary_suspension": {
+      "meshes": 16,
+      "faces": 360
+    },
+    "traction_rod": {
+      "meshes": 1,
+      "faces": 6
+    },
+    "vertical_damper_left": {
+      "meshes": 1,
+      "faces": 6
+    },
+    "vertical_damper_right": {
+      "meshes": 1,
+      "faces": 6
+    },
+    "wheel": {
+      "meshes": 5,
+      "faces": 144
+    },
+    "yaw_damper_left_shaft": {
+      "meshes": 1,
+      "faces": 18
+    },
+    "yaw_damper_left_sleeve": {
+      "meshes": 1,
+      "faces": 18
+    },
+    "yaw_damper_left_upper_mount": {
+      "meshes": 1,
+      "faces": 18
+    },
+    "yaw_damper_right_shaft": {
+      "meshes": 1,
+      "faces": 18
+    },
+    "yaw_damper_right_sleeve": {
+      "meshes": 1,
+      "faces": 18
+    },
+    "yaw_damper_right_upper_mount": {
+      "meshes": 1,
+      "faces": 18
+    }
+  }
+}

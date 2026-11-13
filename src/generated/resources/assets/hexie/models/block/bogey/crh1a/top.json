@@ -1,0 +1,17 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:composite",
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "hexie:block/bogey/crh1a_motor/frame"
+  },
+  "children": {
+    "floor": {
+      "parent": "hexie:block/crh2a/parts/crh2a_floor",
+      "transform": {
+        "rotation": [0, -90, 0],
+        "origin": "corner"
+      }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+# Made in Blockbench 5.2.2
+newmtl m_8a6cc51a-dcd3-0f84-a226-3f6d670f379c
+map_Kd crh1a_bogie_frame_motor.png
+newmtl m_b2843b60-37e8-ef7c-092a-33cb1a1c720a
+map_Kd standard_track_crosstie.png
+newmtl m_8cb12fcb-6897-5b46-12a5-24c536ca253b
+map_Kd standard_track_tie.png
+newmtl m_bc137e9a-c0ff-50e7-f9ae-b5d56e89a689
+map_Kd crh1a_bogie_wheel_trailer.png
+newmtl none
