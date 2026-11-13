@@ -246,9 +246,8 @@ public final class AssembledVehicleMotion {
             if (bridgeForTick != null && compatibility == null) return;
             applyAutomaticControls();
             applyAllControls();
-            if (compatibility != null && net.neoforged.fml.ModList.get().isLoaded("electroenergetics"))
-                compatibility.applyCeePower();
-            else runtime.wheelPowerMultiplier(id -> 1);
+            if (compatibility != null) compatibility.applyTractionPower();
+            else runtime.poweredCarriages(Set.of(), 1);
             try {
                 runtime.tick(1.0 / 20, Set.of(), compatibility == null ? Set.of() : compatibility.motionPausedCarriages());
                 // Keep Create's migration points intact until the bridge has reconciled them.
@@ -590,7 +589,8 @@ public final class AssembledVehicleMotion {
         final VehicleRuntime relocated;
         try {
             relocated = VehicleRuntime.relocateCheckpoint(checkpoint, destination.path(), distances);
-        } catch (CreateRouteBinding.RouteInvalidException | IllegalArgumentException | ConstraintFailure unavailable) {
+        } catch (CreateRouteBinding.RouteInvalidException | IllegalArgumentException | IndexOutOfBoundsException
+                | ConstraintFailure unavailable) {
             // A native two-bogey preview can succeed before every independent support has a
             // usable destination. Keep the original saved owner until a valid placement arrives.
             return false;

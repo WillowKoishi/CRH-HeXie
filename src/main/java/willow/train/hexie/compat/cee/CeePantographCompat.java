@@ -25,7 +25,7 @@ import willow.train.hexie.init.block.BlockInit;
 public final class CeePantographCompat {
     private static final DeferredRegister<PantographType> TYPES =
             DeferredRegister.create(CEERegistries.PANTOGRAPH_TYPE.key(), Main.MOD_ID);
-    // The fixed head is two blocks above the base, slightly forward of center.
+    // fixed head sits two blocks up and slightly forward
     private static final Supplier<PantographType> FIXED_HEAD = TYPES.register(
             "fixed_head", () -> new PantographType(0.25f, -0.10f, 1.875f, 0.5f));
 
@@ -42,6 +42,7 @@ public final class CeePantographCompat {
 
     private static void setup(FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
+            willow.train.hexie.api.vehicle.TractionPowerSources.register(CeeSnapshotTrain::hasLinePower);
             var pantograph = BlockInit.PANTOGRAPH.get();
             MovementBehaviour.REGISTRY.register(pantograph, new FixedHeadMovement());
             MovingInteractionBehaviour.REGISTRY.register(pantograph, new TogglePantograph());
@@ -77,7 +78,7 @@ public final class CeePantographCompat {
             if (context.world.isClientSide
                     || !(context.contraption.entity instanceof CarriageContraptionEntity entity)
                     || !(entity.getCarriage() instanceof IPantographList pantographs)) return;
-            // Create updates the captured block on interaction, while the actor retains its original state.
+            // the actor keeps its original state after a click
             var info = context.contraption.getBlocks().get(context.localPos);
             boolean active = !context.disabled && info != null
                     && info.state().getBlock() instanceof CompatiblePantographBlock

@@ -7,7 +7,7 @@ public final class VehicleConfig {
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.DoubleValue ACCELERATION_MULTIPLIER;
     public static final ModConfigSpec.DoubleValue BRAKING_MULTIPLIER;
-    public static final ModConfigSpec.DoubleValue CEE_POWER_MULTIPLIER;
+    public static final ModConfigSpec.DoubleValue LINE_POWER_MULTIPLIER;
     static {
         var builder = new ModConfigSpec.Builder();
         builder.push("vehicle");
@@ -15,8 +15,8 @@ public final class VehicleConfig {
                 .defineInRange("accelerationMultiplier", 1.0, .1, 10.0);
         BRAKING_MULTIPLIER = builder.comment("Braking motion multiplier. 2 doubles deceleration at the same speed and brake input. Coasting is unchanged.")
                 .defineInRange("brakingMultiplier", 1.0, .1, 10.0);
-        CEE_POWER_MULTIPLIER = builder.comment("Wheel power multiplier for CEE motor carriages above the CEE minimum line voltage.")
-                .defineInRange("ceePowerMultiplier", 1.5, 1.0, 4.0);
+        LINE_POWER_MULTIPLIER = builder.comment("Wheel power multiplier for carriages with external traction power.")
+                .defineInRange("linePowerMultiplier", 1.5, 1.0, 4.0);
         builder.pop();
         SPEC = builder.build();
     }
