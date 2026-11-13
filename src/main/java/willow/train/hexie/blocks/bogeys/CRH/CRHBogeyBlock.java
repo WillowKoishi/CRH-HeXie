@@ -6,11 +6,16 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import willow.train.hexie.blocks.bogeys.HexieBogeyBlock;
 import willow.train.hexie.init.bogeys.BogeyEntityInit;
 import willow.train.hexie.init.bogeys.BogeyStylesInit;
+import willow.train.hexie.vehicle.bogey.BogeyGeometry;
 
 public class CRHBogeyBlock extends HexieBogeyBlock<CRHBogeyBlockEntity> {
 
     public CRHBogeyBlock(Properties properties, BogeySizes.BogeySize size) {
         super(properties, size);
+    }
+
+    public CRHBogeyBlock(Properties properties, BogeySizes.BogeySize size, BogeyGeometry geometry) {
+        super(properties, size, geometry.axleSpan(), geometry.wheelRadius());
     }
 
     @Override

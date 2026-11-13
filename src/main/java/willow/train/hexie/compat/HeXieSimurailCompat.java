@@ -26,6 +26,8 @@ import willow.train.hexie.vehicle.bogey.BuiltinBogeyModel;
 public final class HeXieSimurailCompat {
     public static final BogeyEntry DT206 = entry("dt206", BogeyStylesInit.CRHBOGEY, BogeySizesInit.DT206);
     public static final BogeyEntry SKTB200 = entry("sktb200", BogeyStylesInit.CRHBOGEY, BogeySizesInit.SKTB200);
+    public static final BogeyEntry CRH1A_MOTOR = entry("crh1a_motor", BogeyStylesInit.CRHBOGEY, BogeySizesInit.CRH1A_MOTOR);
+    public static final BogeyEntry CRH1A_TRAILER = entry("crh1a_trailer", BogeyStylesInit.CRHBOGEY, BogeySizesInit.CRH1A_TRAILER);
     public static final BogeyEntry CW2 = entry("cw2", BogeyStylesInit.HXSTANDARDBOGEY, BogeySizes.SMALL);
     public static final BogeyEntry PK209P = entry("pk209p", BogeyStylesInit.HXSTANDARDBOGEY, BogeySizesInit.PK209P);
     public static final BogeyEntry PK209P_NO_MOTOR = entry("pk209p_no_motor", BogeyStylesInit.HXSTANDARDBOGEY, BogeySizesInit.PK209P_NO_MOTOR);
@@ -48,7 +50,7 @@ public final class HeXieSimurailCompat {
             Component.translatable("simurail_bogey_category.hexie.steam"),
             List.of(QJ, QJ_BACKWARD));
     public static final BogeyEntryCategory EMU = new BogeyEntryCategory(
-            Component.translatable("simurail_bogey_category.hexie.emu"), List.of(DT206, SKTB200));
+            Component.translatable("simurail_bogey_category.hexie.emu"), List.of(DT206, SKTB200, CRH1A_MOTOR, CRH1A_TRAILER));
     public static final BogeyParentCategory HEXIE = new BogeyParentCategory(
             Component.translatable("simurail_bogey_category.hexie"),
             List.of(PASSENGER, LOCO, STEAM, EMU));
@@ -85,7 +87,7 @@ public final class HeXieSimurailCompat {
 
     /** Nominal rolling radii and axle positions from HeXie's sizes and renderers, in blocks. */
     private static void configureParameters() {
-        for (var entry : List.of(DT206, SKTB200, CW2, PK209P, PK209P_NO_MOTOR, PK209P_BACKWARD,
+        for (var entry : List.of(DT206, SKTB200, CRH1A_MOTOR, CRH1A_TRAILER, CW2, PK209P, PK209P_NO_MOTOR, PK209P_BACKWARD,
                 SW220K, SW220K_BACKWARD, SW160, DF11G, DF11G_BACKWARD, QJ, QJ_BACKWARD)) {
             var type = entry.type();
             var model = BuiltinBogeyModel.find(type.style().id, type.size().id());

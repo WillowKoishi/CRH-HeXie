@@ -654,7 +654,7 @@
   "patchouli.hexie.landing_text": "瞩来日，行四方",
   "easter.eggs": "此去，二百由旬↓↓",
   "gui.hexie.carriage_flow.demo": "虹彩车舆范式",
-  "container.hexie.inventory.button.switch_mode": "更易车窗流／物品目",
+  "container.hexie.inventory.button.switch_mode": "更易车厢流／物品目",
   "block.hexie.ground_station_sign": "国铁地设驿牌",
   "gui.hexie.ground_station_sign.station_name": "驿名",
   "gui.hexie.ground_station_sign.pinyin": "拼音",
@@ -694,5 +694,13 @@
   "block.hexie.crh2a_electronic_signage": "CRH2A 电书行程牌",
   "block.hexie.crh2a_carriage_number_display": "CRH2A 舆号电字屏",
   "gui.hexie.carriage_number.title": "舆号电字屏",
-  "gui.hexie.carriage_number.hint": "书入 1–2 位数字，留空则清屏"
+  "gui.hexie.carriage_number.hint": "书入 1–2 位数字，留空则清屏",
+  "block.hexie.crh1a_motor_bogey": "CRH1A 动车台车",
+  "simurail_bogey_entry.hexie.crh1a_motor": "CRH1A 动车台车",
+  "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_crh1a_motor.bogey.name": "CRH1A 动车台车",
+  "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_crh1a_motor.bogey.cart": "所宜车式: · CRH1A",
+  "block.hexie.crh1a_trailer_bogey": "CRH1A 拖车台车",
+  "simurail_bogey_entry.hexie.crh1a_trailer": "CRH1A 拖车台车",
+  "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_crh1a_trailer.bogey.name": "CRH1A 拖车台车",
+  "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_crh1a_trailer.bogey.cart": "所宜车式: · CRH1A"
 }

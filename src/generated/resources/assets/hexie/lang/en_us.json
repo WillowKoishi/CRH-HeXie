@@ -761,5 +761,13 @@
   "gui.hexie.carriage_number.hint": "Enter 1–2 digits, or leave blank to clear",
   "block.hexie.crh2a_physical_head": "CRH2A Physical Head",
   "block.hexie.crh2a_physical_head_bogey": "CRH2A Head Physics Bogey Control",
-  "hexie.command.physical_head.incomplete": "The physical fishhead at %s is incomplete or not fully loaded."
+  "hexie.command.physical_head.incomplete": "The physical fishhead at %s is incomplete or not fully loaded.",
+  "block.hexie.crh1a_motor_bogey": "CRH1A Motor Bogey",
+  "simurail_bogey_entry.hexie.crh1a_motor": "CRH1A Motor Bogey",
+  "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_crh1a_motor.bogey.name": "CRH1A Motor Bogey",
+  "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_crh1a_motor.bogey.cart": "Cart: · CRH1A",
+  "block.hexie.crh1a_trailer_bogey": "CRH1A Trailer Bogey",
+  "simurail_bogey_entry.hexie.crh1a_trailer": "CRH1A Trailer Bogey",
+  "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_crh1a_trailer.bogey.name": "CRH1A Trailer Bogey",
+  "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_crh1a_trailer.bogey.cart": "Cart: · CRH1A"
 }

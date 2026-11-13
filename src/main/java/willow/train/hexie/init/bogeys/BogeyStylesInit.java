@@ -1,6 +1,7 @@
 package willow.train.hexie.init.bogeys;
 
 import willow.train.hexie.init.client.PartialModelInit;
+import willow.train.hexie.client.render.bogey.BogeySuspensionModels;
 import com.simibubi.create.AllSoundEvents;
 import com.simibubi.create.content.trains.bogey.BogeySizes;
 import com.simibubi.create.content.trains.bogey.BogeyStyle;
@@ -52,6 +53,8 @@ public class BogeyStylesInit {
                     .displayName(Component.translatable("hexie.bogeys.styles.crhbogey"))
                     .size(BogeySizesInit.DT206, TrackBlockInit.DT206_BOGEY, () -> () -> { var renderer = new HXStandardBogeyRenderer.CrhTwoAxleRenderer(BogeySizesInit.DT206, PartialModelInit.DT206_FRAME, PartialModelInit.DT206_WHEEL, 5.0 / 16); return new BogeyStyle.SizeRenderer(renderer, renderer::createVisual); })
                     .size(BogeySizesInit.SKTB200, TrackBlockInit.SKTB200_BOGEY, () -> () -> { var renderer = new HXStandardBogeyRenderer.CrhTwoAxleRenderer(BogeySizesInit.SKTB200, PartialModelInit.SKTB200_FRAME, PartialModelInit.SKTB200_WHEEL, 5.0 / 16); return new BogeyStyle.SizeRenderer(renderer, renderer::createVisual); })
+                    .size(BogeySizesInit.CRH1A_MOTOR, TrackBlockInit.CRH1A_MOTOR_BOGEY, () -> () -> { var renderer = new HXStandardBogeyRenderer.CrhTwoAxleRenderer(BogeySizesInit.CRH1A_MOTOR, PartialModelInit.CRH1A_MOTOR_FRAME, PartialModelInit.CRH1A_MOTOR_WHEEL, .8006, 0, 1.35, BogeySuspensionModels.CRH1A_MOTOR); return new BogeyStyle.SizeRenderer(renderer, renderer::createVisual); })
+                    .size(BogeySizesInit.CRH1A_TRAILER, TrackBlockInit.CRH1A_TRAILER_BOGEY, () -> () -> { var renderer = new HXStandardBogeyRenderer.CrhTwoAxleRenderer(BogeySizesInit.CRH1A_TRAILER, PartialModelInit.CRH1A_TRAILER_FRAME, PartialModelInit.CRH1A_TRAILER_WHEEL, .8006, 0, 1.35, BogeySuspensionModels.CRH1A_TRAILER); return new BogeyStyle.SizeRenderer(renderer, renderer::createVisual); })
                     .build();
 
     public static BogeyStyle.Builder create(

@@ -16,6 +16,8 @@ import net.minecraft.world.phys.Vec3;
 import willow.train.hexie.init.track.TrackMaterialInit;
 
 public abstract class HexieBogeyBlock<T extends AbstractBogeyBlockEntity> extends AbstractBogeyBlock<T> {
+    private final double wheelPointSpacing;
+    private final double wheelRadius;
     public static final net.minecraft.world.level.block.state.properties.BooleanProperty HEAD_MOUNTED =
             net.minecraft.world.level.block.state.properties.BooleanProperty.create("head_mounted");
     @Override protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition.Builder<Block, BlockState> builder) {
@@ -44,7 +46,14 @@ public abstract class HexieBogeyBlock<T extends AbstractBogeyBlockEntity> extend
         return getShape(state, world, pos, context);
     }
     protected HexieBogeyBlock(Properties properties, BogeySizes.BogeySize size) {
+        this(properties, size, 2.5, .915);
+    }
+
+    protected HexieBogeyBlock(Properties properties, BogeySizes.BogeySize size,
+                              double wheelPointSpacing, double wheelRadius) {
         super(properties.dynamicShape(), size);
+        this.wheelPointSpacing = wheelPointSpacing;
+        this.wheelRadius = wheelRadius;
         registerDefaultState(defaultBlockState().setValue(HEAD_MOUNTED, false));
     }
 
@@ -61,12 +70,12 @@ public abstract class HexieBogeyBlock<T extends AbstractBogeyBlockEntity> extend
 
     @Override
     public final double getWheelPointSpacing() {
-        return 2.5;
+        return wheelPointSpacing;
     }
 
     @Override
     public final double getWheelRadius() {
-        return 0.915;
+        return wheelRadius;
     }
 
     @Override
