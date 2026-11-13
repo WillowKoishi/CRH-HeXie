@@ -978,7 +978,7 @@ public static final DeferredHolder<Block, HXD3DPanelBlocks> CARPORT_25BGZKT_WATE
 
     //受电弓
     public static final DeferredHolder<Block, PantographBlock> PANTOGRAPH = register("pantograph",
-            () -> new PantographBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
+            () -> PantographBlock.create(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),
             object -> () -> new ToolTipsItemHelper(object.get(), new Item.Properties()));
 

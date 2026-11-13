@@ -20,10 +20,19 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.neoforged.fml.ModList;
 
 import org.jetbrains.annotations.NotNull;
+import willow.train.hexie.compat.cee.CeePantographCompat;
 
 public class PantographBlock extends TrapDoorBlock {
+    public static PantographBlock create(Properties properties) {
+        if (ModList.get().isLoaded("electroenergetics")) {
+            return CeePantographCompat.createBlock(properties);
+        }
+        return new PantographBlock(properties);
+    }
+
     public static final BooleanProperty OPEN = BlockStateProperties.OPEN;
     public static final EnumProperty<Half> HALF = BlockStateProperties.HALF;
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
