@@ -30,6 +30,7 @@ import java.util.function.Supplier;
 public class HeXieClientInit {
 
     public static void init() {
+        Main.bus.addListener(willow.train.hexie.compat.cee.PantographBaseModels::onBaking);
         willow.train.hexie.client.render.display.PassengerPanelModels.register();
         willow.train.hexie.client.render.CRH2StaticSections.register();
         Main.bus.addListener(willow.train.hexie.client.render.bogey.BogeyTopModel::register);
