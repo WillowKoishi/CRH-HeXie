@@ -271,6 +271,9 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         firstPositionUpdate = false;
         if (level().isClientSide) compatibilitySyncPending = true;
         else {
+            if (net.neoforged.fml.ModList.get().isLoaded("electroenergetics")) {
+                willow.train.hexie.compat.cee.CeeSnapshotTrain.bind(this, carriage);
+            }
             CreateConsoleTimetable.bindStored(this, carriage.train);
             if (restoringNativeEntity && motion() != null) {
                 motion().applyCurrent(this);

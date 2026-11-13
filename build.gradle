@@ -224,6 +224,11 @@ dependencies {
     }
     compileOnly("maven.modrinth:iris:${iris_version}") { transitive = false }
     compileOnly("maven.modrinth:sodium:${sodium_api_version}") { transitive = false }
+    def cee = "maven.modrinth:create-electro-energetics:ZMfRgLy5"
+    compileOnly(cee) { transitive = false }
+    if (providers.gradleProperty('withCee').isPresent()) {
+        runtimeOnly(cee) { transitive = false }
+    }
 
     // Aviation mods are selected per run.
     aeronauticsRuntimeOnly "com.crystaelix:simurail:${simurail_version}"
