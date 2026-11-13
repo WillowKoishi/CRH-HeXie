@@ -94,6 +94,11 @@ public final class VehicleRuntime {
         brakingMultiplier = braking;
     }
     public double brakingMultiplier() { return brakingMultiplier; }
+    private java.util.function.ToDoubleFunction<UUID> wheelPowerMultiplier = id -> 1;
+
+    public void wheelPowerMultiplier(java.util.function.ToDoubleFunction<UUID> multiplier) {
+        wheelPowerMultiplier = Objects.requireNonNull(multiplier);
+    }
     /** Backend policy: Create owns body impacts; manual and contact coupling remain active. */
     public void collisionEnabled(boolean enabled) { collisionEnabled = enabled; }
     public ConstraintFailurePolicy constraintFailurePolicy() { return ConstraintFailurePolicy.RETRY_CONSIST; }
@@ -306,7 +311,8 @@ public final class VehicleRuntime {
         var group = group(carriage);
         for (Car member : group.cars) for (BogeyDefinition bogey : member.definition.bogeys()) {
             Control control = member.controls.get(bogey.id());
-            traction += control.throttle * bogey.parameters().availableTractionN(group.speed());
+            traction += control.throttle * bogey.parameters().availableTractionN(group.speed(),
+                    wheelPowerMultiplier.applyAsDouble(member.definition.id()));
         }
         return Math.signum(traction);
     }
@@ -1322,7 +1328,8 @@ public final class VehicleRuntime {
         for (Car car : group.cars) for (BogeyDefinition bogey : car.definition.bogeys()) {
             Control control = car.controls.get(bogey.id());
             braking |= control.brake > 0;
-            traction += control.throttle * bogey.parameters().availableTractionN(group.speed());
+            traction += control.throttle * bogey.parameters().availableTractionN(group.speed(),
+                    wheelPowerMultiplier.applyAsDouble(car.definition.id()));
             opposition += control.brake * bogey.parameters().brakeForceN() + bogey.parameters().runningResistanceN(group.speed());
         }
         double direction = Math.signum(group.speed() == 0 ? traction : group.speed());
@@ -1333,7 +1340,8 @@ public final class VehicleRuntime {
         for (Car car : group.cars) for (BogeyDefinition bogey : car.definition.bogeys()) {
             BogeyParameters parameters = bogey.parameters();
             Control control = car.controls.get(bogey.id());
-            double drive = control.throttle * parameters.availableTractionN(group.speed());
+            double drive = control.throttle * parameters.availableTractionN(group.speed(),
+                    wheelPowerMultiplier.applyAsDouble(car.definition.id()));
             double brake = -direction * control.brake * parameters.brakeForceN() * scale;
             double resistance = -direction * parameters.runningResistanceN(group.speed()) * scale;
             DriveMode mode = control.brake > 0 ? DriveMode.BRAKING

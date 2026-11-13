@@ -77,6 +77,16 @@ public final class CreateTrainBridge {
         return record == null ? null : (CompatibilityTrain) record.train;
     }
 
+    void applyCeePower() {
+        double boost = willow.train.hexie.config.VehicleConfig.CEE_POWER_MULTIPLIER.get();
+        var powered = new java.util.HashSet<UUID>();
+        for (var entry : carriages.entrySet()) {
+            if (willow.train.hexie.compat.cee.CeeSnapshotTrain.hasLinePower(entry.getValue()))
+                powered.add(entry.getKey());
+        }
+        motion.runtime().wheelPowerMultiplier(id -> powered.contains(id) ? boost : 1);
+    }
+
     public void bind(SnapshotCarriageEntity entity) {
         var carriage = carriages.get(entity.getUUID());
         if (carriage != null) entity.bindCompatibility(carriage, carriage.train.carriages.indexOf(carriage));

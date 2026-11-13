@@ -246,6 +246,9 @@ public final class AssembledVehicleMotion {
             if (bridgeForTick != null && compatibility == null) return;
             applyAutomaticControls();
             applyAllControls();
+            if (compatibility != null && net.neoforged.fml.ModList.get().isLoaded("electroenergetics"))
+                compatibility.applyCeePower();
+            else runtime.wheelPowerMultiplier(id -> 1);
             try {
                 runtime.tick(1.0 / 20, Set.of(), compatibility == null ? Set.of() : compatibility.motionPausedCarriages());
                 // Keep Create's migration points intact until the bridge has reconciled them.

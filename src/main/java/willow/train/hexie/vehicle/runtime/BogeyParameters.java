@@ -39,10 +39,14 @@ public record BogeyParameters(double loadKg, double tractionForceN, double brake
 
     /** Full-command force; scaling the result scales both the low-speed force and power ceiling. */
     public double availableTractionN(double speedMps) {
+        return availableTractionN(speedMps, 1);
+    }
+
+    double availableTractionN(double speedMps, double powerMultiplier) {
         if (!Double.isFinite(speedMps)) throw new IllegalArgumentException("speedMps");
         if (tractionPowerW == 0) return 0;
         double speed = Math.abs(speedMps);
-        return speed == 0 ? tractionForceN : Math.min(tractionForceN, tractionPowerW / speed);
+        return speed == 0 ? tractionForceN : Math.min(tractionForceN, tractionPowerW / speed * powerMultiplier);
     }
 
     private static void positive(double value, String name) {

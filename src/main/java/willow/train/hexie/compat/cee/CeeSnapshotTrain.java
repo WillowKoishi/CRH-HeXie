@@ -22,6 +22,14 @@ import willow.train.hexie.compat.create.SnapshotCarriageEntity;
 public final class CeeSnapshotTrain {
     private CeeSnapshotTrain() {}
 
+    public static boolean hasLinePower(Carriage carriage) {
+        if (!(carriage instanceof IPantographList equipment) || !equipment.electroEnergetics$hasElectricMotor()
+                || !(carriage.train instanceof ICEETrainExtension train)) return false;
+        var data = train.getElectricTrainData();
+        return data.trainNode != null && data.lastVoltage >
+                com.george_vi.electroenergetics.config.CEEConfigs.server().voltageValues.trainMinVoltage.get();
+    }
+
     public static void bind(SnapshotCarriageEntity entity, Carriage carriage) {
         if (!(entity.getContraption() instanceof CarriageContraption view)
                 || !(carriage instanceof IPantographList equipment)
