@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
@@ -56,6 +57,10 @@ public final class CabModule implements CabTrainInput {
             if (simple == value) return this;
             return new State(input, mode, brakes, approachHeld, deskEnabled, value, handlePositions);
         }
+        /** Replace converted train demands without changing this desk's local operating settings. */
+        public State withDemands(CabController.Input input, CabBrakeConversion.State brakes) {
+            return new State(input, mode, brakes, approachHeld, deskEnabled, simple, handlePositions);
+        }
     }
     private State state = State.NEUTRAL;
     private int keyboardMask;
@@ -70,6 +75,36 @@ public final class CabModule implements CabTrainInput {
     public int keyboardMask() { return keyboardMask; }
     public CabController.Input effectiveInput(double cabSpeed) { return SimpleCabControls.effectiveInput(state, keyboardMask, cabSpeed); }
     public void releaseApproach() { state = state.withApproach(false); }
+
+    /** Copy exact demands between desks, converting the source direction into the target's frame. */
+    public static State synchronize(CabTrainControl desk, State previous, State source, int relativeDirection) {
+        var next = previous.withDemands(source.input().direction(relativeDirection), source.brakes());
+        next = next.withEnabled(desk.synchronizedEnabled(next.request()));
+        var surface = desk.synchronize(new ControlState(previous.handlePositions()), synchronizedRequest(next));
+        return withSurface(next, surface);
+    }
+
+    /** Also update any train-control instruments mounted on the target desk. */
+    public static State synchronize(CabControlHost host, BlockState block, State previous, State source, int relativeDirection) {
+        var next = synchronize(host.trainControl(block), previous, source, relativeDirection);
+        var surface = new ControlState(next.handlePositions());
+        var request = synchronizedRequest(next);
+        for (var mount : host.surfaceGeometry(block).mounts())
+            if (mount.module() instanceof CabTrainControl module)
+                surface = module.synchronize(surface, request);
+        return withSurface(next, surface);
+    }
+
+    private static CabTrainRequest synchronizedRequest(State state) {
+        return new CabTrainRequest(state.input().power(), state.input().brake(), state.input().reverser(),
+                state.deskEnabled(), state.automatic(), state.brakes().parking(),
+                state.brakes().emergencyHandle() || state.brakes().emergencyLatched(), false, state.approachHeld());
+    }
+
+    private static State withSurface(State state, ControlState surface) {
+        return new State(state.input(), state.mode(), state.brakes(), state.approachHeld(),
+                state.deskEnabled(), state.simple(), surface.positions());
+    }
 
     /** A rejected request returns null before touching the saved positions or train commands. */
     public static State operateControls(List<? extends BlockControl> declared, CabTrainControl desk,
@@ -88,6 +123,17 @@ public final class CabModule implements CabTrainInput {
         var owner = module == null ? host.trainControl(block)
                 : module instanceof CabTrainControl mounted ? mounted : CabTrainControl.NONE;
         return operateControls(surface.control(id), owner, value, host.surfaceState(block, previous), previous, speed);
+    }
+
+    /** Resolve the same declared owner used by operateControls, without inferring meaning from control IDs. */
+    public static Set<CabTrainControl.Demand> operatedDemands(CabControlHost host, BlockState block, String id) {
+        var surface = host.surfaceGeometry(block);
+        var control = surface.control(id);
+        if (control == null) return Set.of();
+        var module = surface.owner(id);
+        var owner = module == null ? host.trainControl(block)
+                : module instanceof CabTrainControl mounted ? mounted : CabTrainControl.NONE;
+        return Set.copyOf(owner.operatedDemands(control));
     }
 
     private static State operateControls(BlockControl target, CabTrainControl owner,

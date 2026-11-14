@@ -769,5 +769,14 @@
   "block.hexie.crh1a_trailer_bogey": "CRH1A Trailer Bogey",
   "simurail_bogey_entry.hexie.crh1a_trailer": "CRH1A Trailer Bogey",
   "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_crh1a_trailer.bogey.name": "CRH1A Trailer Bogey",
-  "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_crh1a_trailer.bogey.cart": "Cart: · CRH1A"
+  "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_crh1a_trailer.bogey.cart": "Cart: · CRH1A",
+  "gui.hexie.bogey_selection.title": "Select Bogey",
+  "gui.hexie.bogey_selection.category": "Category",
+  "gui.hexie.bogey_selection.subcategory": "Subcategory",
+  "gui.hexie.bogey_selection.page_title": "Page",
+  "gui.hexie.bogey_selection.page_format": "Page %s",
+  "gui.hexie.bogey_selection.axle_spacing": "Effective axle spacing",
+  "gui.hexie.bogey_selection.track_type": "Track type",
+  "gui.hexie.bogey_selection.addon": "Addon Bogeys",
+  "create.train.status.hexie.multiple_timetables": "The train has multiple timetables"
 }

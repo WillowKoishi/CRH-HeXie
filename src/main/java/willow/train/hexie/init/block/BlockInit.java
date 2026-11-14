@@ -1,13 +1,18 @@
 package willow.train.hexie.init.block;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import com.google.common.base.Supplier;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -141,15 +146,18 @@ public class BlockInit {
             object -> () -> new willow.train.hexie.item.PartBlockItem(object.get(), new Item.Properties()));
 
     public static final DeferredHolder<Block, CRH2DrivingConsoleBlock> CRH2A_DRIVING_CONSOLE =
-            crh2DrivingConsole("crh2a_driving_console", CRH2DrivingConsoleBlock::new);
+            crh2DrivingConsole("crh2a_driving_console", CRH2DrivingConsoleBlock::new,
+                    block -> new willow.train.hexie.item.PartBlockItem(block, new Item.Properties()));
     public static final DeferredHolder<Block, CRH2DrivingConsoleBlock> CRH2A_NONSTANDARD_DRIVING_CONSOLE =
-            crh2DrivingConsole("crh2a_nonstandard_driving_console", CRH2DrivingConsoleBlock::nonstandard);
+            crh2DrivingConsole("crh2a_nonstandard_driving_console", CRH2DrivingConsoleBlock::nonstandard,
+                    block -> new willow.train.hexie.item.DrivingConsoleItem(block, new Item.Properties(), CRH2A_CAB_SEAT));
 
     private static DeferredHolder<Block, CRH2DrivingConsoleBlock> crh2DrivingConsole(
-            String name, Function<BlockBehaviour.Properties, CRH2DrivingConsoleBlock> factory) {
+            String name, Function<BlockBehaviour.Properties, CRH2DrivingConsoleBlock> factory,
+            Function<CRH2DrivingConsoleBlock, ? extends BlockItem> itemFactory) {
         return register(name, () -> factory.apply(BlockBehaviour.Properties.of()
                         .mapColor(MapColor.METAL).strength(2.0f).sound(SoundType.METAL).noOcclusion()),
-                block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
+                block -> () -> itemFactory.apply(block.get()));
     }
 
     public static final DeferredHolder<Block, TestDrivingConsoleBlock> TEST_DRIVING_CONSOLE = register("test_driving_console",
@@ -1251,7 +1259,14 @@ public static final DeferredHolder<Block, DF11GPanel3Wide> DF11G_PANEL_CR = regi
 
     public static final DeferredHolder<Block, Block> HXD3D_SLAB = register("hxd3d_slab",
             () -> new SlabBlock(BlockBehaviour.Properties.of().mapColor(MapColor.STONE).strength(1.5f, 3.0f)
-                    .sound(SoundType.POLISHED_DEEPSLATE).requiresCorrectToolForDrops()),
+                    .sound(SoundType.POLISHED_DEEPSLATE).requiresCorrectToolForDrops()) {
+                private static final VoxelShape FLOOR_COLLISION = Block.box(0, 8, 0, 16, 16, 16);
+
+                @Override
+                public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+                    return FLOOR_COLLISION;
+                }
+            },
             object -> () -> new willow.train.hexie.item.PartBlockItem(object.get(), new Item.Properties()));
 
     public static final DeferredHolder<Block, HXD3DCabDoorBlock> HXD3D_CAB_DOOR = register("hxd3d_cab_door",

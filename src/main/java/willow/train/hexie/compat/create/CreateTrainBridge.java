@@ -32,6 +32,7 @@ import net.minecraft.world.phys.Vec3;
 import willow.train.hexie.vehicle.assembly.CarriageSnapshotStore;
 import willow.train.hexie.vehicle.runtime.BogeyDefinition;
 import willow.train.hexie.vehicle.runtime.CarriageDefinition;
+import willow.train.hexie.vehicle.runtime.VehicleRuntime;
 
 /** Optional Create control adapter over independent connected consists, with no duplicated body/storage. */
 public final class CreateTrainBridge {
@@ -115,13 +116,13 @@ public final class CreateTrainBridge {
     private void updateControlAndRoute() {
         if (removed) return;
         Create.RAILWAYS.markTracksDirty();
-        if (revision != motion.runtime().consistRevision()) rebuild();
         // A native migration may have replaced only the graph, or future edge objects.
         // Consume its result before checking the local geometry used by this frame.
         for (var train : List.copyOf(trains.values())) {
             if (removed) return;
             // Reloads and regrouping can retain native keyboard state; enabled cabs exclude that input too.
             var member = train.carriageIds.getFirst();
+            CreateConsoleTimetable.prepareShared(motion, member);
             if (motion.hasEnabledCabModule(member)) {
                 int input = motion.isSimpleControlSelected(member) ? -motion.cabManualSteer(member) : 0;
                 train.manualSteer = input < 0 ? TravellingPoint.SteerDirection.LEFT
@@ -150,8 +151,15 @@ public final class CreateTrainBridge {
                 break;
             }
         }
+        boolean regroup = revision != motion.runtime().consistRevision();
+        if (regroup) {
+            // A topology edit can coincide with a native track rebuild. Refresh while the
+            // old points are still intact, before constructing their replacement bogeys.
+            refreshActiveRoute();
+            rebuild();
+        }
         if (trains.values().stream().allMatch(train -> train.graph == null)) return;
-        refreshActiveRoute();
+        if (!regroup) refreshActiveRoute();
         for (var train : List.copyOf(trains.values())) {
             if (removed) return;
             if (train.graph == null) continue;
@@ -182,7 +190,10 @@ public final class CreateTrainBridge {
                     CreateDmiRouteSource.readPhysicalSignals(motion, train);
                 }
             }
+            var shared = CreateConsoleTimetable.prepareShared(motion, member);
+            boolean timetableConflict = CreateConsoleTimetable.hasConflict(motion, member);
             for (var cab : motion.cabTimetables(member).values()) {
+                if (timetableConflict || shared != null && cab != shared) continue;
                 boolean publish = cab == selected;
                 cab.with(train, publish, () -> {
                     cab.measureFromConsistEnds();
@@ -190,10 +201,16 @@ public final class CreateTrainBridge {
                     return null;
                 });
             }
+            if (shared != null) CreateConsoleTimetable.synchronize(motion, shared);
         }
     }
 
     private void updateTimetable(CompatibilityTrain train, UUID member, boolean automatic, TrainControl.Source source, boolean publish) {
+        if (CreateConsoleTimetable.hasConflict(motion, member)) {
+            train.automaticRouteAvailable = false;
+            train.controlObservationsReady = false;
+            return;
+        }
         reportStoppedAtStation(train);
         train.runtime.tick(motion.level());
         train.updateStationDeparture();
@@ -259,22 +276,7 @@ public final class CreateTrainBridge {
     public Set<UUID> motionPausedCarriages() { return Set.copyOf(motionPausedCarriages); }
 
     private void refreshActiveRoute() {
-        double minimum = Double.POSITIVE_INFINITY, maximum = Double.NEGATIVE_INFINITY;
-        for (var point : pointLookup.values()) {
-            double distance = currentDistance(point);
-            minimum = Math.min(minimum, distance);
-            maximum = Math.max(maximum, distance);
-        }
-        double lookAhead = 2;
-        for (var carriage : definitions.values()) {
-            lookAhead = Math.max(lookAhead, Math.abs(motion.runtime().speed(carriage.id())) / 20 + 2);
-            for (var bogey : carriage.bogeys()) {
-                double distance = supportDistance(bogey);
-                minimum = Math.min(minimum, distance);
-                maximum = Math.max(maximum, distance);
-            }
-        }
-        var refreshed = motion.route().refresh(minimum - lookAhead, maximum + lookAhead);
+        var refreshed = refreshedRoute(motion.runtime());
         if (refreshed.binding() == motion.route()) return;
         if (!motion.rebindRoute(refreshed.binding(), refreshed.distanceOffset()))
             throw new CreateRouteBinding.RouteInvalidException();
@@ -284,6 +286,28 @@ public final class CreateTrainBridge {
             train.graph = motion.route().graph();
             sync(train);
         }
+    }
+
+    /** Prepare a current binding for selected live consists before changing their ownership. */
+    CreateRouteBinding.Extension refreshedRoute(VehicleRuntime selected) {
+        double minimum = Double.POSITIVE_INFINITY, maximum = Double.NEGATIVE_INFINITY;
+        for (var point : pointLookup.values()) {
+            var support = selected.placement().bogeys().get(point.bogey);
+            if (support == null) continue;
+            double distance = support.distance() + point.offset;
+            minimum = Math.min(minimum, distance);
+            maximum = Math.max(maximum, distance);
+        }
+        double lookAhead = 2;
+        for (var carriage : selected.definitions()) {
+            lookAhead = Math.max(lookAhead, Math.abs(selected.speed(carriage.id())) / 20 + 2);
+            for (var bogey : carriage.bogeys()) {
+                double distance = selected.placement().bogeys().get(bogey.id()).distance();
+                minimum = Math.min(minimum, distance);
+                maximum = Math.max(maximum, distance);
+            }
+        }
+        return motion.route().refresh(minimum - lookAhead, maximum + lookAhead);
     }
 
     /** Release only the motion adapter; native carriage, inventory and entity ownership survive. */
@@ -352,10 +376,17 @@ public final class CreateTrainBridge {
                 else reportStoppedAtStation(train);
                 return null;
             });
+            if (!CreateConsoleTimetable.hasConflict(motion, member)) {
+                var shared = selected != null && selected.hasTimetable() ? selected
+                        : motion.cabTimetables(member).values().stream().filter(CreateCabTimetable::hasTimetable)
+                        .findFirst().orElse(null);
+                if (shared != null) CreateConsoleTimetable.synchronize(motion, shared);
+            }
         }
     }
 
     private void updateAfterTravel(CompatibilityTrain train, double distance) {
+        if (CreateConsoleTimetable.hasConflict(motion, train.carriageIds.getFirst())) return;
         ((CreateTrainAccess) (Object) train).hexie$updateNavigationTarget(motion.level(), distance);
         reportStoppedAtStation(train);
     }
@@ -370,6 +401,7 @@ public final class CreateTrainBridge {
     }
 
     private void observeCabTravel(CompatibilityTrain train, double travel) {
+        if (CreateConsoleTimetable.hasConflict(motion, train.carriageIds.getFirst())) return;
         var point = travel > 0 ? train.carriages.getFirst().getLeadingPoint() : train.carriages.getLast().getTrailingPoint();
         var leading = binding(point);
         double end = currentDistance(leading);
@@ -459,8 +491,18 @@ public final class CreateTrainBridge {
             if (bindings != null) for (var binding : bindings) pointLookup.remove(binding.point);
         }
         for (var train : discarded) { trains.remove(train.id); extensionAttempts.remove(train.id); }
+        boolean routeChanged = remaining.route() != motion.route();
         motion = remaining;
         revision = remaining.runtime().consistRevision();
+        // Preparation has already rebound the surviving state. Publish the new directed
+        // edges now, even when installing the owner suppresses another logical tick.
+        if (routeChanged) {
+            extensionAttempts.clear();
+            for (var train : trains.values()) {
+                train.graph = motion.route().graph();
+                sync(train);
+            }
+        }
         discarded.forEach(this::unregister);
         return this;
     }
@@ -506,6 +548,11 @@ public final class CreateTrainBridge {
             if (index >= 0 && previous.carriages.get(index) == carriage)
                 retainedCars.put(definition.id(), carriage);
         }
+        // Sampling a replaced or missing edge can fail. Prepare every bogey before clearing
+        // lookup maps or attaching any new bogey to a retained native carriage.
+        var preparedBogeys = new HashMap<UUID, PreparedBogey>();
+        for (var definition : runtime.definitions()) for (var bogey : definition.bogeys())
+            preparedBogeys.put(bogey.id(), prepareBogey(definition, bogey));
         trains.clear(); carriages.clear(); definitions.clear(); carriagePoints.clear(); pointLookup.clear();
         var remaining = new ArrayList<>(runtime.definitions());
         remaining.forEach(def -> definitions.put(def.id(), def));
@@ -523,8 +570,15 @@ public final class CreateTrainBridge {
             for (var definition : group) {
                 var ordered = definition.bogeys().stream().sorted(Comparator.comparingDouble(BogeyDefinition::offset)).toList();
                 var front = ordered.getFirst(); var back = ordered.getLast();
-                var firstBogey = makeBogey(definition, front);
-                var lastBogey = front == back ? null : makeBogey(definition, back);
+                var preparedFront = preparedBogeys.get(front.id());
+                var firstBogey = preparedFront.bogey();
+                bindBogey(definition, front, preparedFront);
+                CarriageBogey lastBogey = null;
+                if (front != back) {
+                    var preparedBack = preparedBogeys.get(back.id());
+                    lastBogey = preparedBack.bogey();
+                    bindBogey(definition, back, preparedBack);
+                }
                 int spacing = (int) Math.round(back.offset() - front.offset());
                 var geometry = new CompatibilityTrain.ReferenceCarriage(firstBogey, lastBogey, spacing);
                 var car = retainedCars.get(definition.id());
@@ -649,7 +703,9 @@ public final class CreateTrainBridge {
                         .thenComparing(p -> p.id)).findFirst().orElse(null);
     }
 
-    private CarriageBogey makeBogey(CarriageDefinition car, BogeyDefinition definition) {
+    private record PreparedBogey(CarriageBogey bogey, double halfSpacing) {}
+
+    private PreparedBogey prepareBogey(CarriageDefinition car, BogeyDefinition definition) {
         var snapshot = CarriageSnapshotStore.get(motion.level()).find(car.id()).orElseThrow();
         int index = car.bogeys().indexOf(definition);
         var pos = snapshot.supports().get(index);
@@ -668,11 +724,15 @@ public final class CreateTrainBridge {
         var leading = motion.route().boundedPointAt(centre - half, false);
         var trailing = motion.route().boundedPointAt(centre + half, false);
         var bogey = new CarriageBogey(type, false, data, leading, trailing);
+        return new PreparedBogey(bogey, half);
+    }
+
+    private void bindBogey(CarriageDefinition car, BogeyDefinition definition, PreparedBogey prepared) {
+        var bogey = prepared.bogey();
         // Constructor mixins (RailX) may replace the supplied points. Bind the
         // instances actually retained by the bogey, which all later readers use.
-        bindPoint(car.id(), definition, -half, bogey.leading());
-        bindPoint(car.id(), definition, half, bogey.trailing());
-        return bogey;
+        bindPoint(car.id(), definition, -prepared.halfSpacing(), bogey.leading());
+        bindPoint(car.id(), definition, prepared.halfSpacing(), bogey.trailing());
     }
 
     private void bindPoint(UUID carriage, BogeyDefinition bogey, double offset, TravellingPoint point) {
@@ -735,9 +795,10 @@ public final class CreateTrainBridge {
         boolean[] intercepted = { false };
         GlobalStation[] docked = { null };
         var listener = train.frontSignalListener();
-        boolean conflict = motion.cabSelection(train.carriageIds.getFirst()).conflicting();
+        boolean timetableConflict = CreateConsoleTimetable.hasConflict(motion, train.carriageIds.getFirst());
+        boolean conflict = motion.cabSelection(train.carriageIds.getFirst()).conflicting() || timetableConflict;
         boolean simpleOutput = motion.isSimpleControlSelected(train.carriageIds.getFirst());
-        boolean manualCab = (motion.isManuallyControlled(train.carriageIds.getFirst()) || simpleOutput)
+        boolean manualCab = timetableConflict || (motion.isManuallyControlled(train.carriageIds.getFirst()) || simpleOutput)
                 && !motion.isApproachingStation(train.carriageIds.getFirst());
         double allowed = motion.route().traversePoints(leading.distance, target, (travelled, event) -> {
             // Steam 'n' Rails suppresses its waypoint listener during native manual control.
@@ -862,6 +923,7 @@ public final class CreateTrainBridge {
     /** Report station position and actual stops; this never moves a body or changes driver input. */
     private void reportStoppedAtStation(CompatibilityTrain train) {
         updateStationRange(train);
+        if (CreateConsoleTimetable.hasConflict(motion, train.carriageIds.getFirst())) return;
         // Exact endpoint movement can stop on (rather than cross) the point in this frame.
         if (approachingStation(train) && !CreateWaypointSupport.currentInstruction(train)
                 && train.navigation.destination != null

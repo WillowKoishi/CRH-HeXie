@@ -31,6 +31,7 @@ public final class VehicleRuntime {
     private final Map<UUID, UUID> endpointOwners = new HashMap<>();
     private final List<Connection> connections = new ArrayList<>();
     private final List<Approach> approaches = new ArrayList<>();
+    private final List<CouplingControlReset> couplingControlResets = new ArrayList<>();
     private final Map<UUID, Double> bogeySpeeds = new LinkedHashMap<>();
     // Dynamics owns these cursors. A failed pose evaluation must not rewind the next step.
     private final Map<UUID, Double> motionDistances = new LinkedHashMap<>();
@@ -369,6 +370,19 @@ public final class VehicleRuntime {
 
     public List<CarriageState> states() { return cars.keySet().stream().map(this::state).toList(); }
 
+    /** A completed connection resets its joined controls once; route-domain merges do not. */
+    public record CouplingControlReset(List<UUID> carriages, double brake) {
+        public CouplingControlReset { carriages = List.copyOf(carriages); }
+    }
+
+    /** The owning adapter consumes these events to update its physical driving desks. */
+    public List<CouplingControlReset> drainCouplingControlResets() {
+        if (couplingControlResets.isEmpty()) return List.of();
+        var pending = List.copyOf(couplingControlResets);
+        couplingControlResets.clear();
+        return pending;
+    }
+
     /** The registered completion regions must meet before the connected constraint is installed. */
     public void couple(UUID first, UUID second) {
         validatePair(first, second);
@@ -393,6 +407,13 @@ public final class VehicleRuntime {
         approaches.removeIf(p -> a.contains(owner(p.first)) || a.contains(owner(p.second))
                 || b.contains(owner(p.first)) || b.contains(owner(p.second)));
         a.velocity(velocity); b.velocity(velocity);
+        var joined = new ArrayList<Car>(a.cars);
+        joined.addAll(b.cars);
+        double brake = joined.stream().flatMap(car -> car.controls.values().stream())
+                .mapToDouble(Control::brake).max().orElse(0);
+        var reset = new Control(0, brake);
+        for (Car car : joined) car.controls.replaceAll((id, previous) -> reset);
+        couplingControlResets.add(new CouplingControlReset(joined.stream().map(car -> car.definition.id()).toList(), brake));
         consistRevision++;
     }
 
@@ -552,6 +573,7 @@ public final class VehicleRuntime {
         rebound.collisionEnabled = collisionEnabled;
         rebound.dynamicsMultipliers(accelerationMultiplier, brakingMultiplier);
         rebound.consistRevision = consistRevision;
+        copyCouplingControlResets(rebound);
         return rebound;
     }
 
@@ -573,6 +595,7 @@ public final class VehicleRuntime {
         updated.collisionEnabled = collisionEnabled;
         updated.dynamicsMultipliers(accelerationMultiplier, brakingMultiplier);
         updated.consistRevision += consistRevision;
+        copyCouplingControlResets(updated);
         return updated;
     }
 
@@ -781,6 +804,7 @@ public final class VehicleRuntime {
         moved.collisionEnabled = collisionEnabled;
         moved.dynamicsMultipliers(accelerationMultiplier, brakingMultiplier);
         moved.consistRevision += consistRevision;
+        copyCouplingControlResets(moved);
         return moved;
     }
 
@@ -794,7 +818,29 @@ public final class VehicleRuntime {
         copied.collisionEnabled = collisionEnabled;
         copied.dynamicsMultipliers(accelerationMultiplier, brakingMultiplier);
         copied.consistRevision = consistRevision;
+        copyCouplingControlResets(copied);
         return copied;
+    }
+
+    /**
+     * Retain complete live consists without resampling their track. Removing other consists
+     * changes no solved pose; the external route may be unavailable until the next rebind.
+     * Saved-state restoration still checks ownership, connections, controls and cursors.
+     */
+    public VehicleRuntime subsetPreservingPlacement(Set<UUID> carriageIds) {
+        var copied = restoreSavedState(subsetCheckpoint(checkpoint(), carriageIds), path);
+        copied.collisionEnabled = collisionEnabled;
+        copied.dynamicsMultipliers(accelerationMultiplier, brakingMultiplier);
+        copied.consistRevision = consistRevision;
+        copyCouplingControlResets(copied);
+        return copied;
+    }
+
+    private void copyCouplingControlResets(VehicleRuntime target) {
+        for (var reset : couplingControlResets) {
+            var retained = reset.carriages().stream().filter(target.cars::containsKey).toList();
+            if (!retained.isEmpty()) target.couplingControlResets.add(new CouplingControlReset(retained, reset.brake()));
+        }
     }
 
     /** Select saved complete consists without resolving or resampling their previous route. */
