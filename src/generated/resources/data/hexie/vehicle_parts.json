@@ -1,5 +1,8 @@
 {
-  "hexie:crh1a_panel_wide_window": {
+  "hexie:crh1a_panel_nowindow": {
+    "extension": "SIDE"
+  },
+  "hexie:crh1a_panel_small_window": {
     "extension": "SIDE"
   },
   "hexie:crh2a_panel_nowindow": {
@@ -685,5 +688,8 @@
   "hexie:original_color_window_bsp25t_wide_sealed_blue": {
     "extension": "SIDE",
     "thin_only": true
+  },
+  "hexie:crh1a_panel_wide_window": {
+    "extension": "SIDE"
   }
 }

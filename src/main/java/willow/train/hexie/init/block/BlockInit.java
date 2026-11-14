@@ -66,6 +66,16 @@ public class BlockInit {
     public static final DeferredHolder<Block, CRH2PanelBlock> CRH2A_PANEL_NOWINDOW_THICK = crh2Panel("crh2a_panel_nowindow_thick");
     public static final DeferredHolder<Block, CRH2PanelBlock> CRH2A_PANEL_SMALL_WINDOW = crh2Panel("crh2a_panel_small_window");
     public static final DeferredHolder<Block, CRH2PanelBlock> CRH2A_PANEL_WIDE_WINDOW = crh2Panel("crh2a_panel_wide_window");
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh1a.CRH1PlainPanelBlock> CRH1A_PANEL_SMALL_WINDOW =
+            register("crh1a_panel_small_window", () -> new willow.train.hexie.blocks.emu.crh1a.CRH1PlainPanelBlock(
+                    BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
+                            .sound(SoundType.METAL).noOcclusion(), "crh1a_panel_small_window"),
+                    block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh1a.CRH1PlainPanelBlock> CRH1A_PANEL_NOWINDOW =
+            register("crh1a_panel_nowindow", () -> new willow.train.hexie.blocks.emu.crh1a.CRH1PlainPanelBlock(
+                    BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
+                            .sound(SoundType.METAL).noOcclusion(), "crh1a_panel_nowindow"),
+                    block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
     public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh1a.CRH1PanelBlock> CRH1A_PANEL_WIDE_WINDOW =
             register("crh1a_panel_wide_window", () -> new willow.train.hexie.blocks.emu.crh1a.CRH1PanelBlock(
                     BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)

@@ -7,7 +7,10 @@ import java.util.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.CollisionGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -22,6 +25,7 @@ public final class HeadGeometry {
     public static final int BOGEY_PART = 17;
     public static final AABB FLOOR = new AABB(-19/16d, 0, -8, 35/16d, 1, 1);
     private static final Map<Direction,List<AABB>> COLLISION = new EnumMap<>(Direction.class);
+    private static final VoxelShape[][] FLOOR_SHAPES = new VoxelShape[4][PARTS];
     static {
         var boxes = new ArrayList<AABB>();
         boxes.add(FLOOR);
@@ -33,8 +37,15 @@ public final class HeadGeometry {
                         a.get(5).getAsDouble()/16, a.get(6).getAsDouble()/16, a.get(7).getAsDouble()/16));
             }
         } catch (java.io.IOException failure) { throw new ExceptionInInitializerError(failure); }
-        for (var facing : Direction.Plane.HORIZONTAL)
+        for (var facing : Direction.Plane.HORIZONTAL) {
             COLLISION.put(facing, boxes.stream().map(b -> rotate(b, facing)).toList());
+            for (int part = 0; part < PARTS; part++) {
+                var p = offset(part, Direction.NORTH);
+                var at = offset(part, facing);
+                FLOOR_SHAPES[facing.get2DDataValue()][part] = Shapes.create(
+                        rotate(FLOOR.intersect(new AABB(p)), facing).move(-at.getX(), 0, -at.getZ()));
+            }
+        }
     }
     private HeadGeometry() {}
     public static BlockPos offset(int index, Direction facing) {
@@ -59,10 +70,7 @@ public final class HeadGeometry {
         return new AABB(rotate(new Vec3(b.minX,b.minY,b.minZ),facing), rotate(new Vec3(b.maxX,b.maxY,b.maxZ),facing));
     }
     public static VoxelShape floor(int part, Direction facing) {
-        var p=offset(part,Direction.NORTH);
-        var box=FLOOR.intersect(new AABB(p));
-        var at=offset(part,facing);
-        return Shapes.create(rotate(box,facing).move(-at.getX(),0,-at.getZ()));
+        return FLOOR_SHAPES[facing.get2DDataValue()][part];
     }
     public static List<AABB> boxes(Direction facing) { return COLLISION.get(facing); }
     public static AABB bounds(Direction facing) {
@@ -96,18 +104,38 @@ public final class HeadGeometry {
     /** Upper shell collision is added for people without occupying their build space. */
     public static List<VoxelShape> collisions(BlockGetter world, AABB query) {
         var roots=new HashSet<BlockPos>();
-        for (var p:BlockPos.betweenClosed((int)Math.floor(query.minX)-2,(int)Math.floor(query.minY)-4,(int)Math.floor(query.minZ)-2,
-                (int)Math.floor(query.maxX)+2,(int)Math.floor(query.maxY)+1,(int)Math.floor(query.maxZ)+2)) {
-            if (world instanceof Level level && !level.hasChunkAt(p)) continue;
-            var state=world.getBlockState(p);
-            if (state.getBlock() instanceof CRH2EndFaceBlock) {
-                roots.add(p.immutable());
-                continue;
-            }
-            if (!(state.getBlock() instanceof CRH2HeadBlock) && !(state.getBlock() instanceof HeadFloorBlock)) continue;
-            var root=owner(world,p);
-            if (root!=null) roots.add(root.immutable());
+        var min = new BlockPos((int)Math.floor(query.minX)-2, (int)Math.floor(query.minY)-4, (int)Math.floor(query.minZ)-2);
+        var max = new BlockPos((int)Math.floor(query.maxX)+2, (int)Math.floor(query.maxY)+1, (int)Math.floor(query.maxZ)+2);
+        if (world instanceof CollisionGetter chunks) {
+            for (int cx = min.getX() >> 4; cx <= max.getX() >> 4; cx++)
+                for (int cz = min.getZ() >> 4; cz <= max.getZ() >> 4; cz++) {
+                    // The native collision accessor never loads/generates a missing chunk.
+                    var source = chunks.getChunkForCollisions(cx, cz);
+                    if (source == null) continue;
+                    var low = new BlockPos(Math.max(min.getX(), cx*16), min.getY(), Math.max(min.getZ(), cz*16));
+                    var high = new BlockPos(Math.min(max.getX(), cx*16+15), max.getY(), Math.min(max.getZ(), cz*16+15));
+                    if (source instanceof ChunkAccess chunk) {
+                        for (int sy = low.getY() >> 4; sy <= high.getY() >> 4; sy++) {
+                            int index = chunk.getSectionIndex(sy*16);
+                            if (index < 0 || index >= chunk.getSections().length) continue;
+                            var section = chunk.getSection(index);
+                            // Most queries have no train shell nearby. Check the section palette
+                            // before visiting individual cells; no persistent world cache is needed.
+                            if (section.hasOnlyAir() || !section.maybeHas(HeadGeometry::shellCell)) continue;
+                            var from = new BlockPos(low.getX(), Math.max(low.getY(), sy*16), low.getZ());
+                            var to = new BlockPos(high.getX(), Math.min(high.getY(), sy*16+15), high.getZ());
+                            for (var p : BlockPos.betweenClosed(from, to))
+                                collectRoot(world, p, section.getBlockState(p.getX()&15, p.getY()&15, p.getZ()&15), roots);
+                        }
+                    } else {
+                        // Virtual/custom collision getters retain their own block lookup rules.
+                        scanRoots(world, low, high, roots);
+                    }
+                }
+        } else {
+            scanRoots(world, min, max, roots);
         }
+        if (roots.isEmpty()) return List.of();
         var result=new ArrayList<VoxelShape>();
         for (var root:roots) {
             var state=world.getBlockState(root);
@@ -120,5 +148,26 @@ public final class HeadGeometry {
             }
         }
         return result;
+    }
+
+    private static boolean shellCell(BlockState state) {
+        return state.getBlock() instanceof CRH2HeadBlock || state.getBlock() instanceof HeadFloorBlock
+                || state.getBlock() instanceof CRH2EndFaceBlock;
+    }
+
+    private static void scanRoots(BlockGetter world, BlockPos min, BlockPos max, Set<BlockPos> roots) {
+        for (var p : BlockPos.betweenClosed(min, max)) {
+            if (world instanceof Level level && !level.hasChunkAt(p)) continue;
+            collectRoot(world, p, world.getBlockState(p), roots);
+        }
+    }
+
+    private static void collectRoot(BlockGetter world, BlockPos p, BlockState state, Set<BlockPos> roots) {
+        if (state.getBlock() instanceof CRH2HeadBlock || state.getBlock() instanceof CRH2EndFaceBlock) {
+            roots.add(p.immutable());
+        } else if (state.getBlock() instanceof HeadFloorBlock) {
+            var root=owner(world,p);
+            if (root!=null) roots.add(root.immutable());
+        }
     }
 }

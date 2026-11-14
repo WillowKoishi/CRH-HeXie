@@ -733,6 +733,8 @@
   "block.hexie.crh2a_panel_nowindow": "CRH2A Thick Solid Body Panel",
   "block.hexie.crh2a_panel_nowindow_thick": "CRH2A Thin Solid Body Panel",
   "block.hexie.crh2a_panel_small_window": "CRH2A Small Window Body Panel",
+  "block.hexie.crh1a_panel_small_window": "CRH1A Small Window Body Panel",
+  "block.hexie.crh1a_panel_nowindow": "CRH1A Solid Body Panel",
   "block.hexie.crh2a_panel_wide_window": "CRH2A Wide Window Body Panel",
   "block.hexie.crh1a_panel_wide_window": "CRH1A Wide Window Body Panel",
   "block.hexie.crh2a_skirt_forbogey": "CRH2A Bogie Skirt",

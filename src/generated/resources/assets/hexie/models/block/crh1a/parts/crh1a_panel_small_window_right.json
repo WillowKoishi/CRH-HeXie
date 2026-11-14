@@ -1,0 +1,20 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:composite",
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "hexie:block/crh1a/parts/crh1a_panel_small_window"
+  },
+  "children": {
+    "body": {
+      "parent": "hexie:block/crh1a/parts/crh1a_panel_small_window_right_body"
+    },
+    "glass": {
+      "parent": "hexie:block/crh1a/parts/crh1a_panel_small_window_right_glass"
+    }
+  },
+  "item_render_order": [
+    "body",
+    "glass"
+  ]
+}

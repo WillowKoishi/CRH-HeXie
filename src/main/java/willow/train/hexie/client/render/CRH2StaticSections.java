@@ -121,6 +121,10 @@ public final class CRH2StaticSections {
     private static void addVisual(BlockPos root, BlockState state) {
         if (visualizationManager == null || !models.meshes.containsKey(state)) return;
         var plot = SableRenderEmbedding.find(observedLevel, root);
+        // Ordinary-world panels are static terrain. Use the existing clipped section
+        // mesh path so placing the first panel does not create Flywheel's smooth-light
+        // and OIT programs on the render thread. Moving plots keep their own effects.
+        if (plot == null && state.getBlock() instanceof CRH2PartBlock) return;
         if (plot != null) {
             var parts = plotShells.get(plot);
             if (parts == null) {
