@@ -283,22 +283,42 @@ public final class CreateRouteBinding {
         for (int i = first; i < end; i++) current &= segments.get(i).valid();
         if (current) return new Extension(this, 0);
         var currentGraph = CreateTrackCompatibility.graph(Create.RAILWAYS, segments.get(first).owner.id);
-        if (currentGraph == null) throw new RouteInvalidException();
-        var resolved = new ArrayList<TrackNode>(end - first + 1);
-        for (int i = first; i <= end; i++) {
-            var node = currentGraph.locateNode(nodes.get(i).getLocation());
-            if (node == null) throw new RouteInvalidException();
-            if (!resolved.isEmpty()) {
-                var previous = resolved.getLast();
-                if (currentGraph.getConnectionsFrom(previous).get(node) == null
-                        || currentGraph.getConnectionsFrom(node).get(previous) == null)
+        var resolved = refreshNodes(currentGraph, first, end);
+        if (resolved == null) {
+            // A graph merge/split may retire its old UUID while retaining the occupied track.
+            // Match the selected corridor by exact nodes and edges, never by nearby geometry.
+            currentGraph = null;
+            for (var registered : Create.RAILWAYS.trackNetworks.values()) {
+                var candidate = CreateTrackCompatibility.routeGraph(registered);
+                var candidateNodes = refreshNodes(candidate, first, end);
+                if (candidateNodes == null) continue;
+                if (currentGraph != null && !CreateTrackCompatibility.sameNetwork(currentGraph, candidate))
                     throw new RouteInvalidException();
+                currentGraph = candidate;
+                resolved = candidateNodes;
             }
-            resolved.add(node);
+            if (resolved == null) throw new RouteInvalidException();
         }
         double shift = -route.distanceAt(first, 0);
         var refreshed = new CreateRouteBinding(level, currentGraph, resolved, 0, null, geometryVersion);
         return new Extension(refreshed, shift);
+    }
+
+    private List<TrackNode> refreshNodes(TrackGraph currentGraph, int first, int end) {
+        if (currentGraph == null) return null;
+        var resolved = new ArrayList<TrackNode>(end - first + 1);
+        for (int i = first; i <= end; i++) {
+            var node = currentGraph.locateNode(nodes.get(i).getLocation());
+            if (node == null) return null;
+            if (!resolved.isEmpty()) {
+                var previous = resolved.getLast();
+                if (currentGraph.getConnectionsFrom(previous).get(node) == null
+                        || currentGraph.getConnectionsFrom(node).get(previous) == null)
+                    return null;
+            }
+            resolved.add(node);
+        }
+        return resolved;
     }
 
     /** Build the coupling corridor from occupied track, not obsolete choices outside the trains. */

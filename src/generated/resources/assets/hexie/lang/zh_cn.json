@@ -773,5 +773,14 @@
   "block.hexie.crh1a_trailer_bogey": "CRH1A 拖车转向架",
   "simurail_bogey_entry.hexie.crh1a_trailer": "CRH1A 拖车转向架",
   "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_crh1a_trailer.bogey.name": "CRH1A 拖车转向架",
-  "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_crh1a_trailer.bogey.cart": "适用车型: · CRH1A"
+  "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_crh1a_trailer.bogey.cart": "适用车型: · CRH1A",
+  "gui.hexie.bogey_selection.title": "选择转向架",
+  "gui.hexie.bogey_selection.category": "分类",
+  "gui.hexie.bogey_selection.subcategory": "子分类",
+  "gui.hexie.bogey_selection.page_title": "页码",
+  "gui.hexie.bogey_selection.page_format": "第 %s 页",
+  "gui.hexie.bogey_selection.axle_spacing": "有效轴距",
+  "gui.hexie.bogey_selection.track_type": "轨道类型",
+  "gui.hexie.bogey_selection.addon": "扩展转向架",
+  "create.train.status.hexie.multiple_timetables": "列车有多个时刻表"
 }

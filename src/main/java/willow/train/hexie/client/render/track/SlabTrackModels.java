@@ -58,14 +58,22 @@ public final class SlabTrackModels {
     }
 
     static List<Quad> curve(BezierConnection curve) {
-        List<Frame> frames = BallastModels.curveFrames(curve);
+        return curve(curve, null);
+    }
+
+    static List<Quad> curve(BezierConnection curve, BallastModels.CurveEnds ends) {
+        List<Frame> frames = ends == null ? BallastModels.curveFrames(curve) : BallastModels.curveFrames(curve, ends);
         if (frames.size() < 2) return List.of();
         Frame first = frames.getFirst();
         Point world = first.center().add(point(Vec3.atLowerCornerOf(curve.bePositions.getFirst())));
         Point tangent = point(curve.axes.getFirst().normalize());
         double start = world.x() * tangent.x() + world.y() * tangent.y() + world.z() * tangent.z();
-        double fromHeight = BallastModels.meetsAscendingBlock(curve, true) ? ASCENDING_HEIGHT : HEIGHT;
-        double toHeight = BallastModels.meetsAscendingBlock(curve, false) ? ASCENDING_HEIGHT : HEIGHT;
+        boolean fromAscending = ends == null ? BallastModels.meetsAscendingBlock(curve, true)
+                : ends.first() == BallastModels.End.ASCENDING;
+        boolean toAscending = ends == null ? BallastModels.meetsAscendingBlock(curve, false)
+                : ends.second() == BallastModels.End.ASCENDING;
+        double fromHeight = fromAscending ? ASCENDING_HEIGHT : HEIGHT;
+        double toHeight = toAscending ? ASCENDING_HEIGHT : HEIGHT;
         return build(frames, TrackBedSampling.sample(frames), phase(start), fromHeight, toHeight);
     }
 

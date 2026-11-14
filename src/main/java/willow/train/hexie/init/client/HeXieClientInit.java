@@ -160,6 +160,7 @@ public class HeXieClientInit {
     }
 
     public static void registerMenus(final RegisterMenuScreensEvent event) {
+        event.register(MenuInit.BOGEY_SELECTION_MENU.get(), BogeySelectionScreen::new);
         event.register(MenuInit.CARRIAGE_NUMBER_MENU.get(), CarriageNumberScreen::new);
         event.register(MenuInit.PANEL_TEXT_MENU.get(), PanelTextScreen::new);
         event.register(MenuInit.CARRIAGE_MARKING_MENU.get(), CarriageMarkingScreen::new);

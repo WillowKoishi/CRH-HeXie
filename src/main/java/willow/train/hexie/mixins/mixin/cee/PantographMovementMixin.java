@@ -3,9 +3,6 @@ package willow.train.hexie.mixins.mixin.cee;
 import willow.train.hexie.compat.cee.PantographMounting;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.simibubi.create.content.contraptions.behaviour.MovementContext;
-import com.simibubi.create.content.contraptions.render.ContraptionMatrices;
-import com.simibubi.create.foundation.virtualWorld.VirtualRenderWorld;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
@@ -33,18 +30,4 @@ public abstract class PantographMovementMixin {
         callback.setReturnValue(callback.getReturnValue().add(context.rotation.apply(new Vec3(0, offset, 0))));
     }
 
-    @Inject(method = "renderInContraption", at = @At("HEAD"))
-    private void hexie$lowerBase(MovementContext context, VirtualRenderWorld world, ContraptionMatrices matrices,
-                                  MultiBufferSource buffer, CallbackInfo callback) {
-        matrices.getModel().pushPose();
-        matrices.getModel().translate(0, PantographMounting.movingOffset(context), 0);
-        willow.train.hexie.compat.cee.PantographBaseModels.render(context.state, matrices.getModel(), buffer,
-                net.minecraft.client.renderer.LevelRenderer.getLightColor(world, context.localPos), net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY);
-    }
-
-    @Inject(method = "renderInContraption", at = @At("RETURN"))
-    private void hexie$restorePose(MovementContext context, VirtualRenderWorld world, ContraptionMatrices matrices,
-                                    MultiBufferSource buffer, CallbackInfo callback) {
-        matrices.getModel().popPose();
-    }
 }

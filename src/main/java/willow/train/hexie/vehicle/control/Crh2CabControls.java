@@ -1,5 +1,6 @@
 package willow.train.hexie.vehicle.control;
 
+import java.util.Set;
 import willow.train.hexie.api.interaction.BlockControl;
 import willow.train.hexie.api.cab.CabNeutralPositions;
 import willow.train.hexie.api.cab.CabNeutralPositions.Detent;
@@ -36,6 +37,23 @@ public enum Crh2CabControls implements CabTrainControl {
         return saved;
     }
 
+    @Override public ControlState synchronize(ControlState saved, CabTrainRequest current) {
+        for (var handle : Crh2CabHandle.values())
+            saved = saved.with(handle.positionKey(), legacyNotch(handle, current));
+        return saved;
+    }
+
+    @Override public boolean synchronizedEnabled(CabTrainRequest current) { return current.reverser() != 0; }
+
+    @Override public Set<Demand> operatedDemands(BlockControl control) {
+        if (!(control instanceof Crh2CabHandle handle)) return Set.of();
+        return Set.of(switch (handle) {
+            case POWER -> Demand.POWER;
+            case BRAKE -> Demand.BRAKE;
+            case REVERSER -> Demand.REVERSER;
+        });
+    }
+
     private static int legacyNotch(Crh2CabHandle handle, CabTrainRequest current) {
         return switch (handle) {
             case POWER -> (int) Math.round(current.power() * POWER.maxNotch());
@@ -50,12 +68,15 @@ public enum Crh2CabControls implements CabTrainControl {
 
     @Override public Result operate(BlockControl control, int value, ControlState before, ControlState after,
                                     CabTrainRequest current) {
-        int direction = REVERSER.notch(after);
+        int direction = control == REVERSER ? REVERSER.notch(after) : current.reverser();
         boolean enabled = control == REVERSER ? direction != 0 : current.enabled();
         // Rapid and removal both demand full braking. This desk defines no emergency-release gesture yet.
         int brake = BRAKE.notch(after);
-        double service = brake >= RAPID ? 1 : (double) brake / SERVICE_NOTCHES * TrainControl.Source.CAB_MANUAL.serviceBrakeLimit();
-        var request = new CabTrainRequest((double) POWER.notch(after) / POWER.maxNotch(), service,
+        double service = control == BRAKE
+                ? brake >= RAPID ? 1 : (double) brake / SERVICE_NOTCHES * TrainControl.Source.CAB_MANUAL.serviceBrakeLimit()
+                : current.serviceBrake();
+        double power = control == POWER ? (double) POWER.notch(after) / POWER.maxNotch() : current.power();
+        var request = new CabTrainRequest(power, service,
                 direction, enabled, current.automatic(), current.parking(),
                 current.emergencyDemand(), false, current.approach());
         return new Result(after, request);

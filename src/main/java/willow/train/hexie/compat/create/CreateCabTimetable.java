@@ -33,6 +33,10 @@ final class CreateCabTimetable {
     private DimensionPalette pendingDimensions;
     private boolean publishing;
     private boolean newConsistEnds;
+    private boolean ownsItem;
+    private boolean conflictPaused;
+    private boolean pausedBeforeConflict;
+    private CompoundTag synchronizedRuntime;
 
     CreateCabTimetable(AssembledVehicleMotion.ControlKey key, HolderLookup.Provider registries, CompoundTag blockData) {
         this.key = key;
@@ -44,6 +48,9 @@ final class CreateCabTimetable {
         var runtimeData = execution.contains("Runtime") ? execution.getCompound("Runtime").copy() : initialRuntime(stored);
         if (!stored.isEmpty()) runtimeData.put("Schedule", stored);
         runtime.read(registries, runtimeData);
+        ownsItem = runtime.getSchedule() != null && !execution.getBoolean("SharedTimetableCopy");
+        conflictPaused = execution.getBoolean("TimetableConflict");
+        pausedBeforeConflict = execution.getBoolean("PausedBeforeConflict");
         runtime.currentTitle = execution.getString("CurrentTitle");
         runtime.ticksInTransit = execution.getInt("TicksInTransit");
         if (execution.contains("Throttle")) throttle = execution.getDouble("Throttle");
@@ -67,6 +74,79 @@ final class CreateCabTimetable {
     AssembledVehicleMotion.ControlKey key() { return key; }
     boolean publishing() { return publishing; }
     boolean hasTimetable() { return runtime.getSchedule() != null; }
+    boolean ownsItem() { return hasTimetable() && ownsItem; }
+
+    static boolean ownsStoredItem(CompoundTag timetable) {
+        return !timetable.isEmpty() && !timetable.getCompound(EXECUTION).getBoolean("SharedTimetableCopy");
+    }
+
+    /** Runtime progress and synchronization metadata do not make a second timetable definition. */
+    CompoundTag definition(HolderLookup.Provider registries) {
+        var data = timetable(registries);
+        data.remove("Progress");
+        data.remove(EXECUTION);
+        return data;
+    }
+
+    void conflict(boolean conflicting) {
+        if (conflicting) {
+            if (!conflictPaused) {
+                pausedBeforeConflict = runtime.paused;
+                invalidateNavigation();
+            }
+            runtime.paused = true;
+        } else if (conflictPaused) runtime.paused = pausedBeforeConflict;
+        conflictPaused = conflicting;
+    }
+
+    void clearConflictForEdit() { conflictPaused = false; }
+
+    boolean externallyChanged(HolderLookup.Provider registries) {
+        return synchronizedRuntime != null && !synchronizedRuntime.equals(runtime.write(registries));
+    }
+
+    CompoundTag synchronizedDefinition() {
+        if (synchronizedRuntime == null) return new CompoundTag();
+        var definition = synchronizedRuntime.getCompound("Schedule").copy();
+        definition.remove("Progress");
+        definition.remove(EXECUTION);
+        return definition;
+    }
+
+    void markSynchronized(HolderLookup.Provider registries) { synchronizedRuntime = runtime.write(registries); }
+
+    /** Copy execution without creating another physical schedule item. */
+    void synchronizeFrom(CreateCabTimetable source, HolderLookup.Provider registries) {
+        synchronizeFrom(source, registries, ownsItem() && definition(registries).equals(source.definition(registries)));
+    }
+
+    void synchronizeFrom(CreateCabTimetable source, HolderLookup.Provider registries, boolean keepItem) {
+        if (source == this) { markSynchronized(registries); return; }
+        runtime.read(registries, source.runtime.write(registries));
+        runtime.currentTitle = source.runtime.currentTitle;
+        runtime.ticksInTransit = source.runtime.ticksInTransit;
+        runtime.displayLinkUpdateRequested = source.runtime.displayLinkUpdateRequested;
+        ownsItem = hasTimetable() && keepItem;
+        conflictPaused = source.conflictPaused;
+        pausedBeforeConflict = source.pausedBeforeConflict;
+        throttle = source.throttle;
+        stationStop.restore(source.stationStop.state());
+        displayRoute = source.displayRoute;
+        automaticRouteAvailable = source.automaticRouteAvailable;
+        controlObservationsReady = source.controlObservationsReady;
+        waypointTransitionTicks = source.waypointTransitionTicks;
+        waypointTransitionActive = source.waypointTransitionActive;
+        newConsistEnds = source.newConsistEnds;
+        if (source.pendingNavigation != null) {
+            pendingNavigation = source.pendingNavigation.copy();
+            pendingDimensions = source.pendingDimensions;
+        } else {
+            pendingDimensions = new DimensionPalette();
+            pendingNavigation = source.navigation.write(pendingDimensions);
+        }
+        if (runtime.train instanceof CompatibilityTrain train) bind(train);
+        markSynchronized(registries);
+    }
 
     /** Track invalidation interrupts this execution, without removing its timetable or changing another cab. */
     void invalidateNavigation() {
@@ -75,7 +155,7 @@ final class CreateCabTimetable {
         newConsistEnds = false;
         boolean before = publishing;
         publishing = false;
-        try { navigation.cancelNavigation(); }
+        try { if (navigation.train != null) navigation.cancelNavigation(); }
         finally { publishing = before; }
         // An unresolved saved destination can be absent from the live Navigation already.
         runtime.transitInterrupted();
@@ -147,6 +227,9 @@ final class CreateCabTimetable {
     CompoundTag write(HolderLookup.Provider registries) {
         var execution = new CompoundTag();
         execution.putBoolean(CompatibilityTrain.NATIVE_WHEEL_ORDER, true);
+        execution.putBoolean("SharedTimetableCopy", !ownsItem());
+        execution.putBoolean("TimetableConflict", conflictPaused);
+        execution.putBoolean("PausedBeforeConflict", pausedBeforeConflict);
         var run = runtime.write(registries);
         var stored = run.getCompound("Schedule");
         if (!stored.isEmpty()) stored.putInt("Progress", runtime.currentEntry);
@@ -209,11 +292,16 @@ final class CreateCabTimetable {
         waypointTransitionTicks = 0;
         waypointTransitionActive = false;
         displayRoute = TrainDisplayReadings.Route.unavailable();
+        ownsItem = schedule != null;
+        conflictPaused = false;
+        pausedBeforeConflict = false;
+        synchronizedRuntime = null;
     }
 
     /** Import the previous single-console runtime once, before native execution resumes independently. */
     void adoptLegacy(CompatibilityTrain train, HolderLookup.Provider registries) {
         runtime.read(registries, train.runtime.write(registries));
+        ownsItem = hasTimetable();
         runtime.currentTitle = train.runtime.currentTitle;
         runtime.ticksInTransit = train.runtime.ticksInTransit;
         var route = CreateConsoleTimetable.legacyNavigation(train);

@@ -30,6 +30,7 @@ import net.minecraft.server.MinecraftServer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import willow.train.hexie.mixins.mixin.CreateCarriageAccessor;
 
 /** Create's public train identity and control state, never a second movement or storage owner. */
 @EventBusSubscriber(modid = "hexie")
@@ -79,6 +80,7 @@ public final class CompatibilityTrain extends Train {
     private UUID savedMotionOwner;
     private String motionDimension;
     private long retryAt;
+    private String pendingSourceFailure;
     private long pendingTick = Long.MIN_VALUE;
     private PendingVehicleRelocation pendingRelocation;
     private boolean pendingCabNavigationInvalidation;
@@ -137,15 +139,38 @@ public final class CompatibilityTrain extends Train {
 
     /** A temporarily unavailable graph still has an authoritative saved cab for item exchanges. */
     CompoundTag pendingCabModule(AssembledVehicleMotion.ControlKey key) {
+        return pendingCabModules().get(key);
+    }
+
+    /** Mutable records belong to the canonical pending motion; only this connected train participates. */
+    java.util.Map<AssembledVehicleMotion.ControlKey, CompoundTag> pendingCabModules() {
         invalidatePendingCabNavigation();
         var saved = pendingMotionState();
-        if (saved == null) return null;
+        if (saved == null) return java.util.Map.of();
+        var modules = new java.util.LinkedHashMap<AssembledVehicleMotion.ControlKey, CompoundTag>();
         for (var value : saved.getList("CabModules", Tag.TAG_COMPOUND)) {
             var cab = (CompoundTag) value;
-            if (key.carriage().equals(cab.getUUID("Carriage")) && key.position().asLong() == cab.getLong("Position"))
-                return cab;
+            if (carriageIds.contains(cab.getUUID("Carriage")))
+                modules.put(new AssembledVehicleMotion.ControlKey(cab.getUUID("Carriage"),
+                        net.minecraft.core.BlockPos.of(cab.getLong("Position"))), cab);
         }
-        return null;
+        return modules;
+    }
+
+    /** Entity fallback saves must not restore a stale schedule after an edit to the pending owner. */
+    void refreshPendingMotionCopies(ServerLevel level) {
+        var saved = pendingMotionState();
+        if (saved == null) return;
+        for (var candidate : Create.RAILWAYS.trains.values()) {
+            if (!(candidate instanceof CompatibilityTrain train) || train.bridge != null
+                    || train.pendingMotionState() != saved) continue;
+            for (int i = 0; i < train.carriageIds.size(); i++) {
+                var id = train.carriageIds.get(i);
+                if (level.getEntity(id) instanceof SnapshotCarriageEntity entity) entity.installPendingMotion(saved);
+                var payload = ((CreateCarriageAccessor) (Object) train.carriages.get(i)).hexie$getSerialisedEntity();
+                if (payload != null && payload.contains("MotionState")) payload.put("MotionState", saved.copy());
+            }
+        }
     }
 
     private CompoundTag pendingMotionState() {
@@ -242,32 +267,42 @@ public final class CompatibilityTrain extends Train {
             var source = savedMotion != null ? this
                     : Create.RAILWAYS.trains.get(savedMotionOwner) instanceof CompatibilityTrain owner ? owner : null;
             if (source == null) source = removed.stream().filter(train -> train.savedMotion != null).findFirst().orElse(null);
-            if (source == null || source.savedMotion == null)
-                throw new IllegalStateException("Removed train has no saved motion owner");
-            var pending = source.savedMotion.copy();
-            var checkpoint = willow.train.hexie.vehicle.assembly.VehicleRuntimeNbt.readCheckpoint(pending.getCompound("Runtime"));
-            var remaining = new HashSet<UUID>();
-            checkpoint.carriages().forEach(car -> remaining.add(car.definition().id()));
-            remaining.removeAll(selected);
-            if (remaining.isEmpty()) retain = () -> {};
+            if (source == null || source.savedMotion == null) {
+                // Native remove also applies to orphan records from an interrupted save.
+                // There is no motion domain to hand off, but their selected snapshots and
+                // bodies still have to follow the removal instead of aborting the server tick.
+                Create.LOGGER.warn("Removing orphan HeXie train {} without a saved motion owner", id);
+                source = null;
+            }
+            if (source == null) retain = () -> {};
             else {
-                pending.put("Runtime", willow.train.hexie.vehicle.assembly.VehicleRuntimeNbt.saveCheckpoint(
-                        willow.train.hexie.vehicle.runtime.VehicleRuntime.subsetCheckpoint(checkpoint, remaining)));
-                for (String key : List.of("CarriageSources", "DerailedCarriages", "StalledCarriages", "CabModules", "AutomaticCabs")) {
-                    if (!pending.contains(key)) continue;
-                    var entries = new ListTag();
-                    for (var value : pending.getList(key, Tag.TAG_COMPOUND))
-                        if (remaining.contains(((CompoundTag) value).getUUID("Carriage"))) entries.add(value.copy());
-                    pending.put(key, entries);
-                }
-                retain = () -> {
-                    UUID owner = retainPendingMotion(level, remaining, pending);
-                    var sources = AssembledVehicleMotion.readSources(level, pending);
-                    for (UUID id : remaining) if (level.getEntity(id) instanceof SnapshotCarriageEntity entity) {
-                        entity.setMotionOwner(owner, sources.get(id).forward());
-                        entity.installMotion(null);
+                var pending = source.savedMotion.copy();
+                var checkpoint = willow.train.hexie.vehicle.assembly.VehicleRuntimeNbt.readCheckpoint(pending.getCompound("Runtime"));
+                var remaining = new HashSet<UUID>();
+                var savedIds = checkpoint.carriages().stream().map(car -> car.definition().id())
+                        .collect(java.util.stream.Collectors.toSet());
+                // The saved domain can predate another native removal. Only currently registered
+                // peer records can survive this one; do not recreate obsolete checkpoint members.
+                UUID domainOwner = source.savedMotionOwner;
+                for (var value : Create.RAILWAYS.trains.values())
+                    if (value instanceof CompatibilityTrain peer && !peer.invalid && !peer.retiringProxy
+                            && peer.bridge == null && (peer == source
+                                    || domainOwner != null && domainOwner.equals(peer.savedMotionOwner)))
+                        peer.carriageIds.stream().filter(savedIds::contains).forEach(remaining::add);
+                remaining.removeAll(selected);
+                if (remaining.isEmpty()) retain = () -> {};
+                else {
+                    pending.put("Runtime", willow.train.hexie.vehicle.assembly.VehicleRuntimeNbt.saveCheckpoint(
+                            willow.train.hexie.vehicle.runtime.VehicleRuntime.subsetCheckpoint(checkpoint, remaining)));
+                    for (String key : List.of("CarriageSources", "DerailedCarriages", "StalledCarriages", "CabModules", "AutomaticCabs")) {
+                        if (!pending.contains(key)) continue;
+                        var entries = new ListTag();
+                        for (var value : pending.getList(key, Tag.TAG_COMPOUND))
+                            if (remaining.contains(((CompoundTag) value).getUUID("Carriage"))) entries.add(value.copy());
+                        pending.put(key, entries);
                     }
-                };
+                    retain = preparePendingMotion(level, remaining, pending).commit();
+                }
             }
         }
         var store = willow.train.hexie.vehicle.assembly.CarriageSnapshotStore.get(level);
@@ -317,7 +352,19 @@ public final class CompatibilityTrain extends Train {
         else {
             // Like native Train.tick with no graph: materialize the saved body in active
             // chunks even while its route is unavailable. This does not move or load chunks.
-            train.carriages.forEach(carriage -> carriage.manageEntities(server));
+            var sourceWorld = train.motionDimension == null ? null : server.getServer().getLevel(
+                    ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(train.motionDimension)));
+            if (sourceWorld == null) return;
+            var store = willow.train.hexie.vehicle.assembly.CarriageSnapshotStore.get(sourceWorld);
+            var sourced = new HashSet<UUID>();
+            store.active().forEach(active -> sourced.addAll(active.carriages()));
+            for (int i = 0; i < train.carriages.size(); i++) {
+                UUID id = train.carriageIds.get(i);
+                // Native payloads intentionally omit structure SavedData. Loading one without
+                // its exact snapshot would discard it (or clone a different surviving carriage).
+                // Keep the existing native cargo/payload instead until that structure exists.
+                if (sourced.contains(id) && store.find(id).isPresent()) train.carriages.get(i).manageEntities(server);
+            }
         }
     }
 
@@ -331,6 +378,25 @@ public final class CompatibilityTrain extends Train {
         var dimension = ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(motionDimension));
         var world = server.getServer().getLevel(dimension);
         if (world == null) return;
+        // Source links are cached metadata, not a reason to defer a usable vehicle. Refresh
+        // from the current snapshot owner before either route recovery or native relocation.
+        int previousVersion = savedMotion.getInt("Version");
+        var previousSources = savedMotion.get("CarriageSources");
+        try { AssembledVehicleMotion.readSources(world, savedMotion); }
+        catch (AssembledVehicleMotion.SourceUnavailableException unavailable) {
+            pendingRelocation = null;
+            reportSourceUnavailable(unavailable);
+            return;
+        }
+        if (pendingSourceFailure != null || previousVersion != savedMotion.getInt("Version")
+                || !java.util.Objects.equals(previousSources, savedMotion.get("CarriageSources"))) {
+            // A newly synchronized source is actionable now, even if an earlier attempt was
+            // deferred while the source or its route metadata had not caught up yet.
+            pendingRelocation = null;
+            pendingTick = Long.MIN_VALUE;
+            retryAt = 0;
+        }
+        pendingSourceFailure = null;
         if (pendingRelocation == null) pendingRelocation = new PendingVehicleRelocation(world, savedMotion);
         var pending = pendingRelocation;
         if (pendingTick != world.getGameTime()) {
@@ -342,12 +408,23 @@ public final class CompatibilityTrain extends Train {
                 return;
             }
         }
-        if (server.getGameTime() < retryAt) return;
-        retryAt = server.getGameTime() + 100;
+        if (world.getGameTime() < retryAt) return;
+        retryAt = world.getGameTime() + 100;
         try { AssembledVehicleMotion.readState(world, savedMotion).ensureCompatibility(); }
         catch (AssembledVehicleMotion.RouteUnavailableException unavailable) {
             // The graph may be loading or temporarily disconnected; retain the complete save.
         }
+        catch (AssembledVehicleMotion.SourceUnavailableException unavailable) {
+            pendingRelocation = null;
+            reportSourceUnavailable(unavailable);
+        }
+    }
+
+    private void reportSourceUnavailable(AssembledVehicleMotion.SourceUnavailableException unavailable) {
+        if (!unavailable.getMessage().equals(pendingSourceFailure))
+            Create.LOGGER.warn("HeXie train {} is retaining its saved body and cargo until its source is available: {}",
+                    id, unavailable.getMessage());
+        pendingSourceFailure = unavailable.getMessage();
     }
 
     /**
@@ -356,8 +433,18 @@ public final class CompatibilityTrain extends Train {
      * to that train. Returns the saved owner carriage for any loaded carriers' fallback links.
      */
     static UUID retainPendingMotion(ServerLevel level, Set<UUID> remainingIds, CompoundTag pending) {
+        var retained = preparePendingMotion(level, remainingIds, pending);
+        retained.commit().run();
+        return retained.ownerCarriage();
+    }
+
+    private record PendingRetention(UUID ownerCarriage, Runnable commit) {}
+
+    /** Validate and decode the handoff before deleting any snapshot or changing native ownership. */
+    private static PendingRetention preparePendingMotion(ServerLevel level, Set<UUID> remainingIds, CompoundTag pending) {
         Set<UUID> remaining = Set.copyOf(remainingIds);
-        var sources = AssembledVehicleMotion.readSources(level, pending);
+        var checkpoint = willow.train.hexie.vehicle.assembly.VehicleRuntimeNbt.readCheckpoint(pending.getCompound("Runtime"));
+        var sources = AssembledVehicleMotion.readSavedSources(pending);
         if (remaining.isEmpty() || !remaining.equals(sources.keySet())
                 || !level.dimension().location().toString().equals(pending.getCompound("Route").getString("Dimension")))
             throw new IllegalArgumentException("Pending remainder does not match its carriages or dimension");
@@ -377,21 +464,40 @@ public final class CompatibilityTrain extends Train {
             trains.add(train);
         }
         if (!covered.equals(remaining)) throw new IllegalStateException("Pending remainder is missing native carriage records");
-        UUID ownerCarriage = pending.getCompound("Runtime").getList("Carriages", Tag.TAG_COMPOUND).getCompound(0).getUUID("Id");
+        UUID ownerCarriage = checkpoint.carriages().getFirst().definition().id();
         var owner = owners.get(ownerCarriage);
         var saved = pending.copy();
-        // Finish all decoding before mutating ownership, so malformed subsets cannot consume
-        // the old owner or discard the only saved motion of an unloaded consist.
-        var detector = new PendingVehicleRelocation(level, saved);
-        for (var train : trains) {
-            train.savedMotionOwner = owner.id;
-            train.savedMotion = train == owner ? saved : null;
-            train.motionDimension = level.dimension().location().toString();
-            train.pendingRelocation = train == owner ? detector : null;
-            train.pendingTick = Long.MIN_VALUE;
-            train.retryAt = level.getGameTime() + 100;
+        PendingVehicleRelocation preparedDetector = null;
+        String sourceFailure = null;
+        try {
+            AssembledVehicleMotion.readSources(level, saved);
+            preparedDetector = new PendingVehicleRelocation(level, saved);
+        } catch (AssembledVehicleMotion.SourceUnavailableException unavailable) {
+            // Missing SavedData is independent of native carriage/cargo ownership. Preserve
+            // that authoritative payload, while still completing deletion of the chosen train.
+            sourceFailure = unavailable.getMessage();
         }
-        return ownerCarriage;
+        var directions = AssembledVehicleMotion.readSavedSources(saved);
+        var entities = new HashMap<UUID, SnapshotCarriageEntity>();
+        for (UUID id : remaining)
+            if (level.getEntity(id) instanceof SnapshotCarriageEntity entity) entities.put(id, entity);
+        var detector = preparedDetector;
+        var failure = sourceFailure;
+        return new PendingRetention(ownerCarriage, () -> {
+            for (var train : trains) {
+                train.savedMotionOwner = owner.id;
+                train.savedMotion = train == owner ? saved : null;
+                train.motionDimension = level.dimension().location().toString();
+                train.pendingRelocation = train == owner ? detector : null;
+                train.pendingSourceFailure = train == owner ? failure : null;
+                train.pendingTick = Long.MIN_VALUE;
+                train.retryAt = 0;
+            }
+            entities.forEach((id, entity) -> {
+                entity.setMotionOwner(ownerCarriage, directions.get(id).forward());
+                entity.installMotion(null);
+            });
+        });
     }
 
     @Override public void earlyTick(Level level) {

@@ -19,6 +19,7 @@ import willow.train.hexie.api.cab.DrivingConsoleContext;
 import willow.train.hexie.client.cab.CabViewRotation;
 import willow.train.hexie.compat.create.CarriagePlayerSupport;
 import willow.train.hexie.compat.create.SnapshotCarriageEntity;
+import willow.train.hexie.compat.sable.SableInteractionCoordinates;
 
 /** One carriage-local look direction for the local player, whether standing, seated or driving. */
 @EventBusSubscriber(modid = "hexie", value = Dist.CLIENT)
@@ -141,12 +142,18 @@ public final class CarriageCamera {
         Vec3 offset = cabEye.subtract(frame.localAnchor);
         var rotated = frame.rotation.transform(new Vector3f((float) offset.x, (float) offset.y, (float) offset.z));
         Vec3 eye = frame.worldAnchor.add(rotated.x, rotated.y, rotated.z);
-        return detached ? original.add(eye.subtract(entity.getEyePosition(partial))) : eye;
+        // The native third-person camera already includes Sable's render-pose interpolation.
+        return detached ? original.add(eye.subtract(SableInteractionCoordinates.renderEye(entity, partial))) : eye;
     }
 
     private static Frame frame(DrivingConsoleContext context, float partial) {
         var seat = context.seatAccess();
-        Vec3 anchor = seat.vehicle().position(), local = seat.toLocal(anchor, partial);
+        var vehicle = seat.vehicle();
+        // Sable retains seat entities in distant storage plots. Use a world anchor so the
+        // float rotation below only sees a small local offset and preserves the cushion offset.
+        Vec3 anchor = SableInteractionCoordinates.render(vehicle.level(), vehicle.blockPosition(), partial)
+                .toWorld(vehicle.position());
+        Vec3 local = seat.toLocal(anchor, partial);
         Vec3 x = seat.toLocal(anchor.add(1, 0, 0), partial).subtract(local);
         Vec3 y = seat.toLocal(anchor.add(0, 1, 0), partial).subtract(local);
         Vec3 z = seat.toLocal(anchor.add(0, 0, 1), partial).subtract(local);

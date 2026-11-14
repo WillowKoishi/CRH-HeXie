@@ -56,3 +56,22 @@ Font binaries, sign font profiles and their licenses are distributed in the
 separate HeXie Fonts JAR. See that JAR's META-INF/THIRD_PARTY_NOTICES.txt and
 META-INF/licenses/. The main mod does not bundle these font resources.
 The development tree and sources JAR retain the font resources and notices.
+
+
+Create Simurail (bogey selection interface)
+Upstream: https://github.com/Crystaelix/Create-Simurail
+Source version: 0.1.0+mc1.21.1+a923282 (revision a923282)
+License: https://github.com/Crystaelix/Create-Simurail/blob/a923282/LICENSE
+
+HeXie's bogey selection screen and supporting widgets adapt the layout,
+interaction and preview behavior of Simurail's PhysicsBogeyMenuScreen and
+SLabel. The background texture at
+assets/hexie/textures/gui/bogey_selection.png is an unmodified copy of
+Simurail's assets/simurail/textures/gui/physics_bogey_menu.png.
+The upstream screen credits its preview rendering code to Blocks & Bogies;
+that attribution is retained here for the adapted preview implementation.
+
+Copyright (c) 2026 TheLMiffy1111
+The upstream MIT copyright and permission notice is preserved in
+META-INF/licenses/simurail/MIT.txt (under src/main/resources/ in the repository).
+HeXie's own license does not replace the original notice for these portions.

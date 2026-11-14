@@ -2,11 +2,14 @@ package willow.train.hexie.compat.create;
 
 import com.simibubi.create.AllDataComponents;
 import com.simibubi.create.AllItems;
+import com.simibubi.create.AllSoundEvents;
 import com.simibubi.create.Create;
 import com.simibubi.create.api.behaviour.interaction.MovingInteractionBehaviour;
 import com.simibubi.create.content.contraptions.AbstractContraptionEntity;
 import com.simibubi.create.content.trains.entity.CarriageContraptionEntity;
 import com.simibubi.create.content.trains.entity.Train;
+import com.simibubi.create.content.trains.entity.TrainStatus;
+import com.simibubi.create.foundation.utility.CreateLang;
 import com.simibubi.create.content.trains.graph.DimensionPalette;
 import com.simibubi.create.content.trains.schedule.Schedule;
 import com.simibubi.create.content.trains.schedule.ScheduleItem;
@@ -19,6 +22,14 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import java.util.function.Consumer;
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.WeakHashMap;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -39,6 +50,217 @@ import willow.train.hexie.mixins.mixin.CreateCarriageAccessor;
 /** Each console owns its item. Create runs the timetable on behalf of that console. */
 @EventBusSubscriber(modid = "hexie")
 public final class CreateConsoleTimetable extends MovingInteractionBehaviour {
+    private static final Map<AssembledVehicleMotion, Map<UUID, Set<UUID>>> CONFLICT_NOTICES = new WeakHashMap<>();
+
+    static boolean hasConflict(AssembledVehicleMotion motion, UUID member) {
+        var registries = motion.level().registryAccess();
+        CompoundTag first = null;
+        for (var execution : motion.cabTimetables(member).values()) {
+            if (!execution.hasTimetable()) continue;
+            var definition = execution.definition(registries);
+            if (first == null) first = definition;
+            else if (!first.equals(definition)) return true;
+        }
+        return false;
+    }
+
+    /** A physical connection preserves all schedules and pauses distinct definitions. */
+    static void afterCoupling(AssembledVehicleMotion motion, UUID member) { checkConflict(motion, member); }
+
+    static boolean checkConflict(AssembledVehicleMotion motion, UUID member) {
+        boolean conflicting = hasConflict(motion, member);
+        var executions = motion.cabTimetables(member).values();
+        executions.forEach(execution -> execution.conflict(conflicting));
+        executions.forEach(execution -> execution.markSynchronized(motion.level().registryAccess()));
+        var train = motion.compatibility() == null ? null : motion.compatibility().train(member);
+        if (train == null) return conflicting;
+        // The bridge replaces native train identities after processing a successful connection.
+        UUID consist = motion.runtime().state(member).consist().stream().min(UUID::compareTo).orElse(member);
+        if (!conflicting) {
+            var previousNotices = CONFLICT_NOTICES.get(motion);
+            if (previousNotices != null) previousNotices.remove(consist);
+            return false;
+        }
+        var notices = CONFLICT_NOTICES.computeIfAbsent(motion, unused -> new HashMap<>());
+        var notified = notices.computeIfAbsent(consist, unused -> new HashSet<>());
+        var owner = train.getOwner(motion.level());
+        for (var player : motion.level().players()) {
+            boolean onTrain = player.getRootVehicle() instanceof SnapshotCarriageEntity carriage
+                    && motion.owns(carriage.getUUID()) && motion.runtime().connected(member, carriage.getUUID());
+            if ((!onTrain && player != owner) || !notified.add(player.getUUID())) continue;
+            player.displayClientMessage(CreateLang.translateDirect("train.status", train.name)
+                    .withStyle(ChatFormatting.GOLD), false);
+            new TrainStatus.StatusMessage(Component.literal(" - ").withStyle(ChatFormatting.GRAY)
+                    .append(Component.translatable("create.train.status.hexie.multiple_timetables")
+                            .withStyle(style -> style.withColor(0xFFD3B4)))).displayToPlayer(player);
+        }
+        return true;
+    }
+
+    /** Select one execution for this tick; external pause/resume/progress edits take precedence. */
+    static CreateCabTimetable prepareShared(AssembledVehicleMotion motion, UUID member) {
+        var registries = motion.level().registryAccess();
+        var selected = motion.selectedCabTimetable(member);
+        var executions = motion.cabTimetables(member).values();
+        var changed = executions.stream().filter(cab -> cab.externallyChanged(registries))
+                .findFirst().orElse(null);
+        if (changed != null) {
+            var previousDefinition = changed.synchronizedDefinition();
+            boolean replacement = !changed.definition(registries).equals(previousDefinition);
+            if (replacement) changed.clearConflictForEdit();
+            for (var target : executions) {
+                if (target == changed) continue;
+                if (replacement || target.definition(registries).equals(previousDefinition) || !target.hasTimetable())
+                    target.synchronizeFrom(changed, registries, target.ownsItem());
+            }
+            changed.markSynchronized(registries);
+        }
+        if (checkConflict(motion, member)) return null;
+        var source = changed != null && changed.hasTimetable() ? changed : selected != null && selected.hasTimetable() ? selected
+                : executions.stream().filter(CreateCabTimetable::hasTimetable).findFirst().orElse(null);
+        if (source != null) synchronize(motion, source);
+        return source != null && selected != null ? selected : source;
+    }
+
+    static void synchronize(AssembledVehicleMotion motion, CreateCabTimetable source) {
+        var registries = motion.level().registryAccess();
+        var definition = source.definition(registries);
+        for (var target : motion.cabTimetables(source.key().carriage()).values())
+            if (!target.hasTimetable() || target.definition(registries).equals(definition))
+                target.synchronizeFrom(source, registries);
+    }
+
+    static void setPaused(AssembledVehicleMotion motion, CreateCabTimetable source, boolean paused) {
+        if (checkConflict(motion, source.key().carriage())) return;
+        source.runtime.paused = paused;
+        synchronize(motion, source);
+    }
+
+    /** During a conflict, eject only the clicked definition; replacement still publishes one shared table. */
+    static List<ItemStack> exchangeShared(AssembledVehicleMotion motion, CreateCabTimetable source,
+                                                  Schedule next, HolderLookup.Provider registries) {
+        var all = List.copyOf(motion.cabTimetables(source.key().carriage()).values());
+        var definition = source.definition(registries);
+        boolean separate = next == null && hasConflict(motion, source.key().carriage());
+        var affected = all.stream().filter(cab -> !separate || cab.definition(registries).equals(definition)).toList();
+        var returned = new ArrayList<ItemStack>();
+        for (var cab : affected) {
+            if (cab.ownsItem()) returned.add(timetableItem(Schedule.fromTag(registries, cab.timetable(registries)), registries));
+            cab.replace(null, registries);
+        }
+        source.replace(next, registries);
+        if (next != null) synchronize(motion, source);
+        if (!checkConflict(motion, source.key().carriage())) prepareShared(motion, source.key().carriage());
+        for (var cab : motion.cabTimetables(source.key().carriage()).values()) {
+            if (!(motion.level().getEntity(cab.key().carriage()) instanceof SnapshotCarriageEntity entity)
+                    || entity.getContraption() == null) continue;
+            var info = entity.getContraption().getBlocks().get(cab.key().position());
+            if (info != null) entity.setBlock(info.pos(), cab.withBlockData(info, registries));
+        }
+        return returned;
+    }
+
+    /** Use the canonical pending modules even when no route or motion owner can be restored. */
+    static List<ItemStack> exchangePendingShared(CompatibilityTrain train, AssembledVehicleMotion.ControlKey sourceKey,
+                                                Schedule next, ServerLevel level) {
+        var registries = level.registryAccess();
+        var modules = train.pendingCabModules();
+        var executions = new java.util.LinkedHashMap<AssembledVehicleMotion.ControlKey, CreateCabTimetable>();
+        modules.forEach((key, module) -> {
+            var data = module.contains("TimetableExecution") ? module.getCompound("TimetableExecution")
+                    : storedBlockData(level, key, capturedCabData(level, key));
+            executions.put(key, CreateCabTimetable.read(key, registries, data));
+        });
+        var source = executions.get(sourceKey);
+        if (source == null) throw new IllegalArgumentException("Unknown pending timetable console");
+        var definition = source.definition(registries);
+        boolean separate = next == null && distinctTimetables(executions.values(), registries);
+        var returned = new ArrayList<ItemStack>();
+        for (var cab : executions.values()) {
+            if (separate && !cab.definition(registries).equals(definition)) continue;
+            if (cab.ownsItem()) returned.add(timetableItem(Schedule.fromTag(registries, cab.timetable(registries)), registries));
+            cab.replace(null, registries);
+        }
+        source.replace(next, registries);
+        boolean conflict = distinctTimetables(executions.values(), registries);
+        executions.values().forEach(cab -> cab.conflict(conflict));
+        if (!conflict) {
+            var shared = next != null ? source : executions.values().stream().filter(CreateCabTimetable::hasTimetable)
+                    .findFirst().orElse(null);
+            if (shared != null) executions.values().forEach(cab -> cab.synchronizeFrom(shared, registries));
+        }
+        executions.forEach((key, cab) -> {
+            modules.get(key).put("TimetableExecution", cab.write(registries));
+            savePendingBlockData(train, level, key, cab);
+        });
+        train.refreshPendingMotionCopies(level);
+        return returned;
+    }
+
+    private static boolean distinctTimetables(Iterable<CreateCabTimetable> executions, HolderLookup.Provider registries) {
+        CompoundTag first = null;
+        for (var cab : executions) {
+            if (!cab.hasTimetable()) continue;
+            var definition = cab.definition(registries);
+            if (first == null) first = definition;
+            else if (!first.equals(definition)) return true;
+        }
+        return false;
+    }
+
+    private static CompoundTag pendingBlockData(CompoundTag previous, CreateCabTimetable execution,
+                                                HolderLookup.Provider registries) {
+        var data = previous == null ? new CompoundTag() : previous.copy();
+        data.remove(CreateCabTimetable.EXECUTION);
+        var saved = execution.write(registries);
+        if (saved.contains(CabTimetableHost.PENDING_TIMETABLE))
+            data.put(CabTimetableHost.PENDING_TIMETABLE, saved.getCompound(CabTimetableHost.PENDING_TIMETABLE));
+        else data.remove(CabTimetableHost.PENDING_TIMETABLE);
+        return data;
+    }
+
+    private static CompoundTag capturedCabData(ServerLevel level, AssembledVehicleMotion.ControlKey key) {
+        var snapshot = willow.train.hexie.vehicle.assembly.CarriageSnapshotStore.get(level).find(key.carriage()).orElse(null);
+        return snapshot == null ? null : snapshot.blocks().stream().filter(block -> block.position().equals(key.position()))
+                .map(willow.train.hexie.vehicle.assembly.CarriageSnapshot.Block::entityData)
+                .filter(java.util.Objects::nonNull).findFirst().orElse(null);
+    }
+
+    /** Update both loaded working blocks and native unloaded payloads, preserving all unrelated data. */
+    private static void savePendingBlockData(CompatibilityTrain train, ServerLevel level,
+                                             AssembledVehicleMotion.ControlKey key, CreateCabTimetable execution) {
+        if (level.getEntity(key.carriage()) instanceof SnapshotCarriageEntity entity && entity.getContraption() != null) {
+            var info = entity.getContraption().getBlocks().get(key.position());
+            if (info != null) entity.setBlock(key.position(), execution.withBlockData(info, level.registryAccess()));
+        }
+        int index = train.carriageIds.indexOf(key.carriage());
+        if (index < 0) return;
+        var payload = ((CreateCarriageAccessor) (Object) train.carriages.get(index)).hexie$getSerialisedEntity();
+        if (payload == null || payload.isEmpty() || !payload.contains("WorkingState")) return;
+        var working = payload.getCompound("WorkingState");
+        boolean updated = false;
+        for (String list : List.of("Actors", "ChangedBlocks")) {
+            for (var value : working.getList(list, Tag.TAG_COMPOUND)) {
+                var block = (CompoundTag) value;
+                if (!key.position().equals(NBTHelper.readBlockPos(block, "Pos"))) continue;
+                var previous = block.contains("BlockEntity") ? block.getCompound("BlockEntity") : capturedCabData(level, key);
+                block.put("BlockEntity", pendingBlockData(previous, execution, level.registryAccess()));
+                updated = true;
+            }
+        }
+        if (updated) return;
+        var snapshot = willow.train.hexie.vehicle.assembly.CarriageSnapshotStore.get(level).find(key.carriage()).orElse(null);
+        if (snapshot == null) return;
+        var original = snapshot.blocks().stream().filter(block -> block.position().equals(key.position())).findFirst().orElse(null);
+        if (original == null) return;
+        var block = new CompoundTag();
+        block.put("Pos", net.minecraft.nbt.NbtUtils.writeBlockPos(key.position()));
+        block.put("State", net.minecraft.nbt.NbtUtils.writeBlockState(original.state()));
+        block.put("BlockEntity", pendingBlockData(original.entityData(), execution, level.registryAccess()));
+        var changed = working.getList("ChangedBlocks", Tag.TAG_COMPOUND);
+        changed.add(block);
+        working.put("ChangedBlocks", changed);
+    }
     public static boolean supports(Block block) {
         if (block instanceof IBE<?> ibe) return CabTimetableHost.class.isAssignableFrom(ibe.getBlockEntityClass());
         return block instanceof EntityBlock entityBlock
@@ -58,14 +280,14 @@ public final class CreateConsoleTimetable extends MovingInteractionBehaviour {
         if (!event.getItemStack().isEmpty() && schedule == null) return;
         var previous = exchangePending(cab.timetable(), schedule, cab::readTimetable, player.registryAccess());
         exchangeItems(player, event.getHand(), schedule != null, previous);
-        message(player, schedule == null ? "时刻表已取出" : "时刻表已放入驾驶台，组装后供本车使用");
+        exchangeMessage(player, schedule != null);
     }
 
     @SubscribeEvent
     public static void dropStoredTimetable(BlockDropsEvent event) {
         if (!(event.getBlockEntity() instanceof CabTimetableHost cab)) return;
         var data = cab.timetable();
-        if (data.isEmpty()) return;
+        if (!CreateCabTimetable.ownsStoredItem(data)) return;
         var registries = event.getLevel().registryAccess();
         var item = timetableItem(Schedule.fromTag(registries, data), registries);
         var pos = event.getPos();
@@ -88,19 +310,24 @@ public final class CreateConsoleTimetable extends MovingInteractionBehaviour {
         var motion = entity instanceof SnapshotCarriageEntity snapshot ? snapshot.motion() : null;
         var execution = motion == null ? null : motion.cabTimetable(cab);
         ItemStack previous;
+        List<ItemStack> additional = List.of();
         if (execution != null) {
             if (train instanceof CompatibilityTrain own) bindStored(own, motion);
             var stored = execution.timetable(registries);
             if (!inserting && stored.isEmpty()) return false;
-            previous = stored.isEmpty() ? ItemStack.EMPTY : timetableItem(Schedule.fromTag(registries, stored), registries);
-            execution.replace(schedule, registries);
-            entity.setBlock(pos, execution.withBlockData(info, registries));
+            var returned = exchangeShared(motion, execution, schedule, registries);
+            previous = returned.isEmpty() ? ItemStack.EMPTY : returned.getFirst();
+            additional = returned.size() < 2 ? List.of() : returned.subList(1, returned.size());
         } else {
             var module = train instanceof CompatibilityTrain own ? own.pendingCabModule(cab) : null;
             var blockData = module != null && module.contains("TimetableExecution") ? module.getCompound("TimetableExecution") : info.nbt();
             var stored = blockData == null ? new CompoundTag() : blockData.getCompound(CabTimetableHost.PENDING_TIMETABLE);
             if (!inserting && stored.isEmpty()) return false;
-            previous = exchangeCab(train, cab, stored, schedule, data -> {
+            if (module != null && train instanceof CompatibilityTrain own && player.level() instanceof ServerLevel server) {
+                var returned = exchangePendingShared(own, cab, schedule, server);
+                previous = returned.isEmpty() ? ItemStack.EMPTY : returned.getFirst();
+                additional = returned.size() < 2 ? List.of() : returned.subList(1, returned.size());
+            } else previous = exchangeCab(train, cab, stored, schedule, data -> {
                 var updated = info.nbt() == null ? new CompoundTag() : info.nbt().copy();
                 updated.remove(CreateCabTimetable.EXECUTION);
                 if (data.isEmpty()) updated.remove(CabTimetableHost.PENDING_TIMETABLE);
@@ -114,7 +341,12 @@ public final class CreateConsoleTimetable extends MovingInteractionBehaviour {
             }, registries);
         }
         exchangeItems(player, hand, inserting, previous);
-        message(player, !inserting ? "时刻表已取出" : "时刻表已放入驾驶台");
+        for (var item : additional) player.getInventory().placeItemBackInInventory(item);
+        if (!additional.isEmpty()) {
+            player.getInventory().setChanged();
+            player.containerMenu.broadcastChanges();
+        }
+        exchangeMessage(player, inserting);
         return true;
     }
 
@@ -128,7 +360,8 @@ public final class CreateConsoleTimetable extends MovingInteractionBehaviour {
 
     static ItemStack exchangePending(CompoundTag previous, Schedule next, Consumer<CompoundTag> commit,
                                      HolderLookup.Provider registries) {
-        var returned = previous.isEmpty() ? ItemStack.EMPTY : timetableItem(Schedule.fromTag(registries, previous), registries);
+        var returned = !CreateCabTimetable.ownsStoredItem(previous) ? ItemStack.EMPTY
+                : timetableItem(Schedule.fromTag(registries, previous), registries);
         var replacement = next == null ? new CompoundTag() : next.write(registries);
         commit.accept(replacement);
         return returned;
@@ -313,7 +546,8 @@ public final class CreateConsoleTimetable extends MovingInteractionBehaviour {
     private static Schedule read(Player player, InteractionHand hand) {
         var schedule = ScheduleItem.getSchedule(player.registryAccess(), player.getItemInHand(hand));
         if (schedule == null || schedule.entries.isEmpty()) {
-            message(player, "时刻表没有可读取的条目");
+            AllSoundEvents.DENY.playOnServer(player.level(), player.blockPosition(), 1, 1);
+            player.displayClientMessage(CreateLang.translateDirect("schedule.no_stops"), true);
             return null;
         }
         return schedule;
@@ -379,7 +613,14 @@ public final class CreateConsoleTimetable extends MovingInteractionBehaviour {
         }
     }
 
-    private static void message(Player player, String text) {
-        player.displayClientMessage(Component.literal(text), true);
+    private static void exchangeMessage(Player player, boolean inserted) {
+        if (inserted) {
+            AllSoundEvents.CONFIRM.playOnServer(player.level(), player.blockPosition(), 1, 1);
+            player.displayClientMessage(CreateLang.translateDirect("schedule.applied_to_train")
+                    .withStyle(ChatFormatting.GREEN), true);
+        } else {
+            AllSoundEvents.playItemPickup(player);
+            player.displayClientMessage(CreateLang.translateDirect("schedule.removed_from_train"), true);
+        }
     }
 }

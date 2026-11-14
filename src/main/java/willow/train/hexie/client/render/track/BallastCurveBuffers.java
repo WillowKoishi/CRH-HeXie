@@ -142,6 +142,14 @@ public final class BallastCurveBuffers {
             changed = new IdentityHashMap<>(dirtyTracks);
             dirtyTracks.clear();
         }
+        // The primary owner may be at the other end. Recheck it when a secondary
+        // endpoint loads or changes placement type, even if the curve geometry is identical.
+        for (var track : List.copyOf(changed.keySet())) {
+            if (cachedLevel == null || track.getLevel() != cachedLevel) continue;
+            for (var target : track.getConnections().keySet())
+                if (cachedLevel.hasChunkAt(target) && cachedLevel.getBlockEntity(target) instanceof TrackBlockEntity other)
+                    changed.putIfAbsent(other, false);
+        }
         changed.forEach(BallastCurveBuffers::synchronize);
     }
 
@@ -161,9 +169,10 @@ public final class BallastCurveBuffers {
                 }
                 var texture = slab ? Blocks.SMOOTH_STONE.defaultBlockState() : data.hexie$getBallast(curve.getKey());
                 var entry = CURVES.get(curve);
-                if (entry == null || entry.changed(be, texture, slab)) {
+                var ends = BallastModels.curveEnds(curve, cachedLevel, entry == null ? null : entry.ends);
+                if (entry == null || entry.changed(be, texture, slab, ends)) {
                     if (entry != null) remove(entry);
-                    entry = new Entry(curve, be, texture, slab);
+                    entry = new Entry(curve, be, texture, slab, ends);
                     CURVES.put(curve, entry);
                     pending.add(entry);
                     refreshQueue = true;
@@ -335,28 +344,30 @@ public final class BallastCurveBuffers {
         final BezierConnection curve;
         final TrackBlockEntity owner;
         final MaterialKey material;
+        final BallastModels.CurveEnds ends;
         final AABB bounds;
         final Vec3 start, end, axis1, axis2, normal1, normal2;
         final List<CurveBedBatch.Piece> pieces = new ArrayList<>();
         CurveBedEffect effect;
         ResourceLocation tile;
-        Entry(BezierConnection curve, TrackBlockEntity owner, BlockState texture, boolean slab) {
+        Entry(BezierConnection curve, TrackBlockEntity owner, BlockState texture, boolean slab, BallastModels.CurveEnds ends) {
             // A fresh geometry snapshot also avoids a native lazy Runtime cached before an in-place edit.
             this.curve = curve.clone(); this.owner = owner; material = new MaterialKey(texture, slab);
+            this.ends = ends;
             bounds = this.curve.getBounds().inflate(2);
             start = curve.starts.getFirst(); end = curve.starts.getSecond();
             axis1 = curve.axes.getFirst(); axis2 = curve.axes.getSecond();
             normal1 = curve.normals.getFirst(); normal2 = curve.normals.getSecond();
         }
-        boolean changed(TrackBlockEntity be, BlockState texture, boolean slab) {
+        boolean changed(TrackBlockEntity be, BlockState texture, boolean slab, BallastModels.CurveEnds ends) {
             var current = be.getConnections().get(curve.getKey());
-            return owner != be || material.texture != texture || material.slab != slab
+            return owner != be || material.texture != texture || material.slab != slab || !this.ends.equals(ends)
                     || current == null || !start.equals(current.starts.getFirst()) || !end.equals(current.starts.getSecond())
                     || !axis1.equals(current.axes.getFirst()) || !axis2.equals(current.axes.getSecond())
                     || !normal1.equals(current.normals.getFirst()) || !normal2.equals(current.normals.getSecond());
         }
         void build(ClientLevel level) {
-            var mesh = material.slab ? SlabTrackModels.curve(curve) : BallastModels.curve(curve);
+            var mesh = material.slab ? SlabTrackModels.curve(curve, ends) : BallastModels.curve(curve, ends);
             var pos = owner.getBlockPos();
             if (mesh.isEmpty()) return;
             var texture = BallastModels.material(material.texture);
