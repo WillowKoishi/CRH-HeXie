@@ -49,6 +49,6 @@ side="BOTH"
 [[dependencies.hexie]]
 modId="electroenergetics"
 type="optional"
-versionRange="[1.21.1-1.1.4]"
+versionRange="[1.21.1-1.1.2,)"
 ordering="AFTER"
 side="BOTH"
