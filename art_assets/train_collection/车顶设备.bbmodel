@@ -1,0 +1,1821 @@
+{
+    "meta": {
+        "format_version": "5.0",
+        "model_format": "free",
+        "box_uv": false
+    },
+    "name": "车顶设备",
+    "model_identifier": "",
+    "visible_box": [
+        1,
+        1,
+        0
+    ],
+    "variable_placeholders": "",
+    "multi_file_ruleset": "",
+    "variable_placeholder_buttons": [],
+    "timeline_setups": [],
+    "unhandled_root_fields": {},
+    "resolution": {
+        "width": 16,
+        "height": 16
+    },
+    "elements": [
+        {
+            "name": "mesh",
+            "color": 7,
+            "origin": [
+                -8,
+                78,
+                -70
+            ],
+            "rotation": [
+                0,
+                -180,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "lRTd": [
+                    8,
+                    5.5,
+                    12
+                ],
+                "h6Dy": [
+                    8,
+                    5.5,
+                    -12
+                ],
+                "W2oL": [
+                    8,
+                    2.5,
+                    12
+                ],
+                "N70x": [
+                    8,
+                    2.5,
+                    -12
+                ],
+                "zUbG": [
+                    -8,
+                    7.5,
+                    12
+                ],
+                "LM2k": [
+                    -8,
+                    7.5,
+                    -12
+                ],
+                "hwED": [
+                    -8,
+                    2.5,
+                    12
+                ],
+                "Etcf": [
+                    -8,
+                    2.5,
+                    -12
+                ]
+            },
+            "faces": {
+                "XczzZmm1": {
+                    "uv": {
+                        "N70x": [
+                            16,
+                            8
+                        ],
+                        "W2oL": [
+                            0,
+                            8
+                        ],
+                        "lRTd": [
+                            0,
+                            0
+                        ],
+                        "h6Dy": [
+                            16,
+                            0
+                        ]
+                    },
+                    "vertices": [
+                        "h6Dy",
+                        "lRTd",
+                        "W2oL",
+                        "N70x"
+                    ]
+                },
+                "KGzvuO54": {
+                    "uv": {
+                        "Etcf": [
+                            0,
+                            8
+                        ],
+                        "LM2k": [
+                            0,
+                            0
+                        ],
+                        "zUbG": [
+                            16,
+                            0
+                        ],
+                        "hwED": [
+                            16,
+                            8
+                        ]
+                    },
+                    "vertices": [
+                        "hwED",
+                        "zUbG",
+                        "LM2k",
+                        "Etcf"
+                    ]
+                },
+                "T1u3EjBL": {
+                    "uv": {
+                        "LM2k": [
+                            0,
+                            0
+                        ],
+                        "h6Dy": [
+                            16,
+                            0
+                        ],
+                        "lRTd": [
+                            16,
+                            16
+                        ],
+                        "zUbG": [
+                            0,
+                            16
+                        ]
+                    },
+                    "vertices": [
+                        "zUbG",
+                        "lRTd",
+                        "h6Dy",
+                        "LM2k"
+                    ]
+                },
+                "rRnEVxGM": {
+                    "uv": {
+                        "Etcf": [
+                            0,
+                            16
+                        ],
+                        "hwED": [
+                            0,
+                            0
+                        ],
+                        "W2oL": [
+                            16,
+                            0
+                        ],
+                        "N70x": [
+                            16,
+                            16
+                        ]
+                    },
+                    "vertices": [
+                        "N70x",
+                        "W2oL",
+                        "hwED",
+                        "Etcf"
+                    ]
+                },
+                "R4Jvawgz": {
+                    "uv": {
+                        "hwED": [
+                            0,
+                            8
+                        ],
+                        "zUbG": [
+                            0,
+                            0
+                        ],
+                        "lRTd": [
+                            16,
+                            0
+                        ],
+                        "W2oL": [
+                            16,
+                            8
+                        ]
+                    },
+                    "vertices": [
+                        "W2oL",
+                        "lRTd",
+                        "zUbG",
+                        "hwED"
+                    ]
+                },
+                "yezhSljb": {
+                    "uv": {
+                        "Etcf": [
+                            16,
+                            8
+                        ],
+                        "N70x": [
+                            0,
+                            8
+                        ],
+                        "h6Dy": [
+                            0,
+                            0
+                        ],
+                        "LM2k": [
+                            16,
+                            0
+                        ]
+                    },
+                    "vertices": [
+                        "LM2k",
+                        "h6Dy",
+                        "N70x",
+                        "Etcf"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "d290af08-dbb4-5a3d-af9a-cbde237112cd"
+        },
+        {
+            "name": "mesh",
+            "color": 1,
+            "origin": [
+                -15,
+                75,
+                -70
+            ],
+            "rotation": [
+                0,
+                -180,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "lRTd": [
+                    0.5,
+                    5.5,
+                    12
+                ],
+                "h6Dy": [
+                    0.5,
+                    5.5,
+                    -12
+                ],
+                "W2oL": [
+                    0.5,
+                    2.5,
+                    12
+                ],
+                "N70x": [
+                    0.5,
+                    2.5,
+                    -12
+                ],
+                "zUbG": [
+                    -0.5,
+                    5.5,
+                    12
+                ],
+                "LM2k": [
+                    -0.5,
+                    5.5,
+                    -12
+                ],
+                "hwED": [
+                    -0.5,
+                    2.5,
+                    12
+                ],
+                "Etcf": [
+                    -0.5,
+                    2.5,
+                    -12
+                ]
+            },
+            "faces": {
+                "XczzZmm1": {
+                    "uv": {
+                        "N70x": [
+                            16,
+                            8
+                        ],
+                        "W2oL": [
+                            0,
+                            8
+                        ],
+                        "lRTd": [
+                            0,
+                            0
+                        ],
+                        "h6Dy": [
+                            16,
+                            0
+                        ]
+                    },
+                    "vertices": [
+                        "h6Dy",
+                        "lRTd",
+                        "W2oL",
+                        "N70x"
+                    ]
+                },
+                "KGzvuO54": {
+                    "uv": {
+                        "Etcf": [
+                            0,
+                            8
+                        ],
+                        "LM2k": [
+                            0,
+                            0
+                        ],
+                        "zUbG": [
+                            16,
+                            0
+                        ],
+                        "hwED": [
+                            16,
+                            8
+                        ]
+                    },
+                    "vertices": [
+                        "hwED",
+                        "zUbG",
+                        "LM2k",
+                        "Etcf"
+                    ]
+                },
+                "T1u3EjBL": {
+                    "uv": {
+                        "LM2k": [
+                            0,
+                            0
+                        ],
+                        "h6Dy": [
+                            16,
+                            0
+                        ],
+                        "lRTd": [
+                            16,
+                            16
+                        ],
+                        "zUbG": [
+                            0,
+                            16
+                        ]
+                    },
+                    "vertices": [
+                        "zUbG",
+                        "lRTd",
+                        "h6Dy",
+                        "LM2k"
+                    ]
+                },
+                "rRnEVxGM": {
+                    "uv": {
+                        "Etcf": [
+                            0,
+                            16
+                        ],
+                        "hwED": [
+                            0,
+                            0
+                        ],
+                        "W2oL": [
+                            16,
+                            0
+                        ],
+                        "N70x": [
+                            16,
+                            16
+                        ]
+                    },
+                    "vertices": [
+                        "N70x",
+                        "W2oL",
+                        "hwED",
+                        "Etcf"
+                    ]
+                },
+                "R4Jvawgz": {
+                    "uv": {
+                        "hwED": [
+                            0,
+                            8
+                        ],
+                        "zUbG": [
+                            0,
+                            0
+                        ],
+                        "lRTd": [
+                            16,
+                            0
+                        ],
+                        "W2oL": [
+                            16,
+                            8
+                        ]
+                    },
+                    "vertices": [
+                        "W2oL",
+                        "lRTd",
+                        "zUbG",
+                        "hwED"
+                    ]
+                },
+                "yezhSljb": {
+                    "uv": {
+                        "Etcf": [
+                            16,
+                            8
+                        ],
+                        "N70x": [
+                            0,
+                            8
+                        ],
+                        "h6Dy": [
+                            0,
+                            0
+                        ],
+                        "LM2k": [
+                            16,
+                            0
+                        ]
+                    },
+                    "vertices": [
+                        "LM2k",
+                        "h6Dy",
+                        "N70x",
+                        "Etcf"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "97b09b6d-6dc0-d88c-b673-643d43c885ec"
+        },
+        {
+            "name": "mesh",
+            "color": 5,
+            "origin": [
+                -8,
+                75,
+                -73
+            ],
+            "rotation": [
+                0,
+                -180,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "lRTd": [
+                    8,
+                    5.5,
+                    0.5
+                ],
+                "h6Dy": [
+                    8,
+                    5.5,
+                    -0.5
+                ],
+                "W2oL": [
+                    8,
+                    2.5,
+                    0.5
+                ],
+                "N70x": [
+                    8,
+                    2.5,
+                    -0.5
+                ],
+                "zUbG": [
+                    -8,
+                    5.5,
+                    0.5
+                ],
+                "LM2k": [
+                    -8,
+                    5.5,
+                    -0.5
+                ],
+                "hwED": [
+                    -8,
+                    2.5,
+                    0.5
+                ],
+                "Etcf": [
+                    -8,
+                    2.5,
+                    -0.5
+                ]
+            },
+            "faces": {
+                "XczzZmm1": {
+                    "uv": {
+                        "N70x": [
+                            16,
+                            8
+                        ],
+                        "W2oL": [
+                            0,
+                            8
+                        ],
+                        "lRTd": [
+                            0,
+                            0
+                        ],
+                        "h6Dy": [
+                            16,
+                            0
+                        ]
+                    },
+                    "vertices": [
+                        "h6Dy",
+                        "lRTd",
+                        "W2oL",
+                        "N70x"
+                    ]
+                },
+                "KGzvuO54": {
+                    "uv": {
+                        "Etcf": [
+                            0,
+                            8
+                        ],
+                        "LM2k": [
+                            0,
+                            0
+                        ],
+                        "zUbG": [
+                            16,
+                            0
+                        ],
+                        "hwED": [
+                            16,
+                            8
+                        ]
+                    },
+                    "vertices": [
+                        "hwED",
+                        "zUbG",
+                        "LM2k",
+                        "Etcf"
+                    ]
+                },
+                "T1u3EjBL": {
+                    "uv": {
+                        "LM2k": [
+                            0,
+                            0
+                        ],
+                        "h6Dy": [
+                            16,
+                            0
+                        ],
+                        "lRTd": [
+                            16,
+                            16
+                        ],
+                        "zUbG": [
+                            0,
+                            16
+                        ]
+                    },
+                    "vertices": [
+                        "zUbG",
+                        "lRTd",
+                        "h6Dy",
+                        "LM2k"
+                    ]
+                },
+                "rRnEVxGM": {
+                    "uv": {
+                        "Etcf": [
+                            0,
+                            16
+                        ],
+                        "hwED": [
+                            0,
+                            0
+                        ],
+                        "W2oL": [
+                            16,
+                            0
+                        ],
+                        "N70x": [
+                            16,
+                            16
+                        ]
+                    },
+                    "vertices": [
+                        "N70x",
+                        "W2oL",
+                        "hwED",
+                        "Etcf"
+                    ]
+                },
+                "R4Jvawgz": {
+                    "uv": {
+                        "hwED": [
+                            0,
+                            8
+                        ],
+                        "zUbG": [
+                            0,
+                            0
+                        ],
+                        "lRTd": [
+                            16,
+                            0
+                        ],
+                        "W2oL": [
+                            16,
+                            8
+                        ]
+                    },
+                    "vertices": [
+                        "W2oL",
+                        "lRTd",
+                        "zUbG",
+                        "hwED"
+                    ]
+                },
+                "yezhSljb": {
+                    "uv": {
+                        "Etcf": [
+                            16,
+                            8
+                        ],
+                        "N70x": [
+                            0,
+                            8
+                        ],
+                        "h6Dy": [
+                            0,
+                            0
+                        ],
+                        "LM2k": [
+                            16,
+                            0
+                        ]
+                    },
+                    "vertices": [
+                        "LM2k",
+                        "h6Dy",
+                        "N70x",
+                        "Etcf"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "05c0d475-43e0-07b8-4405-6b99de46121e"
+        },
+        {
+            "name": "mesh",
+            "color": 3,
+            "origin": [
+                -8,
+                73,
+                -70
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "lRTd": [
+                    8,
+                    4.5,
+                    12
+                ],
+                "h6Dy": [
+                    8,
+                    4.5,
+                    -12
+                ],
+                "W2oL": [
+                    8,
+                    3.5,
+                    12
+                ],
+                "N70x": [
+                    8,
+                    3.5,
+                    -12
+                ],
+                "zUbG": [
+                    -8,
+                    4.5,
+                    12
+                ],
+                "LM2k": [
+                    -8,
+                    4.5,
+                    -12
+                ],
+                "hwED": [
+                    -8,
+                    3.5,
+                    12
+                ],
+                "Etcf": [
+                    -8,
+                    3.5,
+                    -12
+                ]
+            },
+            "faces": {
+                "XczzZmm1": {
+                    "uv": {
+                        "N70x": [
+                            16,
+                            8
+                        ],
+                        "W2oL": [
+                            0,
+                            8
+                        ],
+                        "lRTd": [
+                            0,
+                            0
+                        ],
+                        "h6Dy": [
+                            16,
+                            0
+                        ]
+                    },
+                    "vertices": [
+                        "h6Dy",
+                        "lRTd",
+                        "W2oL",
+                        "N70x"
+                    ]
+                },
+                "KGzvuO54": {
+                    "uv": {
+                        "Etcf": [
+                            0,
+                            8
+                        ],
+                        "LM2k": [
+                            0,
+                            0
+                        ],
+                        "zUbG": [
+                            16,
+                            0
+                        ],
+                        "hwED": [
+                            16,
+                            8
+                        ]
+                    },
+                    "vertices": [
+                        "hwED",
+                        "zUbG",
+                        "LM2k",
+                        "Etcf"
+                    ]
+                },
+                "T1u3EjBL": {
+                    "uv": {
+                        "LM2k": [
+                            0,
+                            0
+                        ],
+                        "h6Dy": [
+                            16,
+                            0
+                        ],
+                        "lRTd": [
+                            16,
+                            16
+                        ],
+                        "zUbG": [
+                            0,
+                            16
+                        ]
+                    },
+                    "vertices": [
+                        "zUbG",
+                        "lRTd",
+                        "h6Dy",
+                        "LM2k"
+                    ]
+                },
+                "rRnEVxGM": {
+                    "uv": {
+                        "Etcf": [
+                            0,
+                            16
+                        ],
+                        "hwED": [
+                            0,
+                            0
+                        ],
+                        "W2oL": [
+                            16,
+                            0
+                        ],
+                        "N70x": [
+                            16,
+                            16
+                        ]
+                    },
+                    "vertices": [
+                        "N70x",
+                        "W2oL",
+                        "hwED",
+                        "Etcf"
+                    ]
+                },
+                "R4Jvawgz": {
+                    "uv": {
+                        "hwED": [
+                            0,
+                            8
+                        ],
+                        "zUbG": [
+                            0,
+                            0
+                        ],
+                        "lRTd": [
+                            16,
+                            0
+                        ],
+                        "W2oL": [
+                            16,
+                            8
+                        ]
+                    },
+                    "vertices": [
+                        "W2oL",
+                        "lRTd",
+                        "zUbG",
+                        "hwED"
+                    ]
+                },
+                "yezhSljb": {
+                    "uv": {
+                        "Etcf": [
+                            16,
+                            8
+                        ],
+                        "N70x": [
+                            0,
+                            8
+                        ],
+                        "h6Dy": [
+                            0,
+                            0
+                        ],
+                        "LM2k": [
+                            16,
+                            0
+                        ]
+                    },
+                    "vertices": [
+                        "LM2k",
+                        "h6Dy",
+                        "N70x",
+                        "Etcf"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "23b020f9-fba4-8ccb-1c22-0bffa31b7ac0"
+        },
+        {
+            "name": "mesh",
+            "color": 1,
+            "origin": [
+                -1,
+                75,
+                -70
+            ],
+            "rotation": [
+                0,
+                -180,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "lRTd": [
+                    0.5,
+                    5.5,
+                    12
+                ],
+                "h6Dy": [
+                    0.5,
+                    5.5,
+                    -12
+                ],
+                "W2oL": [
+                    0.5,
+                    2.5,
+                    12
+                ],
+                "N70x": [
+                    0.5,
+                    2.5,
+                    -12
+                ],
+                "zUbG": [
+                    -0.5,
+                    5.5,
+                    12
+                ],
+                "LM2k": [
+                    -0.5,
+                    5.5,
+                    -12
+                ],
+                "hwED": [
+                    -0.5,
+                    2.5,
+                    12
+                ],
+                "Etcf": [
+                    -0.5,
+                    2.5,
+                    -12
+                ]
+            },
+            "faces": {
+                "XczzZmm1": {
+                    "uv": {
+                        "N70x": [
+                            16,
+                            8
+                        ],
+                        "W2oL": [
+                            0,
+                            8
+                        ],
+                        "lRTd": [
+                            0,
+                            0
+                        ],
+                        "h6Dy": [
+                            16,
+                            0
+                        ]
+                    },
+                    "vertices": [
+                        "h6Dy",
+                        "lRTd",
+                        "W2oL",
+                        "N70x"
+                    ]
+                },
+                "KGzvuO54": {
+                    "uv": {
+                        "Etcf": [
+                            0,
+                            8
+                        ],
+                        "LM2k": [
+                            0,
+                            0
+                        ],
+                        "zUbG": [
+                            16,
+                            0
+                        ],
+                        "hwED": [
+                            16,
+                            8
+                        ]
+                    },
+                    "vertices": [
+                        "hwED",
+                        "zUbG",
+                        "LM2k",
+                        "Etcf"
+                    ]
+                },
+                "T1u3EjBL": {
+                    "uv": {
+                        "LM2k": [
+                            0,
+                            0
+                        ],
+                        "h6Dy": [
+                            16,
+                            0
+                        ],
+                        "lRTd": [
+                            16,
+                            16
+                        ],
+                        "zUbG": [
+                            0,
+                            16
+                        ]
+                    },
+                    "vertices": [
+                        "zUbG",
+                        "lRTd",
+                        "h6Dy",
+                        "LM2k"
+                    ]
+                },
+                "rRnEVxGM": {
+                    "uv": {
+                        "Etcf": [
+                            0,
+                            16
+                        ],
+                        "hwED": [
+                            0,
+                            0
+                        ],
+                        "W2oL": [
+                            16,
+                            0
+                        ],
+                        "N70x": [
+                            16,
+                            16
+                        ]
+                    },
+                    "vertices": [
+                        "N70x",
+                        "W2oL",
+                        "hwED",
+                        "Etcf"
+                    ]
+                },
+                "R4Jvawgz": {
+                    "uv": {
+                        "hwED": [
+                            0,
+                            8
+                        ],
+                        "zUbG": [
+                            0,
+                            0
+                        ],
+                        "lRTd": [
+                            16,
+                            0
+                        ],
+                        "W2oL": [
+                            16,
+                            8
+                        ]
+                    },
+                    "vertices": [
+                        "W2oL",
+                        "lRTd",
+                        "zUbG",
+                        "hwED"
+                    ]
+                },
+                "yezhSljb": {
+                    "uv": {
+                        "Etcf": [
+                            16,
+                            8
+                        ],
+                        "N70x": [
+                            0,
+                            8
+                        ],
+                        "h6Dy": [
+                            0,
+                            0
+                        ],
+                        "LM2k": [
+                            16,
+                            0
+                        ]
+                    },
+                    "vertices": [
+                        "LM2k",
+                        "h6Dy",
+                        "N70x",
+                        "Etcf"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "16849352-7db0-c948-fcd3-7206f01d4c2c"
+        },
+        {
+            "name": "mesh",
+            "color": 5,
+            "origin": [
+                -8,
+                75,
+                -67
+            ],
+            "rotation": [
+                0,
+                -180,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "lRTd": [
+                    8,
+                    5.5,
+                    0.5
+                ],
+                "h6Dy": [
+                    8,
+                    5.5,
+                    -0.5
+                ],
+                "W2oL": [
+                    8,
+                    2.5,
+                    0.5
+                ],
+                "N70x": [
+                    8,
+                    2.5,
+                    -0.5
+                ],
+                "zUbG": [
+                    -8,
+                    5.5,
+                    0.5
+                ],
+                "LM2k": [
+                    -8,
+                    5.5,
+                    -0.5
+                ],
+                "hwED": [
+                    -8,
+                    2.5,
+                    0.5
+                ],
+                "Etcf": [
+                    -8,
+                    2.5,
+                    -0.5
+                ]
+            },
+            "faces": {
+                "XczzZmm1": {
+                    "uv": {
+                        "N70x": [
+                            16,
+                            8
+                        ],
+                        "W2oL": [
+                            0,
+                            8
+                        ],
+                        "lRTd": [
+                            0,
+                            0
+                        ],
+                        "h6Dy": [
+                            16,
+                            0
+                        ]
+                    },
+                    "vertices": [
+                        "h6Dy",
+                        "lRTd",
+                        "W2oL",
+                        "N70x"
+                    ]
+                },
+                "KGzvuO54": {
+                    "uv": {
+                        "Etcf": [
+                            0,
+                            8
+                        ],
+                        "LM2k": [
+                            0,
+                            0
+                        ],
+                        "zUbG": [
+                            16,
+                            0
+                        ],
+                        "hwED": [
+                            16,
+                            8
+                        ]
+                    },
+                    "vertices": [
+                        "hwED",
+                        "zUbG",
+                        "LM2k",
+                        "Etcf"
+                    ]
+                },
+                "T1u3EjBL": {
+                    "uv": {
+                        "LM2k": [
+                            0,
+                            0
+                        ],
+                        "h6Dy": [
+                            16,
+                            0
+                        ],
+                        "lRTd": [
+                            16,
+                            16
+                        ],
+                        "zUbG": [
+                            0,
+                            16
+                        ]
+                    },
+                    "vertices": [
+                        "zUbG",
+                        "lRTd",
+                        "h6Dy",
+                        "LM2k"
+                    ]
+                },
+                "rRnEVxGM": {
+                    "uv": {
+                        "Etcf": [
+                            0,
+                            16
+                        ],
+                        "hwED": [
+                            0,
+                            0
+                        ],
+                        "W2oL": [
+                            16,
+                            0
+                        ],
+                        "N70x": [
+                            16,
+                            16
+                        ]
+                    },
+                    "vertices": [
+                        "N70x",
+                        "W2oL",
+                        "hwED",
+                        "Etcf"
+                    ]
+                },
+                "R4Jvawgz": {
+                    "uv": {
+                        "hwED": [
+                            0,
+                            8
+                        ],
+                        "zUbG": [
+                            0,
+                            0
+                        ],
+                        "lRTd": [
+                            16,
+                            0
+                        ],
+                        "W2oL": [
+                            16,
+                            8
+                        ]
+                    },
+                    "vertices": [
+                        "W2oL",
+                        "lRTd",
+                        "zUbG",
+                        "hwED"
+                    ]
+                },
+                "yezhSljb": {
+                    "uv": {
+                        "Etcf": [
+                            16,
+                            8
+                        ],
+                        "N70x": [
+                            0,
+                            8
+                        ],
+                        "h6Dy": [
+                            0,
+                            0
+                        ],
+                        "LM2k": [
+                            16,
+                            0
+                        ]
+                    },
+                    "vertices": [
+                        "LM2k",
+                        "h6Dy",
+                        "N70x",
+                        "Etcf"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "ed17b6d4-a984-c122-ade3-e09d59a0ff0b"
+        },
+        {
+            "name": "mesh",
+            "color": 5,
+            "origin": [
+                -8,
+                75,
+                -81
+            ],
+            "rotation": [
+                0,
+                -180,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "lRTd": [
+                    6.5,
+                    5.5,
+                    0.5
+                ],
+                "h6Dy": [
+                    6.5,
+                    5.5,
+                    -0.5
+                ],
+                "W2oL": [
+                    6.5,
+                    2.5,
+                    0.5
+                ],
+                "N70x": [
+                    6.5,
+                    2.5,
+                    -0.5
+                ],
+                "zUbG": [
+                    -6.5,
+                    5.5,
+                    0.5
+                ],
+                "LM2k": [
+                    -6.5,
+                    5.5,
+                    -0.5
+                ],
+                "hwED": [
+                    -6.5,
+                    2.5,
+                    0.5
+                ],
+                "Etcf": [
+                    -6.5,
+                    2.5,
+                    -0.5
+                ]
+            },
+            "faces": {
+                "XczzZmm1": {
+                    "uv": {
+                        "N70x": [
+                            16,
+                            8
+                        ],
+                        "W2oL": [
+                            0,
+                            8
+                        ],
+                        "lRTd": [
+                            0,
+                            0
+                        ],
+                        "h6Dy": [
+                            16,
+                            0
+                        ]
+                    },
+                    "vertices": [
+                        "h6Dy",
+                        "lRTd",
+                        "W2oL",
+                        "N70x"
+                    ]
+                },
+                "KGzvuO54": {
+                    "uv": {
+                        "Etcf": [
+                            0,
+                            8
+                        ],
+                        "LM2k": [
+                            0,
+                            0
+                        ],
+                        "zUbG": [
+                            16,
+                            0
+                        ],
+                        "hwED": [
+                            16,
+                            8
+                        ]
+                    },
+                    "vertices": [
+                        "hwED",
+                        "zUbG",
+                        "LM2k",
+                        "Etcf"
+                    ]
+                },
+                "T1u3EjBL": {
+                    "uv": {
+                        "LM2k": [
+                            0,
+                            0
+                        ],
+                        "h6Dy": [
+                            16,
+                            0
+                        ],
+                        "lRTd": [
+                            16,
+                            16
+                        ],
+                        "zUbG": [
+                            0,
+                            16
+                        ]
+                    },
+                    "vertices": [
+                        "zUbG",
+                        "lRTd",
+                        "h6Dy",
+                        "LM2k"
+                    ]
+                },
+                "rRnEVxGM": {
+                    "uv": {
+                        "Etcf": [
+                            0,
+                            16
+                        ],
+                        "hwED": [
+                            0,
+                            0
+                        ],
+                        "W2oL": [
+                            16,
+                            0
+                        ],
+                        "N70x": [
+                            16,
+                            16
+                        ]
+                    },
+                    "vertices": [
+                        "N70x",
+                        "W2oL",
+                        "hwED",
+                        "Etcf"
+                    ]
+                },
+                "R4Jvawgz": {
+                    "uv": {
+                        "hwED": [
+                            0,
+                            8
+                        ],
+                        "zUbG": [
+                            0,
+                            0
+                        ],
+                        "lRTd": [
+                            16,
+                            0
+                        ],
+                        "W2oL": [
+                            16,
+                            8
+                        ]
+                    },
+                    "vertices": [
+                        "W2oL",
+                        "lRTd",
+                        "zUbG",
+                        "hwED"
+                    ]
+                },
+                "yezhSljb": {
+                    "uv": {
+                        "Etcf": [
+                            16,
+                            8
+                        ],
+                        "N70x": [
+                            0,
+                            8
+                        ],
+                        "h6Dy": [
+                            0,
+                            0
+                        ],
+                        "LM2k": [
+                            16,
+                            0
+                        ]
+                    },
+                    "vertices": [
+                        "LM2k",
+                        "h6Dy",
+                        "N70x",
+                        "Etcf"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "7b6ef68e-fc0a-ad2f-b62d-4b1837619b54"
+        },
+        {
+            "name": "mesh",
+            "color": 5,
+            "origin": [
+                -8,
+                75,
+                -59
+            ],
+            "rotation": [
+                0,
+                -180,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "lRTd": [
+                    6.5,
+                    5.5,
+                    0.5
+                ],
+                "h6Dy": [
+                    6.5,
+                    5.5,
+                    -0.5
+                ],
+                "W2oL": [
+                    6.5,
+                    2.5,
+                    0.5
+                ],
+                "N70x": [
+                    6.5,
+                    2.5,
+                    -0.5
+                ],
+                "zUbG": [
+                    -6.5,
+                    5.5,
+                    0.5
+                ],
+                "LM2k": [
+                    -6.5,
+                    5.5,
+                    -0.5
+                ],
+                "hwED": [
+                    -6.5,
+                    2.5,
+                    0.5
+                ],
+                "Etcf": [
+                    -6.5,
+                    2.5,
+                    -0.5
+                ]
+            },
+            "faces": {
+                "XczzZmm1": {
+                    "uv": {
+                        "N70x": [
+                            16,
+                            8
+                        ],
+                        "W2oL": [
+                            0,
+                            8
+                        ],
+                        "lRTd": [
+                            0,
+                            0
+                        ],
+                        "h6Dy": [
+                            16,
+                            0
+                        ]
+                    },
+                    "vertices": [
+                        "h6Dy",
+                        "lRTd",
+                        "W2oL",
+                        "N70x"
+                    ]
+                },
+                "KGzvuO54": {
+                    "uv": {
+                        "Etcf": [
+                            0,
+                            8
+                        ],
+                        "LM2k": [
+                            0,
+                            0
+                        ],
+                        "zUbG": [
+                            16,
+                            0
+                        ],
+                        "hwED": [
+                            16,
+                            8
+                        ]
+                    },
+                    "vertices": [
+                        "hwED",
+                        "zUbG",
+                        "LM2k",
+                        "Etcf"
+                    ]
+                },
+                "T1u3EjBL": {
+                    "uv": {
+                        "LM2k": [
+                            0,
+                            0
+                        ],
+                        "h6Dy": [
+                            16,
+                            0
+                        ],
+                        "lRTd": [
+                            16,
+                            16
+                        ],
+                        "zUbG": [
+                            0,
+                            16
+                        ]
+                    },
+                    "vertices": [
+                        "zUbG",
+                        "lRTd",
+                        "h6Dy",
+                        "LM2k"
+                    ]
+                },
+                "rRnEVxGM": {
+                    "uv": {
+                        "Etcf": [
+                            0,
+                            16
+                        ],
+                        "hwED": [
+                            0,
+                            0
+                        ],
+                        "W2oL": [
+                            16,
+                            0
+                        ],
+                        "N70x": [
+                            16,
+                            16
+                        ]
+                    },
+                    "vertices": [
+                        "N70x",
+                        "W2oL",
+                        "hwED",
+                        "Etcf"
+                    ]
+                },
+                "R4Jvawgz": {
+                    "uv": {
+                        "hwED": [
+                            0,
+                            8
+                        ],
+                        "zUbG": [
+                            0,
+                            0
+                        ],
+                        "lRTd": [
+                            16,
+                            0
+                        ],
+                        "W2oL": [
+                            16,
+                            8
+                        ]
+                    },
+                    "vertices": [
+                        "W2oL",
+                        "lRTd",
+                        "zUbG",
+                        "hwED"
+                    ]
+                },
+                "yezhSljb": {
+                    "uv": {
+                        "Etcf": [
+                            16,
+                            8
+                        ],
+                        "N70x": [
+                            0,
+                            8
+                        ],
+                        "h6Dy": [
+                            0,
+                            0
+                        ],
+                        "LM2k": [
+                            16,
+                            0
+                        ]
+                    },
+                    "vertices": [
+                        "LM2k",
+                        "h6Dy",
+                        "N70x",
+                        "Etcf"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "ff6c1019-1bec-87f3-2610-8bf3f9135e5a"
+        }
+    ],
+    "groups": [],
+    "outliner": [
+        "d290af08-dbb4-5a3d-af9a-cbde237112cd",
+        "97b09b6d-6dc0-d88c-b673-643d43c885ec",
+        "05c0d475-43e0-07b8-4405-6b99de46121e",
+        "23b020f9-fba4-8ccb-1c22-0bffa31b7ac0",
+        "16849352-7db0-c948-fcd3-7206f01d4c2c",
+        "ed17b6d4-a984-c122-ade3-e09d59a0ff0b",
+        "7b6ef68e-fc0a-ad2f-b62d-4b1837619b54",
+        "ff6c1019-1bec-87f3-2610-8bf3f9135e5a"
+    ],
+    "textures": []
+}
