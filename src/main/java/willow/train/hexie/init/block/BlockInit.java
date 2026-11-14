@@ -66,6 +66,11 @@ public class BlockInit {
     public static final DeferredHolder<Block, CRH2PanelBlock> CRH2A_PANEL_NOWINDOW_THICK = crh2Panel("crh2a_panel_nowindow_thick");
     public static final DeferredHolder<Block, CRH2PanelBlock> CRH2A_PANEL_SMALL_WINDOW = crh2Panel("crh2a_panel_small_window");
     public static final DeferredHolder<Block, CRH2PanelBlock> CRH2A_PANEL_WIDE_WINDOW = crh2Panel("crh2a_panel_wide_window");
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh1a.CRH1PanelBlock> CRH1A_PANEL_WIDE_WINDOW =
+            register("crh1a_panel_wide_window", () -> new willow.train.hexie.blocks.emu.crh1a.CRH1PanelBlock(
+                    BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
+                            .sound(SoundType.METAL).noOcclusion()),
+                    block -> () -> new willow.train.hexie.item.CRH2PartItem(block.get(), new Item.Properties()));
     public static final DeferredHolder<Block, CRH2PartBlock> CRH2A_CARPORT_MID_ANTENNA =
             register("crh2a_carport_mid_antenna", () -> new willow.train.hexie.blocks.parts.VariantPartBlock(
                     BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
@@ -1317,4 +1322,3 @@ public static final DeferredHolder<Block, DF11GPanel3Wide> DF11G_PANEL_CR = regi
     }
 
 }
-
