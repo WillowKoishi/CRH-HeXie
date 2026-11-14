@@ -678,6 +678,8 @@
   "block.hexie.crh2a_floor": "CRH2A 舆底中段",
   "block.hexie.crh1a_floor": "CRH1A 舆底中段",
   "block.hexie.crh1a_skirt": "CRH1A 舆裾",
+  "block.hexie.crh1a_carport_mid": "CRH1A 中舆之盖",
+  "block.hexie.crh1a_carport_side": "CRH1A 侧舆盖",
   "gui.hexie.head_number.title": "车首之号",
   "gui.hexie.head_number.hint": "两侧同改 · 留空则清",
   "gui.hexie.carriage_marking.title": "舆号",

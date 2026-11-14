@@ -48,7 +48,12 @@ public final class TrainPanelPlacement implements IPlacementHelper {
     private static final class SideRunHelper extends com.simibubi.create.foundation.placement.PoleHelper<Direction> {
         private final String kind;
         SideRunHelper(String kind) {
-            super(state -> isSideRun(state, kind), state -> state.getValue(SideMirrorBlockBase.FACING).getClockWise().getAxis(), SideMirrorBlockBase.FACING);
+            super(state -> isSideRun(state, kind), state -> {
+                Direction facing = state.getValue(SideMirrorBlockBase.FACING);
+                var runAxis = willow.train.hexie.blocks.parts.PartDefinitions.get(state).runAxis();
+                return kind.equals("carport") && runAxis == willow.train.hexie.blocks.parts.PartDefinitions.RunAxis.FACING
+                        ? facing.getAxis() : facing.getClockWise().getAxis();
+            }, SideMirrorBlockBase.FACING);
             this.kind = kind;
         }
         @Override public int attachedPoles(Level level, BlockPos pos, Direction direction) {

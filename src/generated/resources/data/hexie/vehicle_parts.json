@@ -20,6 +20,13 @@
   "hexie:crh2a_carport_mid_antenna": {
     "extension": "ROOF"
   },
+  "hexie:crh1a_carport_mid": {
+    "extension": "ROOF",
+    "run_axis": "FACING"
+  },
+  "hexie:crh1a_carport_side": {
+    "extension": "ROOF"
+  },
   "hexie:crh2a_carport_side": {
     "extension": "ROOF"
   },

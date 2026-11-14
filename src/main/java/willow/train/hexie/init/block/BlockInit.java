@@ -86,6 +86,8 @@ public class BlockInit {
                     BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
                             .sound(SoundType.METAL).noOcclusion(), "crh2a_carport_mid_antenna"),
                     block -> () -> new willow.train.hexie.item.CRH2PartItem(block.get(), new Item.Properties()));
+    public static final DeferredHolder<Block, CRH2PartBlock> CRH1A_CARPORT_MID = crh2Part("crh1a_carport_mid");
+    public static final DeferredHolder<Block, CRH2PartBlock> CRH1A_CARPORT_SIDE = crh2Part("crh1a_carport_side");
     public static final DeferredHolder<Block, CRH2PartBlock> CRH2A_CARPORT_SIDE = crh2Part("crh2a_carport_side");
     public static final DeferredHolder<Block, CRH2PartBlock> CRH2A_SKIRT_FORBOGEY = crh2Part("crh2a_skirt_forbogey");
     public static final DeferredHolder<Block, CRH2PartBlock> CRH2A_SKIRT_NORMAL = crh2Part("crh2a_skirt_normal");

@@ -14,8 +14,13 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 /** Packaged part capabilities. IDs remain stable; model geometry is kept in its existing resources. */
 public final class PartDefinitions {
     public enum Extension { NONE, SIDE, FLOOR, ROOF, SKIRT }
-    public record Definition(Extension extension, boolean reverseFacing, boolean thinOnly) {}
-    private static final Definition NONE=new Definition(Extension.NONE,false,false);
+    public enum RunAxis { PERPENDICULAR, FACING }
+    public record Definition(Extension extension, boolean reverseFacing, boolean thinOnly, RunAxis runAxis) {
+        public Definition(Extension extension, boolean reverseFacing, boolean thinOnly) {
+            this(extension, reverseFacing, thinOnly, RunAxis.PERPENDICULAR);
+        }
+    }
+    private static final Definition NONE=new Definition(Extension.NONE,false,false,RunAxis.PERPENDICULAR);
     private static volatile Map<ResourceLocation,Definition> DEFINITIONS=load();
     private PartDefinitions() {}
     private static Map<ResourceLocation,Definition> load() {
@@ -27,7 +32,8 @@ public final class PartDefinitions {
                 var value=entry.getValue().getAsJsonObject();
                 result.put(ResourceLocation.parse(entry.getKey()),new Definition(Extension.valueOf(value.get("extension").getAsString()),
                         value.has("reverse_facing")&&value.get("reverse_facing").getAsBoolean(),
-                        value.has("thin_only")&&value.get("thin_only").getAsBoolean()));
+                        value.has("thin_only")&&value.get("thin_only").getAsBoolean(),
+                        value.has("run_axis")?RunAxis.valueOf(value.get("run_axis").getAsString()):RunAxis.PERPENDICULAR));
             }
         } catch(java.io.IOException failure) { throw new ExceptionInInitializerError(failure); }
         return Map.copyOf(result);

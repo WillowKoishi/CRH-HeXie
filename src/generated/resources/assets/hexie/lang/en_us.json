@@ -742,6 +742,8 @@
   "block.hexie.crh2a_floor": "CRH2A Center Floor",
   "block.hexie.crh1a_floor": "CRH1A Center Floor",
   "block.hexie.crh1a_skirt": "CRH1A Skirt",
+  "block.hexie.crh1a_carport_mid": "CRH1A Center Car Roof",
+  "block.hexie.crh1a_carport_side": "CRH1A Side Roof",
   "gui.hexie.head_number.title": "Head number",
   "gui.hexie.head_number.hint": "Both sides - leave blank to clear",
   "gui.hexie.carriage_marking.title": "Carriage marking",

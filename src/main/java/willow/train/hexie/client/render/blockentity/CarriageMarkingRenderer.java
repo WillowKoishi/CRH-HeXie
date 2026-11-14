@@ -36,7 +36,8 @@ public final class CarriageMarkingRenderer implements BlockEntityRenderer<CRH2Pa
             drawLabel(entity.panelText(slot), block, localBounds, slot, pose, buffers, light);
             if(entity.harmony(slot)==0)continue;
             boolean right=entity.harmony(slot)==2;
-            var layout= willow.train.hexie.blocks.emu.crh2a.HarmonyMarking.layout(localBounds.minX+slot,localBounds.maxY,right);
+            var layout= willow.train.hexie.blocks.emu.crh2a.HarmonyMarking.layout(localBounds.minX+slot,
+                    localBounds.maxY+block.harmonyMarkingOffsetY(),right);
             SignTextRenderer.drawDecal(ResourceLocation.fromNamespaceAndPath("hexie",
                     "textures/logo/crh-chinarailwayhighspeed"+(right ? "_r" : "")+".png"),pose,buffers,
                     layout.left(),layout.top(),layout.width(),layout.height(),light,

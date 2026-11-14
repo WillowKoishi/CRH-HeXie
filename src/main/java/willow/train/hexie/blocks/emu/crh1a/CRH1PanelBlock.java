@@ -17,4 +17,6 @@ public final class CRH1PanelBlock extends CRH2PanelBlock {
     }
 
     @Override public double markingDepth() { return markingDepth(1); }
+
+    @Override public double harmonyMarkingOffsetY() { return 2 / 16d; }
 }

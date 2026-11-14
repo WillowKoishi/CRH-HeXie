@@ -12,6 +12,7 @@ public interface VehicleMarkingSurface {
     AABB markingBounds(BlockState state);
     AABB markingRenderBounds(BlockState state);
     double markingDepth(double localY);
+    default double harmonyMarkingOffsetY() { return 0; }
     default Direction markingFacing(BlockState state) { return state.getValue(BlockStateProperties.HORIZONTAL_FACING); }
     default int markingSlots(BlockState state) { return markingBounds(state).getXsize()>1.5?2:1; }
     default int markingSlot(BlockState state,BlockPos root,Vec3 hit) {
