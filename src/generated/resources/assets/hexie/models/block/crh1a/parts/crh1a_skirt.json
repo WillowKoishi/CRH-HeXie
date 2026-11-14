@@ -1,0 +1,15 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "ambientocclusion": false,
+  "shade_quads": false,
+  "emissive_ambient": false,
+  "automatic_culling": false,
+  "flip_v": true,
+  "model": "hexie:models/block/crh1a/parts/crh1a_skirt.obj",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "particle": "hexie:block/crh1a/parts/crh1a_skirt",
+    "t0": "hexie:block/crh1a/parts/crh1a_skirt"
+  }
+}

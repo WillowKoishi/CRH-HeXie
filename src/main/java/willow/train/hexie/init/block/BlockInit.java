@@ -89,6 +89,7 @@ public class BlockInit {
     public static final DeferredHolder<Block, CRH2PartBlock> CRH2A_CARPORT_SIDE = crh2Part("crh2a_carport_side");
     public static final DeferredHolder<Block, CRH2PartBlock> CRH2A_SKIRT_FORBOGEY = crh2Part("crh2a_skirt_forbogey");
     public static final DeferredHolder<Block, CRH2PartBlock> CRH2A_SKIRT_NORMAL = crh2Part("crh2a_skirt_normal");
+    public static final DeferredHolder<Block, CRH2PartBlock> CRH1A_SKIRT = crh2Part("crh1a_skirt");
     public static final DeferredHolder<Block, CRH2PartBlock> CRH2A_FLOOR = crh2Part("crh2a_floor");
     public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh1a.CRH1FloorBlock> CRH1A_FLOOR =
             register("crh1a_floor", () -> new willow.train.hexie.blocks.emu.crh1a.CRH1FloorBlock(

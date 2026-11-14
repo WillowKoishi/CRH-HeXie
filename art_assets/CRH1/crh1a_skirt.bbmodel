@@ -1,0 +1,549 @@
+{
+    "meta": {
+        "format_version": "5.0",
+        "model_format": "free",
+        "box_uv": false
+    },
+    "name": "crh1a_skirt",
+    "model_identifier": "",
+    "visible_box": [
+        1,
+        1,
+        0
+    ],
+    "variable_placeholders": "",
+    "multi_file_ruleset": "",
+    "variable_placeholder_buttons": [],
+    "timeline_setups": [],
+    "unhandled_root_fields": {},
+    "resolution": {
+        "width": 16,
+        "height": 16
+    },
+    "elements": [
+        {
+            "name": "裙板",
+            "color": 2,
+            "origin": [
+                -16,
+                32,
+                80
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "7dFg": [
+                    24.6,
+                    -16,
+                    -72
+                ],
+                "BpLK": [
+                    24.6,
+                    -16,
+                    -88
+                ],
+                "6ZvE": [
+                    20.4,
+                    -31.7,
+                    -72
+                ],
+                "uVqz": [
+                    20.4,
+                    -31.7,
+                    -88
+                ],
+                "tcdl": [
+                    23,
+                    -16.002,
+                    -72
+                ],
+                "LHoU": [
+                    23,
+                    -16.002,
+                    -88
+                ],
+                "NFma": [
+                    18.8,
+                    -31.7,
+                    -72
+                ],
+                "DYPs": [
+                    18.8,
+                    -31.7,
+                    -88
+                ],
+                "NrBu": [
+                    22.14047,
+                    -19.21302,
+                    -88
+                ],
+                "gQNH": [
+                    22.14047,
+                    -19.21302,
+                    -72
+                ],
+                "G5Qe": [
+                    23.74047,
+                    -19.21302,
+                    -72
+                ],
+                "DdUW": [
+                    23.74047,
+                    -19.21302,
+                    -88
+                ],
+                "q5Cy": [
+                    0,
+                    -31.7,
+                    -88
+                ],
+                "DdGh": [
+                    0,
+                    -19.213,
+                    -88
+                ],
+                "hsk9": [
+                    0,
+                    -19.213,
+                    -72
+                ],
+                "UbF2": [
+                    0,
+                    -31.7,
+                    -72
+                ]
+            },
+            "faces": {
+                "B2X0iGU3": {
+                    "uv": {
+                        "7dFg": [
+                            16,
+                            31.7479
+                        ],
+                        "BpLK": [
+                            0,
+                            31.7479
+                        ],
+                        "DdUW": [
+                            0,
+                            35.0739
+                        ],
+                        "G5Qe": [
+                            16,
+                            35.0739
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "G5Qe",
+                        "DdUW",
+                        "BpLK",
+                        "7dFg"
+                    ]
+                },
+                "pKwygRuC": {
+                    "uv": {
+                        "LHoU": [
+                            60,
+                            30
+                        ],
+                        "tcdl": [
+                            44,
+                            30
+                        ],
+                        "gQNH": [
+                            44,
+                            33
+                        ],
+                        "NrBu": [
+                            60,
+                            33
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "NrBu",
+                        "gQNH",
+                        "tcdl",
+                        "LHoU"
+                    ]
+                },
+                "OKWVxHwe": {
+                    "uv": {
+                        "DYPs": [
+                            31.9,
+                            16
+                        ],
+                        "NFma": [
+                            31.9,
+                            0
+                        ],
+                        "6ZvE": [
+                            30.3,
+                            0
+                        ],
+                        "uVqz": [
+                            30.3,
+                            16
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "uVqz",
+                        "6ZvE",
+                        "NFma",
+                        "DYPs"
+                    ]
+                },
+                "jH6DCG8N": {
+                    "uv": {
+                        "tcdl": [
+                            1.8,
+                            0
+                        ],
+                        "7dFg": [
+                            0.2,
+                            0
+                        ],
+                        "G5Qe": [
+                            1.0595,
+                            3.213
+                        ],
+                        "gQNH": [
+                            2.6595,
+                            3.213
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "gQNH",
+                        "G5Qe",
+                        "7dFg",
+                        "tcdl"
+                    ]
+                },
+                "jWhZY7h0": {
+                    "uv": {
+                        "BpLK": [
+                            28.8,
+                            14
+                        ],
+                        "LHoU": [
+                            27.2,
+                            14
+                        ],
+                        "NrBu": [
+                            26.3405,
+                            17.213
+                        ],
+                        "DdUW": [
+                            27.9405,
+                            17.213
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "DdUW",
+                        "NrBu",
+                        "LHoU",
+                        "BpLK"
+                    ]
+                },
+                "g6iRAkya": {
+                    "uv": {
+                        "7dFg": [
+                            0,
+                            28
+                        ],
+                        "tcdl": [
+                            2,
+                            28
+                        ],
+                        "LHoU": [
+                            2,
+                            12
+                        ],
+                        "BpLK": [
+                            0,
+                            12
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "BpLK",
+                        "LHoU",
+                        "tcdl",
+                        "7dFg"
+                    ]
+                },
+                "DaQnvf2w": {
+                    "uv": {
+                        "UbF2": [
+                            44,
+                            29
+                        ],
+                        "q5Cy": [
+                            60,
+                            29
+                        ],
+                        "DdGh": [
+                            60,
+                            17
+                        ],
+                        "hsk9": [
+                            44,
+                            17
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "hsk9",
+                        "DdGh",
+                        "q5Cy",
+                        "UbF2"
+                    ]
+                },
+                "cIWKDCof": {
+                    "uv": {
+                        "6ZvE": [
+                            4.4,
+                            15.7
+                        ],
+                        "NFma": [
+                            6,
+                            15.7
+                        ],
+                        "gQNH": [
+                            2.6595,
+                            3.213
+                        ],
+                        "G5Qe": [
+                            1.0595,
+                            3.213
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "G5Qe",
+                        "gQNH",
+                        "NFma",
+                        "6ZvE"
+                    ]
+                },
+                "b65IolIF": {
+                    "uv": {
+                        "uVqz": [
+                            0,
+                            48
+                        ],
+                        "6ZvE": [
+                            16,
+                            48
+                        ],
+                        "G5Qe": [
+                            16,
+                            35.0739
+                        ],
+                        "DdUW": [
+                            0,
+                            35.0739
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "DdUW",
+                        "G5Qe",
+                        "6ZvE",
+                        "uVqz"
+                    ]
+                },
+                "CDf6dGuM": {
+                    "uv": {
+                        "DYPs": [
+                            23,
+                            29.7
+                        ],
+                        "uVqz": [
+                            24.6,
+                            29.7
+                        ],
+                        "DdUW": [
+                            27.9405,
+                            17.213
+                        ],
+                        "NrBu": [
+                            26.3405,
+                            17.213
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "NrBu",
+                        "DdUW",
+                        "uVqz",
+                        "DYPs"
+                    ]
+                },
+                "U5Tz4AWW": {
+                    "uv": {
+                        "NrBu": [
+                            26.3405,
+                            17.213
+                        ],
+                        "DdGh": [
+                            4.2,
+                            17.213
+                        ],
+                        "q5Cy": [
+                            4.2,
+                            29.7
+                        ],
+                        "DYPs": [
+                            23,
+                            29.7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "DYPs",
+                        "q5Cy",
+                        "DdGh",
+                        "NrBu"
+                    ]
+                },
+                "bOevlmQm": {
+                    "uv": {
+                        "gQNH": [
+                            43,
+                            48
+                        ],
+                        "hsk9": [
+                            43,
+                            26
+                        ],
+                        "DdGh": [
+                            27,
+                            26
+                        ],
+                        "NrBu": [
+                            27,
+                            48
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "NrBu",
+                        "DdGh",
+                        "hsk9",
+                        "gQNH"
+                    ]
+                },
+                "8ixISyT8": {
+                    "uv": {
+                        "NFma": [
+                            6,
+                            15.7
+                        ],
+                        "UbF2": [
+                            24.8,
+                            15.7
+                        ],
+                        "hsk9": [
+                            24.8,
+                            3.213
+                        ],
+                        "gQNH": [
+                            2.6595,
+                            3.213
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "gQNH",
+                        "hsk9",
+                        "UbF2",
+                        "NFma"
+                    ]
+                },
+                "BhfiavW0": {
+                    "uv": {
+                        "DYPs": [
+                            31.9,
+                            16
+                        ],
+                        "q5Cy": [
+                            50.7,
+                            16
+                        ],
+                        "UbF2": [
+                            50.7,
+                            0
+                        ],
+                        "NFma": [
+                            31.9,
+                            0
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "NFma",
+                        "UbF2",
+                        "q5Cy",
+                        "DYPs"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "560d257d-d98b-89ea-449b-296ab0ea65f6"
+        }
+    ],
+    "groups": [],
+    "outliner": [
+        "560d257d-d98b-89ea-449b-296ab0ea65f6"
+    ],
+    "textures": [
+        {
+            "name": "crh1a_skirt.png",
+            "relative_path": "crh1a_bogey/crh1a_skirt.png",
+            "folder": "",
+            "namespace": "",
+            "id": "0",
+            "group": "",
+            "scope": 0,
+            "width": 64,
+            "height": 64,
+            "uv_width": 64,
+            "uv_height": 64,
+            "particle": false,
+            "use_as_default": false,
+            "layers_enabled": false,
+            "sync_to_project": "",
+            "file_format": "png",
+            "render_mode": "default",
+            "render_sides": "auto",
+            "wrap_mode": "limited",
+            "pbr_channel": "color",
+            "fps": 7,
+            "force_translucent": false,
+            "frame_time": 1,
+            "frame_order_type": "loop",
+            "frame_order": "",
+            "frame_interpolate": false,
+            "visible": true,
+            "internal": true,
+            "saved": true,
+            "uuid": "5797dd94-1e86-bdcb-6ef5-c80989731e18",
+            "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAADUklEQVR4AeybQa7TMBCGEx/gdVchdhQVsQAEnAFRCZZdcAsOww2AFYseoBIbBCukggQsEJXKlvatWumxDfkiuXKT9DUex8Zt86RfHjsz4/HvGadJX1W/3880koB/ek7dXlxcZMClLwlfSYxOyaYjwNxNnX5mS1oCPYYMbPrmHLHJarVapbEFFTKergRCsh3jXEUGnHMZFATEuDOhYuoICMV0rPNsM+BczwH1/t2rDMS6Q77j2maA74li9R+MgNFolGnERMYOAedwDpTJ3yGAi5BgYrPZpECPIQObPn7L0Pa6xSdw6ZfnaNKvEKDTtM12OBxmi8UiAdPp1OnhazweZy4ok1IhAAUCBcgAGSADZIAMkAEyQAbIsaNCgBk4MtCLQAbSvrbTLZlRh/J13ffRVghYLpfJer0ugAykfW3nI/C2fFYIaMtxnZ/5fL5T//TrUGfraywoAb4W4eK3I8CFvSa2vV6viVqtDuVRe6HFwWAZIF2M1K4pR8EIIKC6W57NGD7ahlcCyumff5+QuKDtxeNPPXnxMgV0fGEwGPhy7ey3NgPYOaC9IwNpX3/+zx92Ehcw/2QySV2ADxMVAvIAUw4egAyQATJABsgAGSADZBPmhK6yzZlRp1ueX/38Nc/An8vLbYu8D6YuctnhdX2X+sf2Ot/7rh0ar2TAIYP/fR0iXFCOPygBeXk4nwGz2Sx1QYWAH9++J+DTh4/bFnkfTN3F/HfZ39H11b0H9xMpbFfrkrrY2s7XRL8ogTev3zbR3erY6m8NIxQKAh4/emgVmq2+dt7GGaB9tdUWBFACNg5t9W18h9YtCAg1KXXsAh9xBiXAxwJcfQYlINozwJXFY7YPmgEu9Y+tD6LV36urBNg4Rx/Y2MSqGzQDoj4D2NGmiHU3JXEFzQDq2AVNFmiro/KPtakUz54/3fmq69DkLo+x2B7yL7ke9I2QJEDfNkFLwPdiJP4VLzXMlxy8CPny+WtCa0KPmbrYSiaNyUbduNlPBrcHOy9FBsNbO32e/spj2GAb02IksXQloO8Ad+8MUxtoOwnrMdmo/L5c/FxN2sa0GEksXQlIWDslmy4DTmk3JWtR+SNq8b/A0lYyaUw2XQnwaxEXxLSbkliOPgMkizZt/gEAAP//ZU6UbgAAAAZJREFUAwC8KvsdQFIN1QAAAABJRU5ErkJggg=="
+        }
+    ]
+}

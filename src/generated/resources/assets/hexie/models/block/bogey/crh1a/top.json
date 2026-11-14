@@ -7,7 +7,7 @@
   },
   "children": {
     "floor": {
-      "parent": "hexie:block/crh2a/parts/crh2a_floor",
+      "parent": "hexie:block/crh1a/parts/crh1a_floor",
       "transform": {
         "rotation": [0, -90, 0],
         "origin": "corner"

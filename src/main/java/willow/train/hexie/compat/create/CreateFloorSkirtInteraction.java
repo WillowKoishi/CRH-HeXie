@@ -32,13 +32,15 @@ public final class CreateFloorSkirtInteraction extends MovingInteractionBehaviou
         var from = frame == null ? entity.toLocalVector(origin, 1) : frame.local(origin);
         var to = frame == null ? entity.toLocalVector(target, 1) : frame.local(target);
         var hit = info.state().getShape(contraption.getContraptionWorld(), position).clip(from, to, position);
-        if (hit == null || !hit.getDirection().getAxis().isHorizontal()) return false;
+        if (hit == null) return false;
+        var skirt = CRH1FloorBlock.skirtProperty(info.state(), hit.getDirection());
+        if (skirt == null) return false;
         var center = Vec3.atCenterOf(position);
         var worldPos = BlockPos.containing(frame == null ? entity.toGlobalVector(center, 1) : frame.world(center));
         if (!entity.level().mayInteract(player, worldPos)
                 || !player.mayUseItemAt(worldPos, hit.getDirection(), player.getItemInHand(hand))) return false;
         if (!entity.level().isClientSide)
-            entity.setBlock(position, new StructureBlockInfo(position, info.state().cycle(CRH1FloorBlock.BOGEY_SKIRT), info.nbt()));
+            entity.setBlock(position, new StructureBlockInfo(position, info.state().cycle(skirt), info.nbt()));
         return true;
     }
 }

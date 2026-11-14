@@ -26,6 +26,9 @@
   "hexie:crh2a_skirt_normal": {
     "extension": "SKIRT"
   },
+  "hexie:crh1a_skirt": {
+    "extension": "SKIRT"
+  },
   "hexie:crh2a_floor": {
     "extension": "FLOOR"
   },
