@@ -676,6 +676,7 @@
   "block.hexie.crh2a_skirt_forbogey": "CRH2A 台车舆裾",
   "block.hexie.crh2a_skirt_normal": "CRH2A 机关舱舆裾",
   "block.hexie.crh2a_floor": "CRH2A 舆底中段",
+  "block.hexie.crh1a_floor": "CRH1A 舆底中段",
   "gui.hexie.head_number.title": "车首之号",
   "gui.hexie.head_number.hint": "两侧同改 · 留空则清",
   "gui.hexie.carriage_marking.title": "舆号",

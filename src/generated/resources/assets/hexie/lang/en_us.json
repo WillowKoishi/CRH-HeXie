@@ -740,6 +740,7 @@
   "block.hexie.crh2a_skirt_forbogey": "CRH2A Bogie Skirt",
   "block.hexie.crh2a_skirt_normal": "CRH2A Equipment Skirt",
   "block.hexie.crh2a_floor": "CRH2A Center Floor",
+  "block.hexie.crh1a_floor": "CRH1A Center Floor",
   "gui.hexie.head_number.title": "Head number",
   "gui.hexie.head_number.hint": "Both sides - leave blank to clear",
   "gui.hexie.carriage_marking.title": "Carriage marking",

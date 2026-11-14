@@ -29,6 +29,9 @@
   "hexie:crh2a_floor": {
     "extension": "FLOOR"
   },
+  "hexie:crh1a_floor": {
+    "extension": "FLOOR"
+  },
   "hexie:train_bottom_panel_block": {
     "extension": "SIDE",
     "thin_only": true

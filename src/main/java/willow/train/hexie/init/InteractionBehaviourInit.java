@@ -24,6 +24,9 @@ public class InteractionBehaviourInit {
         var variants = new willow.train.hexie.compat.create.CreatePartVariantInteraction();
         MovingInteractionBehaviour.REGISTRY.registerProvider(block ->
                 block instanceof willow.train.hexie.blocks.parts.VariantPartBlock ? variants : null);
+        var floorSkirts = new willow.train.hexie.compat.create.CreateFloorSkirtInteraction();
+        MovingInteractionBehaviour.REGISTRY.registerProvider(block ->
+                block instanceof willow.train.hexie.blocks.emu.crh1a.CRH1FloorBlock ? floorSkirts : null);
         var endFaceVariants = new willow.train.hexie.compat.create.CreateEndFaceVariantInteraction();
         MovingInteractionBehaviour.REGISTRY.registerProvider(block ->
                 block instanceof willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock ? endFaceVariants : null);

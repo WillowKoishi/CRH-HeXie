@@ -90,6 +90,11 @@ public class BlockInit {
     public static final DeferredHolder<Block, CRH2PartBlock> CRH2A_SKIRT_FORBOGEY = crh2Part("crh2a_skirt_forbogey");
     public static final DeferredHolder<Block, CRH2PartBlock> CRH2A_SKIRT_NORMAL = crh2Part("crh2a_skirt_normal");
     public static final DeferredHolder<Block, CRH2PartBlock> CRH2A_FLOOR = crh2Part("crh2a_floor");
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh1a.CRH1FloorBlock> CRH1A_FLOOR =
+            register("crh1a_floor", () -> new willow.train.hexie.blocks.emu.crh1a.CRH1FloorBlock(
+                    BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
+                            .sound(SoundType.METAL).noOcclusion()),
+                    block -> () -> new willow.train.hexie.item.CRH2PartItem(block.get(), new Item.Properties()));
     public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock> CRH2A_PASSENGER_DOOR =
             register("crh2a_passenger_door", () -> new willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock(
                     BlockBehaviour.Properties.of().strength(2).sound(SoundType.METAL).noOcclusion().dynamicShape(), true),

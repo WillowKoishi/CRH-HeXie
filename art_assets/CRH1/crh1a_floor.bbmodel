@@ -377,16 +377,476 @@
             },
             "type": "mesh",
             "uuid": "37cd97ce-4b8e-5efc-5727-f447c99443a5"
+        },
+        {
+            "name": "转向架裙板",
+            "color": 2,
+            "origin": [
+                16,
+                16,
+                80
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "7dFg": [
+                    -24.6,
+                    -16,
+                    -72
+                ],
+                "BpLK": [
+                    -24.6,
+                    -16,
+                    -88
+                ],
+                "tcdl": [
+                    -23,
+                    -16.001,
+                    -72
+                ],
+                "LHoU": [
+                    -23,
+                    -16.001,
+                    -88
+                ],
+                "NrBu": [
+                    -21.79047,
+                    -20.51302,
+                    -88
+                ],
+                "gQNH": [
+                    -21.79047,
+                    -20.51302,
+                    -72
+                ],
+                "G5Qe": [
+                    -23.39047,
+                    -20.51302,
+                    -72
+                ],
+                "DdUW": [
+                    -23.39047,
+                    -20.51302,
+                    -88
+                ]
+            },
+            "faces": {
+                "B2X0iGU3": {
+                    "uv": {
+                        "7dFg": [
+                            16,
+                            49
+                        ],
+                        "G5Qe": [
+                            16,
+                            54
+                        ],
+                        "DdUW": [
+                            0,
+                            54
+                        ],
+                        "BpLK": [
+                            0,
+                            49
+                        ]
+                    },
+                    "texture": 1,
+                    "vertices": [
+                        "BpLK",
+                        "DdUW",
+                        "G5Qe",
+                        "7dFg"
+                    ]
+                },
+                "pKwygRuC": {
+                    "uv": {
+                        "LHoU": [
+                            16,
+                            55
+                        ],
+                        "NrBu": [
+                            16,
+                            60
+                        ],
+                        "gQNH": [
+                            0,
+                            60
+                        ],
+                        "tcdl": [
+                            0,
+                            55
+                        ]
+                    },
+                    "texture": 1,
+                    "vertices": [
+                        "tcdl",
+                        "gQNH",
+                        "NrBu",
+                        "LHoU"
+                    ]
+                },
+                "jH6DCG8N": {
+                    "uv": {
+                        "tcdl": [
+                            41,
+                            19.41515
+                        ],
+                        "gQNH": [
+                            41,
+                            24.08645
+                        ],
+                        "G5Qe": [
+                            39,
+                            23.67226
+                        ],
+                        "7dFg": [
+                            39,
+                            19
+                        ]
+                    },
+                    "texture": 1,
+                    "vertices": [
+                        "7dFg",
+                        "G5Qe",
+                        "gQNH",
+                        "tcdl"
+                    ]
+                },
+                "jWhZY7h0": {
+                    "uv": {
+                        "BpLK": [
+                            36.54327,
+                            21
+                        ],
+                        "DdUW": [
+                            31.871,
+                            21
+                        ],
+                        "NrBu": [
+                            31.45673,
+                            19
+                        ],
+                        "LHoU": [
+                            36.12803,
+                            19
+                        ]
+                    },
+                    "texture": 1,
+                    "vertices": [
+                        "LHoU",
+                        "NrBu",
+                        "DdUW",
+                        "BpLK"
+                    ]
+                },
+                "g6iRAkya": {
+                    "uv": {
+                        "7dFg": [
+                            0,
+                            62
+                        ],
+                        "BpLK": [
+                            16,
+                            62
+                        ],
+                        "LHoU": [
+                            16,
+                            64
+                        ],
+                        "tcdl": [
+                            0,
+                            64
+                        ]
+                    },
+                    "texture": 1,
+                    "vertices": [
+                        "tcdl",
+                        "LHoU",
+                        "BpLK",
+                        "7dFg"
+                    ]
+                },
+                "tTEwfdLE": {
+                    "uv": {
+                        "NrBu": [
+                            2,
+                            28
+                        ],
+                        "DdUW": [
+                            0,
+                            28
+                        ],
+                        "G5Qe": [
+                            0,
+                            12
+                        ],
+                        "gQNH": [
+                            2,
+                            12
+                        ]
+                    },
+                    "texture": 1,
+                    "vertices": [
+                        "gQNH",
+                        "G5Qe",
+                        "DdUW",
+                        "NrBu"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "78febeb6-117d-759f-23e3-00ce87a29074"
+        },
+        {
+            "name": "转向架裙板",
+            "color": 2,
+            "origin": [
+                -16,
+                16,
+                80
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "7dFg": [
+                    24.6,
+                    -16,
+                    -72
+                ],
+                "BpLK": [
+                    24.6,
+                    -16,
+                    -88
+                ],
+                "tcdl": [
+                    23,
+                    -16.001,
+                    -72
+                ],
+                "LHoU": [
+                    23,
+                    -16.001,
+                    -88
+                ],
+                "NrBu": [
+                    21.79047,
+                    -20.51302,
+                    -88
+                ],
+                "gQNH": [
+                    21.79047,
+                    -20.51302,
+                    -72
+                ],
+                "G5Qe": [
+                    23.39047,
+                    -20.51302,
+                    -72
+                ],
+                "DdUW": [
+                    23.39047,
+                    -20.51302,
+                    -88
+                ]
+            },
+            "faces": {
+                "B2X0iGU3": {
+                    "uv": {
+                        "7dFg": [
+                            16,
+                            49
+                        ],
+                        "G5Qe": [
+                            16,
+                            54
+                        ],
+                        "DdUW": [
+                            0,
+                            54
+                        ],
+                        "BpLK": [
+                            0,
+                            49
+                        ]
+                    },
+                    "texture": 1,
+                    "vertices": [
+                        "G5Qe",
+                        "DdUW",
+                        "BpLK",
+                        "7dFg"
+                    ]
+                },
+                "pKwygRuC": {
+                    "uv": {
+                        "LHoU": [
+                            16,
+                            55
+                        ],
+                        "NrBu": [
+                            16,
+                            60
+                        ],
+                        "gQNH": [
+                            0,
+                            60
+                        ],
+                        "tcdl": [
+                            0,
+                            55
+                        ]
+                    },
+                    "texture": 1,
+                    "vertices": [
+                        "NrBu",
+                        "gQNH",
+                        "tcdl",
+                        "LHoU"
+                    ]
+                },
+                "jH6DCG8N": {
+                    "uv": {
+                        "tcdl": [
+                            41,
+                            19.41515
+                        ],
+                        "gQNH": [
+                            41,
+                            24.08645
+                        ],
+                        "G5Qe": [
+                            39,
+                            23.67226
+                        ],
+                        "7dFg": [
+                            39,
+                            19
+                        ]
+                    },
+                    "texture": 1,
+                    "vertices": [
+                        "gQNH",
+                        "G5Qe",
+                        "7dFg",
+                        "tcdl"
+                    ]
+                },
+                "jWhZY7h0": {
+                    "uv": {
+                        "BpLK": [
+                            36.54327,
+                            21
+                        ],
+                        "DdUW": [
+                            31.871,
+                            21
+                        ],
+                        "NrBu": [
+                            31.45673,
+                            19
+                        ],
+                        "LHoU": [
+                            36.12803,
+                            19
+                        ]
+                    },
+                    "texture": 1,
+                    "vertices": [
+                        "DdUW",
+                        "NrBu",
+                        "LHoU",
+                        "BpLK"
+                    ]
+                },
+                "g6iRAkya": {
+                    "uv": {
+                        "7dFg": [
+                            0,
+                            62
+                        ],
+                        "BpLK": [
+                            16,
+                            62
+                        ],
+                        "LHoU": [
+                            16,
+                            64
+                        ],
+                        "tcdl": [
+                            0,
+                            64
+                        ]
+                    },
+                    "texture": 1,
+                    "vertices": [
+                        "BpLK",
+                        "LHoU",
+                        "tcdl",
+                        "7dFg"
+                    ]
+                },
+                "tTEwfdLE": {
+                    "uv": {
+                        "NrBu": [
+                            2,
+                            28
+                        ],
+                        "DdUW": [
+                            0,
+                            28
+                        ],
+                        "G5Qe": [
+                            0,
+                            12
+                        ],
+                        "gQNH": [
+                            2,
+                            12
+                        ]
+                    },
+                    "texture": 1,
+                    "vertices": [
+                        "DdUW",
+                        "G5Qe",
+                        "gQNH",
+                        "NrBu"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "25a85fbe-a022-b3ed-ab5d-35b56f7a3687"
         }
     ],
     "groups": [],
     "outliner": [
-        "37cd97ce-4b8e-5efc-5727-f447c99443a5"
+        "37cd97ce-4b8e-5efc-5727-f447c99443a5",
+        "78febeb6-117d-759f-23e3-00ce87a29074",
+        "25a85fbe-a022-b3ed-ab5d-35b56f7a3687"
     ],
     "textures": [
         {
             "name": "crh1a_floor.png",
-            "relative_path": "crh1a_floor.png",
+            "relative_path": "crh1a_bogey/crh1a_floor.png",
             "folder": "",
             "namespace": "",
             "id": "0",
@@ -414,8 +874,41 @@
             "visible": true,
             "internal": true,
             "saved": true,
-            "uuid": "e107a8c1-78e3-a244-98fe-3031326b0394",
-            "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAACEklEQVR4AeyWMU5DMQyG33sXQEJIlIGFg3TiBh24ASMTGzMbEyM34AiVmHoQFgaKhJCQuj/6VcqT1aXk2U+pI1f9FddOHMf+47R7e33uX54e+jRKGR2QOilja7afxWLRa7B1UezbvX98NZ/rdZNGKaMDUidlbMUiN9q4u7o8by5ms+b753c3ShkbkDopYyOOzWbTaICPUhgYcHZ6smMCFU4yFQZSJ2VspQK32rezcLRcLlsNLGIY68PkCmgaIGvHBm+xLq4AjYzGlkYpowNSJ2VsVEHTAFmLj1Iw6QGlgrfYd7gCdHQ6PEgyI5A6KWMjCE0DZC0+SiGaIFWkquntlzI2IHVSxkbluMca4KMUogfQyensmr/Cpapnse/QBDVXgEamgcVBxvoYmmBiAmxIMiOQOiljG7txqXX7+3bXN3ft7f1jm0YpowNSJ2Vs+w69/e7m83k/BhyU//Ea4KM0VK+A5uljbenDs78qATjwjkiApoKap4+1mr2t1gYDrDLp1U8wwGvlrOIOBlhl0qufYIDXylnFHQywyuSx+jkUVzBgtVq1Y3Aos17swQAvlZoqzmDAVJn14jcY4KVSU8UZDJgqs178BgO8VGqqOIMBU2XWi99ggJdK/TfO3HnBgNyM1TY/GFBbRXPPEwzIzVht84MBtVU09zzBgNyM1TY/GFBbRXPPEwzIzVht84MB3iuqjf8PAAD//yWgEh0AAAAGSURBVAMAXWhYrorNfzoAAAAASUVORK5CYII="
+            "uuid": "28c4d619-8c50-3bef-ea80-9ded0f72f227",
+            "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAACcElEQVR4AeyYMU7DQBBF165SBQmREAo3SLkJd+AGlFR01HRUlNyAO3CNVJFoXBAShEQuYPIirTWyZBln11qNNYgn/8zY69md73WU/P3tpXp9fqz8UWpiIGNSk3OHv+l0WoVwGCLZf/5RfrnPzcb5o9TEQMakJtdVeVEUDrrOS5XPr4tLd7VYuO+f3+NRanIgY1KTo/DJZOLaIA9teeLkU1E74OL87OgEOuw1HQYZk5pcqsJj3TePMdB2u83aWK1WGbTliceo4dQxojwCIRsg155afIzrBn8E2AAhRrFDjFE7gA2NDQ685ggyJjU5imIja4M8tOWJk09FlD0gVfEx7ls/Auzo7PDgNUeQManJUQQbWRtsgNCWJ84YqagfgZDvAcvlsgoh1eS5b+0A/+6nw17TYZAxqckxiGZsD2AnZ2cPeQRUOwAbS1tLTQ5kTGpyTH69XmchMEYq6k3QOwE3eM0RZExqcqkKP/W+zevym9v77O7hKfNHqYmBjElNrjmgts/5fD6vgO/kgAY0oAENaGCiIa8+rmWM1NhbIHUHUt/fHBDSgZBXH9eG3DvWteaAWCupdZx8Nps54FcbQAMa0IAGNGidcLNuewR2u52DsiwdoAENaEADGporqfWzOUBr52LVbQ6ItZJaxxm9A7oaYwvA7/Kw3+8zQAMa0IAGNHStrJa8OUBLp4aq0xww1MpqGdccoKVTQ9VpDhhqZbWMaw7Q0qmh6jQHDLWyWsY1B2jp1H/r7HueOaDvio3tfHPA2Dradz7mgL4rNrbzzQFj62jf+ZgD+q7Y2M43B4yto33nYw7ou2JjO98coL2jofX/AQAA//+czOs1AAAABklEQVQDAO58wp9EVfdIAAAAAElFTkSuQmCC"
+        },
+        {
+            "name": "crh1a_skirt.png",
+            "relative_path": "crh1a_bogey/crh1a_skirt.png",
+            "folder": "",
+            "namespace": "",
+            "id": "1",
+            "group": "",
+            "scope": 0,
+            "width": 64,
+            "height": 64,
+            "uv_width": 64,
+            "uv_height": 64,
+            "particle": false,
+            "use_as_default": false,
+            "layers_enabled": false,
+            "sync_to_project": "",
+            "file_format": "png",
+            "render_mode": "default",
+            "render_sides": "auto",
+            "wrap_mode": "limited",
+            "pbr_channel": "color",
+            "fps": 7,
+            "force_translucent": false,
+            "frame_time": 1,
+            "frame_order_type": "loop",
+            "frame_order": "",
+            "frame_interpolate": false,
+            "visible": true,
+            "internal": true,
+            "saved": true,
+            "uuid": "8e394181-fbca-c418-df35-5ef224236408",
+            "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAADUklEQVR4AeybQa7TMBCGEx/gdVchdhQVsQAEnAFRCZZdcAsOww2AFYseoBIbBCukggQsEJXKlvatWumxDfkiuXKT9DUex8Zt86RfHjsz4/HvGadJX1W/3880koB/ek7dXlxcZMClLwlfSYxOyaYjwNxNnX5mS1oCPYYMbPrmHLHJarVapbEFFTKergRCsh3jXEUGnHMZFATEuDOhYuoICMV0rPNsM+BczwH1/t2rDMS6Q77j2maA74li9R+MgNFolGnERMYOAedwDpTJ3yGAi5BgYrPZpECPIQObPn7L0Pa6xSdw6ZfnaNKvEKDTtM12OBxmi8UiAdPp1OnhazweZy4ok1IhAAUCBcgAGSADZIAMkAEyQAbIsaNCgBk4MtCLQAbSvrbTLZlRh/J13ffRVghYLpfJer0ugAykfW3nI/C2fFYIaMtxnZ/5fL5T//TrUGfraywoAb4W4eK3I8CFvSa2vV6viVqtDuVRe6HFwWAZIF2M1K4pR8EIIKC6W57NGD7ahlcCyumff5+QuKDtxeNPPXnxMgV0fGEwGPhy7ey3NgPYOaC9IwNpX3/+zx92Ehcw/2QySV2ADxMVAvIAUw4egAyQATJABsgAGSADZBPmhK6yzZlRp1ueX/38Nc/An8vLbYu8D6YuctnhdX2X+sf2Ot/7rh0ar2TAIYP/fR0iXFCOPygBeXk4nwGz2Sx1QYWAH9++J+DTh4/bFnkfTN3F/HfZ39H11b0H9xMpbFfrkrrY2s7XRL8ogTev3zbR3erY6m8NIxQKAh4/emgVmq2+dt7GGaB9tdUWBFACNg5t9W18h9YtCAg1KXXsAh9xBiXAxwJcfQYlINozwJXFY7YPmgEu9Y+tD6LV36urBNg4Rx/Y2MSqGzQDoj4D2NGmiHU3JXEFzQDq2AVNFmiro/KPtakUz54/3fmq69DkLo+x2B7yL7ke9I2QJEDfNkFLwPdiJP4VLzXMlxy8CPny+WtCa0KPmbrYSiaNyUbduNlPBrcHOy9FBsNbO32e/spj2GAb02IksXQloO8Ad+8MUxtoOwnrMdmo/L5c/FxN2sa0GEksXQlIWDslmy4DTmk3JWtR+SNq8b/A0lYyaUw2XQnwaxEXxLSbkliOPgMkizZt/gEAAP//ZU6UbgAAAAZJREFUAwC8KvsdQFIN1QAAAABJRU5ErkJggg=="
         }
     ]
 }

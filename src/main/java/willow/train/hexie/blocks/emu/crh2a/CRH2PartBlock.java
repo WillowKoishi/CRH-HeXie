@@ -17,9 +17,12 @@ public class CRH2PartBlock extends HorizontalBlockBase implements willow.train.h
     private final CRH2PartShapes geometry;
     private final boolean floor;
     public CRH2PartBlock(Properties properties, String model) {
+        this(properties, model, model.equals("crh2a_floor"));
+    }
+    protected CRH2PartBlock(Properties properties, String model, boolean floor) {
         super(properties.dynamicShape());
         geometry = new CRH2PartShapes(model);
-        floor = model.equals("crh2a_floor");
+        this.floor = floor;
     }
     public static final net.minecraft.world.level.block.state.properties.IntegerProperty PART = net.minecraft.world.level.block.state.properties.IntegerProperty.create("part",0,15);
     @Override protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition.Builder<net.minecraft.world.level.block.Block,BlockState> b) {
