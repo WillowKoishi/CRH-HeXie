@@ -50,6 +50,15 @@ public interface CabTrainControl {
         return controlled;
     }
 
+    /** Additional physical state for desks that regulate a driver-selected speed. */
+    record OutputContext(boolean enabled, boolean selected, boolean simple, boolean routeControl,
+                         ControlState surface, CabTrainRequest request, int direction, double speed) {}
+
+    default VehicleRuntime.Control output(OutputContext context, VehicleRuntime.Control handles,
+                                          VehicleRuntime.Control controlled) {
+        return output(context.enabled(), handles, controlled);
+    }
+
     /**
      * Converts this desk's traction request using the strongest submitted brake
      * demand in the consist. Power is signed in train coordinates, in [-1, 1], and braking is in [0, 1].

@@ -5,7 +5,7 @@ import java.util.Set;
 
 /** One operation plus the complete set of held actions; an empty set releases every held action. */
 public record ControlInput(String controlId, int value, Kind kind, Set<String> held) {
-    public enum Kind { NONE, PRESS, SET, STEP }
+    public enum Kind { NONE, PRESS, SET, STEP, RELEASE_HANDLE }
     public static final ControlInput RELEASE = new ControlInput("", 0, Kind.NONE, Set.of());
     public ControlInput {
         Objects.requireNonNull(controlId); Objects.requireNonNull(kind);

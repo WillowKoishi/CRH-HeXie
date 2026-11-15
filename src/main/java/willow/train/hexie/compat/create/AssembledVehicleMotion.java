@@ -1252,7 +1252,8 @@ public final class AssembledVehicleMotion {
                     ? input.updateSimple(approaching, direction, runtime.speed(carriage), target, deceleration, stop)
                     : input.update(approaching ? CabController.Mode.AUTOMATIC : input.mode(), direction,
                             runtime.speed(carriage), target, deceleration, stop);
-            command = input.convertOutput(driver.cabConverter, command, direction, runtime.speed(carriage));
+            command = input.convertOutput(driver.cabConverter, command, direction, runtime.speed(carriage),
+                    controlling, input.state().automatic() || approaching);
             if (timetableConflict && (input.state().automatic() || approaching))
                 command = new VehicleRuntime.Control(0, input.state().input().brake());
             commands.add(new CabControlArbitration.Command(controlling, command));

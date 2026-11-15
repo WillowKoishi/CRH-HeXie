@@ -1,0 +1,14 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "ambientocclusion": false,
+  "automatic_culling": false,
+  "flip_v": true,
+  "render_type": "minecraft:cutout",
+  "model": "hexie:models/block/crh1a/driving_console/handle.obj",
+  "textures": {
+    "particle": "hexie:block/crh1a/driving_console/crh1a_control_panel",
+    "t0": "hexie:block/crh1a/driving_console/crh1a_control_panel",
+    "t1": "hexie:block/crh1a/driving_console/direction_button"
+  }
+}

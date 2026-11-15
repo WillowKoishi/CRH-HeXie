@@ -174,6 +174,10 @@ public class BlockInit {
     public static final DeferredHolder<Block, CRH2DrivingConsoleBlock> CRH2A_NONSTANDARD_DRIVING_CONSOLE =
             crh2DrivingConsole("crh2a_nonstandard_driving_console", CRH2DrivingConsoleBlock::nonstandard,
                     block -> new willow.train.hexie.item.DrivingConsoleItem(block, new Item.Properties(), CRH2A_CAB_SEAT));
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh1a.CRH1DrivingConsoleBlock> CRH1A_DRIVING_CONSOLE =
+            register("crh1a_driving_console", () -> new willow.train.hexie.blocks.emu.crh1a.CRH1DrivingConsoleBlock(
+                    BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2).sound(SoundType.METAL).noOcclusion()),
+                    block -> () -> new willow.train.hexie.item.DrivingConsoleItem(block.get(), new Item.Properties(), CRH2A_DRIVER_SEAT));
 
     private static DeferredHolder<Block, CRH2DrivingConsoleBlock> crh2DrivingConsole(
             String name, Function<BlockBehaviour.Properties, CRH2DrivingConsoleBlock> factory,

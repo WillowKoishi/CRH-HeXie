@@ -97,7 +97,23 @@ public record ControlInputPacket(Target target, Phase phase, int vehicleId, Bloc
         }
         if (phase == Phase.END) {
             var drag = DRAGS.get(player);
-            if (drag != null && drag.target.matches(this) && drag.control.equals(input.controlId())) DRAGS.remove(player);
+            if (drag != null && drag.target.matches(this) && drag.control.equals(input.controlId()) && drag.target.hand == hand) {
+                DRAGS.remove(player);
+                var context = resolve(player);
+                if (valid(player, drag.target, context) && (target == Target.SEATED || permitted(player, context, drag.hit.getLocation()))) {
+                    var host = BlockControlHost.find(context.state());
+                    if (host != null && host.control(context.state(), drag.control) instanceof BlockControl.Handle handle && handle.hasSpringReturn()) {
+                        var held = input.held();
+                        var session = SESSIONS.get(player);
+                        if (!held.isEmpty() && (session == null || !session.matches(this)
+                                || !validCapture(player, session, context, null)
+                                || !host.inputLayout(context).accepts(new ControlInput("", 0, ControlInput.Kind.NONE, held), target == Target.SEATED)))
+                            held = Set.of();
+                        var release = normalize(host, context, new ControlInput(handle.id(), 0, ControlInput.Kind.RELEASE_HANDLE, held));
+                        if (release != null) host.operateInput(new BlockControlUse(context, player, hand, drag.hit), release);
+                    }
+                }
+            }
             return;
         }
         if (!player.isAlive() || player.isSpectator() || !Double.isFinite(point.lengthSqr())) { clear(player); return; }
@@ -193,6 +209,12 @@ public record ControlInputPacket(Target target, Phase phase, int vehicleId, Bloc
         if (!input.hasCommand()) return input;
         var control = host.inputControl(context.state(), input.controlId());
         if (control == null) return null;
+        if (input.kind() == ControlInput.Kind.RELEASE_HANDLE) {
+            if (!(control instanceof BlockControl.Handle handle) || !handle.hasSpringReturn() || input.value() != 0) return null;
+            int value = handle.releasedNotch(handle.notch(host.surfaceState(context)));
+            if (!handle.validNotches().contains(value)) return null;
+            return new ControlInput(input.controlId(), value, ControlInput.Kind.SET, input.held());
+        }
         if (input.kind() == ControlInput.Kind.STEP) {
             if (!(control instanceof BlockControl.Handle handle) || Math.abs((long) input.value()) != 1) return null;
             var notches = handle.validNotches();

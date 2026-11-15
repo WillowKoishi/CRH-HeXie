@@ -1,0 +1,5714 @@
+{
+    "meta": {
+        "format_version": "5.0",
+        "model_format": "free",
+        "box_uv": false
+    },
+    "name": "crh1a_control_panel",
+    "model_identifier": "",
+    "visible_box": [
+        1,
+        1,
+        0
+    ],
+    "variable_placeholders": "",
+    "multi_file_ruleset": "",
+    "variable_placeholder_buttons": [],
+    "timeline_setups": [],
+    "unhandled_root_fields": {},
+    "resolution": {
+        "width": 16,
+        "height": 16
+    },
+    "elements": [
+        {
+            "name": "mesh",
+            "color": 4,
+            "origin": [
+                -5.4,
+                14,
+                -1.6
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "KGTB": [
+                    0.3,
+                    1.2,
+                    0.3
+                ],
+                "Vlkf": [
+                    0.3,
+                    1.2,
+                    -0.3
+                ],
+                "j5fE": [
+                    0.3,
+                    0,
+                    0.3
+                ],
+                "8RZX": [
+                    0.3,
+                    0,
+                    -0.3
+                ],
+                "18oK": [
+                    -0.3,
+                    1.2,
+                    0.3
+                ],
+                "h4Pm": [
+                    -0.3,
+                    1.2,
+                    -0.3
+                ],
+                "katT": [
+                    -0.3,
+                    0,
+                    0.3
+                ],
+                "7euy": [
+                    -0.3,
+                    0,
+                    -0.3
+                ]
+            },
+            "faces": {
+                "VqZi6Qxg": {
+                    "uv": {
+                        "8RZX": [
+                            20.5,
+                            93.25
+                        ],
+                        "j5fE": [
+                            20,
+                            93.25
+                        ],
+                        "KGTB": [
+                            20,
+                            92
+                        ],
+                        "Vlkf": [
+                            20.5,
+                            92
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Vlkf",
+                        "KGTB",
+                        "j5fE",
+                        "8RZX"
+                    ]
+                },
+                "M83QyMzi": {
+                    "uv": {
+                        "7euy": [
+                            22,
+                            91.25
+                        ],
+                        "h4Pm": [
+                            22,
+                            90
+                        ],
+                        "18oK": [
+                            22.5,
+                            90
+                        ],
+                        "katT": [
+                            22.5,
+                            91.25
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "katT",
+                        "18oK",
+                        "h4Pm",
+                        "7euy"
+                    ]
+                },
+                "eWdIWcOb": {
+                    "uv": {
+                        "h4Pm": [
+                            12,
+                            95
+                        ],
+                        "Vlkf": [
+                            12.5,
+                            95
+                        ],
+                        "KGTB": [
+                            12.5,
+                            95.5
+                        ],
+                        "18oK": [
+                            12,
+                            95.5
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "18oK",
+                        "KGTB",
+                        "Vlkf",
+                        "h4Pm"
+                    ]
+                },
+                "IsnzjUH5": {
+                    "uv": {
+                        "7euy": [
+                            25,
+                            82.5
+                        ],
+                        "katT": [
+                            25,
+                            82
+                        ],
+                        "j5fE": [
+                            25.5,
+                            82
+                        ],
+                        "8RZX": [
+                            25.5,
+                            82.5
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "8RZX",
+                        "j5fE",
+                        "katT",
+                        "7euy"
+                    ]
+                },
+                "pk7eOeKl": {
+                    "uv": {
+                        "katT": [
+                            8,
+                            94.25
+                        ],
+                        "18oK": [
+                            8,
+                            93
+                        ],
+                        "KGTB": [
+                            8.5,
+                            93
+                        ],
+                        "j5fE": [
+                            8.5,
+                            94.25
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "j5fE",
+                        "KGTB",
+                        "18oK",
+                        "katT"
+                    ]
+                },
+                "0ECavNMj": {
+                    "uv": {
+                        "7euy": [
+                            23.5,
+                            79.25
+                        ],
+                        "8RZX": [
+                            23,
+                            79.25
+                        ],
+                        "Vlkf": [
+                            23,
+                            78
+                        ],
+                        "h4Pm": [
+                            23.5,
+                            78
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "h4Pm",
+                        "Vlkf",
+                        "8RZX",
+                        "7euy"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "e72c3179-84c3-6ab0-b9ae-64fc7a1a9b73"
+        },
+        {
+            "name": "mesh",
+            "color": 4,
+            "origin": [
+                -5.4,
+                13.4,
+                -1.6
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "KGTB": [
+                    0.4,
+                    3.5,
+                    0.4
+                ],
+                "Vlkf": [
+                    0.4,
+                    3.5,
+                    -0.4
+                ],
+                "j5fE": [
+                    0.4,
+                    1.2,
+                    0.4
+                ],
+                "8RZX": [
+                    0.4,
+                    1.2,
+                    -0.4
+                ],
+                "18oK": [
+                    -0.4,
+                    3.5,
+                    0.4
+                ],
+                "h4Pm": [
+                    -0.4,
+                    3.5,
+                    -0.4
+                ],
+                "katT": [
+                    -0.4,
+                    1.2,
+                    0.4
+                ],
+                "7euy": [
+                    -0.4,
+                    1.2,
+                    -0.4
+                ]
+            },
+            "faces": {
+                "VqZi6Qxg": {
+                    "uv": {
+                        "8RZX": [
+                            20.75,
+                            90.25
+                        ],
+                        "j5fE": [
+                            20,
+                            90.25
+                        ],
+                        "KGTB": [
+                            20,
+                            89
+                        ],
+                        "Vlkf": [
+                            20.75,
+                            89
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Vlkf",
+                        "KGTB",
+                        "j5fE",
+                        "8RZX"
+                    ]
+                },
+                "M83QyMzi": {
+                    "uv": {
+                        "7euy": [
+                            22,
+                            86.25
+                        ],
+                        "h4Pm": [
+                            22,
+                            85
+                        ],
+                        "18oK": [
+                            22.75,
+                            85
+                        ],
+                        "katT": [
+                            22.75,
+                            86.25
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "katT",
+                        "18oK",
+                        "h4Pm",
+                        "7euy"
+                    ]
+                },
+                "eWdIWcOb": {
+                    "uv": {
+                        "h4Pm": [
+                            12,
+                            93
+                        ],
+                        "Vlkf": [
+                            12.75,
+                            93
+                        ],
+                        "KGTB": [
+                            12.75,
+                            93.75
+                        ],
+                        "18oK": [
+                            12,
+                            93.75
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "18oK",
+                        "KGTB",
+                        "Vlkf",
+                        "h4Pm"
+                    ]
+                },
+                "IsnzjUH5": {
+                    "uv": {
+                        "7euy": [
+                            22,
+                            93.75
+                        ],
+                        "katT": [
+                            22,
+                            93
+                        ],
+                        "j5fE": [
+                            22.75,
+                            93
+                        ],
+                        "8RZX": [
+                            22.75,
+                            93.75
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "8RZX",
+                        "j5fE",
+                        "katT",
+                        "7euy"
+                    ]
+                },
+                "pk7eOeKl": {
+                    "uv": {
+                        "katT": [
+                            16,
+                            93.25
+                        ],
+                        "18oK": [
+                            16,
+                            92
+                        ],
+                        "KGTB": [
+                            16.75,
+                            92
+                        ],
+                        "j5fE": [
+                            16.75,
+                            93.25
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "j5fE",
+                        "KGTB",
+                        "18oK",
+                        "katT"
+                    ]
+                },
+                "0ECavNMj": {
+                    "uv": {
+                        "7euy": [
+                            18.75,
+                            93.25
+                        ],
+                        "8RZX": [
+                            18,
+                            93.25
+                        ],
+                        "Vlkf": [
+                            18,
+                            92
+                        ],
+                        "h4Pm": [
+                            18.75,
+                            92
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "h4Pm",
+                        "Vlkf",
+                        "8RZX",
+                        "7euy"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "ab7a0436-c8e8-f37b-3517-08cef578f850"
+        },
+        {
+            "name": "mesh",
+            "color": 2,
+            "origin": [
+                0,
+                16,
+                0
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "1gXz": [
+                    8,
+                    -3,
+                    9.275
+                ],
+                "bfpH": [
+                    8,
+                    -3,
+                    8
+                ],
+                "GjPZ": [
+                    8,
+                    -16,
+                    9.275
+                ],
+                "ofOb": [
+                    8,
+                    -16,
+                    8
+                ],
+                "MJcl": [
+                    -8,
+                    -3,
+                    9.275
+                ],
+                "npsV": [
+                    -8,
+                    -3,
+                    8
+                ],
+                "2iUQ": [
+                    -8,
+                    -16,
+                    9.275
+                ],
+                "lteM": [
+                    -8,
+                    -16,
+                    8
+                ]
+            },
+            "faces": {
+                "zZFSUEdB": {
+                    "uv": {
+                        "ofOb": [
+                            46,
+                            85
+                        ],
+                        "GjPZ": [
+                            45,
+                            85
+                        ],
+                        "1gXz": [
+                            45,
+                            72
+                        ],
+                        "bfpH": [
+                            46,
+                            72
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "bfpH",
+                        "1gXz",
+                        "GjPZ",
+                        "ofOb"
+                    ]
+                },
+                "JT7EqhEj": {
+                    "uv": {
+                        "lteM": [
+                            67,
+                            85
+                        ],
+                        "npsV": [
+                            67,
+                            72
+                        ],
+                        "MJcl": [
+                            68,
+                            72
+                        ],
+                        "2iUQ": [
+                            68,
+                            85
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "2iUQ",
+                        "MJcl",
+                        "npsV",
+                        "lteM"
+                    ]
+                },
+                "piIErMIy": {
+                    "uv": {
+                        "npsV": [
+                            76,
+                            17
+                        ],
+                        "bfpH": [
+                            92,
+                            17
+                        ],
+                        "1gXz": [
+                            92,
+                            18
+                        ],
+                        "MJcl": [
+                            76,
+                            18
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "MJcl",
+                        "1gXz",
+                        "bfpH",
+                        "npsV"
+                    ]
+                },
+                "Cn6qsrDV": {
+                    "uv": {
+                        "lteM": [
+                            76,
+                            45
+                        ],
+                        "2iUQ": [
+                            76,
+                            44
+                        ],
+                        "GjPZ": [
+                            92,
+                            44
+                        ],
+                        "ofOb": [
+                            92,
+                            45
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "ofOb",
+                        "GjPZ",
+                        "2iUQ",
+                        "lteM"
+                    ]
+                },
+                "Cv7gMuSU": {
+                    "uv": {
+                        "2iUQ": [
+                            37,
+                            31
+                        ],
+                        "MJcl": [
+                            37,
+                            18
+                        ],
+                        "1gXz": [
+                            53,
+                            18
+                        ],
+                        "GjPZ": [
+                            53,
+                            31
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "GjPZ",
+                        "1gXz",
+                        "MJcl",
+                        "2iUQ"
+                    ]
+                },
+                "GuNpwKjN": {
+                    "uv": {
+                        "lteM": [
+                            53,
+                            45
+                        ],
+                        "ofOb": [
+                            37,
+                            45
+                        ],
+                        "bfpH": [
+                            37,
+                            32
+                        ],
+                        "npsV": [
+                            53,
+                            32
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "npsV",
+                        "bfpH",
+                        "ofOb",
+                        "lteM"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "777ea086-5821-2441-cb55-c922151a2210"
+        },
+        {
+            "name": "mesh",
+            "color": 0,
+            "origin": [
+                0,
+                16,
+                -3
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "30wN": [
+                    0.00016,
+                    -2,
+                    12.3
+                ],
+                "tXoU": [
+                    0,
+                    -2,
+                    -1
+                ],
+                "scYh": [
+                    0.00016,
+                    -4,
+                    12.3
+                ],
+                "L5bW": [
+                    0,
+                    -4,
+                    -1
+                ],
+                "OcZk": [
+                    1.00016,
+                    -2,
+                    12.3
+                ],
+                "XSgl": [
+                    5,
+                    -2,
+                    -1.2
+                ],
+                "8hc7": [
+                    1.00016,
+                    -4,
+                    12.3
+                ],
+                "kGTE": [
+                    5,
+                    -4,
+                    -1.2
+                ],
+                "VkPb": [
+                    1.80016,
+                    -2,
+                    12.3
+                ],
+                "1ulV": [
+                    10.4,
+                    -2,
+                    -2.3
+                ],
+                "rkap": [
+                    1.80016,
+                    -4,
+                    12.3
+                ],
+                "NHiz": [
+                    10.4,
+                    -4,
+                    -2.3
+                ],
+                "igyh": [
+                    6.00016,
+                    -2,
+                    12.3
+                ],
+                "wT0p": [
+                    11.5,
+                    -2,
+                    -3.7
+                ],
+                "UlP4": [
+                    6.00016,
+                    -4,
+                    12.3
+                ],
+                "s872": [
+                    11.5,
+                    -4,
+                    -3.7
+                ],
+                "sX1G": [
+                    18.60016,
+                    -2,
+                    12.3
+                ],
+                "KY8I": [
+                    18.6,
+                    -2,
+                    -3.7
+                ],
+                "PcY9": [
+                    18.60016,
+                    -4,
+                    12.3
+                ],
+                "mIAQ": [
+                    18.6,
+                    -4,
+                    -3.7
+                ],
+                "jbJi": [
+                    18.6,
+                    -16,
+                    -3.7
+                ],
+                "BfkZ": [
+                    18.60016,
+                    -16,
+                    12.3
+                ],
+                "bQKc": [
+                    11.5,
+                    -16,
+                    -3.7
+                ],
+                "GVTQ": [
+                    6.00016,
+                    -16,
+                    12.3
+                ]
+            },
+            "faces": {
+                "s4kKxGhr": {
+                    "uv": {
+                        "L5bW": [
+                            74,
+                            62
+                        ],
+                        "tXoU": [
+                            74,
+                            60
+                        ],
+                        "30wN": [
+                            87,
+                            60
+                        ],
+                        "scYh": [
+                            87,
+                            62
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "scYh",
+                        "30wN",
+                        "tXoU",
+                        "L5bW"
+                    ]
+                },
+                "743fVLnX": {
+                    "uv": {
+                        "mIAQ": [
+                            36,
+                            32
+                        ],
+                        "PcY9": [
+                            20,
+                            32
+                        ],
+                        "sX1G": [
+                            20,
+                            30
+                        ],
+                        "KY8I": [
+                            36,
+                            30
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "KY8I",
+                        "sX1G",
+                        "PcY9",
+                        "mIAQ"
+                    ]
+                },
+                "yGORgqKL": {
+                    "uv": {
+                        "XSgl": [
+                            5.1999,
+                            2.5
+                        ],
+                        "OcZk": [
+                            1.2001,
+                            16
+                        ],
+                        "30wN": [
+                            0.2001,
+                            16
+                        ],
+                        "tXoU": [
+                            0.1999,
+                            2.7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "tXoU",
+                        "30wN",
+                        "OcZk",
+                        "XSgl"
+                    ]
+                },
+                "IVXaBhhC": {
+                    "uv": {
+                        "kGTE": [
+                            59.25,
+                            13.5
+                        ],
+                        "L5bW": [
+                            54.25,
+                            13.3
+                        ],
+                        "scYh": [
+                            54.2502,
+                            0
+                        ],
+                        "8hc7": [
+                            55.2502,
+                            0
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "8hc7",
+                        "scYh",
+                        "L5bW",
+                        "kGTE"
+                    ]
+                },
+                "uWbjRwIA": {
+                    "uv": {
+                        "8hc7": [
+                            21.2,
+                            2
+                        ],
+                        "scYh": [
+                            20.2,
+                            2
+                        ],
+                        "30wN": [
+                            20.2,
+                            0
+                        ],
+                        "OcZk": [
+                            21.2,
+                            0
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "OcZk",
+                        "30wN",
+                        "scYh",
+                        "8hc7"
+                    ]
+                },
+                "U5gK8Vyq": {
+                    "uv": {
+                        "kGTE": [
+                            81.75345,
+                            16
+                        ],
+                        "XSgl": [
+                            81.75345,
+                            14
+                        ],
+                        "tXoU": [
+                            86.75745,
+                            14
+                        ],
+                        "L5bW": [
+                            86.75745,
+                            16
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "L5bW",
+                        "tXoU",
+                        "XSgl",
+                        "kGTE"
+                    ]
+                },
+                "duTIjB1C": {
+                    "uv": {
+                        "OcZk": [
+                            21.2,
+                            0
+                        ],
+                        "VkPb": [
+                            22,
+                            0
+                        ],
+                        "rkap": [
+                            22,
+                            2
+                        ],
+                        "8hc7": [
+                            21.2,
+                            2
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "8hc7",
+                        "rkap",
+                        "VkPb",
+                        "OcZk"
+                    ]
+                },
+                "YAu3oJRS": {
+                    "uv": {
+                        "XSgl": [
+                            5.1999,
+                            2.5
+                        ],
+                        "1ulV": [
+                            10.5999,
+                            1.4
+                        ],
+                        "VkPb": [
+                            2.0001,
+                            16
+                        ],
+                        "OcZk": [
+                            1.2001,
+                            16
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "OcZk",
+                        "VkPb",
+                        "1ulV",
+                        "XSgl"
+                    ]
+                },
+                "G9pDqAYS": {
+                    "uv": {
+                        "kGTE": [
+                            81.75345,
+                            16
+                        ],
+                        "NHiz": [
+                            76.24255,
+                            16
+                        ],
+                        "1ulV": [
+                            76.24255,
+                            14
+                        ],
+                        "XSgl": [
+                            81.75345,
+                            14
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "XSgl",
+                        "1ulV",
+                        "NHiz",
+                        "kGTE"
+                    ]
+                },
+                "JIsGK5ay": {
+                    "uv": {
+                        "8hc7": [
+                            55.2502,
+                            0
+                        ],
+                        "rkap": [
+                            56.0502,
+                            0
+                        ],
+                        "NHiz": [
+                            64.65,
+                            14.6
+                        ],
+                        "kGTE": [
+                            59.25,
+                            13.5
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "kGTE",
+                        "NHiz",
+                        "rkap",
+                        "8hc7"
+                    ]
+                },
+                "th2t7E3N": {
+                    "uv": {
+                        "VkPb": [
+                            22,
+                            0
+                        ],
+                        "igyh": [
+                            26.2,
+                            0
+                        ],
+                        "UlP4": [
+                            26.2,
+                            2
+                        ],
+                        "rkap": [
+                            22,
+                            2
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "rkap",
+                        "UlP4",
+                        "igyh",
+                        "VkPb"
+                    ]
+                },
+                "rnMA5Th1": {
+                    "uv": {
+                        "1ulV": [
+                            10.5999,
+                            1.4
+                        ],
+                        "wT0p": [
+                            11.6999,
+                            0
+                        ],
+                        "igyh": [
+                            6.2001,
+                            16
+                        ],
+                        "VkPb": [
+                            2.0001,
+                            16
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "VkPb",
+                        "igyh",
+                        "wT0p",
+                        "1ulV"
+                    ]
+                },
+                "r1A1WlIt": {
+                    "uv": {
+                        "NHiz": [
+                            36,
+                            20
+                        ],
+                        "s872": [
+                            34,
+                            20
+                        ],
+                        "wT0p": [
+                            34,
+                            18
+                        ],
+                        "1ulV": [
+                            36,
+                            18
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "1ulV",
+                        "wT0p",
+                        "s872",
+                        "NHiz"
+                    ]
+                },
+                "KHbOG3P2": {
+                    "uv": {
+                        "rkap": [
+                            56.0502,
+                            0
+                        ],
+                        "UlP4": [
+                            60.2502,
+                            0
+                        ],
+                        "s872": [
+                            65.75,
+                            16
+                        ],
+                        "NHiz": [
+                            64.65,
+                            14.6
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "NHiz",
+                        "s872",
+                        "UlP4",
+                        "rkap"
+                    ]
+                },
+                "7FX3H9gQ": {
+                    "uv": {
+                        "igyh": [
+                            26.2,
+                            0
+                        ],
+                        "sX1G": [
+                            38.8,
+                            0
+                        ],
+                        "PcY9": [
+                            38.8,
+                            2
+                        ],
+                        "UlP4": [
+                            26.2,
+                            2
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "UlP4",
+                        "PcY9",
+                        "sX1G",
+                        "igyh"
+                    ]
+                },
+                "D9jf0NEn": {
+                    "uv": {
+                        "wT0p": [
+                            11.6999,
+                            0
+                        ],
+                        "KY8I": [
+                            18.7999,
+                            0
+                        ],
+                        "sX1G": [
+                            18.8001,
+                            16
+                        ],
+                        "igyh": [
+                            6.2001,
+                            16
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "igyh",
+                        "sX1G",
+                        "KY8I",
+                        "wT0p"
+                    ]
+                },
+                "rxKfPEl2": {
+                    "uv": {
+                        "s872": [
+                            19.55,
+                            60
+                        ],
+                        "mIAQ": [
+                            12.45,
+                            60
+                        ],
+                        "KY8I": [
+                            12.45,
+                            58
+                        ],
+                        "wT0p": [
+                            19.55,
+                            58
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "wT0p",
+                        "KY8I",
+                        "mIAQ",
+                        "s872"
+                    ]
+                },
+                "D9UJj0qB": {
+                    "uv": {
+                        "GVTQ": [
+                            40,
+                            0
+                        ],
+                        "BfkZ": [
+                            53,
+                            0
+                        ],
+                        "jbJi": [
+                            53,
+                            16
+                        ],
+                        "bQKc": [
+                            45.4998,
+                            16
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "bQKc",
+                        "jbJi",
+                        "BfkZ",
+                        "GVTQ"
+                    ]
+                },
+                "YIgaNxnx": {
+                    "uv": {
+                        "mIAQ": [
+                            12.45,
+                            60
+                        ],
+                        "s872": [
+                            19.55,
+                            60
+                        ],
+                        "bQKc": [
+                            19.55,
+                            72
+                        ],
+                        "jbJi": [
+                            12.45,
+                            72
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "jbJi",
+                        "bQKc",
+                        "s872",
+                        "mIAQ"
+                    ]
+                },
+                "2INcmRMd": {
+                    "uv": {
+                        "PcY9": [
+                            20,
+                            32
+                        ],
+                        "mIAQ": [
+                            36,
+                            32
+                        ],
+                        "jbJi": [
+                            36,
+                            44
+                        ],
+                        "BfkZ": [
+                            20,
+                            44
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "BfkZ",
+                        "jbJi",
+                        "mIAQ",
+                        "PcY9"
+                    ]
+                },
+                "3PfiFGaQ": {
+                    "uv": {
+                        "UlP4": [
+                            26.2,
+                            2
+                        ],
+                        "PcY9": [
+                            38.8,
+                            2
+                        ],
+                        "BfkZ": [
+                            38.8,
+                            14
+                        ],
+                        "GVTQ": [
+                            26.2,
+                            14
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "GVTQ",
+                        "BfkZ",
+                        "PcY9",
+                        "UlP4"
+                    ]
+                },
+                "ZtjcJmt7": {
+                    "uv": {
+                        "s872": [
+                            17,
+                            45
+                        ],
+                        "UlP4": [
+                            34,
+                            45
+                        ],
+                        "GVTQ": [
+                            34,
+                            57
+                        ],
+                        "bQKc": [
+                            17,
+                            57
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "bQKc",
+                        "GVTQ",
+                        "UlP4",
+                        "s872"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "b307cc9b-3e4a-e3b5-d0c7-4ff3e1672939"
+        },
+        {
+            "name": "mesh",
+            "color": 0,
+            "origin": [
+                0,
+                16,
+                -3
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "30wN": [
+                    0.00016,
+                    -2,
+                    12.3
+                ],
+                "tXoU": [
+                    0,
+                    -2,
+                    -1
+                ],
+                "scYh": [
+                    0.00016,
+                    -4,
+                    12.3
+                ],
+                "L5bW": [
+                    0,
+                    -4,
+                    -1
+                ],
+                "OcZk": [
+                    -0.99984,
+                    -2,
+                    12.3
+                ],
+                "XSgl": [
+                    -5,
+                    -2,
+                    -1.2
+                ],
+                "8hc7": [
+                    -0.99984,
+                    -4,
+                    12.3
+                ],
+                "kGTE": [
+                    -5,
+                    -4,
+                    -1.2
+                ],
+                "VkPb": [
+                    -1.79984,
+                    -2,
+                    12.3
+                ],
+                "1ulV": [
+                    -10.4,
+                    -2,
+                    -2.3
+                ],
+                "rkap": [
+                    -1.79984,
+                    -4,
+                    12.3
+                ],
+                "NHiz": [
+                    -10.4,
+                    -4,
+                    -2.3
+                ],
+                "igyh": [
+                    -5.99984,
+                    -2,
+                    12.3
+                ],
+                "wT0p": [
+                    -11.5,
+                    -2,
+                    -3.7
+                ],
+                "UlP4": [
+                    -5.99984,
+                    -4,
+                    12.3
+                ],
+                "s872": [
+                    -11.5,
+                    -4,
+                    -3.7
+                ],
+                "sX1G": [
+                    -18.59984,
+                    -2,
+                    12.3
+                ],
+                "KY8I": [
+                    -18.6,
+                    -2,
+                    -3.7
+                ],
+                "PcY9": [
+                    -18.59984,
+                    -4,
+                    12.3
+                ],
+                "mIAQ": [
+                    -18.6,
+                    -4,
+                    -3.7
+                ],
+                "jbJi": [
+                    -18.6,
+                    -16,
+                    -3.7
+                ],
+                "BfkZ": [
+                    -18.59984,
+                    -16,
+                    12.3
+                ],
+                "bQKc": [
+                    -11.5,
+                    -16,
+                    -3.7
+                ],
+                "GVTQ": [
+                    -5.99984,
+                    -16,
+                    12.3
+                ]
+            },
+            "faces": {
+                "s4kKxGhr": {
+                    "uv": {
+                        "L5bW": [
+                            89,
+                            13
+                        ],
+                        "scYh": [
+                            76,
+                            13
+                        ],
+                        "30wN": [
+                            76,
+                            11
+                        ],
+                        "tXoU": [
+                            89,
+                            11
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "tXoU",
+                        "30wN",
+                        "scYh",
+                        "L5bW"
+                    ]
+                },
+                "743fVLnX": {
+                    "uv": {
+                        "mIAQ": [
+                            0,
+                            36
+                        ],
+                        "KY8I": [
+                            0,
+                            34
+                        ],
+                        "sX1G": [
+                            16,
+                            34
+                        ],
+                        "PcY9": [
+                            16,
+                            36
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "PcY9",
+                        "sX1G",
+                        "KY8I",
+                        "mIAQ"
+                    ]
+                },
+                "yGORgqKL": {
+                    "uv": {
+                        "XSgl": [
+                            13.7999,
+                            19.5
+                        ],
+                        "tXoU": [
+                            18.7999,
+                            19.7
+                        ],
+                        "30wN": [
+                            18.8001,
+                            33
+                        ],
+                        "OcZk": [
+                            17.8001,
+                            33
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "OcZk",
+                        "30wN",
+                        "tXoU",
+                        "XSgl"
+                    ]
+                },
+                "IVXaBhhC": {
+                    "uv": {
+                        "kGTE": [
+                            57.7499,
+                            62.5
+                        ],
+                        "8hc7": [
+                            61.7501,
+                            49
+                        ],
+                        "scYh": [
+                            62.7501,
+                            49
+                        ],
+                        "L5bW": [
+                            62.7499,
+                            62.3
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "L5bW",
+                        "scYh",
+                        "8hc7",
+                        "kGTE"
+                    ]
+                },
+                "uWbjRwIA": {
+                    "uv": {
+                        "8hc7": [
+                            37.8,
+                            17
+                        ],
+                        "OcZk": [
+                            37.8,
+                            15
+                        ],
+                        "30wN": [
+                            38.8,
+                            15
+                        ],
+                        "scYh": [
+                            38.8,
+                            17
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "scYh",
+                        "30wN",
+                        "OcZk",
+                        "8hc7"
+                    ]
+                },
+                "U5gK8Vyq": {
+                    "uv": {
+                        "kGTE": [
+                            81.24655,
+                            43
+                        ],
+                        "L5bW": [
+                            76.24255,
+                            43
+                        ],
+                        "tXoU": [
+                            76.24255,
+                            41
+                        ],
+                        "XSgl": [
+                            81.24655,
+                            41
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "XSgl",
+                        "tXoU",
+                        "L5bW",
+                        "kGTE"
+                    ]
+                },
+                "duTIjB1C": {
+                    "uv": {
+                        "OcZk": [
+                            37.8,
+                            15
+                        ],
+                        "8hc7": [
+                            37.8,
+                            17
+                        ],
+                        "rkap": [
+                            37,
+                            17
+                        ],
+                        "VkPb": [
+                            37,
+                            15
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "VkPb",
+                        "rkap",
+                        "8hc7",
+                        "OcZk"
+                    ]
+                },
+                "YAu3oJRS": {
+                    "uv": {
+                        "XSgl": [
+                            13.7999,
+                            19.5
+                        ],
+                        "OcZk": [
+                            17.8001,
+                            33
+                        ],
+                        "VkPb": [
+                            17.0001,
+                            33
+                        ],
+                        "1ulV": [
+                            8.3999,
+                            18.4
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "1ulV",
+                        "VkPb",
+                        "OcZk",
+                        "XSgl"
+                    ]
+                },
+                "G9pDqAYS": {
+                    "uv": {
+                        "kGTE": [
+                            81.24655,
+                            43
+                        ],
+                        "XSgl": [
+                            81.24655,
+                            41
+                        ],
+                        "1ulV": [
+                            86.75745,
+                            41
+                        ],
+                        "NHiz": [
+                            86.75745,
+                            43
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "NHiz",
+                        "1ulV",
+                        "XSgl",
+                        "kGTE"
+                    ]
+                },
+                "JIsGK5ay": {
+                    "uv": {
+                        "8hc7": [
+                            61.7501,
+                            49
+                        ],
+                        "kGTE": [
+                            57.7499,
+                            62.5
+                        ],
+                        "NHiz": [
+                            52.3499,
+                            63.6
+                        ],
+                        "rkap": [
+                            60.9501,
+                            49
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "rkap",
+                        "NHiz",
+                        "kGTE",
+                        "8hc7"
+                    ]
+                },
+                "th2t7E3N": {
+                    "uv": {
+                        "VkPb": [
+                            37,
+                            15
+                        ],
+                        "rkap": [
+                            37,
+                            17
+                        ],
+                        "UlP4": [
+                            32.8,
+                            17
+                        ],
+                        "igyh": [
+                            32.8,
+                            15
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "igyh",
+                        "UlP4",
+                        "rkap",
+                        "VkPb"
+                    ]
+                },
+                "rnMA5Th1": {
+                    "uv": {
+                        "1ulV": [
+                            8.3999,
+                            18.4
+                        ],
+                        "VkPb": [
+                            17.0001,
+                            33
+                        ],
+                        "igyh": [
+                            12.8001,
+                            33
+                        ],
+                        "wT0p": [
+                            7.2999,
+                            17
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "wT0p",
+                        "igyh",
+                        "VkPb",
+                        "1ulV"
+                    ]
+                },
+                "r1A1WlIt": {
+                    "uv": {
+                        "NHiz": [
+                            34,
+                            23
+                        ],
+                        "1ulV": [
+                            34,
+                            21
+                        ],
+                        "wT0p": [
+                            36,
+                            21
+                        ],
+                        "s872": [
+                            36,
+                            23
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "s872",
+                        "wT0p",
+                        "1ulV",
+                        "NHiz"
+                    ]
+                },
+                "KHbOG3P2": {
+                    "uv": {
+                        "rkap": [
+                            60.9501,
+                            49
+                        ],
+                        "NHiz": [
+                            52.3499,
+                            63.6
+                        ],
+                        "s872": [
+                            51.2499,
+                            65
+                        ],
+                        "UlP4": [
+                            56.7501,
+                            49
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "UlP4",
+                        "s872",
+                        "NHiz",
+                        "rkap"
+                    ]
+                },
+                "7FX3H9gQ": {
+                    "uv": {
+                        "igyh": [
+                            32.8,
+                            15
+                        ],
+                        "UlP4": [
+                            32.8,
+                            17
+                        ],
+                        "PcY9": [
+                            20.2,
+                            17
+                        ],
+                        "sX1G": [
+                            20.2,
+                            15
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "sX1G",
+                        "PcY9",
+                        "UlP4",
+                        "igyh"
+                    ]
+                },
+                "D9jf0NEn": {
+                    "uv": {
+                        "wT0p": [
+                            7.2999,
+                            17
+                        ],
+                        "igyh": [
+                            12.8001,
+                            33
+                        ],
+                        "sX1G": [
+                            0.2001,
+                            33
+                        ],
+                        "KY8I": [
+                            0.1999,
+                            17
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "KY8I",
+                        "sX1G",
+                        "igyh",
+                        "wT0p"
+                    ]
+                },
+                "rxKfPEl2": {
+                    "uv": {
+                        "s872": [
+                            21.45,
+                            60
+                        ],
+                        "wT0p": [
+                            21.45,
+                            58
+                        ],
+                        "KY8I": [
+                            28.55,
+                            58
+                        ],
+                        "mIAQ": [
+                            28.55,
+                            60
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "mIAQ",
+                        "KY8I",
+                        "wT0p",
+                        "s872"
+                    ]
+                },
+                "D9UJj0qB": {
+                    "uv": {
+                        "GVTQ": [
+                            12.8001,
+                            49
+                        ],
+                        "bQKc": [
+                            7.2999,
+                            65
+                        ],
+                        "jbJi": [
+                            0.1999,
+                            65
+                        ],
+                        "BfkZ": [
+                            0.1999,
+                            49
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "BfkZ",
+                        "jbJi",
+                        "bQKc",
+                        "GVTQ"
+                    ]
+                },
+                "YIgaNxnx": {
+                    "uv": {
+                        "mIAQ": [
+                            28.55,
+                            60
+                        ],
+                        "jbJi": [
+                            28.55,
+                            72
+                        ],
+                        "bQKc": [
+                            21.45,
+                            72
+                        ],
+                        "s872": [
+                            21.45,
+                            60
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "s872",
+                        "bQKc",
+                        "jbJi",
+                        "mIAQ"
+                    ]
+                },
+                "2INcmRMd": {
+                    "uv": {
+                        "PcY9": [
+                            16,
+                            36
+                        ],
+                        "BfkZ": [
+                            16,
+                            48
+                        ],
+                        "jbJi": [
+                            0,
+                            48
+                        ],
+                        "mIAQ": [
+                            0,
+                            36
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "mIAQ",
+                        "jbJi",
+                        "BfkZ",
+                        "PcY9"
+                    ]
+                },
+                "3PfiFGaQ": {
+                    "uv": {
+                        "UlP4": [
+                            32.8,
+                            17
+                        ],
+                        "GVTQ": [
+                            32.8,
+                            29
+                        ],
+                        "BfkZ": [
+                            20.2,
+                            29
+                        ],
+                        "PcY9": [
+                            20.2,
+                            17
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "PcY9",
+                        "BfkZ",
+                        "GVTQ",
+                        "UlP4"
+                    ]
+                },
+                "ZtjcJmt7": {
+                    "uv": {
+                        "s872": [
+                            52,
+                            46
+                        ],
+                        "bQKc": [
+                            52,
+                            58
+                        ],
+                        "GVTQ": [
+                            35,
+                            58
+                        ],
+                        "UlP4": [
+                            35,
+                            46
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "UlP4",
+                        "GVTQ",
+                        "bQKc",
+                        "s872"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "55d3598d-b65a-233a-54b6-284bb7d81f86"
+        },
+        {
+            "name": "mesh",
+            "color": 2,
+            "origin": [
+                0,
+                1,
+                3.7375
+            ],
+            "rotation": [
+                -98,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "1gXz": [
+                    5.8,
+                    5.1,
+                    0.6375
+                ],
+                "bfpH": [
+                    5.8,
+                    5.1,
+                    -0.6375
+                ],
+                "GjPZ": [
+                    5.8,
+                    -5.1,
+                    0.6375
+                ],
+                "ofOb": [
+                    5.8,
+                    -4.96083,
+                    -1.62777
+                ],
+                "MJcl": [
+                    -5.8,
+                    5.1,
+                    0.6375
+                ],
+                "npsV": [
+                    -5.8,
+                    5.1,
+                    -0.6375
+                ],
+                "2iUQ": [
+                    -5.8,
+                    -5.1,
+                    0.6375
+                ],
+                "lteM": [
+                    -5.8,
+                    -4.96083,
+                    -1.62777
+                ]
+            },
+            "faces": {
+                "zZFSUEdB": {
+                    "uv": {
+                        "ofOb": [
+                            21,
+                            13
+                        ],
+                        "GjPZ": [
+                            20,
+                            13
+                        ],
+                        "1gXz": [
+                            20,
+                            3
+                        ],
+                        "bfpH": [
+                            21,
+                            3
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "bfpH",
+                        "1gXz",
+                        "GjPZ",
+                        "ofOb"
+                    ]
+                },
+                "JT7EqhEj": {
+                    "uv": {
+                        "lteM": [
+                            22,
+                            13
+                        ],
+                        "npsV": [
+                            22,
+                            3
+                        ],
+                        "MJcl": [
+                            23,
+                            3
+                        ],
+                        "2iUQ": [
+                            23,
+                            13
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "2iUQ",
+                        "MJcl",
+                        "npsV",
+                        "lteM"
+                    ]
+                },
+                "piIErMIy": {
+                    "uv": {
+                        "npsV": [
+                            79,
+                            26
+                        ],
+                        "bfpH": [
+                            91,
+                            26
+                        ],
+                        "1gXz": [
+                            91,
+                            27
+                        ],
+                        "MJcl": [
+                            79,
+                            27
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "MJcl",
+                        "1gXz",
+                        "bfpH",
+                        "npsV"
+                    ]
+                },
+                "Cn6qsrDV": {
+                    "uv": {
+                        "lteM": [
+                            69,
+                            80
+                        ],
+                        "2iUQ": [
+                            69,
+                            79
+                        ],
+                        "GjPZ": [
+                            81,
+                            79
+                        ],
+                        "ofOb": [
+                            81,
+                            80
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "ofOb",
+                        "GjPZ",
+                        "2iUQ",
+                        "lteM"
+                    ]
+                },
+                "Cv7gMuSU": {
+                    "uv": {
+                        "2iUQ": [
+                            54,
+                            27
+                        ],
+                        "MJcl": [
+                            54,
+                            17
+                        ],
+                        "1gXz": [
+                            66,
+                            17
+                        ],
+                        "GjPZ": [
+                            66,
+                            27
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "GjPZ",
+                        "1gXz",
+                        "MJcl",
+                        "2iUQ"
+                    ]
+                },
+                "GuNpwKjN": {
+                    "uv": {
+                        "lteM": [
+                            66,
+                            38
+                        ],
+                        "ofOb": [
+                            54,
+                            38
+                        ],
+                        "bfpH": [
+                            54,
+                            28
+                        ],
+                        "npsV": [
+                            66,
+                            28
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "npsV",
+                        "bfpH",
+                        "ofOb",
+                        "lteM"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "8b3a22a7-34ac-6d0d-7bf8-c6ac20f8be37"
+        },
+        {
+            "name": "mesh",
+            "color": 6,
+            "origin": [
+                0,
+                14,
+                9.95
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "vdKW": [
+                    7.69196,
+                    5.6,
+                    -4.31142
+                ],
+                "YXDe": [
+                    7.225,
+                    5.6,
+                    -5.3
+                ],
+                "GWMV": [
+                    8.4,
+                    0,
+                    -0.725
+                ],
+                "AC6v": [
+                    6.4,
+                    0,
+                    -7.2
+                ],
+                "Cla5": [
+                    0,
+                    5.6,
+                    -4.3
+                ],
+                "XOuE": [
+                    0,
+                    5.6,
+                    -5.3
+                ],
+                "BGO6": [
+                    0,
+                    0,
+                    -0.725
+                ],
+                "3WVw": [
+                    0,
+                    0,
+                    -7.2
+                ],
+                "lbBw": [
+                    8.04598,
+                    2.8,
+                    -1.70571
+                ],
+                "lKTj": [
+                    6.8125,
+                    2.8,
+                    -6.25
+                ],
+                "fQc3": [
+                    0,
+                    2.8,
+                    -6.25
+                ],
+                "ZVJn": [
+                    0,
+                    2.8,
+                    -1.7
+                ]
+            },
+            "faces": {
+                "hpL6Rdvx": {
+                    "uv": {
+                        "GWMV": [
+                            23,
+                            78.9875
+                        ],
+                        "lbBw": [
+                            24.0392,
+                            76.196
+                        ],
+                        "lKTj": [
+                            28.748,
+                            76.196
+                        ],
+                        "AC6v": [
+                            29.7728,
+                            79
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "AC6v",
+                        "lKTj",
+                        "lbBw",
+                        "GWMV"
+                    ]
+                },
+                "mqxNbMKN": {
+                    "uv": {
+                        "3WVw": [
+                            75.2625,
+                            24.6
+                        ],
+                        "fQc3": [
+                            76.2125,
+                            21.8
+                        ],
+                        "ZVJn": [
+                            80.7625,
+                            21.8
+                        ],
+                        "BGO6": [
+                            81.7375,
+                            24.6
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "BGO6",
+                        "ZVJn",
+                        "fQc3",
+                        "3WVw"
+                    ]
+                },
+                "YNfEVbux": {
+                    "uv": {
+                        "XOuE": [
+                            9.15548,
+                            81
+                        ],
+                        "YXDe": [
+                            16.38047,
+                            81.01071
+                        ],
+                        "vdKW": [
+                            16.846,
+                            82
+                        ],
+                        "Cla5": [
+                            9.154,
+                            82
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Cla5",
+                        "vdKW",
+                        "YXDe",
+                        "XOuE"
+                    ]
+                },
+                "g2nCutVO": {
+                    "uv": {
+                        "3WVw": [
+                            57.3,
+                            70
+                        ],
+                        "BGO6": [
+                            57.3,
+                            64
+                        ],
+                        "GWMV": [
+                            65.7,
+                            64
+                        ],
+                        "AC6v": [
+                            63.7,
+                            70
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "AC6v",
+                        "GWMV",
+                        "BGO6",
+                        "3WVw"
+                    ]
+                },
+                "1Zaf35ur": {
+                    "uv": {
+                        "BGO6": [
+                            64.3,
+                            53.7899
+                        ],
+                        "ZVJn": [
+                            64.3007,
+                            50.825
+                        ],
+                        "lbBw": [
+                            72.3467,
+                            50.825
+                        ],
+                        "GWMV": [
+                            72.7,
+                            53.7919
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "GWMV",
+                        "lbBw",
+                        "ZVJn",
+                        "BGO6"
+                    ]
+                },
+                "kBDqzxBK": {
+                    "uv": {
+                        "AC6v": [
+                            75.2125,
+                            51.9135
+                        ],
+                        "lKTj": [
+                            74.8,
+                            48.9568
+                        ],
+                        "fQc3": [
+                            81.6125,
+                            48.9568
+                        ],
+                        "3WVw": [
+                            81.6125,
+                            51.9135
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "3WVw",
+                        "fQc3",
+                        "lKTj",
+                        "AC6v"
+                    ]
+                },
+                "LbecaYSp": {
+                    "uv": {
+                        "YXDe": [
+                            27.7231,
+                            73.3985
+                        ],
+                        "lKTj": [
+                            28.748,
+                            76.196
+                        ],
+                        "lbBw": [
+                            24.0392,
+                            76.196
+                        ],
+                        "vdKW": [
+                            26.6467,
+                            73.3753
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "vdKW",
+                        "lbBw",
+                        "lKTj",
+                        "YXDe"
+                    ]
+                },
+                "xxDG15Vn": {
+                    "uv": {
+                        "XOuE": [
+                            81.6125,
+                            46
+                        ],
+                        "fQc3": [
+                            81.6125,
+                            48.9568
+                        ],
+                        "lKTj": [
+                            74.8,
+                            48.9568
+                        ],
+                        "YXDe": [
+                            74.3875,
+                            46
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "YXDe",
+                        "lKTj",
+                        "fQc3",
+                        "XOuE"
+                    ]
+                },
+                "wIgf5aPy": {
+                    "uv": {
+                        "Cla5": [
+                            78.1625,
+                            19
+                        ],
+                        "ZVJn": [
+                            80.7625,
+                            21.8
+                        ],
+                        "fQc3": [
+                            76.2125,
+                            21.8
+                        ],
+                        "XOuE": [
+                            77.1625,
+                            19
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "XOuE",
+                        "fQc3",
+                        "ZVJn",
+                        "Cla5"
+                    ]
+                },
+                "B6g1Xp3j": {
+                    "uv": {
+                        "vdKW": [
+                            71.9945,
+                            47
+                        ],
+                        "lbBw": [
+                            72.3467,
+                            50.825
+                        ],
+                        "ZVJn": [
+                            64.3007,
+                            50.825
+                        ],
+                        "Cla5": [
+                            64.3026,
+                            47.004
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Cla5",
+                        "ZVJn",
+                        "lbBw",
+                        "vdKW"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "97c2049f-7787-b29c-9f2b-7aedcd3fc049"
+        },
+        {
+            "name": "mesh",
+            "color": 6,
+            "origin": [
+                -13.05,
+                17,
+                -4.9
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "vdKW": [
+                    -1.88528,
+                    3,
+                    -1.25383
+                ],
+                "YXDe": [
+                    -0.95638,
+                    3.23717,
+                    -1.37157
+                ],
+                "GWMV": [
+                    -5.59202,
+                    -3,
+                    -0.81631
+                ],
+                "AC6v": [
+                    1.24279,
+                    -3,
+                    -0.78996
+                ],
+                "Cla5": [
+                    -1.01704,
+                    3,
+                    4.17021
+                ],
+                "XOuE": [
+                    -0.11314,
+                    3.23717,
+                    3.87747
+                ],
+                "BGO6": [
+                    -4.61525,
+                    -3,
+                    5.22323
+                ],
+                "3WVw": [
+                    1.93738,
+                    -3,
+                    3.64927
+                ],
+                "JFGj": [
+                    -4.19439,
+                    0.06503,
+                    -0.9416
+                ],
+                "537W": [
+                    0.17115,
+                    0,
+                    -1.10872
+                ],
+                "Qas1": [
+                    0.95257,
+                    0,
+                    3.82292
+                ],
+                "Tx8T": [
+                    -3.27188,
+                    0.06503,
+                    4.79019
+                ],
+                "ZKOm": [
+                    -0.76456,
+                    2.62627,
+                    -1.37267
+                ],
+                "3GJB": [
+                    -2.24591,
+                    2.54163,
+                    -1.20506
+                ],
+                "kiXE": [
+                    -1.36919,
+                    2.54163,
+                    4.26704
+                ],
+                "NoLw": [
+                    0.09012,
+                    2.62627,
+                    3.97447
+                ],
+                "6v6a": [
+                    0.10844,
+                    3.40135,
+                    -1.19262
+                ],
+                "V54F": [
+                    0.93027,
+                    2.94836,
+                    3.23258
+                ],
+                "Bavs": [
+                    0.24435,
+                    3.02762,
+                    -1.13781
+                ],
+                "Ikx4": [
+                    0.80792,
+                    3.32209,
+                    3.25467
+                ]
+            },
+            "faces": {
+                "hpL6Rdvx": {
+                    "uv": {
+                        "GWMV": [
+                            73.9141,
+                            28.9641
+                        ],
+                        "AC6v": [
+                            67.0859,
+                            29
+                        ],
+                        "537W": [
+                            68.1439,
+                            25.9783
+                        ],
+                        "JFGj": [
+                            72.5126,
+                            25.9128
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "JFGj",
+                        "537W",
+                        "AC6v",
+                        "GWMV"
+                    ]
+                },
+                "mqxNbMKN": {
+                    "uv": {
+                        "3WVw": [
+                            44,
+                            77.44991
+                        ],
+                        "BGO6": [
+                            37.26142,
+                            77.46485
+                        ],
+                        "Tx8T": [
+                            38.66204,
+                            74.3949
+                        ],
+                        "Qas1": [
+                            42.99585,
+                            74.45213
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Qas1",
+                        "Tx8T",
+                        "BGO6",
+                        "3WVw"
+                    ]
+                },
+                "YNfEVbux": {
+                    "uv": {
+                        "XOuE": [
+                            36.71421,
+                            81.1084
+                        ],
+                        "Cla5": [
+                            36.64169,
+                            82.08499
+                        ],
+                        "vdKW": [
+                            31.28579,
+                            80.86492
+                        ],
+                        "YXDe": [
+                            31.53005,
+                            79.93043
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "YXDe",
+                        "vdKW",
+                        "Cla5",
+                        "XOuE"
+                    ]
+                },
+                "g2nCutVO": {
+                    "uv": {
+                        "3WVw": [
+                            79.05137,
+                            69.97698
+                        ],
+                        "AC6v": [
+                            74.55812,
+                            70
+                        ],
+                        "GWMV": [
+                            73.44102,
+                            63.25706
+                        ],
+                        "BGO6": [
+                            79.55898,
+                            63.25706
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "BGO6",
+                        "GWMV",
+                        "AC6v",
+                        "3WVw"
+                    ]
+                },
+                "1Zaf35ur": {
+                    "uv": {
+                        "BGO6": [
+                            57.118,
+                            78.11467
+                        ],
+                        "GWMV": [
+                            51,
+                            78.11657
+                        ],
+                        "JFGj": [
+                            51.0984,
+                            74.74707
+                        ],
+                        "Tx8T": [
+                            56.9039,
+                            74.74707
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Tx8T",
+                        "JFGj",
+                        "GWMV",
+                        "BGO6"
+                    ]
+                },
+                "kBDqzxBK": {
+                    "uv": {
+                        "AC6v": [
+                            4.52536,
+                            78.93567
+                        ],
+                        "3WVw": [
+                            0.03216,
+                            78.93287
+                        ],
+                        "Qas1": [
+                            0.01476,
+                            75.77067
+                        ],
+                        "537W": [
+                            5.00796,
+                            75.77067
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "537W",
+                        "Qas1",
+                        "3WVw",
+                        "AC6v"
+                    ]
+                },
+                "8SyeZkqX": {
+                    "uv": {
+                        "YXDe": [
+                            69.26679,
+                            22.72613
+                        ],
+                        "vdKW": [
+                            70.20082,
+                            22.97232
+                        ],
+                        "3GJB": [
+                            70.56029,
+                            23.43412
+                        ],
+                        "ZKOm": [
+                            69.07036,
+                            23.33551
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "ZKOm",
+                        "3GJB",
+                        "vdKW",
+                        "YXDe"
+                    ]
+                },
+                "CQaobXO8": {
+                    "uv": {
+                        "Ikx4": [
+                            0.00385,
+                            0
+                        ],
+                        "6v6a": [
+                            4.50644,
+                            0
+                        ],
+                        "Bavs": [
+                            4.42459,
+                            1
+                        ],
+                        "V54F": [
+                            0,
+                            1
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "V54F",
+                        "Bavs",
+                        "6v6a",
+                        "Ikx4"
+                    ]
+                },
+                "fNRvGToK": {
+                    "uv": {
+                        "Cla5": [
+                            40.99449,
+                            71.46024
+                        ],
+                        "XOuE": [
+                            41.9372,
+                            71.20388
+                        ],
+                        "NoLw": [
+                            42.11834,
+                            71.8293
+                        ],
+                        "kiXE": [
+                            40.62994,
+                            71.9141
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "kiXE",
+                        "NoLw",
+                        "XOuE",
+                        "Cla5"
+                    ]
+                },
+                "d1NAvue2": {
+                    "uv": {
+                        "vdKW": [
+                            51.15708,
+                            71
+                        ],
+                        "Cla5": [
+                            56.65018,
+                            71.00296
+                        ],
+                        "kiXE": [
+                            56.68982,
+                            71.58768
+                        ],
+                        "3GJB": [
+                            51.14792,
+                            71.5852
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "3GJB",
+                        "kiXE",
+                        "Cla5",
+                        "vdKW"
+                    ]
+                },
+                "OrkilQ2E": {
+                    "uv": {
+                        "JFGj": [
+                            72.50375,
+                            25.91293
+                        ],
+                        "537W": [
+                            68.1439,
+                            25.9783
+                        ],
+                        "ZKOm": [
+                            69.07036,
+                            23.33551
+                        ],
+                        "3GJB": [
+                            70.56024,
+                            23.43411
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "3GJB",
+                        "ZKOm",
+                        "537W",
+                        "JFGj"
+                    ]
+                },
+                "PAw26nMf": {
+                    "uv": {
+                        "Tx8T": [
+                            56.904,
+                            74.74707
+                        ],
+                        "JFGj": [
+                            51.0984,
+                            74.74707
+                        ],
+                        "3GJB": [
+                            51.14792,
+                            71.5852
+                        ],
+                        "kiXE": [
+                            56.68982,
+                            71.58768
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "kiXE",
+                        "3GJB",
+                        "JFGj",
+                        "Tx8T"
+                    ]
+                },
+                "ntnZ4ykl": {
+                    "uv": {
+                        "Qas1": [
+                            42.99384,
+                            74.4521
+                        ],
+                        "Tx8T": [
+                            38.66204,
+                            74.3949
+                        ],
+                        "kiXE": [
+                            40.62994,
+                            71.9141
+                        ],
+                        "NoLw": [
+                            42.11834,
+                            71.8293
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "NoLw",
+                        "kiXE",
+                        "Tx8T",
+                        "Qas1"
+                    ]
+                },
+                "fMfHVBmh": {
+                    "uv": {
+                        "537W": [
+                            5.00786,
+                            75.77067
+                        ],
+                        "Qas1": [
+                            0.01476,
+                            75.77067
+                        ],
+                        "NoLw": [
+                            0,
+                            73.00228
+                        ],
+                        "ZKOm": [
+                            5.415,
+                            73
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "ZKOm",
+                        "NoLw",
+                        "Qas1",
+                        "537W"
+                    ]
+                },
+                "Y3CjDonl": {
+                    "uv": {
+                        "ZKOm": [
+                            69.07036,
+                            23.33551
+                        ],
+                        "Bavs": [
+                            68.03985,
+                            22.92896
+                        ],
+                        "6v6a": [
+                            68.18717,
+                            22.55555
+                        ],
+                        "YXDe": [
+                            69.26514,
+                            22.73126
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "YXDe",
+                        "6v6a",
+                        "Bavs",
+                        "ZKOm"
+                    ]
+                },
+                "alimOGZ3": {
+                    "uv": {
+                        "NoLw": [
+                            38,
+                            80.94786
+                        ],
+                        "V54F": [
+                            38.60831,
+                            79.95646
+                        ],
+                        "Bavs": [
+                            43.03295,
+                            79.95646
+                        ],
+                        "ZKOm": [
+                            43.41409,
+                            81
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "ZKOm",
+                        "Bavs",
+                        "V54F",
+                        "NoLw"
+                    ]
+                },
+                "hyCuqIKn": {
+                    "uv": {
+                        "XOuE": [
+                            41.93956,
+                            71.21203
+                        ],
+                        "Ikx4": [
+                            43.0293,
+                            71
+                        ],
+                        "V54F": [
+                            43.18639,
+                            71.36112
+                        ],
+                        "NoLw": [
+                            42.11834,
+                            71.8293
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "NoLw",
+                        "V54F",
+                        "Ikx4",
+                        "XOuE"
+                    ]
+                },
+                "n8SbAUtb": {
+                    "uv": {
+                        "YXDe": [
+                            31.53081,
+                            79.9306
+                        ],
+                        "6v6a": [
+                            32.09501,
+                            79
+                        ],
+                        "Ikx4": [
+                            36.48111,
+                            80.0179
+                        ],
+                        "XOuE": [
+                            36.71421,
+                            81.1084
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "XOuE",
+                        "Ikx4",
+                        "6v6a",
+                        "YXDe"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "62db747d-555e-34e3-3cdf-0ce4a90225e6"
+        },
+        {
+            "name": "mesh",
+            "color": 6,
+            "origin": [
+                -6.3,
+                14,
+                2
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "vdKW": [
+                    -7.77817,
+                    6,
+                    -2.73553
+                ],
+                "YXDe": [
+                    -6.87697,
+                    6.23717,
+                    -3.01174
+                ],
+                "GWMV": [
+                    -11.38853,
+                    0,
+                    -1.67432
+                ],
+                "AC6v": [
+                    -4.94975,
+                    0,
+                    -4.14975
+                ],
+                "Cla5": [
+                    -1.28339,
+                    6,
+                    3.78551
+                ],
+                "XOuE": [
+                    -0.86907,
+                    6.23717,
+                    2.87116
+                ],
+                "BGO6": [
+                    -2.06789,
+                    0,
+                    7.22132
+                ],
+                "3WVw": [
+                    0,
+                    0,
+                    0.8
+                ],
+                "orkc": [
+                    -10.01026,
+                    3.05613,
+                    -2.12806
+                ],
+                "LjO9": [
+                    -6.01041,
+                    3,
+                    -3.79619
+                ],
+                "nvsU": [
+                    -0.40659,
+                    3,
+                    1.80763
+                ],
+                "6Fl1": [
+                    -1.72755,
+                    2.78113,
+                    6.23028
+                ],
+                "Ta6l": [
+                    -0.87821,
+                    5.63842,
+                    2.57977
+                ],
+                "Cnmn": [
+                    -6.80907,
+                    5.63842,
+                    -3.35109
+                ],
+                "j9zp": [
+                    -8.89422,
+                    4.52807,
+                    -2.4318
+                ],
+                "O60w": [
+                    -1.50547,
+                    4.39057,
+                    5.00789
+                ],
+                "8cSG": [
+                    -5.95025,
+                    6.31623,
+                    -3.63846
+                ],
+                "UD0t": [
+                    -0.20739,
+                    5.95465,
+                    1.90895
+                ],
+                "wDN7": [
+                    -6.13825,
+                    5.95465,
+                    -4.02191
+                ],
+                "EYR2": [
+                    -0.14235,
+                    6.31623,
+                    2.14443
+                ]
+            },
+            "faces": {
+                "hpL6Rdvx": {
+                    "uv": {
+                        "GWMV": [
+                            14,
+                            78.9946
+                        ],
+                        "AC6v": [
+                            7.1045,
+                            79
+                        ],
+                        "LjO9": [
+                            8.2195,
+                            75.9989
+                        ],
+                        "orkc": [
+                            12.5533,
+                            75.9427
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "orkc",
+                        "LjO9",
+                        "AC6v",
+                        "GWMV"
+                    ]
+                },
+                "mqxNbMKN": {
+                    "uv": {
+                        "3WVw": [
+                            74,
+                            36.98785
+                        ],
+                        "BGO6": [
+                            67.25561,
+                            37
+                        ],
+                        "6Fl1": [
+                            68.29849,
+                            34.21699
+                        ],
+                        "nvsU": [
+                            72.91387,
+                            33.99142
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "nvsU",
+                        "6Fl1",
+                        "BGO6",
+                        "3WVw"
+                    ]
+                },
+                "YNfEVbux": {
+                    "uv": {
+                        "XOuE": [
+                            86.24986,
+                            1.0308
+                        ],
+                        "Cla5": [
+                            86.60177,
+                            1.99991
+                        ],
+                        "vdKW": [
+                            77.39823,
+                            1.96576
+                        ],
+                        "YXDe": [
+                            77.84174,
+                            1.1009
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "YXDe",
+                        "vdKW",
+                        "Cla5",
+                        "XOuE"
+                    ]
+                },
+                "g2nCutVO": {
+                    "uv": {
+                        "3WVw": [
+                            73.00468,
+                            6.83673
+                        ],
+                        "AC6v": [
+                            66.00665,
+                            7
+                        ],
+                        "GWMV": [
+                            63.05785,
+                            0.76379
+                        ],
+                        "BGO6": [
+                            75.94215,
+                            0.76379
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "BGO6",
+                        "GWMV",
+                        "AC6v",
+                        "3WVw"
+                    ]
+                },
+                "1Zaf35ur": {
+                    "uv": {
+                        "BGO6": [
+                            66.8822,
+                            45.78625
+                        ],
+                        "GWMV": [
+                            54,
+                            45.87655
+                        ],
+                        "orkc": [
+                            54.6606,
+                            42.55855
+                        ],
+                        "6Fl1": [
+                            66.4271,
+                            42.85705
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "6Fl1",
+                        "orkc",
+                        "GWMV",
+                        "BGO6"
+                    ]
+                },
+                "kBDqzxBK": {
+                    "uv": {
+                        "AC6v": [
+                            7.6375,
+                            71.9434
+                        ],
+                        "3WVw": [
+                            0.6375,
+                            71.9434
+                        ],
+                        "nvsU": [
+                            0.2125,
+                            68.7811
+                        ],
+                        "LjO9": [
+                            8.1375,
+                            68.7811
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "LjO9",
+                        "nvsU",
+                        "3WVw",
+                        "AC6v"
+                    ]
+                },
+                "2iroQq3N": {
+                    "uv": {
+                        "YXDe": [
+                            9.3466,
+                            72.71939
+                        ],
+                        "vdKW": [
+                            10.27106,
+                            72.98012
+                        ],
+                        "j9zp": [
+                            11.40811,
+                            74.46723
+                        ],
+                        "Cnmn": [
+                            9.12842,
+                            73.35855
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Cnmn",
+                        "j9zp",
+                        "vdKW",
+                        "YXDe"
+                    ]
+                },
+                "hzHRS7kC": {
+                    "uv": {
+                        "EYR2": [
+                            53,
+                            47.0063
+                        ],
+                        "8cSG": [
+                            61.1959,
+                            47
+                        ],
+                        "wDN7": [
+                            61.6,
+                            48
+                        ],
+                        "UD0t": [
+                            53.2125,
+                            48
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "UD0t",
+                        "wDN7",
+                        "8cSG",
+                        "EYR2"
+                    ]
+                },
+                "StoDdv5J": {
+                    "uv": {
+                        "Cla5": [
+                            70.77293,
+                            31.00253
+                        ],
+                        "XOuE": [
+                            71.75093,
+                            30.74193
+                        ],
+                        "Ta6l": [
+                            72.03483,
+                            31.34433
+                        ],
+                        "O60w": [
+                            69.53073,
+                            32.59973
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "O60w",
+                        "Ta6l",
+                        "XOuE",
+                        "Cla5"
+                    ]
+                },
+                "0QUfKXdj": {
+                    "uv": {
+                        "vdKW": [
+                            55.82189,
+                            39
+                        ],
+                        "Cla5": [
+                            65.02517,
+                            39.04076
+                        ],
+                        "O60w": [
+                            65.72611,
+                            40.94936
+                        ],
+                        "j9zp": [
+                            55.24123,
+                            40.77879
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "j9zp",
+                        "O60w",
+                        "Cla5",
+                        "vdKW"
+                    ]
+                },
+                "TP6BDjJL": {
+                    "uv": {
+                        "LjO9": [
+                            8.1375,
+                            68.7811
+                        ],
+                        "nvsU": [
+                            0.2125,
+                            68.7811
+                        ],
+                        "Ta6l": [
+                            0,
+                            66
+                        ],
+                        "Cnmn": [
+                            8.3875,
+                            66
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Cnmn",
+                        "Ta6l",
+                        "nvsU",
+                        "LjO9"
+                    ]
+                },
+                "05FALbkO": {
+                    "uv": {
+                        "orkc": [
+                            12.55075,
+                            75.94273
+                        ],
+                        "LjO9": [
+                            8.2195,
+                            75.9989
+                        ],
+                        "Cnmn": [
+                            9.12842,
+                            73.35855
+                        ],
+                        "j9zp": [
+                            11.40806,
+                            74.46721
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "j9zp",
+                        "Cnmn",
+                        "LjO9",
+                        "orkc"
+                    ]
+                },
+                "9bb6DrkV": {
+                    "uv": {
+                        "6Fl1": [
+                            66.42698,
+                            42.85705
+                        ],
+                        "orkc": [
+                            54.6606,
+                            42.55855
+                        ],
+                        "j9zp": [
+                            55.24123,
+                            40.77879
+                        ],
+                        "O60w": [
+                            65.72606,
+                            40.94936
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "O60w",
+                        "j9zp",
+                        "orkc",
+                        "6Fl1"
+                    ]
+                },
+                "rrdA5eSI": {
+                    "uv": {
+                        "nvsU": [
+                            72.91388,
+                            33.99142
+                        ],
+                        "6Fl1": [
+                            68.29849,
+                            34.21699
+                        ],
+                        "O60w": [
+                            69.53069,
+                            32.59975
+                        ],
+                        "Ta6l": [
+                            72.03483,
+                            31.34433
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Ta6l",
+                        "O60w",
+                        "6Fl1",
+                        "nvsU"
+                    ]
+                },
+                "7ko5gRIm": {
+                    "uv": {
+                        "Cnmn": [
+                            24,
+                            10.95142
+                        ],
+                        "wDN7": [
+                            24.02686,
+                            10
+                        ],
+                        "8cSG": [
+                            25,
+                            10.03337
+                        ],
+                        "YXDe": [
+                            25,
+                            11.15489
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "YXDe",
+                        "8cSG",
+                        "wDN7",
+                        "Cnmn"
+                    ]
+                },
+                "fd7Xr74C": {
+                    "uv": {
+                        "Ta6l": [
+                            79,
+                            77
+                        ],
+                        "UD0t": [
+                            79,
+                            76
+                        ],
+                        "wDN7": [
+                            87,
+                            76
+                        ],
+                        "Cnmn": [
+                            87,
+                            77
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Cnmn",
+                        "wDN7",
+                        "UD0t",
+                        "Ta6l"
+                    ]
+                },
+                "kxtgZrZh": {
+                    "uv": {
+                        "XOuE": [
+                            71.7557,
+                            30.75206
+                        ],
+                        "EYR2": [
+                            72.75345,
+                            30.52328
+                        ],
+                        "UD0t": [
+                            72.93936,
+                            30.91805
+                        ],
+                        "Ta6l": [
+                            72.03483,
+                            31.34433
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Ta6l",
+                        "UD0t",
+                        "EYR2",
+                        "XOuE"
+                    ]
+                },
+                "Yewnj0mL": {
+                    "uv": {
+                        "YXDe": [
+                            77.84156,
+                            1.1009
+                        ],
+                        "8cSG": [
+                            78.05606,
+                            0
+                        ],
+                        "EYR2": [
+                            86.25206,
+                            0
+                        ],
+                        "XOuE": [
+                            86.24986,
+                            1.0308
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "XOuE",
+                        "EYR2",
+                        "8cSG",
+                        "YXDe"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "008aed77-c3ca-9b66-b64d-b479cea4ec32"
+        },
+        {
+            "name": "mesh",
+            "color": 6,
+            "origin": [
+                0,
+                14,
+                9.95
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "vdKW": [
+                    -7.69196,
+                    5.6,
+                    -4.31142
+                ],
+                "YXDe": [
+                    -7.225,
+                    5.6,
+                    -5.3
+                ],
+                "GWMV": [
+                    -8.4,
+                    0,
+                    -0.725
+                ],
+                "AC6v": [
+                    -6.4,
+                    0,
+                    -7.2
+                ],
+                "Cla5": [
+                    0,
+                    5.6,
+                    -4.3
+                ],
+                "XOuE": [
+                    0,
+                    5.6,
+                    -5.3
+                ],
+                "BGO6": [
+                    0,
+                    0,
+                    -0.725
+                ],
+                "3WVw": [
+                    0,
+                    0,
+                    -7.2
+                ],
+                "lbBw": [
+                    -8.04598,
+                    2.8,
+                    -1.70571
+                ],
+                "lKTj": [
+                    -6.8125,
+                    2.8,
+                    -6.25
+                ],
+                "fQc3": [
+                    0,
+                    2.8,
+                    -6.25
+                ],
+                "ZVJn": [
+                    0,
+                    2.8,
+                    -1.7
+                ]
+            },
+            "faces": {
+                "hpL6Rdvx": {
+                    "uv": {
+                        "GWMV": [
+                            81,
+                            32.9875
+                        ],
+                        "AC6v": [
+                            74.2272,
+                            33
+                        ],
+                        "lKTj": [
+                            75.252,
+                            30.196
+                        ],
+                        "lbBw": [
+                            79.9608,
+                            30.196
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "lbBw",
+                        "lKTj",
+                        "AC6v",
+                        "GWMV"
+                    ]
+                },
+                "mqxNbMKN": {
+                    "uv": {
+                        "3WVw": [
+                            81.7375,
+                            39.6
+                        ],
+                        "BGO6": [
+                            75.2625,
+                            39.6
+                        ],
+                        "ZVJn": [
+                            76.2375,
+                            36.8
+                        ],
+                        "fQc3": [
+                            80.7875,
+                            36.8
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "fQc3",
+                        "ZVJn",
+                        "BGO6",
+                        "3WVw"
+                    ]
+                },
+                "YNfEVbux": {
+                    "uv": {
+                        "XOuE": [
+                            8,
+                            80
+                        ],
+                        "Cla5": [
+                            8,
+                            81
+                        ],
+                        "vdKW": [
+                            0,
+                            80.9886
+                        ],
+                        "YXDe": [
+                            0.467,
+                            80
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "YXDe",
+                        "vdKW",
+                        "Cla5",
+                        "XOuE"
+                    ]
+                },
+                "g2nCutVO": {
+                    "uv": {
+                        "3WVw": [
+                            75,
+                            21
+                        ],
+                        "AC6v": [
+                            69,
+                            21
+                        ],
+                        "GWMV": [
+                            67,
+                            15
+                        ],
+                        "BGO6": [
+                            75,
+                            15
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "BGO6",
+                        "GWMV",
+                        "AC6v",
+                        "3WVw"
+                    ]
+                },
+                "1Zaf35ur": {
+                    "uv": {
+                        "BGO6": [
+                            72.7,
+                            61.7899
+                        ],
+                        "GWMV": [
+                            64.3,
+                            61.7919
+                        ],
+                        "lbBw": [
+                            64.6533,
+                            58.825
+                        ],
+                        "ZVJn": [
+                            72.6993,
+                            58.825
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "ZVJn",
+                        "lbBw",
+                        "GWMV",
+                        "BGO6"
+                    ]
+                },
+                "kBDqzxBK": {
+                    "uv": {
+                        "AC6v": [
+                            80.7875,
+                            58.9135
+                        ],
+                        "3WVw": [
+                            74.3875,
+                            58.9135
+                        ],
+                        "fQc3": [
+                            74.3875,
+                            55.9568
+                        ],
+                        "lKTj": [
+                            81.2,
+                            55.9568
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "lKTj",
+                        "fQc3",
+                        "3WVw",
+                        "AC6v"
+                    ]
+                },
+                "LbecaYSp": {
+                    "uv": {
+                        "YXDe": [
+                            76.2769,
+                            27.3985
+                        ],
+                        "vdKW": [
+                            77.3533,
+                            27.3753
+                        ],
+                        "lbBw": [
+                            79.9608,
+                            30.196
+                        ],
+                        "lKTj": [
+                            75.252,
+                            30.196
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "lKTj",
+                        "lbBw",
+                        "vdKW",
+                        "YXDe"
+                    ]
+                },
+                "xxDG15Vn": {
+                    "uv": {
+                        "XOuE": [
+                            74.3875,
+                            53
+                        ],
+                        "YXDe": [
+                            81.6125,
+                            53
+                        ],
+                        "lKTj": [
+                            81.2,
+                            55.9568
+                        ],
+                        "fQc3": [
+                            74.3875,
+                            55.9568
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "fQc3",
+                        "lKTj",
+                        "YXDe",
+                        "XOuE"
+                    ]
+                },
+                "wIgf5aPy": {
+                    "uv": {
+                        "Cla5": [
+                            78.8375,
+                            34
+                        ],
+                        "XOuE": [
+                            79.8375,
+                            34
+                        ],
+                        "fQc3": [
+                            80.7875,
+                            36.8
+                        ],
+                        "ZVJn": [
+                            76.2375,
+                            36.8
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "ZVJn",
+                        "fQc3",
+                        "XOuE",
+                        "Cla5"
+                    ]
+                },
+                "B6g1Xp3j": {
+                    "uv": {
+                        "vdKW": [
+                            65.0055,
+                            55
+                        ],
+                        "Cla5": [
+                            72.6974,
+                            55.004
+                        ],
+                        "ZVJn": [
+                            72.6993,
+                            58.825
+                        ],
+                        "lbBw": [
+                            64.6533,
+                            58.825
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "lbBw",
+                        "ZVJn",
+                        "Cla5",
+                        "vdKW"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "bb6d299a-4523-ce22-ccce-cf45e7ec3834"
+        },
+        {
+            "name": "mesh",
+            "color": 6,
+            "origin": [
+                6.3,
+                14,
+                2
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "vdKW": [
+                    7.77817,
+                    6,
+                    -2.73553
+                ],
+                "YXDe": [
+                    6.87697,
+                    6.23717,
+                    -3.01174
+                ],
+                "GWMV": [
+                    11.38853,
+                    0,
+                    -1.67432
+                ],
+                "AC6v": [
+                    4.94975,
+                    0,
+                    -4.14975
+                ],
+                "Cla5": [
+                    1.28339,
+                    6,
+                    3.78551
+                ],
+                "XOuE": [
+                    0.86907,
+                    6.23717,
+                    2.87116
+                ],
+                "BGO6": [
+                    2.06789,
+                    0,
+                    7.22132
+                ],
+                "3WVw": [
+                    0,
+                    0,
+                    0.8
+                ],
+                "orkc": [
+                    10.01026,
+                    3.05613,
+                    -2.12806
+                ],
+                "LjO9": [
+                    6.01041,
+                    3,
+                    -3.79619
+                ],
+                "nvsU": [
+                    0.40659,
+                    3,
+                    1.80763
+                ],
+                "6Fl1": [
+                    1.72755,
+                    2.78113,
+                    6.23028
+                ],
+                "Ta6l": [
+                    0.87821,
+                    5.63842,
+                    2.57977
+                ],
+                "Cnmn": [
+                    6.80907,
+                    5.63842,
+                    -3.35109
+                ],
+                "j9zp": [
+                    8.89422,
+                    4.52807,
+                    -2.4318
+                ],
+                "O60w": [
+                    1.50547,
+                    4.39057,
+                    5.00789
+                ],
+                "8cSG": [
+                    5.95025,
+                    6.31623,
+                    -3.63846
+                ],
+                "UD0t": [
+                    0.20739,
+                    5.95465,
+                    1.90895
+                ],
+                "wDN7": [
+                    6.13825,
+                    5.95465,
+                    -4.02191
+                ],
+                "EYR2": [
+                    0.14235,
+                    6.31623,
+                    2.14443
+                ]
+            },
+            "faces": {
+                "hpL6Rdvx": {
+                    "uv": {
+                        "GWMV": [
+                            71,
+                            77.9946
+                        ],
+                        "orkc": [
+                            72.4467,
+                            74.9427
+                        ],
+                        "LjO9": [
+                            76.7805,
+                            74.9989
+                        ],
+                        "AC6v": [
+                            77.8955,
+                            78
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "AC6v",
+                        "LjO9",
+                        "orkc",
+                        "GWMV"
+                    ]
+                },
+                "mqxNbMKN": {
+                    "uv": {
+                        "3WVw": [
+                            30,
+                            73.98785
+                        ],
+                        "nvsU": [
+                            31.08613,
+                            70.99142
+                        ],
+                        "6Fl1": [
+                            35.70151,
+                            71.21699
+                        ],
+                        "BGO6": [
+                            36.74439,
+                            74
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "BGO6",
+                        "6Fl1",
+                        "nvsU",
+                        "3WVw"
+                    ]
+                },
+                "YNfEVbux": {
+                    "uv": {
+                        "XOuE": [
+                            78.75014,
+                            72.0308
+                        ],
+                        "YXDe": [
+                            87.15826,
+                            72.1009
+                        ],
+                        "vdKW": [
+                            87.60177,
+                            72.96576
+                        ],
+                        "Cla5": [
+                            78.39823,
+                            72.99991
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Cla5",
+                        "vdKW",
+                        "YXDe",
+                        "XOuE"
+                    ]
+                },
+                "g2nCutVO": {
+                    "uv": {
+                        "3WVw": [
+                            44.16327,
+                            62.05317
+                        ],
+                        "BGO6": [
+                            50,
+                            59.1157
+                        ],
+                        "GWMV": [
+                            50,
+                            72
+                        ],
+                        "AC6v": [
+                            44,
+                            69.05119
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "AC6v",
+                        "GWMV",
+                        "BGO6",
+                        "3WVw"
+                    ]
+                },
+                "1Zaf35ur": {
+                    "uv": {
+                        "BGO6": [
+                            30.1178,
+                            65.78625
+                        ],
+                        "6Fl1": [
+                            30.5729,
+                            62.85705
+                        ],
+                        "orkc": [
+                            42.3394,
+                            62.55855
+                        ],
+                        "GWMV": [
+                            43,
+                            65.87655
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "GWMV",
+                        "orkc",
+                        "6Fl1",
+                        "BGO6"
+                    ]
+                },
+                "kBDqzxBK": {
+                    "uv": {
+                        "AC6v": [
+                            67.3625,
+                            13.9434
+                        ],
+                        "LjO9": [
+                            66.8625,
+                            10.7811
+                        ],
+                        "nvsU": [
+                            74.7875,
+                            10.7811
+                        ],
+                        "3WVw": [
+                            74.3625,
+                            13.9434
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "3WVw",
+                        "nvsU",
+                        "LjO9",
+                        "AC6v"
+                    ]
+                },
+                "2iroQq3N": {
+                    "uv": {
+                        "YXDe": [
+                            75.65085,
+                            71.71936
+                        ],
+                        "Cnmn": [
+                            75.86903,
+                            72.35851
+                        ],
+                        "j9zp": [
+                            73.58934,
+                            73.4672
+                        ],
+                        "vdKW": [
+                            74.72639,
+                            71.98009
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "vdKW",
+                        "j9zp",
+                        "Cnmn",
+                        "YXDe"
+                    ]
+                },
+                "hzHRS7kC": {
+                    "uv": {
+                        "EYR2": [
+                            88,
+                            74.0063
+                        ],
+                        "UD0t": [
+                            87.7875,
+                            75
+                        ],
+                        "wDN7": [
+                            79.4,
+                            75
+                        ],
+                        "8cSG": [
+                            79.8041,
+                            74
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "8cSG",
+                        "wDN7",
+                        "UD0t",
+                        "EYR2"
+                    ]
+                },
+                "StoDdv5J": {
+                    "uv": {
+                        "Cla5": [
+                            33.22711,
+                            68.00255
+                        ],
+                        "O60w": [
+                            34.46931,
+                            69.59975
+                        ],
+                        "Ta6l": [
+                            31.96521,
+                            68.34435
+                        ],
+                        "XOuE": [
+                            32.24911,
+                            67.74195
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "XOuE",
+                        "Ta6l",
+                        "O60w",
+                        "Cla5"
+                    ]
+                },
+                "0QUfKXdj": {
+                    "uv": {
+                        "vdKW": [
+                            41.17799,
+                            59
+                        ],
+                        "j9zp": [
+                            41.75865,
+                            60.77879
+                        ],
+                        "O60w": [
+                            31.27377,
+                            60.94936
+                        ],
+                        "Cla5": [
+                            31.97471,
+                            59.04076
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Cla5",
+                        "O60w",
+                        "j9zp",
+                        "vdKW"
+                    ]
+                },
+                "TP6BDjJL": {
+                    "uv": {
+                        "LjO9": [
+                            66.8625,
+                            10.7811
+                        ],
+                        "Cnmn": [
+                            66.6125,
+                            8
+                        ],
+                        "Ta6l": [
+                            75,
+                            8
+                        ],
+                        "nvsU": [
+                            74.7875,
+                            10.7811
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "nvsU",
+                        "Ta6l",
+                        "Cnmn",
+                        "LjO9"
+                    ]
+                },
+                "05FALbkO": {
+                    "uv": {
+                        "orkc": [
+                            72.4467,
+                            74.9427
+                        ],
+                        "j9zp": [
+                            73.58939,
+                            73.46717
+                        ],
+                        "Cnmn": [
+                            75.86903,
+                            72.35851
+                        ],
+                        "LjO9": [
+                            76.77795,
+                            74.99887
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "LjO9",
+                        "Cnmn",
+                        "j9zp",
+                        "orkc"
+                    ]
+                },
+                "9bb6DrkV": {
+                    "uv": {
+                        "6Fl1": [
+                            30.5729,
+                            62.85705
+                        ],
+                        "O60w": [
+                            31.27382,
+                            60.94936
+                        ],
+                        "j9zp": [
+                            41.75865,
+                            60.77879
+                        ],
+                        "orkc": [
+                            42.33928,
+                            62.55855
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "orkc",
+                        "j9zp",
+                        "O60w",
+                        "6Fl1"
+                    ]
+                },
+                "rrdA5eSI": {
+                    "uv": {
+                        "nvsU": [
+                            31.08612,
+                            70.99142
+                        ],
+                        "Ta6l": [
+                            31.96517,
+                            68.34433
+                        ],
+                        "O60w": [
+                            34.46931,
+                            69.59975
+                        ],
+                        "6Fl1": [
+                            35.70151,
+                            71.21699
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "6Fl1",
+                        "O60w",
+                        "Ta6l",
+                        "nvsU"
+                    ]
+                },
+                "7ko5gRIm": {
+                    "uv": {
+                        "Cnmn": [
+                            13.20347,
+                            17.5855
+                        ],
+                        "YXDe": [
+                            13,
+                            17
+                        ],
+                        "8cSG": [
+                            14.12151,
+                            17
+                        ],
+                        "wDN7": [
+                            14.15489,
+                            17.55864
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "wDN7",
+                        "8cSG",
+                        "YXDe",
+                        "Cnmn"
+                    ]
+                },
+                "fd7Xr74C": {
+                    "uv": {
+                        "Ta6l": [
+                            55,
+                            81
+                        ],
+                        "Cnmn": [
+                            47,
+                            81
+                        ],
+                        "wDN7": [
+                            47,
+                            80
+                        ],
+                        "UD0t": [
+                            55,
+                            80
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "UD0t",
+                        "wDN7",
+                        "Cnmn",
+                        "Ta6l"
+                    ]
+                },
+                "kxtgZrZh": {
+                    "uv": {
+                        "XOuE": [
+                            32.24911,
+                            67.74195
+                        ],
+                        "Ta6l": [
+                            31.96998,
+                            68.33422
+                        ],
+                        "UD0t": [
+                            31.06545,
+                            67.90794
+                        ],
+                        "EYR2": [
+                            31.25136,
+                            67.51318
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "EYR2",
+                        "UD0t",
+                        "Ta6l",
+                        "XOuE"
+                    ]
+                },
+                "Yewnj0mL": {
+                    "uv": {
+                        "YXDe": [
+                            87.15844,
+                            72.1009
+                        ],
+                        "XOuE": [
+                            78.75014,
+                            72.0308
+                        ],
+                        "EYR2": [
+                            78.74794,
+                            71
+                        ],
+                        "8cSG": [
+                            86.94394,
+                            71
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "8cSG",
+                        "EYR2",
+                        "XOuE",
+                        "YXDe"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "04ea6a1a-96d6-70ce-c164-e13a5c3eddb0"
+        },
+        {
+            "name": "mesh",
+            "color": 6,
+            "origin": [
+                13.05,
+                17,
+                -4.9
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "vdKW": [
+                    1.88528,
+                    3,
+                    -1.25383
+                ],
+                "YXDe": [
+                    0.95638,
+                    3.23717,
+                    -1.37157
+                ],
+                "GWMV": [
+                    5.59202,
+                    -3,
+                    -0.81631
+                ],
+                "AC6v": [
+                    -1.24279,
+                    -3,
+                    -0.78996
+                ],
+                "Cla5": [
+                    1.01704,
+                    3,
+                    4.17021
+                ],
+                "XOuE": [
+                    0.11314,
+                    3.23717,
+                    3.87747
+                ],
+                "BGO6": [
+                    4.61525,
+                    -3,
+                    5.22323
+                ],
+                "3WVw": [
+                    -1.93738,
+                    -3,
+                    3.64927
+                ],
+                "JFGj": [
+                    4.19439,
+                    0.06503,
+                    -0.9416
+                ],
+                "537W": [
+                    -0.17115,
+                    0,
+                    -1.10872
+                ],
+                "Qas1": [
+                    -0.95257,
+                    0,
+                    3.82292
+                ],
+                "Tx8T": [
+                    3.27188,
+                    0.06503,
+                    4.79019
+                ],
+                "ZKOm": [
+                    0.76456,
+                    2.62627,
+                    -1.37267
+                ],
+                "3GJB": [
+                    2.24591,
+                    2.54163,
+                    -1.20506
+                ],
+                "kiXE": [
+                    1.36919,
+                    2.54163,
+                    4.26704
+                ],
+                "NoLw": [
+                    -0.09012,
+                    2.62627,
+                    3.97447
+                ],
+                "6v6a": [
+                    -0.10844,
+                    3.40135,
+                    -1.19262
+                ],
+                "V54F": [
+                    -0.93027,
+                    2.94836,
+                    3.23258
+                ],
+                "Bavs": [
+                    -0.24435,
+                    3.02762,
+                    -1.13781
+                ],
+                "Ikx4": [
+                    -0.80792,
+                    3.32209,
+                    3.25467
+                ]
+            },
+            "faces": {
+                "hpL6Rdvx": {
+                    "uv": {
+                        "GWMV": [
+                            66.0859,
+                            70.9641
+                        ],
+                        "JFGj": [
+                            67.4874,
+                            67.9128
+                        ],
+                        "537W": [
+                            71.8561,
+                            67.9783
+                        ],
+                        "AC6v": [
+                            72.9141,
+                            71
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "AC6v",
+                        "537W",
+                        "JFGj",
+                        "GWMV"
+                    ]
+                },
+                "mqxNbMKN": {
+                    "uv": {
+                        "3WVw": [
+                            68,
+                            44.45806
+                        ],
+                        "Qas1": [
+                            69.00415,
+                            41.46028
+                        ],
+                        "Tx8T": [
+                            73.33796,
+                            41.40305
+                        ],
+                        "BGO6": [
+                            74.73858,
+                            44.473
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "BGO6",
+                        "Tx8T",
+                        "Qas1",
+                        "3WVw"
+                    ]
+                },
+                "YNfEVbux": {
+                    "uv": {
+                        "XOuE": [
+                            37.28579,
+                            69.1084
+                        ],
+                        "YXDe": [
+                            42.46995,
+                            67.93043
+                        ],
+                        "vdKW": [
+                            42.71421,
+                            68.86492
+                        ],
+                        "Cla5": [
+                            37.35831,
+                            70.08499
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Cla5",
+                        "vdKW",
+                        "YXDe",
+                        "XOuE"
+                    ]
+                },
+                "g2nCutVO": {
+                    "uv": {
+                        "3WVw": [
+                            15.02302,
+                            74.38965
+                        ],
+                        "BGO6": [
+                            22,
+                            73.88203
+                        ],
+                        "GWMV": [
+                            22,
+                            80
+                        ],
+                        "AC6v": [
+                            15,
+                            78.8829
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "AC6v",
+                        "GWMV",
+                        "BGO6",
+                        "3WVw"
+                    ]
+                },
+                "1Zaf35ur": {
+                    "uv": {
+                        "BGO6": [
+                            59.882,
+                            79.11467
+                        ],
+                        "Tx8T": [
+                            60.0961,
+                            75.74707
+                        ],
+                        "JFGj": [
+                            65.9016,
+                            75.74707
+                        ],
+                        "GWMV": [
+                            66,
+                            79.11657
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "GWMV",
+                        "JFGj",
+                        "Tx8T",
+                        "BGO6"
+                    ]
+                },
+                "kBDqzxBK": {
+                    "uv": {
+                        "AC6v": [
+                            77.47474,
+                            9.93567
+                        ],
+                        "537W": [
+                            76.99214,
+                            6.77067
+                        ],
+                        "Qas1": [
+                            81.98534,
+                            6.77067
+                        ],
+                        "3WVw": [
+                            81.96794,
+                            9.93287
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "3WVw",
+                        "Qas1",
+                        "537W",
+                        "AC6v"
+                    ]
+                },
+                "8SyeZkqX": {
+                    "uv": {
+                        "YXDe": [
+                            70.72436,
+                            64.72599
+                        ],
+                        "ZKOm": [
+                            70.92079,
+                            65.33537
+                        ],
+                        "3GJB": [
+                            69.43086,
+                            65.43398
+                        ],
+                        "vdKW": [
+                            69.79033,
+                            64.97218
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "vdKW",
+                        "3GJB",
+                        "ZKOm",
+                        "YXDe"
+                    ]
+                },
+                "CQaobXO8": {
+                    "uv": {
+                        "Ikx4": [
+                            18,
+                            38.50259
+                        ],
+                        "V54F": [
+                            17,
+                            38.50644
+                        ],
+                        "Bavs": [
+                            17,
+                            34.08185
+                        ],
+                        "6v6a": [
+                            18,
+                            34
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "6v6a",
+                        "Bavs",
+                        "V54F",
+                        "Ikx4"
+                    ]
+                },
+                "fNRvGToK": {
+                    "uv": {
+                        "Cla5": [
+                            71.00551,
+                            38.46839
+                        ],
+                        "kiXE": [
+                            71.37006,
+                            38.92225
+                        ],
+                        "NoLw": [
+                            69.88166,
+                            38.83745
+                        ],
+                        "XOuE": [
+                            70.0628,
+                            38.21203
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "XOuE",
+                        "NoLw",
+                        "kiXE",
+                        "Cla5"
+                    ]
+                },
+                "d1NAvue2": {
+                    "uv": {
+                        "vdKW": [
+                            65.84302,
+                            72
+                        ],
+                        "3GJB": [
+                            65.85218,
+                            72.5852
+                        ],
+                        "kiXE": [
+                            60.31029,
+                            72.58768
+                        ],
+                        "Cla5": [
+                            60.34992,
+                            72.00296
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Cla5",
+                        "kiXE",
+                        "3GJB",
+                        "vdKW"
+                    ]
+                },
+                "OrkilQ2E": {
+                    "uv": {
+                        "JFGj": [
+                            67.4874,
+                            67.9128
+                        ],
+                        "3GJB": [
+                            69.43091,
+                            65.43398
+                        ],
+                        "ZKOm": [
+                            70.92079,
+                            65.33537
+                        ],
+                        "537W": [
+                            71.84725,
+                            67.97817
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "537W",
+                        "ZKOm",
+                        "3GJB",
+                        "JFGj"
+                    ]
+                },
+                "PAw26nMf": {
+                    "uv": {
+                        "Tx8T": [
+                            60.0961,
+                            75.74707
+                        ],
+                        "kiXE": [
+                            60.31029,
+                            72.58768
+                        ],
+                        "3GJB": [
+                            65.85218,
+                            72.5852
+                        ],
+                        "JFGj": [
+                            65.9017,
+                            75.74707
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "JFGj",
+                        "3GJB",
+                        "kiXE",
+                        "Tx8T"
+                    ]
+                },
+                "ntnZ4ykl": {
+                    "uv": {
+                        "Qas1": [
+                            69.00616,
+                            41.46025
+                        ],
+                        "NoLw": [
+                            69.88166,
+                            38.83745
+                        ],
+                        "kiXE": [
+                            71.37006,
+                            38.92225
+                        ],
+                        "Tx8T": [
+                            73.33796,
+                            41.40305
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Tx8T",
+                        "kiXE",
+                        "NoLw",
+                        "Qas1"
+                    ]
+                },
+                "fMfHVBmh": {
+                    "uv": {
+                        "537W": [
+                            76.99214,
+                            6.77067
+                        ],
+                        "ZKOm": [
+                            76.585,
+                            4
+                        ],
+                        "NoLw": [
+                            82,
+                            4.00228
+                        ],
+                        "Qas1": [
+                            81.98524,
+                            6.77067
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Qas1",
+                        "NoLw",
+                        "ZKOm",
+                        "537W"
+                    ]
+                },
+                "Y3CjDonl": {
+                    "uv": {
+                        "ZKOm": [
+                            70.92079,
+                            65.33537
+                        ],
+                        "YXDe": [
+                            70.72601,
+                            64.73113
+                        ],
+                        "6v6a": [
+                            71.80398,
+                            64.55541
+                        ],
+                        "Bavs": [
+                            71.9513,
+                            64.92883
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Bavs",
+                        "6v6a",
+                        "YXDe",
+                        "ZKOm"
+                    ]
+                },
+                "alimOGZ3": {
+                    "uv": {
+                        "NoLw": [
+                            24.05214,
+                            9
+                        ],
+                        "ZKOm": [
+                            24,
+                            3.58591
+                        ],
+                        "Bavs": [
+                            25,
+                            3.96705
+                        ],
+                        "V54F": [
+                            25,
+                            8.39169
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "V54F",
+                        "Bavs",
+                        "ZKOm",
+                        "NoLw"
+                    ]
+                },
+                "hyCuqIKn": {
+                    "uv": {
+                        "XOuE": [
+                            70.0628,
+                            38.21203
+                        ],
+                        "NoLw": [
+                            69.88402,
+                            38.8293
+                        ],
+                        "V54F": [
+                            68.81597,
+                            38.36112
+                        ],
+                        "Ikx4": [
+                            68.97306,
+                            38
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Ikx4",
+                        "V54F",
+                        "NoLw",
+                        "XOuE"
+                    ]
+                },
+                "n8SbAUtb": {
+                    "uv": {
+                        "YXDe": [
+                            42.46919,
+                            67.9306
+                        ],
+                        "XOuE": [
+                            37.28579,
+                            69.1084
+                        ],
+                        "Ikx4": [
+                            37.51889,
+                            68.0179
+                        ],
+                        "6v6a": [
+                            41.90499,
+                            67
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "6v6a",
+                        "Ikx4",
+                        "XOuE",
+                        "YXDe"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "e5962299-0c8c-0fd7-ef29-c4e216fdafdf"
+        }
+    ],
+    "groups": [
+        {
+            "name": "操作杆",
+            "uuid": "e8c0bb49-3754-37e4-2f2c-d90eb57dfc7f",
+            "export": true,
+            "locked": false,
+            "scope": 0,
+            "selected": false,
+            "visibility": true,
+            "_static": {
+                "properties": {},
+                "temp_data": {}
+            },
+            "origin": [
+                -5.4,
+                14,
+                -1.6
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "color": 0,
+            "children": [],
+            "reset": false,
+            "shade": true,
+            "mirror_uv": false,
+            "autouv": 0,
+            "isOpen": false,
+            "primary_selected": false
+        },
+        {
+            "name": "驾驶台",
+            "uuid": "c7037814-aca6-c584-af79-e0c156c241e2",
+            "export": true,
+            "locked": false,
+            "scope": 0,
+            "selected": false,
+            "visibility": true,
+            "_static": {
+                "properties": {},
+                "temp_data": {}
+            },
+            "origin": [
+                0,
+                14,
+                9.95
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "color": 0,
+            "children": [],
+            "reset": false,
+            "shade": true,
+            "mirror_uv": false,
+            "autouv": 0,
+            "isOpen": true,
+            "primary_selected": false
+        }
+    ],
+    "outliner": [
+        {
+            "uuid": "e8c0bb49-3754-37e4-2f2c-d90eb57dfc7f",
+            "isOpen": false,
+            "children": [
+                "e72c3179-84c3-6ab0-b9ae-64fc7a1a9b73",
+                "ab7a0436-c8e8-f37b-3517-08cef578f850"
+            ]
+        },
+        {
+            "uuid": "c7037814-aca6-c584-af79-e0c156c241e2",
+            "isOpen": true,
+            "children": [
+                "777ea086-5821-2441-cb55-c922151a2210",
+                "b307cc9b-3e4a-e3b5-d0c7-4ff3e1672939",
+                "55d3598d-b65a-233a-54b6-284bb7d81f86",
+                "8b3a22a7-34ac-6d0d-7bf8-c6ac20f8be37",
+                "97c2049f-7787-b29c-9f2b-7aedcd3fc049",
+                "62db747d-555e-34e3-3cdf-0ce4a90225e6",
+                "008aed77-c3ca-9b66-b64d-b479cea4ec32",
+                "bb6d299a-4523-ce22-ccce-cf45e7ec3834",
+                "04ea6a1a-96d6-70ce-c164-e13a5c3eddb0",
+                "e5962299-0c8c-0fd7-ef29-c4e216fdafdf"
+            ]
+        }
+    ],
+    "textures": [
+        {
+            "name": "crh1a_control_panel.png",
+            "relative_path": "crh1a_control_panel.png",
+            "folder": "",
+            "namespace": "",
+            "id": "0",
+            "group": "",
+            "scope": 0,
+            "width": 128,
+            "height": 128,
+            "uv_width": 128,
+            "uv_height": 128,
+            "particle": false,
+            "use_as_default": false,
+            "layers_enabled": false,
+            "sync_to_project": "",
+            "file_format": "png",
+            "render_mode": "default",
+            "render_sides": "auto",
+            "wrap_mode": "limited",
+            "pbr_channel": "color",
+            "fps": 7,
+            "force_translucent": false,
+            "frame_time": 1,
+            "frame_order_type": "loop",
+            "frame_order": "",
+            "frame_interpolate": false,
+            "visible": true,
+            "internal": true,
+            "saved": true,
+            "uuid": "a7ac1649-d661-3e68-9ba9-4653e20df640",
+            "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAMgElEQVR4AeydyYsVvxbHk+uIigqu5CEICk9ERVwIgogrXSi2Ey5c9dK1/4H/hYpII+LPAcVGBAcEV098CxeOqIjj04WI8zz060/Zp4mx5qpU5d6bS387J8nJSXLONzWl+nZn9+7dIzb2798/Iti3b18kb9++fSQLe/bsGTl6+EBtwF5ZDAwMjAxkYPPmzSNgy5YtI2X76fZ2nUWLFikbauxz4cIFdfHiRUU6VpSZ/HPijLLxn/9eVwK7LimPfmZnBRS01qrT6agJEyaoiRMn/gXVp58OwU1CGZ+sWLFC2ZgzZ05kitSuS8pHDSr8kmDbAScPbBJU6Kqrm3Zcj354eNh1F7H2JcCTJk1SIC0/efLkWBv9UOicAG05UQLOagfkk4hAfVvjbLvfniUAwQasboAsJBDZzBcNxNDQkBoaQ9G2Pun3LAEILmB1A2QgMiQAlAGfgtLkWHqWAASXlR8H6mw06XQf+pIxdC5fvqwux0AUujVlVbPa04COgHlev35dpQGdXoPzI8Dow5hWfGaucI4CkkcG5Ak+KWCQy5YtU2lARzA4OKgGxyBl3Zh21q5dq9bGoBsnY46Z4AKCS5oEOUKYbeXiTlKzrtdk50eAthxG4IEEHhnYecpAW+Nsu99WCDB79mw1exRMnhSYsuQpKwtZ2RJwM4/Mk0KttdJal+2iJ9o1RoAFCxZEQc8bXPSreJhVTfAl2BLwPDbl3C5pnjbdqtMYAd68eaPeWMBpUmbKZhnlPuHfC/6l8sKncSeNpXYC5HVOHr2kQbdZnrR7GVfe5jiT+rbLO0uXLlV1AeNs48Y5I64MXRO2DvZ8Q9LuZVy5b2OPG0/nxo0bKgtz585VeSAdxDkjroztYdqQAluHurJIe6ATV1e2n25vl+sUYL4v4GrCckqo0/6qVatUEnbs2KEEdfbZbbZyEcCclEkGWzb1ispy+DfbvXr1ysymynG669evV4J58+YpIPnFixcrQarhHq8sTABX/pDDf532z58/r8Dt27fHzSJTZmK8sg+FUgRg86huX7k4BcStdlY95RwN6p5DN9orRQAXE407BVTtx1zltvz06dOq5nuifSkCsHlU9+xdnAJY6YDVTpqEuufio72kMZUiQJIx38pl1bPaRTZTrgeAb+NucjylCMA1QByaHHiRvjgCxAFigCK2ek23FAG6xQlXrlxR4Pjx4yoO1IFumY+LcZYiANcAcZABsuMnoAzZTJFdI+3Nnrg61+Px1X4pAqRNJmsbFzKYyNJP6yvUVfdA7QSQrVxJGSKypMg2qAtoxwO1E0Ae6JRNTTdwdDCPFmkyumbbIOfzQO0EYHtXHuqUSc1h20eKrLzZNsi/PZD1u3YC0KE81CmT0v7AgQOqCrBRBWyPV2nfTW1rfyGkmyYfN9Z+Cj7z75Q9V0s7jLx9+5akJyBvR/XEZHJMosM5++6D/6kyoG2OPoKKxx5wcg1Qdb5a6+h9fa3LpVX776f2XhKAd/iroJ8CWHWugQBVPdjl7WshwKxZs2p1A3/NUwUM5vv376ooaNcryDuPWgiQt7O8elUO/7Sln0+fPqnPnz8r0iTY9bTrN3hJgCqrn7YE0QwusgAymPKTJ08UoIx2WZDb3zxpli0f6r0kAKu4CnDsx48fFSDgpALJv3z5UgF0AfWkWSjyeDvLlg/1tROATZm0TZusOpxSJfi0xQaBZlWTCsw8OibQMfNJcpHH20k2fCqvnQBZGzZZ9TiHIE6dOlWVAW2xwQXgt2/f/rgQtPPoAXQBcr+hFgIcPXpUHTlyRB0+fFgdOnRIDQ0NqYMHDxba0DEdv2XLFrVhw4ZSoK1pK07muwMAdf0aeOYOIgLYh2Uq4mDqmfUjIyPjWa1/P71jJQKt9XhdlgCRsnDixAl18uRJdfr0aXXmzBl19uxZde7cuegLrS9dujTeRdqhWp73k5p64437SOhwzrbnawbalE09yqUtgTbBlbjktdbRt3Srih+tdfRN36ZdNfaBgODXr19RCZtTWYgUS/zi6GajhBlnTYoa7mSdk7Pq6ZCgaK2jQCMLIAKQvNb5jwbK+Eh7UuylgWY8mMoCeuDr16+Ka4O0FL1eRXQKqDo5MzDIWcjbn9Y6WvUEnO/7AchxoA5cu3ZN5YUa/dy7d0/dvXtXxaXv379XHz58GNXq3Z/aCKC1/usIABEIlpkiA63TjwboCLCRBXRVzo/WOtptzFJ//vy5evz4cZZaV9fXQgA8QABMEDAzj2yWaa0jwijro7UutOrFpor5aK2jPtABHCEE5l0AdwJJUNZncHBw/BtCB8dkS6WrsrURQGZNoLXWkeNtmTwgGAAZaK0VH2QB9VlAV+vfbWkPKKOdBBrZhFmOfr+jdgLgUIIgEOdLPimlHbpmgMjboJ4y7NDGBisboAeQTVAG+L5gu20/5p0QQBxJkLTW40cD8gIJoqRq9IOcBdpr/eeqH206/iPtCTIgT2qSAJkyGpnPAZJk9IB9+0ee8m6GUwLgGAJmgoCYeWTK0CWNA8GiHF300sDKBgQZiIwNQBlATrPDM4WfP39Gt4hper7UlR1HLQTAyVmQ5/pTpkxRAH1SgiGBJchxoF7r5FVvTl7aE2AgefoBlAFkaUewf/z4EQX7y5cv4+8QsEPIBpLo9WJaCwHyPrffuHGj2rRpk9q8ebPaunWr2rZtW/RVbTt37ox8S7CmTZumwPTp09WMGTMiWciTJyWwkIsUIAOCDigDyHTK3wHcunVL3blzJ3oecP/+ffXgwQP18OHD6BaQdwXQ61UUJkDWixA4Ko8Oejb4Cpc1a9ao1atXR9/vt3LlSlUE8+fPj/4hJEQiwAAZIJuABHb/WfnBsds+M81q43t9YQL8E/OfQc0yJmzm42R08sA+NGe1Iag2WP3ALocM2JP7f+Q4UB9X3itlhQmQ9ZWxOIbzaRrQsWEHmxc0BJyHke02dp6g2mD1AylHBuTN9gQ6DqZOL8qFCcCFURpwEhdSaUAHgrAJgx7BBQRaIHlJ0aNdGuxVbuYJOJAy5DRb/VJXmAB1OYYvbL5586YyL7oePXoUvaD57Nkz9eLFi+itXggBCSBdVt+ysgkuMkAWkJc7Cq1/31Uk3fub5Vn9dnN9awRgJeI4DrukcWBPXwhAGqdjlmGTYBNoIME2dXpNrjqf1ggggSdo9iR4uYOHMOhw6OdUwSnD1gv56h5ojQAMnatzM9gEHBBsLgrRCXDrgc67d+9UFlwMgXPskiVLon/UuHz5ckU+Cy7G0e82OzNnzlSnTp2KBXWgX5zEU0HQL/Nlnq2eAhhAQLseCAQY87+58pHBWFVPJ4EAY+Hl4tMExZCAF0yRexURAczNDVOOmzS7dGmgTdauHTouwN1DErL6sy9A+aMRQHlW2zbq6+ozIkARY3n2ArJ28Ir0V0SXZwY8MBKY+SJ2+kk38TawG51A4Am6wMwzH/MQb8vU9yP+ug3ktg90ozMk8HEp84EQ7CvEpdQXBY+qs1DUZtP6hU8BTQ+wSH8EnuDGpdgxg8+bPvzRh6TUF0XWn59RX9Rm0/o9RYCk4FOOY9lRBOY3g1BeFsPDwyoNZe022a6nCJB0B0A5TuUIAJDrwMDAgEpDHX24thERIOvWr+wg+IfQZdu6aGdf+Jl5F/11g82IAK4GunDhQlemY+1yz56E2AZdWFj3kJ0S4OrVq6XHm3RuNQ0m6Ui5qYucRA7Kqe9HOCVAFYcmnVtNm0k6Um7qBjneA94SIH64obRuDwQC1O3RLrMXCNBlAat7uM4IcOzYsbrHGuw58IAzArx+/drBcIPJuj3gjAC7du2qe6x9bc/V5J0RwNWAg916PVA7AcK5v94AubZWOwHCud91yOq1XzsBwrm/3gC5tlaZAHLIl5Q3ZFwPOtivzwOFCbB3794/epdDvqTr1q2L6m29qDD88s4DhQlgH+IlL6nsAEreuxmHAf3hgcIE+KN1yDj3gOsOAgFce9hz+4EAngfI9fACAVx72HP7gQCeB8j18AIBXHvYc/uBAJ4HyPXwAgFce9hz+4EAngaoqWEFAjTlaU/7CQTwNDBNDSsQoClPe9pPIICngWlqWIEATXna034CATwNTFPDCgRoytOe9hMI4Flgmh5OIEDTHvesv0AAzwLS9HACAZr2uGf9BQJ4FpCmhxMI0LTHPesvEMCzgDQ9nECApj3uWX+BAJ4EpK1hBAK05XlP+g0E8CQQbQ0jEKAtz3vSbyCAJ4FoaxiBAG153pN+AwE8CURbwwgEaMvznvQbCNByINru/v8AAAD//8EsWLYAAAAGSURBVAMARIsAlyEfVoIAAAAASUVORK5CYII="
+        }
+    ]
+}

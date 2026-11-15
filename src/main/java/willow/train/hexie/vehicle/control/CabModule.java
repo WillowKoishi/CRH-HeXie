@@ -168,8 +168,14 @@ public final class CabModule implements CabTrainInput {
     /** Apply the desk's output policy before the common aggregator receives independent demands. */
     public VehicleRuntime.Control convertOutput(CabTrainControl desk, VehicleRuntime.Control controlled,
                                                int direction, double speed) {
+        return convertOutput(desk, controlled, direction, speed, true, state.automatic() || state.approachHeld());
+    }
+    public VehicleRuntime.Control convertOutput(CabTrainControl desk, VehicleRuntime.Control controlled,
+                                               int direction, double speed, boolean selected, boolean routeControl) {
         var handles = CabController.manual(effectiveInput(speed * direction).direction(direction));
-        return desk.output(state.enabled(), handles, controlled);
+        var context = new CabTrainControl.OutputContext(state.enabled(), selected, state.simple(), routeControl,
+                state.surface(desk), state.request(), direction, speed);
+        return desk.output(context, handles, controlled);
     }
     public CompoundTag write() {
         var tag = new CompoundTag();

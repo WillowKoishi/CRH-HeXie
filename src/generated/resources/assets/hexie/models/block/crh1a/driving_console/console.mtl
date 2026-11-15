@@ -1,0 +1,8 @@
+newmtl body
+map_Kd #t0
+Kd 1 1 1
+d 1
+newmtl button
+map_Kd #t1
+Kd 1 1 1
+d 1

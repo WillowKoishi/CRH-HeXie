@@ -128,7 +128,7 @@ final class SurfaceInputTarget implements SurfaceInteraction.Context {
         send(Phase.BEGIN, -1, new ControlInput(handle.id(), handle.notch(state()), ControlInput.Kind.SET, Set.of()));
     }
     @Override public void end(BlockControl.Handle handle) {
-        send(Phase.END, -1, new ControlInput(handle.id(), 0, ControlInput.Kind.SET, Set.of()));
+        send(Phase.END, -1, new ControlInput(handle.id(), 0, ControlInput.Kind.SET, SurfaceInputClient.heldFor(identity)));
     }
     @Override public void submit(BlockControl control, int value) {
         send(control instanceof BlockControl.Handle ? Phase.UPDATE : Phase.OPERATE, -1,
