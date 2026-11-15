@@ -22,6 +22,10 @@ public abstract class MixinClientContraptionDoor {
     @Inject(method = "readBlockEntity", at = @At("RETURN"), require = 1)
     private void hexie$initialiseDoorAnimation(CallbackInfoReturnable<BlockEntity> cir) {
         if (cir.getReturnValue() instanceof CustomRenderedDoorEntity display
+                && display.getBlockState().getBlock() instanceof willow.train.hexie.blocks.emu.crh1a.CRH1DoorBlock
+                && display.getBlockState().getValue(DoorBlock.HALF) == DoubleBlockHalf.LOWER)
+            willow.train.hexie.compat.create.CRH1DoorMovement.initialiseDisplay(contraption, display.getBlockPos(), display);
+        if (cir.getReturnValue() instanceof CustomRenderedDoorEntity display
                 && display.getBlockState().getBlock() instanceof CRH2DoorBlock
                 && display.getBlockState().getValue(DoorBlock.HALF) == DoubleBlockHalf.LOWER)
             CRH2DoorMovement.initialiseDisplay(contraption, display.getBlockPos(), display);

@@ -161,6 +161,21 @@ public class HeXieClientInit {
                             null, bellows, .5, state -> willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock.bounds(
                                     state.getValue(willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock.FACING)),
                             new willow.train.hexie.client.render.PartialCouplerRenderer.ContactSpan(14 / 16d, 51 / 16d))));
+            var crh1End = willow.train.hexie.init.block.BlockInit.CRH1A_END_FACE.get();
+            var crh1Pivot = crh1End.axis().atHeight(crh1End.complete().y());
+            var crh1Bellows = java.util.stream.Stream.of(PartialModelInit.CRH1_END_BELLOWS_LEFT,
+                    PartialModelInit.CRH1_END_BELLOWS_RIGHT, PartialModelInit.CRH1_END_BELLOWS_TOP,
+                    PartialModelInit.CRH1_END_BELLOWS_BOTTOM)
+                    .map(model -> new willow.train.hexie.client.render.PartialCouplerRenderer.BellowsPart(model,
+                            willow.train.hexie.blocks.emu.crh1a.CRH1EndFaceBlock.BELLOWS_BASE_Z,
+                            willow.train.hexie.blocks.emu.crh1a.CRH1EndFaceBlock.BELLOWS_FRONT_Z,
+                            willow.train.hexie.blocks.emu.crh1a.CRH1EndFaceBlock.MAX_BELLOWS_THICKNESS)).toList();
+            willow.train.hexie.client.render.SnapshotCouplerRenderer.register(crh1End,
+                    new willow.train.hexie.client.render.CRH1EndFaceRenderer(new willow.train.hexie.client.render.PartialCouplerRenderer(PartialModelInit.CRH1_END_COUPLER,
+                            new net.minecraft.world.phys.Vec3(crh1Pivot.x() + .5, crh1Pivot.y() + .5, crh1Pivot.z() + .5),
+                            null, crh1Bellows, .5, state -> willow.train.hexie.blocks.emu.crh1a.CRH1EndFaceGeometry.bounds(
+                                    state.getValue(willow.train.hexie.blocks.emu.crh1a.CRH1EndFaceBlock.FACING)),
+                            new willow.train.hexie.client.render.PartialCouplerRenderer.ContactSpan(14 / 16d, 51 / 16d))));
         });
         event.enqueueWork(() -> SimpleEntityVisualizer.builder(EntityInit.ASSEMBLED_CARRIAGE.get())
                 .factory(SnapshotCarriageVisual::new)

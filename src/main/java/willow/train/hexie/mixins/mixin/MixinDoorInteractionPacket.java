@@ -28,6 +28,7 @@ public abstract class MixinDoorInteractionPacket {
         // This alters only the following coordinate sanity check. The actual hit, native
         // block reach, permissions, item use and block updates remain in the native handler.
         return CRH2DoorInteraction.validExtendedHit(player, packet.getHitResult())
+                || willow.train.hexie.blocks.emu.crh1a.CRH1DoorInteraction.validExtendedHit(player, packet.getHitResult())
                 || CouplerInteraction.validExtendedHit(player, packet.getHitResult()) ? Vec3.ZERO : delta;
     }
 }

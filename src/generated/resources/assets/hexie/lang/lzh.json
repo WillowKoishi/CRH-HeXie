@@ -1,5 +1,8 @@
 {
   "block.hexie.crh1a_head": "CRH1A 首车",
+  "block.hexie.crh1a_psg_door": "CRH1A 客舆户",
+  "block.hexie.crh1a_endface": "CRH1A 端壁（车钩与内通车篷）",
+  "simurail_coupler_type.hexie.crh1a_semipermanent": "CRH1A 半永久车钩",
   "block.hexie.scharfenberg_coupler": "沙库车钩",
   "block.hexie.crh1a_head.tooltip.summary": "CRH1A 首车，内置沙库车钩。",
   "block.hexie.crh1a_head.tooltip.condition1": "右按整流罩",

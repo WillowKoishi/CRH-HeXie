@@ -1,0 +1,28 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:composite",
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "hexie:block/crh1a/doors/crh1a_psg_door"
+  },
+  "children": {
+    "frame_body": {
+      "parent": "hexie:block/crh1a/doors/crh1a_psg_door_frame_left_body"
+    },
+    "frame_glass": {
+      "parent": "hexie:block/crh1a/doors/crh1a_psg_door_frame_left_glass"
+    },
+    "leaf_body": {
+      "parent": "hexie:block/crh1a/doors/crh1a_psg_door_left_body"
+    },
+    "leaf_glass": {
+      "parent": "hexie:block/crh1a/doors/crh1a_psg_door_left_glass"
+    }
+  },
+  "item_render_order": [
+    "frame_body",
+    "leaf_body",
+    "frame_glass",
+    "leaf_glass"
+  ]
+}

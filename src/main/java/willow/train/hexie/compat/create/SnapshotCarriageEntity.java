@@ -765,6 +765,8 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             if (state.getBlock() instanceof willow.train.hexie.blocks.emu.head.CRH2HeadBlock)
                 box = box.minmax(willow.train.hexie.blocks.emu.head.HeadGeometry.bounds(
                         state.getValue(willow.train.hexie.blocks.emu.head.CRH2HeadBlock.FACING)).move(block.position()));
+            if (state.getBlock() instanceof willow.train.hexie.blocks.parts.ModelRenderBounds model)
+                box = box.minmax(model.modelRenderBounds(state).move(block.position()));
             var hook = willow.train.hexie.blocks.coupler.CouplerBlock.of(state);
             if (hook != null && hook.geometry() != null)
                 box = box.minmax(hook.geometry().bounds(hook.facing(state)).move(block.position()));
@@ -775,6 +777,9 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         // Create reuses contraption.bounds when aligning its compatibility entity;
         // updating only this entity's box loses the interaction reach on that pass.
         view.expandBoundsAroundAxis(Direction.Axis.Y);
+        // Create rounds the preserved Y interval and derives its radius from block cells.
+        // Retain the original model envelope too, including fractional height and overhangs.
+        view.bounds = view.bounds.minmax(bounds);
         view.configureDirection(originalForward);
         setInitialOrientation(Direction.SOUTH);
         startAtInitialYaw();
@@ -1975,7 +1980,8 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
                     var previousDoors = new java.util.HashMap<BlockPos, BlockEntity>();
                     for (var be : renderedBlockEntityView)
                         if (be instanceof willow.train.hexie.blocks.base.BlockEntityAnimation
-                                && !(be.getBlockState().getBlock() instanceof willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock))
+                                && !(be.getBlockState().getBlock() instanceof willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock)
+                                && !(be.getBlockState().getBlock() instanceof willow.train.hexie.blocks.emu.crh1a.CRH1DoorBlock))
                             previousDoors.put(be.getBlockPos(), be);
                     super.resetRenderLevel();
                     for (var entry : previousDoors.entrySet()) {

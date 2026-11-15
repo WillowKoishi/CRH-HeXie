@@ -11,7 +11,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import willow.train.hexie.blockentity.CustomRenderedDoorEntity;
 import willow.train.hexie.client.render.carriage.CarriageBlockVisual;
 import willow.train.hexie.client.render.carriage.CarriageTransparencyCompat;
-import willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock;
 
 /** Door instances use the carriage's transform and light volume, including beyond the entity render pass. */
 public final class CarriageDoorVisual extends CarriageBlockVisual<CustomRenderedDoorEntity>
@@ -59,7 +58,7 @@ public final class CarriageDoorVisual extends CarriageBlockVisual<CustomRendered
     }
 
     @Override protected boolean rendersEntireBlock() {
-        return !CarriageTransparencyCompat.required() || !(blockEntity.getBlockState().getBlock() instanceof CRH2DoorBlock);
+        return !CarriageTransparencyCompat.required() || !CustomRenderedDoorRenderer.isShellDoor(blockEntity.getBlockState());
     }
 
     @Override public void collectCrumblingInstances(Consumer<Instance> consumer) {

@@ -80,6 +80,7 @@
     "client.MixinTrainHudDirection",
     "client.MixinClientContraptionDoor",
     "client.MixinCRH2DoorRenderContext",
+    "client.MixinCRH1DoorRenderContext",
     "client.MixinSableSingleBlockShell",
     "client.MixinCarriageChildVisuals",
     "client.MixinBallastModelData",

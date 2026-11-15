@@ -98,6 +98,13 @@ public class BlockInit {
                     BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
                             .sound(SoundType.METAL).noOcclusion()),
                     block -> () -> new willow.train.hexie.item.CRH2PartItem(block.get(), new Item.Properties()));
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh1a.CRH1DoorMemberBlock> CRH1A_PASSENGER_DOOR_MEMBER =
+            BLOCKS.register("crh1a_psg_door_member", () -> new willow.train.hexie.blocks.emu.crh1a.CRH1DoorMemberBlock(
+                    BlockBehaviour.Properties.of().strength(2).sound(SoundType.METAL).noOcclusion().noLootTable()));
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh1a.CRH1DoorBlock> CRH1A_PASSENGER_DOOR =
+            register("crh1a_psg_door", () -> new willow.train.hexie.blocks.emu.crh1a.CRH1DoorBlock(
+                    BlockBehaviour.Properties.of().strength(2).sound(SoundType.METAL).noOcclusion().dynamicShape()),
+                    block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
     public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock> CRH2A_PASSENGER_DOOR =
             register("crh2a_passenger_door", () -> new willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock(
                     BlockBehaviour.Properties.of().strength(2).sound(SoundType.METAL).noOcclusion().dynamicShape(), true),
@@ -113,6 +120,12 @@ public class BlockInit {
                     block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
     public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock> CRH2A_END_FACE =
             register("crh2a_endface", () -> new willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock(
+                    BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
+                            .sound(SoundType.METAL).noOcclusion()),
+                    block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
+
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh1a.CRH1EndFaceBlock> CRH1A_END_FACE =
+            register("crh1a_endface", () -> new willow.train.hexie.blocks.emu.crh1a.CRH1EndFaceBlock(
                     BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
                             .sound(SoundType.METAL).noOcclusion()),
                     block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));

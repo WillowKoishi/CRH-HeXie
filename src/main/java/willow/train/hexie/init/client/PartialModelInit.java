@@ -28,6 +28,11 @@ public class PartialModelInit {
             CRH2_CAB_DOOR_LEFT_GLASS = block("crh2a/doors/crh2a_cab_door_left_glass"),
             CRH2_CAB_DOOR_RIGHT_GLASS = block("crh2a/doors/crh2a_cab_door_right_glass"),
             CRH2_END_COUPLER = block("crh2a/endface/coupler"),
+            CRH1_END_COUPLER = block("crh1a/endface/coupler"),
+            CRH1_END_BELLOWS_LEFT = block("crh1a/endface/bellows_left"),
+            CRH1_END_BELLOWS_RIGHT = block("crh1a/endface/bellows_right"),
+            CRH1_END_BELLOWS_TOP = block("crh1a/endface/bellows_top"),
+            CRH1_END_BELLOWS_BOTTOM = block("crh1a/endface/bellows_bottom"),
             CRH1_HEAD_COVER_UPPER = block("crh1a/head/cover_upper"),
             CRH1_HEAD_COVER_LOWER = block("crh1a/head/cover_lower"),
             CRH1_HEAD_COUPLER_REAR = block("crh1a/head/coupler_rear"),
@@ -139,6 +144,7 @@ public class PartialModelInit {
     }
 
     public static void init() {
+        willow.train.hexie.client.render.blockentity.CRH1DoorRenderer.init();
         willow.train.hexie.client.render.bogey.BogeySuspensionModels.init();
     }
 }

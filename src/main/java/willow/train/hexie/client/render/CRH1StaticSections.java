@@ -4,12 +4,13 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.state.BlockState;
 import willow.train.hexie.blocks.emu.crh1a.CRH1HeadBlock;
+import willow.train.hexie.blocks.emu.crh1a.CRH1EndFaceBlock;
 
-/** CRH1 owns its head registration independently of the CRH2 block types. */
+/** CRH1 owns its head and end-face registrations independently of the CRH2 block types. */
 public final class CRH1StaticSections {
     private static final StaticShellSections SHELLS = new StaticShellSections(
-            block -> block instanceof CRH1HeadBlock,
-            state -> state.getBlock() instanceof CRH1HeadBlock,
+            block -> block instanceof CRH1HeadBlock || block instanceof CRH1EndFaceBlock,
+            state -> state.getBlock() instanceof CRH1HeadBlock || state.getBlock() instanceof CRH1EndFaceBlock,
             state -> false, (model, state) -> model, true);
 
     private CRH1StaticSections() {}

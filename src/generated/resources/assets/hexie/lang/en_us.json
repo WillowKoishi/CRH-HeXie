@@ -1,5 +1,8 @@
 {
   "block.hexie.crh1a_head": "CRH1A Head",
+  "block.hexie.crh1a_psg_door": "CRH1A Passenger Door",
+  "block.hexie.crh1a_endface": "CRH1A End Face with Coupler and Inner Gangway",
+  "simurail_coupler_type.hexie.crh1a_semipermanent": "CRH1A Semi-permanent Coupler",
   "block.hexie.scharfenberg_coupler": "Scharfenberg Coupler",
   "block.hexie.crh1a_head.tooltip.summary": "CRH1A head with an integrated Scharfenberg coupler.",
   "block.hexie.crh1a_head.tooltip.condition1": "Right-click the cover",

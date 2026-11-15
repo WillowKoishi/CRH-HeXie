@@ -12,7 +12,7 @@ public final class SimurailCouplerFactory {
 
     public static CouplerBlockEntity create(BlockPos pos, BlockState state) {
         if (state.is(BlockInit.GENERAL_JANNEY_COUPLER.get()) || state.is(BlockInit.CRH2A_AUTO_COUPLER.get())
-                || state.is(BlockInit.CRH2A_END_FACE.get()))
+                || state.is(BlockInit.CRH2A_END_FACE.get()) || state.is(BlockInit.CRH1A_END_FACE.get()))
             return new PhysicalCouplerBlockEntity(pos, state);
         return new CouplerBlockEntity(pos, state);
     }

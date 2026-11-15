@@ -1,0 +1,4891 @@
+{
+    "meta": {
+        "format_version": "5.0",
+        "model_format": "free",
+        "box_uv": false
+    },
+    "name": "crh1a_psg_door",
+    "model_identifier": "",
+    "visible_box": [
+        1,
+        1,
+        0
+    ],
+    "variable_placeholders": "",
+    "multi_file_ruleset": "",
+    "variable_placeholder_buttons": [],
+    "timeline_setups": [],
+    "unhandled_root_fields": {},
+    "resolution": {
+        "width": 16,
+        "height": 16
+    },
+    "elements": [
+        {
+            "name": "裙板",
+            "color": 2,
+            "origin": [
+                -16,
+                16,
+                72
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "7dFg": [
+                    24.6,
+                    -16,
+                    -72
+                ],
+                "BpLK": [
+                    24.6,
+                    -16,
+                    -88
+                ],
+                "6ZvE": [
+                    20.4,
+                    -31.7,
+                    -72
+                ],
+                "uVqz": [
+                    20.4,
+                    -31.7,
+                    -88
+                ],
+                "tcdl": [
+                    23,
+                    -16.002,
+                    -72
+                ],
+                "LHoU": [
+                    23,
+                    -16.002,
+                    -88
+                ],
+                "NFma": [
+                    18.8,
+                    -31.7,
+                    -72
+                ],
+                "DYPs": [
+                    18.8,
+                    -31.7,
+                    -88
+                ],
+                "NrBu": [
+                    22.14047,
+                    -19.21302,
+                    -88
+                ],
+                "gQNH": [
+                    22.14047,
+                    -19.21302,
+                    -72
+                ],
+                "G5Qe": [
+                    23.74047,
+                    -19.21302,
+                    -72
+                ],
+                "DdUW": [
+                    23.74047,
+                    -19.21302,
+                    -88
+                ],
+                "q5Cy": [
+                    7,
+                    -31.7,
+                    -88
+                ],
+                "DdGh": [
+                    7,
+                    -19.213,
+                    -88
+                ],
+                "hsk9": [
+                    7,
+                    -19.213,
+                    -72
+                ],
+                "UbF2": [
+                    7,
+                    -31.7,
+                    -72
+                ]
+            },
+            "faces": {
+                "B2X0iGU3": {
+                    "uv": {
+                        "7dFg": [
+                            50,
+                            17.7479
+                        ],
+                        "BpLK": [
+                            66,
+                            17.7479
+                        ],
+                        "DdUW": [
+                            66,
+                            21.0739
+                        ],
+                        "G5Qe": [
+                            50,
+                            21.0739
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "G5Qe",
+                        "DdUW",
+                        "BpLK",
+                        "7dFg"
+                    ]
+                },
+                "pKwygRuC": {
+                    "uv": {
+                        "LHoU": [
+                            84,
+                            44
+                        ],
+                        "tcdl": [
+                            100,
+                            44
+                        ],
+                        "gQNH": [
+                            100,
+                            47
+                        ],
+                        "NrBu": [
+                            84,
+                            47
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "NrBu",
+                        "gQNH",
+                        "tcdl",
+                        "LHoU"
+                    ]
+                },
+                "OKWVxHwe": {
+                    "uv": {
+                        "DYPs": [
+                            79.1,
+                            64
+                        ],
+                        "NFma": [
+                            79.1,
+                            48
+                        ],
+                        "6ZvE": [
+                            80.7,
+                            48
+                        ],
+                        "uVqz": [
+                            80.7,
+                            64
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "uVqz",
+                        "6ZvE",
+                        "NFma",
+                        "DYPs"
+                    ]
+                },
+                "jH6DCG8N": {
+                    "uv": {
+                        "tcdl": [
+                            47.2,
+                            31.002
+                        ],
+                        "7dFg": [
+                            48.8,
+                            31
+                        ],
+                        "G5Qe": [
+                            47.9405,
+                            34.213
+                        ],
+                        "gQNH": [
+                            46.3405,
+                            34.213
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "gQNH",
+                        "G5Qe",
+                        "7dFg",
+                        "tcdl"
+                    ]
+                },
+                "jWhZY7h0": {
+                    "uv": {
+                        "BpLK": [
+                            0.2,
+                            36
+                        ],
+                        "LHoU": [
+                            1.8,
+                            36.002
+                        ],
+                        "NrBu": [
+                            2.6595,
+                            39.213
+                        ],
+                        "DdUW": [
+                            1.0595,
+                            39.213
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "DdUW",
+                        "NrBu",
+                        "LHoU",
+                        "BpLK"
+                    ]
+                },
+                "g6iRAkya": {
+                    "uv": {
+                        "7dFg": [
+                            16,
+                            71
+                        ],
+                        "tcdl": [
+                            16,
+                            73
+                        ],
+                        "LHoU": [
+                            0,
+                            73
+                        ],
+                        "BpLK": [
+                            0,
+                            71
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "BpLK",
+                        "LHoU",
+                        "tcdl",
+                        "7dFg"
+                    ]
+                },
+                "DaQnvf2w": {
+                    "uv": {
+                        "UbF2": [
+                            35,
+                            95
+                        ],
+                        "q5Cy": [
+                            19,
+                            95
+                        ],
+                        "DdGh": [
+                            19,
+                            83
+                        ],
+                        "hsk9": [
+                            35,
+                            83
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "hsk9",
+                        "DdGh",
+                        "q5Cy",
+                        "UbF2"
+                    ]
+                },
+                "cIWKDCof": {
+                    "uv": {
+                        "6ZvE": [
+                            44.6,
+                            46.7
+                        ],
+                        "NFma": [
+                            43,
+                            46.7
+                        ],
+                        "gQNH": [
+                            46.3405,
+                            34.213
+                        ],
+                        "G5Qe": [
+                            47.9405,
+                            34.213
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "G5Qe",
+                        "gQNH",
+                        "NFma",
+                        "6ZvE"
+                    ]
+                },
+                "b65IolIF": {
+                    "uv": {
+                        "uVqz": [
+                            66,
+                            34
+                        ],
+                        "6ZvE": [
+                            50,
+                            34
+                        ],
+                        "G5Qe": [
+                            50,
+                            21.0739
+                        ],
+                        "DdUW": [
+                            66,
+                            21.0739
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "DdUW",
+                        "G5Qe",
+                        "6ZvE",
+                        "uVqz"
+                    ]
+                },
+                "CDf6dGuM": {
+                    "uv": {
+                        "DYPs": [
+                            6,
+                            51.7
+                        ],
+                        "uVqz": [
+                            4.4,
+                            51.7
+                        ],
+                        "DdUW": [
+                            1.0595,
+                            39.213
+                        ],
+                        "NrBu": [
+                            2.6595,
+                            39.213
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "NrBu",
+                        "DdUW",
+                        "uVqz",
+                        "DYPs"
+                    ]
+                },
+                "U5Tz4AWW": {
+                    "uv": {
+                        "NrBu": [
+                            2.6595,
+                            39.213
+                        ],
+                        "DdGh": [
+                            17.8,
+                            39.213
+                        ],
+                        "q5Cy": [
+                            17.8,
+                            51.7
+                        ],
+                        "DYPs": [
+                            6,
+                            51.7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "DYPs",
+                        "q5Cy",
+                        "DdGh",
+                        "NrBu"
+                    ]
+                },
+                "bOevlmQm": {
+                    "uv": {
+                        "gQNH": [
+                            65,
+                            15
+                        ],
+                        "hsk9": [
+                            65,
+                            0
+                        ],
+                        "DdGh": [
+                            81,
+                            0
+                        ],
+                        "NrBu": [
+                            81,
+                            15
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "NrBu",
+                        "DdGh",
+                        "hsk9",
+                        "gQNH"
+                    ]
+                },
+                "8ixISyT8": {
+                    "uv": {
+                        "NFma": [
+                            43,
+                            46.7
+                        ],
+                        "UbF2": [
+                            31.2,
+                            46.7
+                        ],
+                        "hsk9": [
+                            31.2,
+                            34.213
+                        ],
+                        "gQNH": [
+                            46.3405,
+                            34.213
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "gQNH",
+                        "hsk9",
+                        "UbF2",
+                        "NFma"
+                    ]
+                },
+                "BhfiavW0": {
+                    "uv": {
+                        "DYPs": [
+                            79.1,
+                            64
+                        ],
+                        "q5Cy": [
+                            67.3,
+                            64
+                        ],
+                        "UbF2": [
+                            67.3,
+                            48
+                        ],
+                        "NFma": [
+                            79.1,
+                            48
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "NFma",
+                        "UbF2",
+                        "q5Cy",
+                        "DYPs"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "3216a8e1-1a90-e9f5-3993-166dc9f3196b"
+        },
+        {
+            "name": "裙板",
+            "color": 2,
+            "origin": [
+                -16,
+                16,
+                88
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "7dFg": [
+                    24.6,
+                    -16,
+                    -72
+                ],
+                "BpLK": [
+                    24.6,
+                    -16,
+                    -88
+                ],
+                "6ZvE": [
+                    20.4,
+                    -31.7,
+                    -72
+                ],
+                "uVqz": [
+                    20.4,
+                    -31.7,
+                    -88
+                ],
+                "tcdl": [
+                    23,
+                    -16.002,
+                    -72
+                ],
+                "LHoU": [
+                    23,
+                    -16.002,
+                    -88
+                ],
+                "NFma": [
+                    18.8,
+                    -31.7,
+                    -72
+                ],
+                "DYPs": [
+                    18.8,
+                    -31.7,
+                    -88
+                ],
+                "NrBu": [
+                    22.14047,
+                    -19.21302,
+                    -88
+                ],
+                "gQNH": [
+                    22.14047,
+                    -19.21302,
+                    -72
+                ],
+                "G5Qe": [
+                    23.74047,
+                    -19.21302,
+                    -72
+                ],
+                "DdUW": [
+                    23.74047,
+                    -19.21302,
+                    -88
+                ],
+                "q5Cy": [
+                    7,
+                    -31.7,
+                    -88
+                ],
+                "DdGh": [
+                    7,
+                    -19.213,
+                    -88
+                ],
+                "hsk9": [
+                    7,
+                    -19.213,
+                    -72
+                ],
+                "UbF2": [
+                    7,
+                    -31.7,
+                    -72
+                ]
+            },
+            "faces": {
+                "B2X0iGU3": {
+                    "uv": {
+                        "7dFg": [
+                            50,
+                            49.7479
+                        ],
+                        "BpLK": [
+                            66,
+                            49.7479
+                        ],
+                        "DdUW": [
+                            66,
+                            53.0739
+                        ],
+                        "G5Qe": [
+                            50,
+                            53.0739
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "G5Qe",
+                        "DdUW",
+                        "BpLK",
+                        "7dFg"
+                    ]
+                },
+                "pKwygRuC": {
+                    "uv": {
+                        "LHoU": [
+                            84,
+                            66
+                        ],
+                        "tcdl": [
+                            100,
+                            66
+                        ],
+                        "gQNH": [
+                            100,
+                            69
+                        ],
+                        "NrBu": [
+                            84,
+                            69
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "NrBu",
+                        "gQNH",
+                        "tcdl",
+                        "LHoU"
+                    ]
+                },
+                "OKWVxHwe": {
+                    "uv": {
+                        "DYPs": [
+                            63.1,
+                            83
+                        ],
+                        "NFma": [
+                            63.1,
+                            67
+                        ],
+                        "6ZvE": [
+                            64.7,
+                            67
+                        ],
+                        "uVqz": [
+                            64.7,
+                            83
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "uVqz",
+                        "6ZvE",
+                        "NFma",
+                        "DYPs"
+                    ]
+                },
+                "jH6DCG8N": {
+                    "uv": {
+                        "tcdl": [
+                            48.2,
+                            45.002
+                        ],
+                        "7dFg": [
+                            49.8,
+                            45
+                        ],
+                        "G5Qe": [
+                            48.9405,
+                            48.213
+                        ],
+                        "gQNH": [
+                            47.3405,
+                            48.213
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "gQNH",
+                        "G5Qe",
+                        "7dFg",
+                        "tcdl"
+                    ]
+                },
+                "jWhZY7h0": {
+                    "uv": {
+                        "BpLK": [
+                            46.2,
+                            0
+                        ],
+                        "LHoU": [
+                            47.8,
+                            0.002
+                        ],
+                        "NrBu": [
+                            48.6595,
+                            3.213
+                        ],
+                        "DdUW": [
+                            47.0595,
+                            3.213
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "DdUW",
+                        "NrBu",
+                        "LHoU",
+                        "BpLK"
+                    ]
+                },
+                "g6iRAkya": {
+                    "uv": {
+                        "7dFg": [
+                            112,
+                            84
+                        ],
+                        "tcdl": [
+                            112,
+                            86
+                        ],
+                        "LHoU": [
+                            96,
+                            86
+                        ],
+                        "BpLK": [
+                            96,
+                            84
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "BpLK",
+                        "LHoU",
+                        "tcdl",
+                        "7dFg"
+                    ]
+                },
+                "DaQnvf2w": {
+                    "uv": {
+                        "UbF2": [
+                            100,
+                            25
+                        ],
+                        "q5Cy": [
+                            84,
+                            25
+                        ],
+                        "DdGh": [
+                            84,
+                            13
+                        ],
+                        "hsk9": [
+                            100,
+                            13
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "hsk9",
+                        "DdGh",
+                        "q5Cy",
+                        "UbF2"
+                    ]
+                },
+                "cIWKDCof": {
+                    "uv": {
+                        "6ZvE": [
+                            45.6,
+                            60.7
+                        ],
+                        "NFma": [
+                            44,
+                            60.7
+                        ],
+                        "gQNH": [
+                            47.3405,
+                            48.213
+                        ],
+                        "G5Qe": [
+                            48.9405,
+                            48.213
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "G5Qe",
+                        "gQNH",
+                        "NFma",
+                        "6ZvE"
+                    ]
+                },
+                "b65IolIF": {
+                    "uv": {
+                        "uVqz": [
+                            66,
+                            66
+                        ],
+                        "6ZvE": [
+                            50,
+                            66
+                        ],
+                        "G5Qe": [
+                            50,
+                            53.0739
+                        ],
+                        "DdUW": [
+                            66,
+                            53.0739
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "DdUW",
+                        "G5Qe",
+                        "6ZvE",
+                        "uVqz"
+                    ]
+                },
+                "CDf6dGuM": {
+                    "uv": {
+                        "DYPs": [
+                            52,
+                            15.7
+                        ],
+                        "uVqz": [
+                            50.4,
+                            15.7
+                        ],
+                        "DdUW": [
+                            47.0595,
+                            3.213
+                        ],
+                        "NrBu": [
+                            48.6595,
+                            3.213
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "NrBu",
+                        "DdUW",
+                        "uVqz",
+                        "DYPs"
+                    ]
+                },
+                "U5Tz4AWW": {
+                    "uv": {
+                        "NrBu": [
+                            48.6595,
+                            3.213
+                        ],
+                        "DdGh": [
+                            63.8,
+                            3.213
+                        ],
+                        "q5Cy": [
+                            63.8,
+                            15.7
+                        ],
+                        "DYPs": [
+                            52,
+                            15.7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "DYPs",
+                        "q5Cy",
+                        "DdGh",
+                        "NrBu"
+                    ]
+                },
+                "bOevlmQm": {
+                    "uv": {
+                        "gQNH": [
+                            67,
+                            31
+                        ],
+                        "hsk9": [
+                            67,
+                            16
+                        ],
+                        "DdGh": [
+                            83,
+                            16
+                        ],
+                        "NrBu": [
+                            83,
+                            31
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "NrBu",
+                        "DdGh",
+                        "hsk9",
+                        "gQNH"
+                    ]
+                },
+                "8ixISyT8": {
+                    "uv": {
+                        "NFma": [
+                            44,
+                            60.7
+                        ],
+                        "UbF2": [
+                            32.2,
+                            60.7
+                        ],
+                        "hsk9": [
+                            32.2,
+                            48.213
+                        ],
+                        "gQNH": [
+                            47.3405,
+                            48.213
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "gQNH",
+                        "hsk9",
+                        "UbF2",
+                        "NFma"
+                    ]
+                },
+                "BhfiavW0": {
+                    "uv": {
+                        "DYPs": [
+                            63.1,
+                            83
+                        ],
+                        "q5Cy": [
+                            51.3,
+                            83
+                        ],
+                        "UbF2": [
+                            51.3,
+                            67
+                        ],
+                        "NFma": [
+                            63.1,
+                            67
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "NFma",
+                        "UbF2",
+                        "q5Cy",
+                        "DYPs"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "9ecad434-6e92-f17f-13fb-6f7c31865ad0"
+        },
+        {
+            "name": "无窗侧板-上",
+            "color": 2,
+            "origin": [
+                0.6,
+                11.2,
+                8
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "7dFg": [
+                    9.2,
+                    20.8,
+                    8
+                ],
+                "BpLK": [
+                    9.2,
+                    20.8,
+                    3
+                ],
+                "6ZvE": [
+                    9.9,
+                    4.8,
+                    8
+                ],
+                "uVqz": [
+                    9.9,
+                    4.8,
+                    3
+                ],
+                "tcdl": [
+                    7.6,
+                    20.8,
+                    8
+                ],
+                "LHoU": [
+                    7.6,
+                    20.8,
+                    3
+                ],
+                "NFma": [
+                    8.3,
+                    4.8,
+                    8
+                ],
+                "DYPs": [
+                    8.3,
+                    4.8,
+                    3
+                ]
+            },
+            "faces": {
+                "B2X0iGU3": {
+                    "uv": {
+                        "uVqz": [
+                            92,
+                            103
+                        ],
+                        "6ZvE": [
+                            87,
+                            103
+                        ],
+                        "7dFg": [
+                            87,
+                            87
+                        ],
+                        "BpLK": [
+                            92,
+                            87
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "BpLK",
+                        "7dFg",
+                        "6ZvE",
+                        "uVqz"
+                    ]
+                },
+                "pKwygRuC": {
+                    "uv": {
+                        "DYPs": [
+                            72,
+                            106
+                        ],
+                        "LHoU": [
+                            72,
+                            90
+                        ],
+                        "tcdl": [
+                            77,
+                            90
+                        ],
+                        "NFma": [
+                            77,
+                            106
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "NFma",
+                        "tcdl",
+                        "LHoU",
+                        "DYPs"
+                    ]
+                },
+                "OKWVxHwe": {
+                    "uv": {
+                        "DYPs": [
+                            33,
+                            101
+                        ],
+                        "NFma": [
+                            33,
+                            96
+                        ],
+                        "6ZvE": [
+                            35,
+                            96
+                        ],
+                        "uVqz": [
+                            35,
+                            101
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "uVqz",
+                        "6ZvE",
+                        "NFma",
+                        "DYPs"
+                    ]
+                },
+                "jH6DCG8N": {
+                    "uv": {
+                        "NFma": [
+                            24,
+                            112.01531
+                        ],
+                        "tcdl": [
+                            24,
+                            96
+                        ],
+                        "7dFg": [
+                            26,
+                            96.06993
+                        ],
+                        "6ZvE": [
+                            26,
+                            112.08524
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "6ZvE",
+                        "7dFg",
+                        "tcdl",
+                        "NFma"
+                    ]
+                },
+                "jWhZY7h0": {
+                    "uv": {
+                        "DYPs": [
+                            96.52731,
+                            83
+                        ],
+                        "uVqz": [
+                            96.45738,
+                            81
+                        ],
+                        "BpLK": [
+                            112.47269,
+                            81
+                        ],
+                        "LHoU": [
+                            112.54262,
+                            83
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "LHoU",
+                        "BpLK",
+                        "uVqz",
+                        "DYPs"
+                    ]
+                },
+                "g6iRAkya": {
+                    "uv": {
+                        "7dFg": [
+                            98,
+                            96
+                        ],
+                        "tcdl": [
+                            96,
+                            96
+                        ],
+                        "LHoU": [
+                            96,
+                            91
+                        ],
+                        "BpLK": [
+                            98,
+                            91
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "BpLK",
+                        "LHoU",
+                        "tcdl",
+                        "7dFg"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "3ace3ca9-7b6f-8629-0f93-a0c046ac8071"
+        },
+        {
+            "name": "无窗侧板-下",
+            "color": 2,
+            "origin": [
+                0.6,
+                -4.8,
+                19
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "7dFg": [
+                    10,
+                    12.7,
+                    -3
+                ],
+                "BpLK": [
+                    10,
+                    12.7,
+                    -8
+                ],
+                "6ZvE": [
+                    8,
+                    4.8,
+                    -3
+                ],
+                "uVqz": [
+                    8,
+                    4.8,
+                    -8
+                ],
+                "tcdl": [
+                    8.4,
+                    12.7,
+                    -3
+                ],
+                "LHoU": [
+                    8.4,
+                    12.7,
+                    -8
+                ],
+                "NFma": [
+                    6.4,
+                    4.8,
+                    -3
+                ],
+                "DYPs": [
+                    6.4,
+                    4.8,
+                    -8
+                ],
+                "rUAx": [
+                    8.3,
+                    20.8,
+                    -3
+                ],
+                "PWfK": [
+                    9.9,
+                    20.8,
+                    -3
+                ],
+                "ZBsQ": [
+                    9.9,
+                    20.8,
+                    -8
+                ],
+                "SyiM": [
+                    8.3,
+                    20.8,
+                    -8
+                ]
+            },
+            "faces": {
+                "B2X0iGU3": {
+                    "uv": {
+                        "uVqz": [
+                            63,
+                            100.2498
+                        ],
+                        "6ZvE": [
+                            58,
+                            100.2498
+                        ],
+                        "7dFg": [
+                            58,
+                            92.1006
+                        ],
+                        "BpLK": [
+                            63,
+                            92.1006
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "BpLK",
+                        "7dFg",
+                        "6ZvE",
+                        "uVqz"
+                    ]
+                },
+                "pKwygRuC": {
+                    "uv": {
+                        "DYPs": [
+                            0,
+                            101
+                        ],
+                        "LHoU": [
+                            0,
+                            92.8508
+                        ],
+                        "tcdl": [
+                            5,
+                            92.8508
+                        ],
+                        "NFma": [
+                            5,
+                            101
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "NFma",
+                        "tcdl",
+                        "LHoU",
+                        "DYPs"
+                    ]
+                },
+                "EZDRxgeY": {
+                    "uv": {
+                        "SyiM": [
+                            96,
+                            97
+                        ],
+                        "ZBsQ": [
+                            98,
+                            97
+                        ],
+                        "PWfK": [
+                            98,
+                            102
+                        ],
+                        "rUAx": [
+                            96,
+                            102
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "rUAx",
+                        "PWfK",
+                        "ZBsQ",
+                        "SyiM"
+                    ]
+                },
+                "OKWVxHwe": {
+                    "uv": {
+                        "DYPs": [
+                            99,
+                            62
+                        ],
+                        "NFma": [
+                            99,
+                            57
+                        ],
+                        "6ZvE": [
+                            101,
+                            57
+                        ],
+                        "uVqz": [
+                            101,
+                            62
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "uVqz",
+                        "6ZvE",
+                        "NFma",
+                        "DYPs"
+                    ]
+                },
+                "jH6DCG8N": {
+                    "uv": {
+                        "NFma": [
+                            51.2,
+                            107
+                        ],
+                        "tcdl": [
+                            53.2,
+                            99.1
+                        ],
+                        "7dFg": [
+                            54.8,
+                            99.1
+                        ],
+                        "6ZvE": [
+                            52.8,
+                            107
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "6ZvE",
+                        "7dFg",
+                        "tcdl",
+                        "NFma"
+                    ]
+                },
+                "jWhZY7h0": {
+                    "uv": {
+                        "DYPs": [
+                            67.8,
+                            109
+                        ],
+                        "uVqz": [
+                            66.2,
+                            109
+                        ],
+                        "BpLK": [
+                            64.2,
+                            101.1
+                        ],
+                        "LHoU": [
+                            65.8,
+                            101.1
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "LHoU",
+                        "BpLK",
+                        "uVqz",
+                        "DYPs"
+                    ]
+                },
+                "38Jfihok": {
+                    "uv": {
+                        "7dFg": [
+                            54.8,
+                            99.1
+                        ],
+                        "tcdl": [
+                            53.2,
+                            99.1
+                        ],
+                        "rUAx": [
+                            53.1,
+                            91
+                        ],
+                        "PWfK": [
+                            54.7,
+                            91
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "PWfK",
+                        "rUAx",
+                        "tcdl",
+                        "7dFg"
+                    ]
+                },
+                "pAxMY5XE": {
+                    "uv": {
+                        "BpLK": [
+                            63,
+                            92.1006
+                        ],
+                        "7dFg": [
+                            58,
+                            92.1006
+                        ],
+                        "PWfK": [
+                            58,
+                            84
+                        ],
+                        "ZBsQ": [
+                            63,
+                            84
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "ZBsQ",
+                        "PWfK",
+                        "7dFg",
+                        "BpLK"
+                    ]
+                },
+                "RIkuccUY": {
+                    "uv": {
+                        "LHoU": [
+                            65.8,
+                            101.1
+                        ],
+                        "BpLK": [
+                            64.2,
+                            101.1
+                        ],
+                        "ZBsQ": [
+                            64.3,
+                            93
+                        ],
+                        "SyiM": [
+                            65.9,
+                            93
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "SyiM",
+                        "ZBsQ",
+                        "BpLK",
+                        "LHoU"
+                    ]
+                },
+                "SsQYHujI": {
+                    "uv": {
+                        "tcdl": [
+                            5,
+                            92.8508
+                        ],
+                        "LHoU": [
+                            0,
+                            92.8508
+                        ],
+                        "SyiM": [
+                            0,
+                            84.7501
+                        ],
+                        "rUAx": [
+                            5,
+                            84.7501
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "rUAx",
+                        "SyiM",
+                        "LHoU",
+                        "tcdl"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "c1d96900-1a44-5aa9-f50d-9352bb244950"
+        },
+        {
+            "name": "车门",
+            "color": 2,
+            "origin": [
+                0.6,
+                -4.8,
+                3.5
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "7dFg": [
+                    10,
+                    12.7,
+                    7.5
+                ],
+                "BpLK": [
+                    10,
+                    12.7,
+                    -14.5
+                ],
+                "6ZvE": [
+                    8,
+                    4.8,
+                    7.5
+                ],
+                "uVqz": [
+                    8,
+                    4.8,
+                    -14.5
+                ],
+                "tcdl": [
+                    8.4,
+                    12.7,
+                    7.5
+                ],
+                "LHoU": [
+                    8.4,
+                    12.7,
+                    -14.5
+                ],
+                "NFma": [
+                    6.4,
+                    4.8,
+                    7.5
+                ],
+                "DYPs": [
+                    6.4,
+                    4.8,
+                    -14.5
+                ],
+                "rUAx": [
+                    8.3,
+                    20.8,
+                    7.5
+                ],
+                "I2Vl": [
+                    9.2,
+                    36.8,
+                    7.5
+                ],
+                "KCYY": [
+                    9.2,
+                    36.8,
+                    -14.5
+                ],
+                "N9JC": [
+                    9.9,
+                    20.8,
+                    7.5
+                ],
+                "2gFe": [
+                    9.9,
+                    20.8,
+                    -14.5
+                ],
+                "HfHY": [
+                    7.6,
+                    36.8,
+                    7.5
+                ],
+                "k4SM": [
+                    7.6,
+                    36.8,
+                    -14.5
+                ],
+                "SyiM": [
+                    8.3,
+                    20.8,
+                    -14.5
+                ]
+            },
+            "faces": {
+                "B2X0iGU3": {
+                    "uv": {
+                        "uVqz": [
+                            22,
+                            34.2498
+                        ],
+                        "6ZvE": [
+                            0,
+                            34.2498
+                        ],
+                        "7dFg": [
+                            0,
+                            26.1006
+                        ],
+                        "BpLK": [
+                            22,
+                            26.1006
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "BpLK",
+                        "7dFg",
+                        "6ZvE",
+                        "uVqz"
+                    ]
+                },
+                "pKwygRuC": {
+                    "uv": {
+                        "DYPs": [
+                            0,
+                            17
+                        ],
+                        "LHoU": [
+                            0,
+                            8.8508
+                        ],
+                        "tcdl": [
+                            22,
+                            8.8508
+                        ],
+                        "NFma": [
+                            22,
+                            17
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "NFma",
+                        "tcdl",
+                        "LHoU",
+                        "DYPs"
+                    ]
+                },
+                "OKWVxHwe": {
+                    "uv": {
+                        "DYPs": [
+                            69,
+                            115
+                        ],
+                        "NFma": [
+                            69,
+                            93
+                        ],
+                        "6ZvE": [
+                            71,
+                            93
+                        ],
+                        "uVqz": [
+                            71,
+                            115
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "uVqz",
+                        "6ZvE",
+                        "NFma",
+                        "DYPs"
+                    ]
+                },
+                "jH6DCG8N": {
+                    "uv": {
+                        "NFma": [
+                            18.2,
+                            57
+                        ],
+                        "tcdl": [
+                            20.2,
+                            49.1
+                        ],
+                        "7dFg": [
+                            21.8,
+                            49.1
+                        ],
+                        "6ZvE": [
+                            19.8,
+                            57
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "6ZvE",
+                        "7dFg",
+                        "tcdl",
+                        "NFma"
+                    ]
+                },
+                "jWhZY7h0": {
+                    "uv": {
+                        "DYPs": [
+                            39.8,
+                            107
+                        ],
+                        "uVqz": [
+                            38.2,
+                            107
+                        ],
+                        "BpLK": [
+                            36.2,
+                            99.1
+                        ],
+                        "LHoU": [
+                            37.8,
+                            99.1
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "LHoU",
+                        "BpLK",
+                        "uVqz",
+                        "DYPs"
+                    ]
+                },
+                "38Jfihok": {
+                    "uv": {
+                        "7dFg": [
+                            21.8,
+                            49.1
+                        ],
+                        "tcdl": [
+                            20.2,
+                            49.1
+                        ],
+                        "rUAx": [
+                            20.1,
+                            41
+                        ],
+                        "N9JC": [
+                            21.7,
+                            41
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "N9JC",
+                        "rUAx",
+                        "tcdl",
+                        "7dFg"
+                    ]
+                },
+                "pAxMY5XE": {
+                    "uv": {
+                        "BpLK": [
+                            22,
+                            26.1006
+                        ],
+                        "7dFg": [
+                            0,
+                            26.1006
+                        ],
+                        "N9JC": [
+                            0,
+                            18
+                        ],
+                        "2gFe": [
+                            22,
+                            18
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "2gFe",
+                        "N9JC",
+                        "7dFg",
+                        "BpLK"
+                    ]
+                },
+                "RIkuccUY": {
+                    "uv": {
+                        "LHoU": [
+                            37.8,
+                            99.1
+                        ],
+                        "BpLK": [
+                            36.2,
+                            99.1
+                        ],
+                        "2gFe": [
+                            36.3,
+                            91
+                        ],
+                        "SyiM": [
+                            37.9,
+                            91
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "SyiM",
+                        "2gFe",
+                        "BpLK",
+                        "LHoU"
+                    ]
+                },
+                "SsQYHujI": {
+                    "uv": {
+                        "tcdl": [
+                            22,
+                            8.8508
+                        ],
+                        "LHoU": [
+                            0,
+                            8.8508
+                        ],
+                        "rUAx": [
+                            22,
+                            0.7501
+                        ],
+                        "SyiM": [
+                            0,
+                            0.7501
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "rUAx",
+                        "SyiM",
+                        "LHoU",
+                        "tcdl"
+                    ]
+                },
+                "TrFAl21o": {
+                    "uv": {
+                        "2gFe": [
+                            45,
+                            16
+                        ],
+                        "N9JC": [
+                            23,
+                            16
+                        ],
+                        "I2Vl": [
+                            23,
+                            0
+                        ],
+                        "KCYY": [
+                            45,
+                            0
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "KCYY",
+                        "I2Vl",
+                        "N9JC",
+                        "2gFe"
+                    ]
+                },
+                "HD3iQBtI": {
+                    "uv": {
+                        "k4SM": [
+                            23,
+                            17
+                        ],
+                        "HfHY": [
+                            45,
+                            17
+                        ],
+                        "rUAx": [
+                            45,
+                            33
+                        ],
+                        "SyiM": [
+                            23,
+                            33
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "rUAx",
+                        "HfHY",
+                        "k4SM",
+                        "SyiM"
+                    ]
+                },
+                "gngShiqa": {
+                    "uv": {
+                        "HfHY": [
+                            21,
+                            96
+                        ],
+                        "I2Vl": [
+                            23,
+                            96.06993
+                        ],
+                        "N9JC": [
+                            23,
+                            112.08524
+                        ],
+                        "rUAx": [
+                            21,
+                            112.01531
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "N9JC",
+                        "I2Vl",
+                        "HfHY",
+                        "rUAx"
+                    ]
+                },
+                "HYKgXzEM": {
+                    "uv": {
+                        "2gFe": [
+                            86.45738,
+                            10
+                        ],
+                        "KCYY": [
+                            102.47269,
+                            10
+                        ],
+                        "k4SM": [
+                            102.54262,
+                            12
+                        ],
+                        "SyiM": [
+                            86.52731,
+                            12
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "k4SM",
+                        "KCYY",
+                        "2gFe",
+                        "SyiM"
+                    ]
+                },
+                "Kh6fqPt0": {
+                    "uv": {
+                        "I2Vl": [
+                            20,
+                            118
+                        ],
+                        "HfHY": [
+                            18,
+                            118
+                        ],
+                        "k4SM": [
+                            18,
+                            96
+                        ],
+                        "KCYY": [
+                            20,
+                            96
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "KCYY",
+                        "k4SM",
+                        "HfHY",
+                        "I2Vl"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "1760af21-b98c-4f3c-4781-c3c7dad469d6"
+        },
+        {
+            "name": "无窗侧板-下",
+            "color": 2,
+            "origin": [
+                0.6,
+                -4.8,
+                -8
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "7dFg": [
+                    10,
+                    12.7,
+                    -3
+                ],
+                "BpLK": [
+                    10,
+                    12.7,
+                    -8
+                ],
+                "6ZvE": [
+                    8,
+                    4.8,
+                    -3
+                ],
+                "uVqz": [
+                    8,
+                    4.8,
+                    -8
+                ],
+                "tcdl": [
+                    8.4,
+                    12.7,
+                    -3
+                ],
+                "LHoU": [
+                    8.4,
+                    12.7,
+                    -8
+                ],
+                "NFma": [
+                    6.4,
+                    4.8,
+                    -3
+                ],
+                "DYPs": [
+                    6.4,
+                    4.8,
+                    -8
+                ],
+                "rUAx": [
+                    8.3,
+                    20.8,
+                    -3
+                ],
+                "PWfK": [
+                    9.9,
+                    20.8,
+                    -3
+                ],
+                "ZBsQ": [
+                    9.9,
+                    20.8,
+                    -8
+                ],
+                "SyiM": [
+                    8.3,
+                    20.8,
+                    -8
+                ]
+            },
+            "faces": {
+                "B2X0iGU3": {
+                    "uv": {
+                        "uVqz": [
+                            11,
+                            100.2498
+                        ],
+                        "6ZvE": [
+                            6,
+                            100.2498
+                        ],
+                        "7dFg": [
+                            6,
+                            92.1006
+                        ],
+                        "BpLK": [
+                            11,
+                            92.1006
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "BpLK",
+                        "7dFg",
+                        "6ZvE",
+                        "uVqz"
+                    ]
+                },
+                "pKwygRuC": {
+                    "uv": {
+                        "DYPs": [
+                            66,
+                            92
+                        ],
+                        "LHoU": [
+                            66,
+                            83.8508
+                        ],
+                        "tcdl": [
+                            71,
+                            83.8508
+                        ],
+                        "NFma": [
+                            71,
+                            92
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "NFma",
+                        "tcdl",
+                        "LHoU",
+                        "DYPs"
+                    ]
+                },
+                "EZDRxgeY": {
+                    "uv": {
+                        "SyiM": [
+                            47,
+                            61
+                        ],
+                        "ZBsQ": [
+                            49,
+                            61
+                        ],
+                        "PWfK": [
+                            49,
+                            66
+                        ],
+                        "rUAx": [
+                            47,
+                            66
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "rUAx",
+                        "PWfK",
+                        "ZBsQ",
+                        "SyiM"
+                    ]
+                },
+                "OKWVxHwe": {
+                    "uv": {
+                        "DYPs": [
+                            72,
+                            87
+                        ],
+                        "NFma": [
+                            72,
+                            82
+                        ],
+                        "6ZvE": [
+                            74,
+                            82
+                        ],
+                        "uVqz": [
+                            74,
+                            87
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "uVqz",
+                        "6ZvE",
+                        "NFma",
+                        "DYPs"
+                    ]
+                },
+                "jH6DCG8N": {
+                    "uv": {
+                        "NFma": [
+                            41.2,
+                            107
+                        ],
+                        "tcdl": [
+                            43.2,
+                            99.1
+                        ],
+                        "7dFg": [
+                            44.8,
+                            99.1
+                        ],
+                        "6ZvE": [
+                            42.8,
+                            107
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "6ZvE",
+                        "7dFg",
+                        "tcdl",
+                        "NFma"
+                    ]
+                },
+                "jWhZY7h0": {
+                    "uv": {
+                        "DYPs": [
+                            49.8,
+                            107
+                        ],
+                        "uVqz": [
+                            48.2,
+                            107
+                        ],
+                        "BpLK": [
+                            46.2,
+                            99.1
+                        ],
+                        "LHoU": [
+                            47.8,
+                            99.1
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "LHoU",
+                        "BpLK",
+                        "uVqz",
+                        "DYPs"
+                    ]
+                },
+                "38Jfihok": {
+                    "uv": {
+                        "7dFg": [
+                            44.8,
+                            99.1
+                        ],
+                        "tcdl": [
+                            43.2,
+                            99.1
+                        ],
+                        "rUAx": [
+                            43.1,
+                            91
+                        ],
+                        "PWfK": [
+                            44.7,
+                            91
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "PWfK",
+                        "rUAx",
+                        "tcdl",
+                        "7dFg"
+                    ]
+                },
+                "pAxMY5XE": {
+                    "uv": {
+                        "BpLK": [
+                            11,
+                            92.1006
+                        ],
+                        "7dFg": [
+                            6,
+                            92.1006
+                        ],
+                        "PWfK": [
+                            6,
+                            84
+                        ],
+                        "ZBsQ": [
+                            11,
+                            84
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "ZBsQ",
+                        "PWfK",
+                        "7dFg",
+                        "BpLK"
+                    ]
+                },
+                "RIkuccUY": {
+                    "uv": {
+                        "LHoU": [
+                            47.8,
+                            99.1
+                        ],
+                        "BpLK": [
+                            46.2,
+                            99.1
+                        ],
+                        "ZBsQ": [
+                            46.3,
+                            91
+                        ],
+                        "SyiM": [
+                            47.9,
+                            91
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "SyiM",
+                        "ZBsQ",
+                        "BpLK",
+                        "LHoU"
+                    ]
+                },
+                "SsQYHujI": {
+                    "uv": {
+                        "tcdl": [
+                            71,
+                            83.8508
+                        ],
+                        "LHoU": [
+                            66,
+                            83.8508
+                        ],
+                        "SyiM": [
+                            66,
+                            75.7501
+                        ],
+                        "rUAx": [
+                            71,
+                            75.7501
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "rUAx",
+                        "SyiM",
+                        "LHoU",
+                        "tcdl"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "cd7a1906-9637-3362-f4b9-fcc936947b90"
+        },
+        {
+            "name": "无窗侧板-上",
+            "color": 2,
+            "origin": [
+                0.6,
+                11.2,
+                -19
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "7dFg": [
+                    9.2,
+                    20.8,
+                    8
+                ],
+                "BpLK": [
+                    9.2,
+                    20.8,
+                    3
+                ],
+                "6ZvE": [
+                    9.9,
+                    4.8,
+                    8
+                ],
+                "uVqz": [
+                    9.9,
+                    4.8,
+                    3
+                ],
+                "tcdl": [
+                    7.6,
+                    20.8,
+                    8
+                ],
+                "LHoU": [
+                    7.6,
+                    20.8,
+                    3
+                ],
+                "NFma": [
+                    8.3,
+                    4.8,
+                    8
+                ],
+                "DYPs": [
+                    8.3,
+                    4.8,
+                    3
+                ]
+            },
+            "faces": {
+                "B2X0iGU3": {
+                    "uv": {
+                        "uVqz": [
+                            17,
+                            103
+                        ],
+                        "6ZvE": [
+                            12,
+                            103
+                        ],
+                        "7dFg": [
+                            12,
+                            87
+                        ],
+                        "BpLK": [
+                            17,
+                            87
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "BpLK",
+                        "7dFg",
+                        "6ZvE",
+                        "uVqz"
+                    ]
+                },
+                "pKwygRuC": {
+                    "uv": {
+                        "DYPs": [
+                            81,
+                            103
+                        ],
+                        "LHoU": [
+                            81,
+                            87
+                        ],
+                        "tcdl": [
+                            86,
+                            87
+                        ],
+                        "NFma": [
+                            86,
+                            103
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "NFma",
+                        "tcdl",
+                        "LHoU",
+                        "DYPs"
+                    ]
+                },
+                "OKWVxHwe": {
+                    "uv": {
+                        "DYPs": [
+                            39,
+                            96
+                        ],
+                        "NFma": [
+                            39,
+                            91
+                        ],
+                        "6ZvE": [
+                            41,
+                            91
+                        ],
+                        "uVqz": [
+                            41,
+                            96
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "uVqz",
+                        "6ZvE",
+                        "NFma",
+                        "DYPs"
+                    ]
+                },
+                "jH6DCG8N": {
+                    "uv": {
+                        "NFma": [
+                            46,
+                            28.01531
+                        ],
+                        "tcdl": [
+                            46,
+                            12
+                        ],
+                        "7dFg": [
+                            48,
+                            12.06993
+                        ],
+                        "6ZvE": [
+                            48,
+                            28.08524
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "6ZvE",
+                        "7dFg",
+                        "tcdl",
+                        "NFma"
+                    ]
+                },
+                "jWhZY7h0": {
+                    "uv": {
+                        "DYPs": [
+                            4.52731,
+                            38
+                        ],
+                        "uVqz": [
+                            4.45738,
+                            36
+                        ],
+                        "BpLK": [
+                            20.47269,
+                            36
+                        ],
+                        "LHoU": [
+                            20.54262,
+                            38
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "LHoU",
+                        "BpLK",
+                        "uVqz",
+                        "DYPs"
+                    ]
+                },
+                "g6iRAkya": {
+                    "uv": {
+                        "7dFg": [
+                            51,
+                            96
+                        ],
+                        "tcdl": [
+                            49,
+                            96
+                        ],
+                        "LHoU": [
+                            49,
+                            91
+                        ],
+                        "BpLK": [
+                            51,
+                            91
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "BpLK",
+                        "LHoU",
+                        "tcdl",
+                        "7dFg"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "46895f3d-caa7-15ed-463b-e0149dddb1d6"
+        },
+        {
+            "name": "车顶侧面",
+            "color": 2,
+            "origin": [
+                -16,
+                16,
+                24
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "qV0C": [
+                    25.1,
+                    19.3,
+                    -24
+                ],
+                "YsH0": [
+                    25.1,
+                    19.3,
+                    -40
+                ],
+                "YkRj": [
+                    25.8,
+                    16,
+                    -24
+                ],
+                "Cwqv": [
+                    25.8,
+                    16,
+                    -40
+                ],
+                "Ryv9": [
+                    23.1,
+                    19.3,
+                    -24
+                ],
+                "lkCJ": [
+                    23.1,
+                    19.3,
+                    -40
+                ],
+                "KfOS": [
+                    24.175,
+                    16,
+                    -24
+                ],
+                "6TGx": [
+                    24.175,
+                    16,
+                    -40
+                ],
+                "QnMb": [
+                    22.9,
+                    23.3,
+                    -24
+                ],
+                "0tWg": [
+                    22.9,
+                    23.3,
+                    -40
+                ],
+                "Wrbw": [
+                    20.9,
+                    23.3,
+                    -24
+                ],
+                "bKkd": [
+                    20.9,
+                    23.3,
+                    -40
+                ],
+                "nUYD": [
+                    8,
+                    23.3,
+                    -24
+                ],
+                "bo3I": [
+                    8,
+                    23.3,
+                    -40
+                ],
+                "Kutv": [
+                    8.00001,
+                    20,
+                    -40
+                ],
+                "dkPy": [
+                    8.00001,
+                    20,
+                    -24
+                ],
+                "RuAk": [
+                    8,
+                    26.3,
+                    -40
+                ],
+                "PgQ7": [
+                    8,
+                    26.3,
+                    -24
+                ],
+                "YIQd": [
+                    16.7,
+                    26.3,
+                    -24
+                ],
+                "EMGX": [
+                    16.7,
+                    26.3,
+                    -40
+                ],
+                "sdW2": [
+                    18.7,
+                    26.3,
+                    -24
+                ],
+                "dUOP": [
+                    18.7,
+                    26.3,
+                    -40
+                ],
+                "CJsM": [
+                    8,
+                    28,
+                    -40
+                ],
+                "7zYs": [
+                    8,
+                    28,
+                    -24
+                ],
+                "MrhL": [
+                    12.9,
+                    27.9,
+                    -24
+                ],
+                "qJVt": [
+                    12.9,
+                    27.9,
+                    -40
+                ],
+                "TJtx": [
+                    15.3,
+                    27.6,
+                    -24
+                ],
+                "fFok": [
+                    15.3,
+                    27.6,
+                    -40
+                ]
+            },
+            "faces": {
+                "9CkE9uDw": {
+                    "uv": {
+                        "Cwqv": [
+                            100,
+                            42.9386
+                        ],
+                        "YkRj": [
+                            84,
+                            42.9386
+                        ],
+                        "qV0C": [
+                            84,
+                            39.5651
+                        ],
+                        "YsH0": [
+                            100,
+                            39.5651
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "YsH0",
+                        "qV0C",
+                        "YkRj",
+                        "Cwqv"
+                    ]
+                },
+                "yq8K1hPF": {
+                    "uv": {
+                        "6TGx": [
+                            93,
+                            90
+                        ],
+                        "lkCJ": [
+                            93,
+                            87
+                        ],
+                        "Ryv9": [
+                            109,
+                            87
+                        ],
+                        "KfOS": [
+                            109,
+                            90
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "KfOS",
+                        "Ryv9",
+                        "lkCJ",
+                        "6TGx"
+                    ]
+                },
+                "JPPDdDw9": {
+                    "uv": {
+                        "qJVt": [
+                            33,
+                            66.901
+                        ],
+                        "fFok": [
+                            33,
+                            69.3197
+                        ],
+                        "TJtx": [
+                            17,
+                            69.3197
+                        ],
+                        "MrhL": [
+                            17,
+                            66.901
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "MrhL",
+                        "TJtx",
+                        "fFok",
+                        "qJVt"
+                    ]
+                },
+                "HUNHgvxy": {
+                    "uv": {
+                        "6TGx": [
+                            30,
+                            112
+                        ],
+                        "KfOS": [
+                            30,
+                            96
+                        ],
+                        "YkRj": [
+                            32,
+                            96
+                        ],
+                        "Cwqv": [
+                            32,
+                            112
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Cwqv",
+                        "YkRj",
+                        "KfOS",
+                        "6TGx"
+                    ]
+                },
+                "o5NuuSvP": {
+                    "uv": {
+                        "KfOS": [
+                            16.275,
+                            86
+                        ],
+                        "Ryv9": [
+                            15.2,
+                            82.7
+                        ],
+                        "qV0C": [
+                            17.2,
+                            82.7
+                        ],
+                        "YkRj": [
+                            17.9,
+                            86
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "YkRj",
+                        "qV0C",
+                        "Ryv9",
+                        "KfOS"
+                    ]
+                },
+                "JBpVeDDo": {
+                    "uv": {
+                        "6TGx": [
+                            83.725,
+                            12
+                        ],
+                        "Cwqv": [
+                            82.1,
+                            12
+                        ],
+                        "YsH0": [
+                            82.8,
+                            8.7
+                        ],
+                        "lkCJ": [
+                            84.8,
+                            8.7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "lkCJ",
+                        "YsH0",
+                        "Cwqv",
+                        "6TGx"
+                    ]
+                },
+                "eFwf2rLf": {
+                    "uv": {
+                        "qV0C": [
+                            17.2,
+                            82.7
+                        ],
+                        "Ryv9": [
+                            15.2,
+                            82.7
+                        ],
+                        "Wrbw": [
+                            13,
+                            78.7
+                        ],
+                        "QnMb": [
+                            15,
+                            78.7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "QnMb",
+                        "Wrbw",
+                        "Ryv9",
+                        "qV0C"
+                    ]
+                },
+                "Vs4Gkz3m": {
+                    "uv": {
+                        "YsH0": [
+                            100,
+                            39.5651
+                        ],
+                        "qV0C": [
+                            84,
+                            39.5651
+                        ],
+                        "QnMb": [
+                            84,
+                            35
+                        ],
+                        "0tWg": [
+                            100,
+                            35
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "0tWg",
+                        "QnMb",
+                        "qV0C",
+                        "YsH0"
+                    ]
+                },
+                "AqKAxbf7": {
+                    "uv": {
+                        "lkCJ": [
+                            84.8,
+                            8.7
+                        ],
+                        "YsH0": [
+                            82.8,
+                            8.7
+                        ],
+                        "0tWg": [
+                            85,
+                            4.7
+                        ],
+                        "bKkd": [
+                            87,
+                            4.7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "bKkd",
+                        "0tWg",
+                        "YsH0",
+                        "lkCJ"
+                    ]
+                },
+                "9fp2TX0k": {
+                    "uv": {
+                        "dkPy": [
+                            98,
+                            65
+                        ],
+                        "Kutv": [
+                            82,
+                            65
+                        ],
+                        "bo3I": [
+                            82,
+                            61.7
+                        ],
+                        "nUYD": [
+                            98,
+                            61.7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "nUYD",
+                        "bo3I",
+                        "Kutv",
+                        "dkPy"
+                    ]
+                },
+                "3Nn37EFL": {
+                    "uv": {
+                        "qJVt": [
+                            33,
+                            66.901
+                        ],
+                        "MrhL": [
+                            17,
+                            66.901
+                        ],
+                        "7zYs": [
+                            17,
+                            62
+                        ],
+                        "CJsM": [
+                            33,
+                            62
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "CJsM",
+                        "7zYs",
+                        "MrhL",
+                        "qJVt"
+                    ]
+                },
+                "ZZ11cXGX": {
+                    "uv": {
+                        "lkCJ": [
+                            84.8,
+                            8.7
+                        ],
+                        "bKkd": [
+                            87,
+                            4.7
+                        ],
+                        "bo3I": [
+                            99.9,
+                            4.7
+                        ],
+                        "Kutv": [
+                            99.9,
+                            8
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Kutv",
+                        "bo3I",
+                        "bKkd",
+                        "lkCJ"
+                    ]
+                },
+                "CTF2z3gp": {
+                    "uv": {
+                        "Ryv9": [
+                            50,
+                            82
+                        ],
+                        "lkCJ": [
+                            34,
+                            82
+                        ],
+                        "Kutv": [
+                            34,
+                            67
+                        ],
+                        "dkPy": [
+                            50,
+                            67
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "dkPy",
+                        "Kutv",
+                        "lkCJ",
+                        "Ryv9"
+                    ]
+                },
+                "LOBZYepj": {
+                    "uv": {
+                        "Wrbw": [
+                            13,
+                            78.7
+                        ],
+                        "Ryv9": [
+                            15.2,
+                            82.7
+                        ],
+                        "dkPy": [
+                            0.1,
+                            82
+                        ],
+                        "nUYD": [
+                            0.1,
+                            78.7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "nUYD",
+                        "dkPy",
+                        "Ryv9",
+                        "Wrbw"
+                    ]
+                },
+                "397ARG1F": {
+                    "uv": {
+                        "nUYD": [
+                            98,
+                            61.7
+                        ],
+                        "bo3I": [
+                            82,
+                            61.7
+                        ],
+                        "RuAk": [
+                            82,
+                            58.7
+                        ],
+                        "PgQ7": [
+                            98,
+                            58.7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "PgQ7",
+                        "RuAk",
+                        "bo3I",
+                        "nUYD"
+                    ]
+                },
+                "d0W9kyhZ": {
+                    "uv": {
+                        "Wrbw": [
+                            13,
+                            78.7
+                        ],
+                        "nUYD": [
+                            0.1,
+                            78.7
+                        ],
+                        "PgQ7": [
+                            0.1,
+                            75.7
+                        ],
+                        "YIQd": [
+                            8.8,
+                            75.7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "YIQd",
+                        "PgQ7",
+                        "nUYD",
+                        "Wrbw"
+                    ]
+                },
+                "vpwWp6xS": {
+                    "uv": {
+                        "bo3I": [
+                            99.9,
+                            4.7
+                        ],
+                        "bKkd": [
+                            87,
+                            4.7
+                        ],
+                        "EMGX": [
+                            91.2,
+                            1.7
+                        ],
+                        "RuAk": [
+                            99.9,
+                            1.7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "RuAk",
+                        "EMGX",
+                        "bKkd",
+                        "bo3I"
+                    ]
+                },
+                "MiEb17La": {
+                    "uv": {
+                        "QnMb": [
+                            15,
+                            78.7
+                        ],
+                        "Wrbw": [
+                            13,
+                            78.7
+                        ],
+                        "YIQd": [
+                            8.8,
+                            75.7
+                        ],
+                        "sdW2": [
+                            10.8,
+                            75.7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "sdW2",
+                        "YIQd",
+                        "Wrbw",
+                        "QnMb"
+                    ]
+                },
+                "zeeK3ix2": {
+                    "uv": {
+                        "0tWg": [
+                            33,
+                            78.1211
+                        ],
+                        "QnMb": [
+                            17,
+                            78.1211
+                        ],
+                        "sdW2": [
+                            17,
+                            72.9598
+                        ],
+                        "dUOP": [
+                            33,
+                            72.9598
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "dUOP",
+                        "sdW2",
+                        "QnMb",
+                        "0tWg"
+                    ]
+                },
+                "4tdMk0Id": {
+                    "uv": {
+                        "bKkd": [
+                            87,
+                            4.7
+                        ],
+                        "0tWg": [
+                            85,
+                            4.7
+                        ],
+                        "dUOP": [
+                            89.2,
+                            1.7
+                        ],
+                        "EMGX": [
+                            91.2,
+                            1.7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "EMGX",
+                        "dUOP",
+                        "0tWg",
+                        "bKkd"
+                    ]
+                },
+                "TUTyx4HA": {
+                    "uv": {
+                        "PgQ7": [
+                            98,
+                            58.7
+                        ],
+                        "RuAk": [
+                            82,
+                            58.7
+                        ],
+                        "CJsM": [
+                            82,
+                            57
+                        ],
+                        "7zYs": [
+                            98,
+                            57
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "7zYs",
+                        "CJsM",
+                        "RuAk",
+                        "PgQ7"
+                    ]
+                },
+                "xNew7ezR": {
+                    "uv": {
+                        "YIQd": [
+                            8.8,
+                            75.7
+                        ],
+                        "PgQ7": [
+                            0.1,
+                            75.7
+                        ],
+                        "7zYs": [
+                            0.1,
+                            74
+                        ],
+                        "MrhL": [
+                            5,
+                            74.1
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "MrhL",
+                        "7zYs",
+                        "PgQ7",
+                        "YIQd"
+                    ]
+                },
+                "Aar21Xve": {
+                    "uv": {
+                        "RuAk": [
+                            99.9,
+                            1.7
+                        ],
+                        "EMGX": [
+                            91.2,
+                            1.7
+                        ],
+                        "qJVt": [
+                            95,
+                            0.1
+                        ],
+                        "CJsM": [
+                            99.9,
+                            0
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "CJsM",
+                        "qJVt",
+                        "EMGX",
+                        "RuAk"
+                    ]
+                },
+                "Fufu4lFa": {
+                    "uv": {
+                        "sdW2": [
+                            10.8,
+                            75.7
+                        ],
+                        "YIQd": [
+                            8.8,
+                            75.7
+                        ],
+                        "MrhL": [
+                            5,
+                            74.1
+                        ],
+                        "TJtx": [
+                            7.4,
+                            74.4
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "TJtx",
+                        "MrhL",
+                        "YIQd",
+                        "sdW2"
+                    ]
+                },
+                "tvI7zhPv": {
+                    "uv": {
+                        "dUOP": [
+                            33,
+                            72.9598
+                        ],
+                        "sdW2": [
+                            17,
+                            72.9598
+                        ],
+                        "TJtx": [
+                            17,
+                            69.3197
+                        ],
+                        "fFok": [
+                            33,
+                            69.3197
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "fFok",
+                        "TJtx",
+                        "sdW2",
+                        "dUOP"
+                    ]
+                },
+                "MxgOIKrn": {
+                    "uv": {
+                        "EMGX": [
+                            91.2,
+                            1.7
+                        ],
+                        "dUOP": [
+                            89.2,
+                            1.7
+                        ],
+                        "fFok": [
+                            92.6,
+                            0.4
+                        ],
+                        "qJVt": [
+                            95,
+                            0.1
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "qJVt",
+                        "fFok",
+                        "dUOP",
+                        "EMGX"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "240b8055-8b75-2842-44f6-4fe23d1f4adf"
+        },
+        {
+            "name": "车顶侧面",
+            "color": 2,
+            "origin": [
+                -16,
+                16,
+                40
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "qV0C": [
+                    25.1,
+                    19.3,
+                    -24
+                ],
+                "YsH0": [
+                    25.1,
+                    19.3,
+                    -40
+                ],
+                "YkRj": [
+                    25.8,
+                    16,
+                    -24
+                ],
+                "Cwqv": [
+                    25.8,
+                    16,
+                    -40
+                ],
+                "Ryv9": [
+                    23.1,
+                    19.3,
+                    -24
+                ],
+                "lkCJ": [
+                    23.1,
+                    19.3,
+                    -40
+                ],
+                "KfOS": [
+                    24.175,
+                    16,
+                    -24
+                ],
+                "6TGx": [
+                    24.175,
+                    16,
+                    -40
+                ],
+                "QnMb": [
+                    22.9,
+                    23.3,
+                    -24
+                ],
+                "0tWg": [
+                    22.9,
+                    23.3,
+                    -40
+                ],
+                "Wrbw": [
+                    20.9,
+                    23.3,
+                    -24
+                ],
+                "bKkd": [
+                    20.9,
+                    23.3,
+                    -40
+                ],
+                "nUYD": [
+                    8,
+                    23.3,
+                    -24
+                ],
+                "bo3I": [
+                    8,
+                    23.3,
+                    -40
+                ],
+                "Kutv": [
+                    8.00001,
+                    20,
+                    -40
+                ],
+                "dkPy": [
+                    8.00001,
+                    20,
+                    -24
+                ],
+                "RuAk": [
+                    8,
+                    26.3,
+                    -40
+                ],
+                "PgQ7": [
+                    8,
+                    26.3,
+                    -24
+                ],
+                "YIQd": [
+                    16.7,
+                    26.3,
+                    -24
+                ],
+                "EMGX": [
+                    16.7,
+                    26.3,
+                    -40
+                ],
+                "sdW2": [
+                    18.7,
+                    26.3,
+                    -24
+                ],
+                "dUOP": [
+                    18.7,
+                    26.3,
+                    -40
+                ],
+                "CJsM": [
+                    8,
+                    28,
+                    -40
+                ],
+                "7zYs": [
+                    8,
+                    28,
+                    -24
+                ],
+                "MrhL": [
+                    12.9,
+                    27.9,
+                    -24
+                ],
+                "qJVt": [
+                    12.9,
+                    27.9,
+                    -40
+                ],
+                "TJtx": [
+                    15.3,
+                    27.6,
+                    -24
+                ],
+                "fFok": [
+                    15.3,
+                    27.6,
+                    -40
+                ]
+            },
+            "faces": {
+                "9CkE9uDw": {
+                    "uv": {
+                        "Cwqv": [
+                            100,
+                            33.9386
+                        ],
+                        "YkRj": [
+                            84,
+                            33.9386
+                        ],
+                        "qV0C": [
+                            84,
+                            30.5651
+                        ],
+                        "YsH0": [
+                            100,
+                            30.5651
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "YsH0",
+                        "qV0C",
+                        "YkRj",
+                        "Cwqv"
+                    ]
+                },
+                "yq8K1hPF": {
+                    "uv": {
+                        "6TGx": [
+                            86,
+                            73
+                        ],
+                        "lkCJ": [
+                            86,
+                            70
+                        ],
+                        "Ryv9": [
+                            102,
+                            70
+                        ],
+                        "KfOS": [
+                            102,
+                            73
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "KfOS",
+                        "Ryv9",
+                        "lkCJ",
+                        "6TGx"
+                    ]
+                },
+                "JPPDdDw9": {
+                    "uv": {
+                        "qJVt": [
+                            16,
+                            57.901
+                        ],
+                        "fFok": [
+                            16,
+                            60.3197
+                        ],
+                        "TJtx": [
+                            0,
+                            60.3197
+                        ],
+                        "MrhL": [
+                            0,
+                            57.901
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "MrhL",
+                        "TJtx",
+                        "fFok",
+                        "qJVt"
+                    ]
+                },
+                "HUNHgvxy": {
+                    "uv": {
+                        "6TGx": [
+                            27,
+                            112
+                        ],
+                        "KfOS": [
+                            27,
+                            96
+                        ],
+                        "YkRj": [
+                            29,
+                            96
+                        ],
+                        "Cwqv": [
+                            29,
+                            112
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Cwqv",
+                        "YkRj",
+                        "KfOS",
+                        "6TGx"
+                    ]
+                },
+                "o5NuuSvP": {
+                    "uv": {
+                        "KfOS": [
+                            83.275,
+                            77
+                        ],
+                        "Ryv9": [
+                            82.2,
+                            73.7
+                        ],
+                        "qV0C": [
+                            84.2,
+                            73.7
+                        ],
+                        "YkRj": [
+                            84.9,
+                            77
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "YkRj",
+                        "qV0C",
+                        "Ryv9",
+                        "KfOS"
+                    ]
+                },
+                "JBpVeDDo": {
+                    "uv": {
+                        "6TGx": [
+                            78.725,
+                            89
+                        ],
+                        "Cwqv": [
+                            77.1,
+                            89
+                        ],
+                        "YsH0": [
+                            77.8,
+                            85.7
+                        ],
+                        "lkCJ": [
+                            79.8,
+                            85.7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "lkCJ",
+                        "YsH0",
+                        "Cwqv",
+                        "6TGx"
+                    ]
+                },
+                "eFwf2rLf": {
+                    "uv": {
+                        "qV0C": [
+                            84.2,
+                            73.7
+                        ],
+                        "Ryv9": [
+                            82.2,
+                            73.7
+                        ],
+                        "Wrbw": [
+                            80,
+                            69.7
+                        ],
+                        "QnMb": [
+                            82,
+                            69.7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "QnMb",
+                        "Wrbw",
+                        "Ryv9",
+                        "qV0C"
+                    ]
+                },
+                "Vs4Gkz3m": {
+                    "uv": {
+                        "YsH0": [
+                            100,
+                            30.5651
+                        ],
+                        "qV0C": [
+                            84,
+                            30.5651
+                        ],
+                        "QnMb": [
+                            84,
+                            26
+                        ],
+                        "0tWg": [
+                            100,
+                            26
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "0tWg",
+                        "QnMb",
+                        "qV0C",
+                        "YsH0"
+                    ]
+                },
+                "AqKAxbf7": {
+                    "uv": {
+                        "lkCJ": [
+                            79.8,
+                            85.7
+                        ],
+                        "YsH0": [
+                            77.8,
+                            85.7
+                        ],
+                        "0tWg": [
+                            80,
+                            81.7
+                        ],
+                        "bKkd": [
+                            82,
+                            81.7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "bKkd",
+                        "0tWg",
+                        "YsH0",
+                        "lkCJ"
+                    ]
+                },
+                "9fp2TX0k": {
+                    "uv": {
+                        "dkPy": [
+                            65,
+                            43
+                        ],
+                        "Kutv": [
+                            49,
+                            43
+                        ],
+                        "bo3I": [
+                            49,
+                            39.7
+                        ],
+                        "nUYD": [
+                            65,
+                            39.7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "nUYD",
+                        "bo3I",
+                        "Kutv",
+                        "dkPy"
+                    ]
+                },
+                "3Nn37EFL": {
+                    "uv": {
+                        "qJVt": [
+                            16,
+                            57.901
+                        ],
+                        "MrhL": [
+                            0,
+                            57.901
+                        ],
+                        "7zYs": [
+                            0,
+                            53
+                        ],
+                        "CJsM": [
+                            16,
+                            53
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "CJsM",
+                        "7zYs",
+                        "MrhL",
+                        "qJVt"
+                    ]
+                },
+                "ZZ11cXGX": {
+                    "uv": {
+                        "lkCJ": [
+                            79.8,
+                            85.7
+                        ],
+                        "bKkd": [
+                            82,
+                            81.7
+                        ],
+                        "bo3I": [
+                            94.9,
+                            81.7
+                        ],
+                        "Kutv": [
+                            94.9,
+                            85
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Kutv",
+                        "bo3I",
+                        "bKkd",
+                        "lkCJ"
+                    ]
+                },
+                "CTF2z3gp": {
+                    "uv": {
+                        "Ryv9": [
+                            83,
+                            47
+                        ],
+                        "lkCJ": [
+                            67,
+                            47
+                        ],
+                        "Kutv": [
+                            67,
+                            32
+                        ],
+                        "dkPy": [
+                            83,
+                            32
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "dkPy",
+                        "Kutv",
+                        "lkCJ",
+                        "Ryv9"
+                    ]
+                },
+                "LOBZYepj": {
+                    "uv": {
+                        "Wrbw": [
+                            80,
+                            69.7
+                        ],
+                        "Ryv9": [
+                            82.2,
+                            73.7
+                        ],
+                        "dkPy": [
+                            67.1,
+                            73
+                        ],
+                        "nUYD": [
+                            67.1,
+                            69.7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "nUYD",
+                        "dkPy",
+                        "Ryv9",
+                        "Wrbw"
+                    ]
+                },
+                "397ARG1F": {
+                    "uv": {
+                        "nUYD": [
+                            65,
+                            39.7
+                        ],
+                        "bo3I": [
+                            49,
+                            39.7
+                        ],
+                        "RuAk": [
+                            49,
+                            36.7
+                        ],
+                        "PgQ7": [
+                            65,
+                            36.7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "PgQ7",
+                        "RuAk",
+                        "bo3I",
+                        "nUYD"
+                    ]
+                },
+                "d0W9kyhZ": {
+                    "uv": {
+                        "Wrbw": [
+                            80,
+                            69.7
+                        ],
+                        "nUYD": [
+                            67.1,
+                            69.7
+                        ],
+                        "PgQ7": [
+                            67.1,
+                            66.7
+                        ],
+                        "YIQd": [
+                            75.8,
+                            66.7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "YIQd",
+                        "PgQ7",
+                        "nUYD",
+                        "Wrbw"
+                    ]
+                },
+                "vpwWp6xS": {
+                    "uv": {
+                        "bo3I": [
+                            94.9,
+                            81.7
+                        ],
+                        "bKkd": [
+                            82,
+                            81.7
+                        ],
+                        "EMGX": [
+                            86.2,
+                            78.7
+                        ],
+                        "RuAk": [
+                            94.9,
+                            78.7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "RuAk",
+                        "EMGX",
+                        "bKkd",
+                        "bo3I"
+                    ]
+                },
+                "MiEb17La": {
+                    "uv": {
+                        "QnMb": [
+                            82,
+                            69.7
+                        ],
+                        "Wrbw": [
+                            80,
+                            69.7
+                        ],
+                        "YIQd": [
+                            75.8,
+                            66.7
+                        ],
+                        "sdW2": [
+                            77.8,
+                            66.7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "sdW2",
+                        "YIQd",
+                        "Wrbw",
+                        "QnMb"
+                    ]
+                },
+                "zeeK3ix2": {
+                    "uv": {
+                        "0tWg": [
+                            16,
+                            69.1211
+                        ],
+                        "QnMb": [
+                            0,
+                            69.1211
+                        ],
+                        "sdW2": [
+                            0,
+                            63.9598
+                        ],
+                        "dUOP": [
+                            16,
+                            63.9598
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "dUOP",
+                        "sdW2",
+                        "QnMb",
+                        "0tWg"
+                    ]
+                },
+                "4tdMk0Id": {
+                    "uv": {
+                        "bKkd": [
+                            82,
+                            81.7
+                        ],
+                        "0tWg": [
+                            80,
+                            81.7
+                        ],
+                        "dUOP": [
+                            84.2,
+                            78.7
+                        ],
+                        "EMGX": [
+                            86.2,
+                            78.7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "EMGX",
+                        "dUOP",
+                        "0tWg",
+                        "bKkd"
+                    ]
+                },
+                "TUTyx4HA": {
+                    "uv": {
+                        "PgQ7": [
+                            65,
+                            36.7
+                        ],
+                        "RuAk": [
+                            49,
+                            36.7
+                        ],
+                        "CJsM": [
+                            49,
+                            35
+                        ],
+                        "7zYs": [
+                            65,
+                            35
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "7zYs",
+                        "CJsM",
+                        "RuAk",
+                        "PgQ7"
+                    ]
+                },
+                "xNew7ezR": {
+                    "uv": {
+                        "YIQd": [
+                            75.8,
+                            66.7
+                        ],
+                        "PgQ7": [
+                            67.1,
+                            66.7
+                        ],
+                        "7zYs": [
+                            67.1,
+                            65
+                        ],
+                        "MrhL": [
+                            72,
+                            65.1
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "MrhL",
+                        "7zYs",
+                        "PgQ7",
+                        "YIQd"
+                    ]
+                },
+                "Aar21Xve": {
+                    "uv": {
+                        "RuAk": [
+                            94.9,
+                            78.7
+                        ],
+                        "EMGX": [
+                            86.2,
+                            78.7
+                        ],
+                        "qJVt": [
+                            90,
+                            77.1
+                        ],
+                        "CJsM": [
+                            94.9,
+                            77
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "CJsM",
+                        "qJVt",
+                        "EMGX",
+                        "RuAk"
+                    ]
+                },
+                "Fufu4lFa": {
+                    "uv": {
+                        "sdW2": [
+                            77.8,
+                            66.7
+                        ],
+                        "YIQd": [
+                            75.8,
+                            66.7
+                        ],
+                        "MrhL": [
+                            72,
+                            65.1
+                        ],
+                        "TJtx": [
+                            74.4,
+                            65.4
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "TJtx",
+                        "MrhL",
+                        "YIQd",
+                        "sdW2"
+                    ]
+                },
+                "tvI7zhPv": {
+                    "uv": {
+                        "dUOP": [
+                            16,
+                            63.9598
+                        ],
+                        "sdW2": [
+                            0,
+                            63.9598
+                        ],
+                        "TJtx": [
+                            0,
+                            60.3197
+                        ],
+                        "fFok": [
+                            16,
+                            60.3197
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "fFok",
+                        "TJtx",
+                        "sdW2",
+                        "dUOP"
+                    ]
+                },
+                "MxgOIKrn": {
+                    "uv": {
+                        "EMGX": [
+                            86.2,
+                            78.7
+                        ],
+                        "dUOP": [
+                            84.2,
+                            78.7
+                        ],
+                        "fFok": [
+                            87.6,
+                            77.4
+                        ],
+                        "qJVt": [
+                            90,
+                            77.1
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "qJVt",
+                        "fFok",
+                        "dUOP",
+                        "EMGX"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "4be73395-e1cc-bbab-c279-068f93d704ff"
+        },
+        {
+            "name": "mesh",
+            "color": 4,
+            "origin": [
+                8,
+                36.5,
+                0
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "R5wh": [
+                    0.5,
+                    5.9,
+                    10.5
+                ],
+                "DqlV": [
+                    0.5,
+                    5.9,
+                    -10.5
+                ],
+                "rrCF": [
+                    0.5,
+                    0,
+                    10.5
+                ],
+                "fHCH": [
+                    0.5,
+                    0,
+                    -10.5
+                ],
+                "nJve": [
+                    -5.9,
+                    5.9,
+                    12.7
+                ],
+                "KsQ2": [
+                    -5.9,
+                    5.9,
+                    -12.7
+                ],
+                "AbsG": [
+                    -0.5,
+                    0,
+                    10.5
+                ],
+                "HyUs": [
+                    -0.5,
+                    0,
+                    -10.5
+                ]
+            },
+            "faces": {
+                "wkPpuWNW": {
+                    "uv": {
+                        "fHCH": [
+                            57,
+                            90
+                        ],
+                        "rrCF": [
+                            36,
+                            90
+                        ],
+                        "R5wh": [
+                            36,
+                            84
+                        ],
+                        "DqlV": [
+                            57,
+                            84
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "DqlV",
+                        "R5wh",
+                        "rrCF",
+                        "fHCH"
+                    ]
+                },
+                "UDLE3yKO": {
+                    "uv": {
+                        "HyUs": [
+                            84.5,
+                            56
+                        ],
+                        "KsQ2": [
+                            82.3,
+                            48
+                        ],
+                        "nJve": [
+                            107.7,
+                            48
+                        ],
+                        "AbsG": [
+                            105.5,
+                            56
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "AbsG",
+                        "nJve",
+                        "KsQ2",
+                        "HyUs"
+                    ]
+                },
+                "XEzkaeBp": {
+                    "uv": {
+                        "KsQ2": [
+                            23,
+                            34
+                        ],
+                        "DqlV": [
+                            29,
+                            36.2
+                        ],
+                        "R5wh": [
+                            29,
+                            57.2
+                        ],
+                        "nJve": [
+                            23,
+                            59.4
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "nJve",
+                        "R5wh",
+                        "DqlV",
+                        "KsQ2"
+                    ]
+                },
+                "FwYdlil1": {
+                    "uv": {
+                        "HyUs": [
+                            56,
+                            112
+                        ],
+                        "AbsG": [
+                            56,
+                            91
+                        ],
+                        "rrCF": [
+                            57,
+                            91
+                        ],
+                        "fHCH": [
+                            57,
+                            112
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "fHCH",
+                        "rrCF",
+                        "AbsG",
+                        "HyUs"
+                    ]
+                },
+                "pz0D4N9C": {
+                    "uv": {
+                        "AbsG": [
+                            100.8219,
+                            80
+                        ],
+                        "nJve": [
+                            95,
+                            74
+                        ],
+                        "R5wh": [
+                            102,
+                            74
+                        ],
+                        "rrCF": [
+                            102,
+                            80
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "rrCF",
+                        "R5wh",
+                        "nJve",
+                        "AbsG"
+                    ]
+                },
+                "fKnGfchX": {
+                    "uv": {
+                        "HyUs": [
+                            72.9457,
+                            81
+                        ],
+                        "fHCH": [
+                            72,
+                            81
+                        ],
+                        "DqlV": [
+                            72,
+                            75
+                        ],
+                        "KsQ2": [
+                            78.7676,
+                            75
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "KsQ2",
+                        "DqlV",
+                        "fHCH",
+                        "HyUs"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "fa4177fd-08b7-3692-c444-524a5c65485d"
+        },
+        {
+            "name": "参考方块",
+            "color": 9,
+            "origin": [
+                0,
+                -16,
+                0
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "zQxs": [
+                    8,
+                    16,
+                    8
+                ],
+                "borY": [
+                    8,
+                    16,
+                    -8
+                ],
+                "04Hp": [
+                    8,
+                    0,
+                    8
+                ],
+                "ULeY": [
+                    8,
+                    0,
+                    -8
+                ],
+                "X10c": [
+                    -8,
+                    16,
+                    8
+                ],
+                "r1KG": [
+                    -8,
+                    16,
+                    -8
+                ],
+                "jD46": [
+                    -8,
+                    0,
+                    8
+                ],
+                "GxRN": [
+                    -8,
+                    0,
+                    -8
+                ]
+            },
+            "faces": {
+                "LNHWtRXQ": {
+                    "uv": {
+                        "ULeY": [
+                            16,
+                            16
+                        ],
+                        "borY": [
+                            16,
+                            0
+                        ],
+                        "04Hp": [
+                            0,
+                            16
+                        ],
+                        "zQxs": [
+                            0,
+                            0
+                        ]
+                    },
+                    "vertices": [
+                        "borY",
+                        "zQxs",
+                        "04Hp",
+                        "ULeY"
+                    ]
+                },
+                "Ea4uoGGR": {
+                    "uv": {
+                        "GxRN": [
+                            0,
+                            16
+                        ],
+                        "jD46": [
+                            16,
+                            16
+                        ],
+                        "r1KG": [
+                            0,
+                            0
+                        ],
+                        "X10c": [
+                            16,
+                            0
+                        ]
+                    },
+                    "vertices": [
+                        "jD46",
+                        "X10c",
+                        "r1KG",
+                        "GxRN"
+                    ]
+                },
+                "COPFL1hn": {
+                    "uv": {
+                        "r1KG": [
+                            0,
+                            0
+                        ],
+                        "X10c": [
+                            0,
+                            16
+                        ],
+                        "borY": [
+                            16,
+                            0
+                        ],
+                        "zQxs": [
+                            16,
+                            16
+                        ]
+                    },
+                    "vertices": [
+                        "X10c",
+                        "zQxs",
+                        "borY",
+                        "r1KG"
+                    ]
+                },
+                "oKiJd6i1": {
+                    "uv": {
+                        "GxRN": [
+                            0,
+                            16
+                        ],
+                        "ULeY": [
+                            16,
+                            16
+                        ],
+                        "jD46": [
+                            0,
+                            0
+                        ],
+                        "04Hp": [
+                            16,
+                            0
+                        ]
+                    },
+                    "vertices": [
+                        "ULeY",
+                        "04Hp",
+                        "jD46",
+                        "GxRN"
+                    ]
+                },
+                "PZcfMiR9": {
+                    "uv": {
+                        "jD46": [
+                            0,
+                            16
+                        ],
+                        "04Hp": [
+                            16,
+                            16
+                        ],
+                        "X10c": [
+                            0,
+                            0
+                        ],
+                        "zQxs": [
+                            16,
+                            0
+                        ]
+                    },
+                    "vertices": [
+                        "04Hp",
+                        "zQxs",
+                        "X10c",
+                        "jD46"
+                    ]
+                },
+                "yIFdOO44": {
+                    "uv": {
+                        "GxRN": [
+                            16,
+                            16
+                        ],
+                        "r1KG": [
+                            16,
+                            0
+                        ],
+                        "ULeY": [
+                            0,
+                            16
+                        ],
+                        "borY": [
+                            0,
+                            0
+                        ]
+                    },
+                    "vertices": [
+                        "r1KG",
+                        "borY",
+                        "ULeY",
+                        "GxRN"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "d2b966a9-0063-4009-b483-aa8fc531f42d"
+        }
+    ],
+    "groups": [],
+    "outliner": [
+        "3216a8e1-1a90-e9f5-3993-166dc9f3196b",
+        "9ecad434-6e92-f17f-13fb-6f7c31865ad0",
+        "3ace3ca9-7b6f-8629-0f93-a0c046ac8071",
+        "c1d96900-1a44-5aa9-f50d-9352bb244950",
+        "cd7a1906-9637-3362-f4b9-fcc936947b90",
+        "46895f3d-caa7-15ed-463b-e0149dddb1d6",
+        "240b8055-8b75-2842-44f6-4fe23d1f4adf",
+        "4be73395-e1cc-bbab-c279-068f93d704ff",
+        "fa4177fd-08b7-3692-c444-524a5c65485d",
+        "1760af21-b98c-4f3c-4781-c3c7dad469d6",
+        "d2b966a9-0063-4009-b483-aa8fc531f42d"
+    ],
+    "textures": [
+        {
+            "name": "crh1a_psg_door.png",
+            "relative_path": "crh1a_psg_door.png",
+            "folder": "",
+            "namespace": "",
+            "id": "0",
+            "group": "",
+            "scope": 0,
+            "width": 128,
+            "height": 128,
+            "uv_width": 128,
+            "uv_height": 128,
+            "particle": false,
+            "use_as_default": false,
+            "layers_enabled": false,
+            "sync_to_project": "",
+            "file_format": "png",
+            "render_mode": "default",
+            "render_sides": "auto",
+            "wrap_mode": "limited",
+            "pbr_channel": "color",
+            "fps": 7,
+            "force_translucent": false,
+            "frame_time": 1,
+            "frame_order_type": "loop",
+            "frame_order": "",
+            "frame_interpolate": false,
+            "visible": true,
+            "internal": true,
+            "saved": true,
+            "uuid": "b8878200-fc3d-c459-f0e5-5be93f29759d",
+            "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAPFElEQVR4AeydX4wV1R3HzxnqWsVlG5O7u2IjSF2qKDWtTR9096HWaEKbPkhSX2yb+oAmjeyDTdv4Uk0a09o+NbEBHyQxfWgTIDFCAw3pA2ysYGGbYrdSLF02CC4bseyyEJbAeL7j/q5nD/PnzJw/M3PvkPvZ8//3+51zfnPO7Nm5QzA1eSx0ARP/1q9fH27cuNEqDzzwQChEs8ceeyxc5DjSJgwNDYUm6OrOGovHH3886puuPBv1grfGDjAXwLi1a9eyV7Zsscrq1ash2iorVqxgJqQZg0klwjBkaaTJcVUWuBLsQ+7CwoIVNbOzs8yEJCNwxVMZ55yNjY1FcB4fp7o+w+DB4RHmgqxOrF+37ue6xMnau3cvP3Xq1GURDqFcXcLFFR0CykccUBphb2/vT9FW5FtfAXDVQzbnnHHOEa0ktV4BxARGg4p7gSgifpw/f54BEY0+iIMoIX4gToik9Y+46rfS5KvL/fDwMAPIRwjkuHVjNAQGg60+5gIN3daqnDhxwkiWyfKPtoryTZzHL/GcZ+crspwnna8AYplnceTpmdxebjc3Nycnl1z5SwoyEra2AHH1e7+Lz+haZrFzB8i0wKDC8ePHP2/Q3EpTeQXAcg4geGRkhIEicbRxDckXDsBfZcwFzMs/3MyZKsIkFoV0075P6bqEwbbXt29yge8BwI1dUZ22tgDSv2PHDl4UkuErDPp6b2QuYDX6V/Tqp3ZJXcU9gQlJcm3miy3Apjj/ssR9QHV/yfY/HLk11toBXnvtNSt33Ta2gJ07d3KCZqHoNkDtSI7LsNYOIA9MX18fkxkYGGCA8hAHlEY4ODgYiaClvGgYCVn8YbLko+2iGG9BxzjAmjVrGKCRQxwkpZFP5TZWAMirI8H0R/PMBT4HA/cBnPNrQEzqjOCs0B+BOFDTi3kim7HDhw9zEyIhNfmhmul0BcBeNjMzwxP4tcjXpS0DMtVOIL1nz55lQPxxqF8woMnLaEvgTMEEklOnMBgdHeUuwCC8c+hg6ALIVnnvP8dDHbZv3xlbD/K6cSsIcOPRarXCBH4m8nVpy4BMDGjdKHoTSO3q1l/Y63QLgIIq8e4/j7L7vrI+0aSuXAESR6NmBZjcLJK6hHZJZZ2e73QFuP/eVcwFcZOCK1uHuLaUR0t50ZDk1CnMcoBfic7oIqqW97k4P8+KgKt/zZfWRIZ37RZwdGKC2SQaTc8/Pjx9lp3474nc0OR7Nte7uiSF0QrwvU1/ZDZJUuYyf83QnQyTCXS2Aqoj21R06ad2sqy6xCMHODd9ltmkjM5jKacVAPE0ZPtuXr6cAeTZ2AJwUGUC7PBJ5AA+FbrSRVd0Vpimn67koiFkL1w6F6p8ODMT6gIZPokcYN8bm5lNfHagarrOXbjKVGDjkUPjTAfU9UnkAD4V2tT11FNPWX0YxMYWkNS/Rx7+Okvia9/4KiOS2rvKr7UD2B6Uoks/tYM9SVf5vr/+nSUht4EMnzQOII22jRUg6SrXzZfM8RKtrQP09/cfF4RAHinc/cvprLhc3+SZALSFLnn/Z8tuYTosaQMhFskSVVsHUDuGiQTIR5gEymWOjP+jnZz+4OQvLn38QSHQti2oRpFgcnKS/fiZZ6wCmRiDnuWD3AWQDVb0LkcQkfXrn1weNVj88YMffn8xxtiKmz73AgtZbmbnr7zAYv6dO3+e6RDT1FtWMDU1xfbv328VyEQPFhYWQgJpFbHnRks4lnHECaSBmkYegBzO+ZO//+XohbNnz3Kk7147xE2ADBsMtlrcBBs25JERzCQ/stV+DKtIHdUIcgSEalneNJxgenr6YBAEV9EWD6CYABm20D3wSapnyw5dOQEGk0AjfMfNFMjpVuRf6dLiVRmfjrkJrMqA0oFO1q99t96yjKmU0YfrHIC+3WIS+urII09s/oIvXbp66KpPOvRJy0dbXT226gV0EwWBtBUUCdHeJ7DRpz5dXVlXfla5rp6serrl160Aug2bevEjsORQpxsPgvCFTRA/PE1u1UagtiuAvHVVbVDJHp1DINSh+mWEkQPUYTDTBsfkCRy0TZOdt8zkEAht8+ozrR85gKmQpv1nI4B3GZvwmSQ/sVo7AH4TIGwM19/G/82K8K9j77OJ996PTKBnA4qGkRCPP8p2gOgr3KK/OuGMqHcNuNqy7rt7FSvCvV++i627+y5hWv0+bQdwNahpQyKukgGhNwJxQs1bTPeLcBlIk2lS1n/7EC/CwBdX84HbV70I3XhXgQmQYULetm0HyNvQVn1awouEZINwiugvgpQuGvb29m6FHfgrJEJAcYRAzkMcQF/SH3ds50OXTaw6AH7/3717N7P9sKZOh+PeDZD0LoC4ujo6OrGOVQfA5HfiIHVyn5Y4gK2ltCoDhqeA8GiYD3t8/A7vQscSB8BAwQmKgLZlAFuhN22iUZYFZHQjwbPPPhuaUKVBwySr9mAV0EFt1y3pYOXKlcyEqgzUzTfdEn07GE5Q5D0BVemHbzuC06dPMxN8G5ylD18Pp28J5wmz5OqUu9ijSW+WbKqXN7zuHiCvgDLr0/6v2qCz5FMdOAxQZRRNY6JcUNSerHZWtwD8ZQ1kKXVVju/5A5KP7SALWiWoTdHQ5KlktIXejT/6SQgQ94XXLaCnp4cDX52DHrrSs0LU7Ua8bAGYdNCNA1z1PlvdAtTOYtKBmm8jnbT/25DdTTKC5557jplgOliYyCJA7653T4YA8YZiI2BlCzA5SELbYqZ3Xqsd237Lgc+eWXEAk4MktLXZYdz155GXt34e2T7qmuqw4gAmB0loa9oJub38fX/kY4LToDoI5+bmnsZ2NDs7yxECiiMEch7iAG3rihUHqFLn5e/7Z/3qJ5ejDzpfikW9OHD+YUKcTB95VhwAy7gJRTv6nftWcYD2G779qJf3A8hOAr0qJk8Eo60qz3XaigNgGTcBnSz6aha0o9ezmDzSBRvA2NgYA5zzKFTjqEPQCR6lEYptgpkAGT6x4gBWDC7wapb261ysGJBfSBiGDCtC/pbVaRGwqxeYyuXLl/t1QVdMln+0hYyqMDw8zAAmFyGQ43F2wgkAykyeCEZbyPBJ0HPTrVxFLKUzusBYk4MktIWMKoDlHnAev/xznpyv2j99ajKcGH+7EGirynOVDvb96XehCa4Mq6PcuHsCV/2wJbc69wC2emQgZ2RkhAGIQAh046iHrQIhMXlmln188Wou0Iba+wiDR57YzE3wYWTVdcgTT/cC+LbQhg2P8oceeigXaIO2vvoc/b+BWLrS8GVM2XqKHuTgfUqcf/rlJM4/DXX68ufdfwmT0Glvow62gJMXLlyIEAIRnpmfn18Q8QWRf0VwTTjHRKvVihD5HfmZmjwWqqCjSROEfJTLcK4/+XK7MuMB5/yG8fHxVeMCYQjC244cOdIj4j0iD2VwkntEvQjhDKEo67jPW2MHmEpaJ3HymFauU2ZDho6etDqY3LTydhluiEA7o4sjcRMnbx8YGlwoWaBenCzk+yK4du3ai+Kw42kgbmaiUIq/JCb9D8IYmVdFx7b+5uWX9yMUZUz30Aj11EOnKA0hJfPg8AhTiTMpbcJomxTjMiG2ziu0lSIU6TNCHrbYCMQF0SdNZlTB4Y9AHHxsBWKJj0Il/rzQ/eSBAwciFuObRHrT2wcPjoj0JgHTPTRCPfXQCWnIkMn7lg65rct42kSJSQ/FGEbbpLDhHmyftJUiFOnbRD622AhR9waRbn/SZLcrMcZsx7W3gCTF6HhSWZ58mvS5Sxdzv6WDXs+SR59ad7DVx1TkOjoTJFbL9jmC3FY3Dh2EbhvTeoFsdN44lGPvQ2gKXs3yzYe/xVor78qNy9ezpE2IcP6txOI4tLdKsY2+JHg6ZluNtllsvTRmQkZoAskpEhqtAOhcEaVxbfBqFrEsFvrQ61ni5Jrm4YsaIEEOtsBoS1x8U0i0VYot8knRkeexnQIRj9tetybI9JodwHOLgo6R58JqihcNIcMEn490oY8mtspti44/tZNl5Y0H6uEH0hCCd9u0Wq1QBvmugV7bwGa5H4hDB/KJba/vYCpUFhdi8Ck/79Yp1zf5Qxzakg1Fw0A9/EC6qDBb7e684w5mC12b+npvZCos4R+ufiCK/y+o9SfxHuDWvr7MjuEqIDIrd2AFsQVepP4XCTEkJn+IQ1vIMCFQDz+QhsCklxhj6VRB/U4FX9QAaf1759DBUAX11XFCGvl44CPvwyJUH20hwxaJK4AtBS7lbNiwgWXhSP+bQu6b4regwyKs9ScYbKUfgJTRu/9NTTEdXtmyhWXhwn6x3H+XKCofD35U4WGRyq0Art6uMTD0DJNRJ276o3mmgjrq0o408ncZfDEVD3zgwY8qPCyS6gBHJyaYDDruGtxdA+jBAQxAHOBNpABxPHkDEEd9gDhAHYA47buIu+L+e1cxlTRd6BNAHdgNEC+DVAcow6CydI6OjnKVsmzxqTdQDz+QzjJg/bp1TCarfhXK972xmcmQTbj6AKUR4uoEiJsgjxHiJrJctQ3Uww+kXSmro1x1aUe6jv1IstnqFiDujLkJSUZ2c77rvltzACyjgAymmzCkKY5ygDyEIIonvB4NBzAAddIgp0urU9Wysm235gBVHeCq22Xy66SNvjUOYGMUaywjUA8/kC6zP1gSoZ+2B8QBthH8hxTq/0ZCZwGoA5DetWsXA0g3pI9AbVYATH56V5rSIiMQqIcfSENQ3JEs8l2AGz3gQjbJTOpP0opD7To9rM0K0KkTgXccgbL6l9sBcCXNzMxwmTKMxxcySS/2fcQpRFwuR9olPcsHuQr0yWOEOMYO+Tr4qpPbAXwZ1ujxMwKNA/gZ58pqaRwgY2rUpR3pjCa1Kq6kA+DOHMgjiTSQ87DPE8inOEKkG7JHoJIOkG12U8PWCDQOIEYSKwsQ0a77NA7QdVO+tMONAywdj9JTvg1w5gDyH20ojmUWoJMIAeIucXX4gtM74NJ2H7KdOYAP4+uqA3/3AFWwv3GAKsxCiTY0DhAz+Lg6QUxRx2U1DtBxU5qvQ40D5BuvjqttzQFwRw86boQ6vEPWHKDDx8l598pS0DhAWSNfEb2NA1RkIsoyo3GAska+InobB6jIRJRlRuMAZY18RfQ2DlCRiSjLjMYByhr5iuhtHKDkiShb/ScAAAD//9R7yxEAAAAGSURBVAMAOI24Ws2yr6kAAAAASUVORK5CYII="
+        }
+    ]
+}

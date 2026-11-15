@@ -1,5 +1,8 @@
 {
   "block.hexie.crh1a_head": "CRH1A 车头",
+  "block.hexie.crh1a_psg_door": "CRH1A 客室门",
+  "block.hexie.crh1a_endface": "CRH1A 端面（车钩与内风挡）",
+  "simurail_coupler_type.hexie.crh1a_semipermanent": "CRH1A 半永久车钩",
   "block.hexie.scharfenberg_coupler": "沙库车钩",
   "block.hexie.crh1a_head.tooltip.summary": "自带沙库车钩的 CRH1A 车头。",
   "block.hexie.crh1a_head.tooltip.condition1": "右键整流罩",
