@@ -106,6 +106,8 @@ public final class DrivingConsoleEntity extends BlockEntity implements CabDispla
         super.loadAdditional(tag, registries);
         pendingTimetable = tag.getCompound(PENDING_TIMETABLE).copy();
         benchControls = willow.train.hexie.vehicle.control.CabModule.read(tag.getCompound(tag.contains("CabControls") ? "CabControls" : "TestControls"));
+        if (getBlockState().getBlock() instanceof CabControlHost host)
+            benchControls.submit(CabModule.normalize(host.trainControl(getBlockState()), benchControls.state()));
     }
     @Override public net.minecraft.nbt.CompoundTag getUpdateTag(net.minecraft.core.HolderLookup.Provider registries) { return saveWithoutMetadata(registries); }
     @Override public net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket getUpdatePacket() {
@@ -114,6 +116,7 @@ public final class DrivingConsoleEntity extends BlockEntity implements CabDispla
 
     public DrivingConsoleEntity(BlockPos pos, BlockState state) {
         super(BlockEntitiesInit.DRIVING_CONSOLE.get(), pos, state);
+        if (state.getBlock() instanceof CabControlHost host) benchControls = host.createCabModule();
     }
 
     /** Replaces the previous source, including any legacy speed-only binding. */

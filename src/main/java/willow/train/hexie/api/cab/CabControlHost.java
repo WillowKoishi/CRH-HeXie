@@ -12,6 +12,9 @@ public interface CabControlHost extends CabSurfaceHost {
 
     default CabTrainControl trainControl(BlockState block) { return CabTrainControl.NONE; }
 
+    /** A physical setting may remain operable even while the carriage is derailed. */
+    default boolean operatesWhenDerailed(BlockState block, String controlId) { return false; }
+
     /** Physical detents for the common controller's power-zero and reverser-cut-out checks. */
     default CabNeutralPositions neutralPositions(BlockState block) { return CabNeutralPositions.FROM_REQUEST; }
 

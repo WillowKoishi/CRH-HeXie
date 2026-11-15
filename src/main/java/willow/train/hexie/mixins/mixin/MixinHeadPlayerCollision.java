@@ -17,7 +17,9 @@ public interface MixinHeadPlayerCollision {
     @Inject(method="getBlockCollisions",at=@At("RETURN"),cancellable=true)
     private void hexie$headShell(Entity entity,AABB box,CallbackInfoReturnable<Iterable<VoxelShape>> callback) {
         if (!(entity instanceof Player)) return;
-        var extra=HeadGeometry.collisions((CollisionGetter)(Object)this,box);
+        var world=(CollisionGetter)(Object)this;
+        var extra=new java.util.ArrayList<>(HeadGeometry.collisions(world,box));
+        extra.addAll(willow.train.hexie.blocks.parts.PlayerCollisionShells.collisions(world,box));
         if(extra.isEmpty())return;
         var original=callback.getReturnValue();
         callback.setReturnValue(() -> Stream.concat(StreamSupport.stream(original.spliterator(),false),extra.stream()).iterator());

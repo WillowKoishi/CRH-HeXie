@@ -26,6 +26,9 @@ public interface CabTrainControl {
     /** Independent enable switches remain local; a reverser-operated desk may derive its enable here. */
     default boolean synchronizedEnabled(CabTrainRequest current) { return current.enabled(); }
 
+    /** Normalize direction for desks whose physical selector cannot represent every common state. */
+    default int normalizeDirection(CabTrainRequest current) { return current.reverser(); }
+
     enum Demand { POWER, BRAKE, REVERSER }
 
     /** Identify explicit demand gestures, including selecting an already displayed value. */

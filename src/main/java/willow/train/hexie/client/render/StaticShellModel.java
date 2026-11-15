@@ -14,9 +14,13 @@ import net.neoforged.neoforge.client.model.data.ModelData;
 import net.neoforged.neoforge.client.model.data.ModelProperty;
 
 /** Terrain geometry is emitted once, into its destination sections. Item/virtual models stay available. */
-final class CRH2StaticModel extends BakedModelWrapper<BakedModel> {
+final class StaticShellModel extends BakedModelWrapper<BakedModel> {
     private static final ModelProperty<Boolean> SECTION_GEOMETRY = new ModelProperty<>();
-    CRH2StaticModel(BakedModel original) { super(original); }
+    private final boolean unshadedVirtual;
+    StaticShellModel(BakedModel original, boolean unshadedVirtual) {
+        super(original);
+        this.unshadedVirtual = unshadedVirtual;
+    }
 
     @Override public ModelData getModelData(BlockAndTintGetter world, BlockPos pos, BlockState state, ModelData data) {
         var inherited = super.getModelData(world, pos, state, data);
@@ -31,6 +35,9 @@ final class CRH2StaticModel extends BakedModelWrapper<BakedModel> {
     @Override public List<BakedQuad> getQuads(BlockState state, Direction side, RandomSource random,
                                              ModelData data, RenderType layer) {
         if (Boolean.TRUE.equals(data.get(SECTION_GEOMETRY))) return List.of();
-        return super.getQuads(state, side, random, data, layer);
+        var quads = super.getQuads(state, side, random, data, layer);
+        if (!unshadedVirtual) return quads;
+        return quads.stream().map(quad -> new BakedQuad(quad.getVertices(), quad.getTintIndex(),
+                quad.getDirection(), quad.getSprite(), false, false)).toList();
     }
 }

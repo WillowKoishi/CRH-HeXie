@@ -45,6 +45,8 @@ public final class HexieNetworkHandler {
                 willow.train.hexie.network.s2c.PassengerDisplayPacket.CODEC, (packet, context) -> packet.handle(context));
         registrar.playToClient(willow.train.hexie.network.s2c.CarriageNumberPacket.TYPE,
                 willow.train.hexie.network.s2c.CarriageNumberPacket.CODEC, (packet, context) -> packet.handle(context));
+        registrar.playToClient(willow.train.hexie.network.s2c.CRH1HeadAnimationPacket.TYPE,
+                willow.train.hexie.network.s2c.CRH1HeadAnimationPacket.CODEC, (packet, context) -> packet.handle(context));
         registrar.playToClient(willow.train.hexie.network.s2c.PanelEditPacket.TYPE,
                 willow.train.hexie.network.s2c.PanelEditPacket.CODEC, (packet, context) -> packet.handle(context));
         registrar.playToServer(willow.train.hexie.compat.create.CreatePanelEditorOpenPacket.TYPE,

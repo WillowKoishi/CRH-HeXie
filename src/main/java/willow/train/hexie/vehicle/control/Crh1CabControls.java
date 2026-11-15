@@ -18,7 +18,7 @@ public enum Crh1CabControls implements CabTrainControl {
     public static final String TARGET_SPEED = "hexie:crh1a_target_speed";
     public static final CabNeutralPositions NEUTRAL_POSITIONS = new CabNeutralPositions(
             new CabNeutralPositions.Detent(Crh1CabHandle.INSTANCE, Crh1CabHandle.ZERO),
-            new CabNeutralPositions.Detent(DIRECTION, 0));
+            CabNeutralPositions.Detent.any());
 
     public enum DirectionButton implements BlockControl.Button {
         INSTANCE;
@@ -26,11 +26,8 @@ public enum Crh1CabControls implements CabTrainControl {
         @Override public boolean showTooltip() { return true; }
         @Override public Component nameText() { return Component.translatable("gui.hexie.cab.crh1_direction_button"); }
         @Override public Component valueText(ControlState state) {
-            return Component.translatable(switch (state.getOrDefault(DIRECTION, 0)) {
-                case 1 -> "gui.hexie.cab.forward";
-                case -1 -> "gui.hexie.cab.reverse";
-                default -> "gui.hexie.cab.off";
-            });
+            return Component.translatable(state.getOrDefault(DIRECTION, 1) == -1
+                    ? "gui.hexie.cab.reverse" : "gui.hexie.cab.forward");
         }
     }
 
@@ -39,12 +36,12 @@ public enum Crh1CabControls implements CabTrainControl {
                 || !Crh1CabHandle.INSTANCE.accepts(saved.getOrDefault(Crh1CabHandle.INSTANCE.positionKey(), 0)))
             saved = saved.with(Crh1CabHandle.INSTANCE.positionKey(), fromRequest(current));
         if (!saved.positions().containsKey(TARGET_SPEED)) saved = saved.with(TARGET_SPEED, -1);
-        return saved.with(DIRECTION, current.reverser());
+        return saved.with(DIRECTION, normalizeDirection(current));
     }
 
     @Override public ControlState synchronize(ControlState saved, CabTrainRequest current) {
         return saved.with(Crh1CabHandle.INSTANCE.positionKey(), fromRequest(current))
-                .with(TARGET_SPEED, -1).with(DIRECTION, current.reverser());
+                .with(TARGET_SPEED, -1).with(DIRECTION, normalizeDirection(current));
     }
 
     private static int fromRequest(CabTrainRequest request) {
@@ -56,6 +53,7 @@ public enum Crh1CabControls implements CabTrainControl {
     }
 
     @Override public boolean synchronizedEnabled(CabTrainRequest current) { return current.reverser() != 0; }
+    @Override public int normalizeDirection(CabTrainRequest current) { return current.reverser() == -1 ? -1 : 1; }
     @Override public Set<Demand> operatedDemands(BlockControl control) {
         if (control == Crh1CabHandle.INSTANCE) return Set.of(Demand.POWER, Demand.BRAKE);
         return control == DirectionButton.INSTANCE ? Set.of(Demand.REVERSER) : Set.of();
@@ -86,11 +84,8 @@ public enum Crh1CabControls implements CabTrainControl {
     @Override public Result operate(BlockControl control, int value, ControlState before, ControlState after,
                                     CabTrainRequest current, double speed) {
         if (control == DirectionButton.INSTANCE) {
-            // Avoid changing the travel direction while moving or while traction is requested.
-            if (Math.abs(speed) > .05 || Crh1CabHandle.INSTANCE.notch(before) > Crh1CabHandle.ZERO)
-                return new Result(before, current);
-            int direction = current.reverser() == 0 ? 1 : current.reverser() == 1 ? -1 : 0;
-            var request = new CabTrainRequest(current.power(), current.serviceBrake(), direction, direction != 0,
+            int direction = -normalizeDirection(current);
+            var request = new CabTrainRequest(current.power(), current.serviceBrake(), direction, true,
                     current.automatic(), current.parking(), current.emergencyDemand(), false, current.approach());
             return new Result(after.with(DIRECTION, direction), request);
         }
@@ -101,19 +96,20 @@ public enum Crh1CabControls implements CabTrainControl {
         double limit = TrainControl.Source.CAB_MANUAL.serviceBrakeLimit();
         double brake = notch <= Crh1CabHandle.FULL_SERVICE ? limit : notch < 0 ? -notch * limit / 8 : 0;
         int target = before.getOrDefault(TARGET_SPEED, -1);
+        int direction = normalizeDirection(current);
         if (notch <= Crh1CabHandle.ZERO) target = -1;
         else {
             if (target < 0 || previous <= Crh1CabHandle.ZERO)
                 target = Math.clamp((int) Math.round(Math.abs(speed) * 36), 0, 3000);
-            if (notch != Crh1CabHandle.DRIVE && current.reverser() != 0)
+            if (notch != Crh1CabHandle.DRIVE)
                 target = Math.clamp(target + (notch - Crh1CabHandle.DRIVE) * 10, 0, 3000);
         }
         after = after.with(TARGET_SPEED, target);
         double speedError = target < 0 ? 0 : target / 36d - Math.abs(speed);
-        double power = notch > 0 && current.reverser() != 0 ? Math.clamp(speedError / .5, 0, 1) : 0;
+        double power = notch > 0 ? Math.clamp(speedError / .5, 0, 1) : 0;
         // A release is accepted only at rest; a moving emergency remains latched by the common brake conversion.
         boolean releaseEmergency = !emergency && Math.abs(speed) < .05;
-        var request = new CabTrainRequest(power, brake, current.reverser(), current.enabled(), current.automatic(),
+        var request = new CabTrainRequest(power, brake, direction, current.reverser() == 0 || current.enabled(), current.automatic(),
                 current.parking(), emergency, releaseEmergency, current.approach());
         return new Result(after, request);
     }

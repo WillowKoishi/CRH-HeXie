@@ -5,11 +5,16 @@ import com.simibubi.create.foundation.render.SpecialModels;
 import com.simibubi.create.content.contraptions.render.ClientContraption;
 import com.simibubi.create.foundation.utility.worldWrappers.WrappedBlockAndTintGetter;
 import dev.engine_room.flywheel.api.model.Model;
+import dev.engine_room.flywheel.api.material.CardinalLightingMode;
 import dev.engine_room.flywheel.api.visualization.VisualizationContext;
 import dev.engine_room.flywheel.lib.instance.InstanceTypes;
 import dev.engine_room.flywheel.lib.instance.PosedInstance;
 import dev.engine_room.flywheel.lib.model.baked.BakedModelBuilder;
 import dev.engine_room.flywheel.lib.model.baked.PartialModel;
+import dev.engine_room.flywheel.lib.material.LightShaders;
+import dev.engine_room.flywheel.lib.material.SimpleMaterial;
+import dev.engine_room.flywheel.lib.model.ModelUtil;
+import dev.engine_room.flywheel.lib.util.RendererReloadCache;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -22,6 +27,15 @@ import willow.train.hexie.compat.create.SnapshotCarriageEntity;
 
 /** Articulated models live in the same local embedding as the carriage's structure. */
 final class SnapshotCouplerVisual implements CouplerModelParts.Sink {
+    private static final RendererReloadCache<PartialModel, Model> SHELL_PARTS = new RendererReloadCache<>(model ->
+            new BakedModelBuilder(model.get()).materialFunc((layer, shaded, ao) -> {
+                var material = ModelUtil.getMaterial(layer, false, false);
+                if (willow.train.hexie.client.render.carriage.CarriageTransparencyCompat.required())
+                    material = willow.train.hexie.client.render.carriage.CompatibleCarriageVisual
+                            .withCompatibleTransparency(material, layer);
+                return material == null ? null : SimpleMaterial.builderOf(material).light(LightShaders.SMOOTH)
+                        .cardinalLightingMode(CardinalLightingMode.OFF).ambientOcclusion(false).build();
+            }).build());
     private record Part(Model model, PosedInstance instance) {}
     private record Moving(BlockState state, Model model) {}
     private final VisualizationContext context;
@@ -84,6 +98,10 @@ final class SnapshotCouplerVisual implements CouplerModelParts.Sink {
                 instance.setChanged();
             }
         }
+    }
+
+    @Override public void drawShell(PartialModel model, PoseStack stack) {
+        emit(SHELL_PARTS.get(model), stack);
     }
 
     private void emit(Model model, PoseStack stack) {

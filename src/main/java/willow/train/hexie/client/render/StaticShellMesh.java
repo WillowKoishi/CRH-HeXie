@@ -12,11 +12,11 @@ import net.neoforged.neoforge.client.model.data.ModelData;
 import net.minecraft.client.renderer.RenderType;
 
 /** Resource-time clipping only: retain the authored surface, UVs and normals. */
-final class CRH2StaticMesh {
+final class StaticShellMesh {
     record Face(BlockPos cell, BakedQuad quad, RenderType renderType) {}
     final List<Face> faces;
 
-    CRH2StaticMesh(BakedModel model, BlockState state) {
+    StaticShellMesh(BakedModel model, BlockState state) {
         var result = new ArrayList<Face>();
         var random = RandomSource.create(42);
         for (var renderType : model.getRenderTypes(state, random, ModelData.EMPTY)) {

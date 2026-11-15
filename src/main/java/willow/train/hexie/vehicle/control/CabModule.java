@@ -78,7 +78,7 @@ public final class CabModule implements CabTrainInput {
 
     /** Copy exact demands between desks, converting the source direction into the target's frame. */
     public static State synchronize(CabTrainControl desk, State previous, State source, int relativeDirection) {
-        var next = previous.withDemands(source.input().direction(relativeDirection), source.brakes());
+        var next = normalize(desk, previous.withDemands(source.input().direction(relativeDirection), source.brakes()));
         next = next.withEnabled(desk.synchronizedEnabled(next.request()));
         var surface = desk.synchronize(new ControlState(previous.handlePositions()), synchronizedRequest(next));
         return withSurface(next, surface);
@@ -106,9 +106,20 @@ public final class CabModule implements CabTrainInput {
                 state.deskEnabled(), state.simple(), surface.positions());
     }
 
+    /** Bring older or synchronized requests into the range represented by this physical desk. */
+    public static State normalize(CabTrainControl desk, State state) {
+        int direction = desk.normalizeDirection(state.request());
+        if (direction == state.input().reverser()) return state;
+        var input = new CabController.Input(state.input().power(), state.input().brake(), direction);
+        var next = state.withDemands(input, state.brakes());
+        next = next.withEnabled(desk.synchronizedEnabled(next.request()));
+        return withSurface(next, desk.restore(new ControlState(next.handlePositions()), next.request()));
+    }
+
     /** A rejected request returns null before touching the saved positions or train commands. */
     public static State operateControls(List<? extends BlockControl> declared, CabTrainControl desk,
                                         String id, int value, State previous, double speed) {
+        previous = normalize(desk, previous);
         var index = DECLARED_CONTROLS.computeIfAbsent(declared, controls -> {
             var byId = new LinkedHashMap<String, BlockControl>();
             for (var control : controls) byId.putIfAbsent(control.id(), control);
@@ -118,6 +129,7 @@ public final class CabModule implements CabTrainInput {
     }
 
     public static State operateControls(CabControlHost host, BlockState block, String id, int value, State previous, double speed) {
+        previous = normalize(host.trainControl(block), previous);
         var surface = host.surfaceGeometry(block);
         var module = surface.owner(id);
         var owner = module == null ? host.trainControl(block)

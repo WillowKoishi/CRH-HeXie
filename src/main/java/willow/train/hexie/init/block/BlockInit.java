@@ -117,6 +117,12 @@ public class BlockInit {
                             .sound(SoundType.METAL).noOcclusion()),
                     block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
 
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.coupler.ScharfenbergCouplerBlock> SCHARFENBERG_COUPLER =
+            register("scharfenberg_coupler", () -> new willow.train.hexie.blocks.coupler.ScharfenbergCouplerBlock(
+                    BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
+                            .sound(SoundType.METAL).noOcclusion()),
+                    block -> () -> new BlockItem(block.get(), new Item.Properties()));
+
     public static final DeferredHolder<Block, willow.train.hexie.blocks.coupler.ModelCouplerBlock> CRH2A_AUTO_COUPLER =
             register("crh2a_auto_coupler", () -> new willow.train.hexie.blocks.coupler.ModelCouplerBlock(
                     BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
@@ -149,6 +155,15 @@ public class BlockInit {
                 .mapColor(MapColor.METAL).strength(2).sound(SoundType.METAL).noOcclusion(), name),
                 block -> () -> new willow.train.hexie.item.CRH2PartItem(block.get(), new Item.Properties()));
     }
+
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh1a.CRH1HeadBlock> CRH1A_HEAD = register("crh1a_head",
+            () -> new willow.train.hexie.blocks.emu.crh1a.CRH1HeadBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL).strength(2).sound(SoundType.METAL).noOcclusion()),
+            object -> () -> new willow.train.hexie.item.PartBlockItem(object.get(), new Item.Properties()));
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh1a.CRH1HeadFloorBlock> CRH1A_HEAD_FLOOR =
+            BLOCKS.register("crh1a_head_floor", () -> new willow.train.hexie.blocks.emu.crh1a.CRH1HeadFloorBlock(
+                    BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
+                            .sound(SoundType.METAL).noOcclusion().noLootTable()));
 
     public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.head.CRH2HeadBlock> CRH2A_HEAD = register("crh2a_head",
             () -> new willow.train.hexie.blocks.emu.head.CRH2HeadBlock(BlockBehaviour.Properties.of()

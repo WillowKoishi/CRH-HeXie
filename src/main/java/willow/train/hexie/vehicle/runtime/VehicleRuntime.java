@@ -383,9 +383,20 @@ public final class VehicleRuntime {
         return pending;
     }
 
+    private java.util.function.Predicate<CouplingEndpoint> couplingAvailability = ignored -> true;
+    public void couplingAvailability(java.util.function.Predicate<CouplingEndpoint> available) {
+        couplingAvailability = java.util.Objects.requireNonNull(available);
+    }
+    public boolean couplingAvailable(CouplingEndpoint endpoint) { return couplingAvailability.test(endpoint); }
+    private void requireAvailable(UUID first, UUID second) {
+        if (!couplingAvailable(endpoint(first)) || !couplingAvailable(endpoint(second)))
+            throw new IllegalStateException("车钩尚未完全伸出");
+    }
+
     /** The registered completion regions must meet before the connected constraint is installed. */
     public void couple(UUID first, UUID second) {
         validatePair(first, second);
+        requireAvailable(first, second);
         if (!regionsMeet(placement, first, second, false))
             throw new IllegalStateException("Coupling completion regions do not overlap");
         Group a = group(owner(first)), b = group(owner(second));
@@ -437,6 +448,7 @@ public final class VehicleRuntime {
     /** Explicit shunting request: the first car and its consist approach the second endpoint. */
     public void beginCoupling(UUID first, UUID second, double approachSpeedMps) {
         validatePair(first, second);
+        requireAvailable(first, second);
         Approach approach = new Approach(first, second, approachSpeedMps);
         validateApproachParticipants(first, second);
         if (regionsMeet(placement, first, second, false)) couple(first, second);
@@ -454,6 +466,25 @@ public final class VehicleRuntime {
     public void cancelCoupling(UUID endpoint) {
         endpoint(endpoint);
         approaches.removeIf(a -> a.first.equals(endpoint) || a.second.equals(endpoint));
+    }
+
+    /** Reconcile persisted block-owned release conditions before the next motion step. */
+    public void releaseCouplingsIf(java.util.function.Predicate<CouplingEndpoint> shouldRelease) {
+        Objects.requireNonNull(shouldRelease);
+        if (connections.isEmpty() && approaches.isEmpty()) return;
+        var released = new java.util.LinkedHashSet<UUID>();
+        for (var connection : connections) {
+            if (shouldRelease.test(endpoint(connection.first))) released.add(connection.first);
+            if (shouldRelease.test(endpoint(connection.second))) released.add(connection.second);
+        }
+        for (var approach : approaches) {
+            if (shouldRelease.test(endpoint(approach.first))) released.add(approach.first);
+            if (shouldRelease.test(endpoint(approach.second))) released.add(approach.second);
+        }
+        for (UUID id : released) {
+            uncouple(id);
+            cancelCoupling(id);
+        }
     }
 
     /** Install on a free hook without moving its body, bogeys or independent dynamics cursors. */
@@ -1104,6 +1135,7 @@ public final class VehicleRuntime {
     private Event firstEvent(List<Group> groups, Solution end, double duration, TickMotion motion) {
         Event event = null;
         for (Approach approach : approaches) {
+            if (!couplingAvailable(endpoint(approach.first)) || !couplingAvailable(endpoint(approach.second))) continue;
             if (motion.failed(group(owner(approach.first))) || motion.failed(group(owner(approach.second)))) continue;
             var coupling = new Connection(approach.first, approach.second);
             double time = couplingContactTime(coupling, groups, end, duration, false, motion);
@@ -1120,7 +1152,8 @@ public final class VehicleRuntime {
         for (Group group : groups) {
             boolean manual = approaches.stream().anyMatch(a -> group.contains(owner(a.first)) || group.contains(owner(a.second)));
             free.add(manual || motion.failed(group) ? List.of() : group.cars.stream().flatMap(c -> c.definition.couplings().stream())
-                    .filter(e -> e.kind() == CouplingEndpoint.Kind.RIGID && !occupied.contains(e.id())).toList());
+                    .filter(e -> e.kind() == CouplingEndpoint.Kind.RIGID && !occupied.contains(e.id())
+                            && couplingAvailable(e)).toList());
         }
         for (int i = 0; i < free.size(); i++) for (int j = i + 1; j < free.size(); j++) {
             for (CouplingEndpoint a : free.get(i)) for (CouplingEndpoint b : free.get(j)) {

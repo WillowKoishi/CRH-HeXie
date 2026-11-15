@@ -14,7 +14,13 @@ public record CabNeutralPositions(@Nullable Detent powerZero, @Nullable Detent r
     public static final CabNeutralPositions FROM_REQUEST = new CabNeutralPositions(null, null);
 
     public static final class Detent {
+        private static final Detent ANY = new Detent(surface -> true);
         private final Predicate<ControlState> atPosition;
+
+        private Detent(Predicate<ControlState> atPosition) { this.atPosition = atPosition; }
+
+        /** A desk without a cut-out position has no reverser detent to check. */
+        public static Detent any() { return ANY; }
 
         /** A button-operated selector supplies its readout in the restored surface state. */
         public Detent(String positionKey, int notch) {

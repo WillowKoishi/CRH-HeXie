@@ -43,10 +43,13 @@ public final class ContraptionInteractionTargets {
             var adapter = willow.train.hexie.blocks.coupler.CouplerAdapterData.read(info.nbt());
             if (adapter != null) bounds = willow.train.hexie.blocks.coupler.CouplerAdapterGeometry.bounds(state, adapter);
         }
-        boolean shell = state.getBlock() instanceof CRH2HeadBlock || state.getBlock() instanceof CRH2EndFaceBlock;
+        boolean shell = state.getBlock() instanceof CRH2HeadBlock || state.getBlock() instanceof CRH2EndFaceBlock
+                || state.getBlock() instanceof willow.train.hexie.blocks.parts.PlayerCollisionShell;
         boolean bogey = state.getBlock() instanceof HexieBogeyBlock<?>
                 || state.getBlock() instanceof willow.train.hexie.blocks.emu.head.HeadFloorBlock
-                    && state.getValue(willow.train.hexie.blocks.emu.head.HeadFloorBlock.PART) == HeadGeometry.BOGEY_PART;
+                    && state.getValue(willow.train.hexie.blocks.emu.head.HeadFloorBlock.PART) == HeadGeometry.BOGEY_PART
+                || state.getBlock() instanceof willow.train.hexie.vehicle.assembly.OwnedBogeyMount mount
+                    && mount.isBogeyMount(state);
         boolean sign = PassengerDisplayPanel.supports(state.getBlock()) && state.hasProperty(PanelDisplayMount.PROPERTY)
                 && state.getValue(PanelDisplayMount.PROPERTY).hasSign();
         synchronized (TARGETS) {
@@ -58,10 +61,11 @@ public final class ContraptionInteractionTargets {
             else holder.index.put(owner, bounds.move(owner));
             if (shell) {
                 boolean endFace = state.getBlock() instanceof CRH2EndFaceBlock;
-                Direction facing = state.getValue(CRH2HeadBlock.FACING);
+                Direction facing = state.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING);
                 var previous = holder.shells.get(owner);
-                if (previous == null || previous.endFace != endFace || previous.facing != facing)
-                    holder.shells.put(owner, new Shell(owner, facing, endFace));
+                if (previous == null || previous.endFace != endFace || previous.facing != facing
+                        || previous.state.getBlock() != state.getBlock())
+                    holder.shells.put(owner, new Shell(owner, facing, endFace, state));
             } else holder.shells.remove(owner);
             if (bogey) holder.bogeys.add(owner);
             else holder.bogeys.remove(owner);
@@ -183,19 +187,22 @@ public final class ContraptionInteractionTargets {
         private final BlockPos owner;
         private final Direction facing;
         private final boolean endFace;
+        private final BlockState state;
         private List<AABB> boxes;
         private AABB bounds;
 
-        private Shell(BlockPos owner, Direction facing, boolean endFace) {
+        private Shell(BlockPos owner, Direction facing, boolean endFace, BlockState state) {
             this.owner = owner;
             this.facing = facing;
             this.endFace = endFace;
+            this.state = state;
         }
 
         /** Server-side metadata discovery does not need the client player's collision boxes. */
         private void prepare() {
             if (boxes != null) return;
-            var local = endFace ? CRH2EndFaceBlock.playerBoxes(facing) : HeadGeometry.boxes(facing);
+            var local = state.getBlock() instanceof willow.train.hexie.blocks.parts.PlayerCollisionShell custom
+                    ? custom.playerCollisionBoxes(state) : endFace ? CRH2EndFaceBlock.playerBoxes(facing) : HeadGeometry.boxes(facing);
             boxes = local.stream().map(box -> box.move(owner)).toList();
             bounds = boxes.getFirst();
             for (int i = 1; i < boxes.size(); i++) bounds = bounds.minmax(boxes.get(i));

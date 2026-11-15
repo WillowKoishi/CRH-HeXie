@@ -28,4 +28,11 @@ public interface CouplerBlock {
     default CouplingEndpoint.Kind kind() { return CouplingEndpoint.Kind.RIGID; }
     /** Additional arm travel from its resting length, in blocks; this does not limit swing. */
     default double maxExtension() { return CouplingEndpoint.DEFAULT_MAX_EXTENSION; }
+    /** Some built-in couplers cannot mate until a persisted deployment animation completes. */
+    default boolean requiresReadyState() { return false; }
+    default boolean readyForCoupling(BlockState state, net.minecraft.nbt.CompoundTag data, double time) { return true; }
+    /** Opt-in for a coupling whose stored block state can require its existing connection to be released. */
+    default boolean hasStateDrivenRelease() { return false; }
+    default boolean releaseForState(BlockState state, net.minecraft.nbt.CompoundTag data) { return false; }
+    default boolean allowsAdapters() { return true; }
 }

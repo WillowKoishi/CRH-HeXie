@@ -9,6 +9,8 @@ import net.minecraft.world.level.block.state.BlockState;
 public interface PartStructure {
     /** A member is supplied by its root's item and must never print independently. */
     default boolean isPartMember() { return false; }
+    /** Root is installed atomically by Create's schematic printer. */
+    default boolean schematicRoot() { return false; }
     BlockPos partRoot(BlockGetter level, BlockPos pos, BlockState state);
     Map<BlockPos, BlockState> partCells(BlockGetter level, BlockPos root, BlockState rootState);
     default boolean ownsCell(BlockGetter level, BlockPos root, BlockState rootState, BlockPos pos, BlockState expected) {

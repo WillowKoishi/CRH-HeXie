@@ -17,6 +17,7 @@ public abstract class MixinSableSingleBlockShell {
 
     @Inject(method = "renderSingleBlock", at = @At("HEAD"), cancellable = true, remap = false, require = 1)
     private void hexie$skipInstancedShell(CallbackInfo ci) {
-        if (CRH2StaticSections.instanced(singleBlockPos)) ci.cancel();
+        if (CRH2StaticSections.instanced(singleBlockPos)
+                || willow.train.hexie.client.render.CRH1StaticSections.instanced(singleBlockPos)) ci.cancel();
     }
 }

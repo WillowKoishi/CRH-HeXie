@@ -1,4 +1,9 @@
 {
+  "block.hexie.crh1a_head": "CRH1A 车头",
+  "block.hexie.scharfenberg_coupler": "沙库车钩",
+  "block.hexie.crh1a_head.tooltip.summary": "自带沙库车钩的 CRH1A 车头。",
+  "block.hexie.crh1a_head.tooltip.condition1": "右键整流罩",
+  "block.hexie.crh1a_head.tooltip.behaviour1": "打开后车钩伸出；关闭时先解除连挂并收回车钩。",
   "block.hexie.crh2a_physical_head.tooltip.summary": "专供 Simurail 物理列车使用的 CRH2A 头车。",
   "block.hexie.crh2a_physical_head.tooltip.condition1": "使用限制",
   "block.hexie.crh2a_physical_head.tooltip.behaviour1": "请勿用于机械动力原版列车系统；未安装 Simurail 时，此方块不可见。",

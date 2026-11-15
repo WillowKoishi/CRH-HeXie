@@ -18,7 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /** Shared shell models under one moving, lit embedding per Sable plot. */
-final class CRH2PlotShellVisual implements EffectVisual<CRH2PlotShellVisual.Parts>, SimpleDynamicVisual, ShaderLightVisual {
+final class StaticShellPlotVisual implements EffectVisual<StaticShellPlotVisual.Parts>, SimpleDynamicVisual, ShaderLightVisual {
     /** Stable effect identity; publish one immutable snapshot for a batch of owner changes. */
     static final class Parts implements Effect {
         private final ClientLevel level;
@@ -60,7 +60,7 @@ final class CRH2PlotShellVisual implements EffectVisual<CRH2PlotShellVisual.Part
         }
 
         @Override public EffectVisual<?> visualize(VisualizationContext context, float partialTick) {
-            return new CRH2PlotShellVisual(context, this, partialTick);
+            return new StaticShellPlotVisual(context, this, partialTick);
         }
     }
 
@@ -74,7 +74,7 @@ final class CRH2PlotShellVisual implements EffectVisual<CRH2PlotShellVisual.Part
     private SectionCollector collector;
     private boolean deleted;
 
-    private CRH2PlotShellVisual(VisualizationContext context, Parts effect, float partialTick) {
+    private StaticShellPlotVisual(VisualizationContext context, Parts effect, float partialTick) {
         this.effect = effect;
         binding = effect.plot.create(context, partialTick);
         if (effect.plot.removed()) delete();
@@ -99,12 +99,12 @@ final class CRH2PlotShellVisual implements EffectVisual<CRH2PlotShellVisual.Part
         for (var entry : snapshot.entrySet()) {
             if (instances.containsKey(entry.getKey())) continue;
             var pos = entry.getKey();
-            var model = CRH2ShellVisual.model(entry.getValue());
+            var model = StaticShellVisual.model(entry.getValue());
             var instance = context.instancerProvider().instancer(InstanceTypes.TRANSFORMED, model).createInstance();
             instance.setIdentityTransform().translate(pos.getX() - origin.getX(),
                     pos.getY() - origin.getY(), pos.getZ() - origin.getZ()).setChanged();
             var bounds = model.boundingSphere();
-            var sections = CRH2ShellVisual.sections(pos.getX() + bounds.x(), pos.getY() + bounds.y(),
+            var sections = StaticShellVisual.sections(pos.getX() + bounds.x(), pos.getY() + bounds.y(),
                     pos.getZ() + bounds.z(), bounds.w() + 1);
             instances.put(pos, new Part(entry.getValue(), instance, sections));
         }

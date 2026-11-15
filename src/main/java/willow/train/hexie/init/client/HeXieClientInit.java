@@ -33,6 +33,7 @@ public class HeXieClientInit {
         Main.bus.addListener(willow.train.hexie.compat.cee.PantographBaseModels::onBaking);
         willow.train.hexie.client.render.display.PassengerPanelModels.register();
         willow.train.hexie.client.render.CRH2StaticSections.register();
+        willow.train.hexie.client.render.CRH1StaticSections.register();
         Main.bus.addListener(willow.train.hexie.client.render.bogey.BogeyTopModel::register);
         Main.bus.addListener(willow.train.hexie.compat.create.bogey.CreateAddonBogeyClient::registerAdditional);
         willow.train.hexie.client.render.track.BallastCurveBuffers.register();
@@ -79,6 +80,8 @@ public class HeXieClientInit {
                 willow.train.hexie.client.render.blockentity.PassengerPanelRenderer::new);
         event.registerBlockEntityRenderer(BlockEntitiesInit.CRH2A_PART.get(), CarriageMarkingRenderer::new);
         event.registerBlockEntityRenderer(BlockEntitiesInit.CRH2A_HEAD.get(), HeadNumberRenderer::new);
+        event.registerBlockEntityRenderer(BlockEntitiesInit.CRH1A_HEAD.get(),
+                willow.train.hexie.client.render.blockentity.CRH1HeadRenderer::new);
         event.registerBlockEntityRenderer(BlockEntitiesInit.DRIVING_CONSOLE.get(),
                 willow.train.hexie.client.render.blockentity.DrivingConsoleRenderer::new);
         // Entity builders run before Registrate is attached to our bus. Bind directly so the
@@ -135,6 +138,13 @@ public class HeXieClientInit {
                             PartialModelInit.CRH2_AUTO_COUPLER_COVER_LEFT, PartialModelInit.CRH2_AUTO_COUPLER_COVER_RIGHT,
                             willow.train.hexie.init.block.BlockInit.CRH2A_AUTO_COUPLER.get().geometry()));
             var endCoupler = willow.train.hexie.init.block.BlockInit.CRH2A_END_FACE.get();
+            willow.train.hexie.client.render.SnapshotCouplerRenderer.register(
+                    willow.train.hexie.init.block.BlockInit.CRH1A_HEAD.get(),
+                    new willow.train.hexie.client.render.CRH1HeadCouplerRenderer());
+            var scharfenberg = willow.train.hexie.init.block.BlockInit.SCHARFENBERG_COUPLER.get();
+            willow.train.hexie.client.render.SnapshotCouplerRenderer.register(scharfenberg,
+                    new willow.train.hexie.client.render.PartialCouplerRenderer(PartialModelInit.SCHARFENBERG_COUPLER_ARM,
+                            scharfenberg.geometry().armOrigin(), null, java.util.List.of(), 0));
             var pivot = endCoupler.axis().atHeight(endCoupler.complete().y());
             double back = willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock.BELLOWS_BASE_Z;
             double front = willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock.BELLOWS_FRONT_Z;

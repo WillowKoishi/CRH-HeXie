@@ -24,7 +24,8 @@ public final class PartSchematicPlacement {
                 ||state.getBlock() instanceof CRH2PartBlock&&state.getValue(CRH2PartBlock.PART)!=0;
     }
     public static boolean root(BlockState state) {
-        return state.getBlock() instanceof CRH2HeadBlock||state.getBlock() instanceof CRH2PartBlock&&!member(state)||LegacyPartLayout.supports(state);
+        return state.getBlock() instanceof CRH2HeadBlock||state.getBlock() instanceof CRH2PartBlock&&!member(state)
+                ||state.getBlock() instanceof PartStructure part&&part.schematicRoot()&&!member(state)||LegacyPartLayout.supports(state);
     }
     /** Missing members in old schematics still belong to their declared root, never to an AIR removal shot. */
     public static Set<BlockPos> targetMembers(SchematicLevel schematic) {

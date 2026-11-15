@@ -20,9 +20,9 @@ public final class CreativeTabsInit {
         register("hexie_normalspeedpassagecarriagetab", Main.HEXIE_NORMAL_SPEED_PASSAGE_CARRIAGE_TAB,
                 willow.train.hexie.item.CarriagePartCatalog.creativeNames());
         register("hexie_emu", Main.HEXIE_EMU, new String[] {
-                "crh2a_head", "crh2a_physical_head", "crh2a_carport_mid_antenna", "crh1a_carport_mid", "crh1a_carport_side", "crh2a_carport_side", "crh2a_panel_nowindow",
+                "crh1a_head", "crh2a_head", "crh2a_physical_head", "crh2a_carport_mid_antenna", "crh1a_carport_mid", "crh1a_carport_side", "crh2a_carport_side", "crh2a_panel_nowindow",
                 "crh2a_panel_nowindow_thick", "crh2a_panel_small_window", "crh2a_panel_wide_window", "crh1a_panel_wide_window",
-                "crh2a_skirt_forbogey", "crh2a_skirt_normal", "crh1a_skirt", "crh2a_floor", "crh1a_floor", "crh2a_endface", "crh2a_auto_coupler", "crh2a_rescue_coupler",
+                "crh2a_skirt_forbogey", "crh2a_skirt_normal", "crh1a_skirt", "crh2a_floor", "crh1a_floor", "crh2a_endface", "crh2a_auto_coupler", "scharfenberg_coupler", "crh2a_rescue_coupler",
                 "crh2a_passenger_door", "crh2a_passenger_door_wide", "crh2a_cab_door", "crh_logo", "panel_text",
                 "test_driving_console", "crh2a_driving_console", "crh2a_driver_seat",
                 "crh2a_nonstandard_driving_console", "crh1a_driving_console", "crh2a_cab_seat",

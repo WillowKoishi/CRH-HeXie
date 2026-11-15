@@ -21,25 +21,40 @@ import willow.train.hexie.api.interaction.ControlInputLayout;
 import willow.train.hexie.blocks.DrivingConsoleBlock;
 import willow.train.hexie.vehicle.control.Crh1CabControls;
 import willow.train.hexie.vehicle.control.Crh1CabHandle;
+import willow.train.hexie.vehicle.control.CabModule;
 
 /** CRH1A's single-controller cab uses the same seat and vehicle adapter as the CRH2A desk. */
 public final class CRH1DrivingConsoleBlock extends DrivingConsoleBlock {
     private static final Map<Direction, VoxelShape> SHAPES = createShapes();
     private final Map<BlockState, ControlInputLayout> detailedLayouts = new ConcurrentHashMap<>();
+    private final Map<BlockState, ControlInputLayout> simpleLayouts = new ConcurrentHashMap<>();
 
     public CRH1DrivingConsoleBlock(Properties properties) {
         super(properties, CRH1CabGeometry::surface, Crh1CabControls.INSTANCE, Crh1CabControls.NEUTRAL_POSITIONS);
     }
 
+    @Override public CabModule createCabModule() {
+        var module = new CabModule();
+        module.submit(CabModule.normalize(Crh1CabControls.INSTANCE, module.state()));
+        return module;
+    }
+
+    @Override public boolean operatesWhenDerailed(BlockState state, String controlId) {
+        return Crh1CabControls.DirectionButton.INSTANCE.id().equals(controlId);
+    }
+
     @Override public ControlInputLayout inputLayout(BlockControlContext target) {
         var base = super.inputLayout(target);
-        if (CabTargetView.find(target).controls().simple()) return base;
-        return detailedLayouts.computeIfAbsent(target.state(), ignored -> {
+        boolean simple = CabTargetView.find(target).controls().simple();
+        var layouts = simple ? simpleLayouts : detailedLayouts;
+        return layouts.computeIfAbsent(target.state(), ignored -> {
             var bindings = new ArrayList<>(base.bindings());
-            bindings.add(new ControlInputLayout.Binding(ControlInputLayout.Device.KEY, 'W', ControlInputLayout.Action.STEP_HOLD,
-                    Crh1CabHandle.INSTANCE.id(), 1).seated());
-            bindings.add(new ControlInputLayout.Binding(ControlInputLayout.Device.KEY, 'S', ControlInputLayout.Action.STEP_HOLD,
-                    Crh1CabHandle.INSTANCE.id(), -1).seated());
+            if (!simple) {
+                bindings.add(new ControlInputLayout.Binding(ControlInputLayout.Device.KEY, 'W', ControlInputLayout.Action.STEP_HOLD,
+                        Crh1CabHandle.INSTANCE.id(), 1).seated());
+                bindings.add(new ControlInputLayout.Binding(ControlInputLayout.Device.KEY, 'S', ControlInputLayout.Action.STEP_HOLD,
+                        Crh1CabHandle.INSTANCE.id(), -1).seated());
+            }
             bindings.add(new ControlInputLayout.Binding(ControlInputLayout.Device.KEY, 'R', ControlInputLayout.Action.PRESS,
                     Crh1CabControls.DirectionButton.INSTANCE.id(), 0).seated());
             return new ControlInputLayout(base.seatedCapture(), base.pointedEntries(), bindings, base.view());

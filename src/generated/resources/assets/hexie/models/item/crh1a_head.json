@@ -1,0 +1,88 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:composite",
+  "textures": {
+    "particle": "hexie:block/crh1a/head/crh1a_head"
+  },
+  "children": {
+    "body": {
+      "parent": "hexie:block/crh1a/head/body"
+    },
+    "cover_lower": {
+      "parent": "hexie:block/crh1a/head/cover_lower"
+    },
+    "cover_upper": {
+      "parent": "hexie:block/crh1a/head/cover_upper"
+    },
+    "coupler_rear": {
+      "parent": "hexie:block/crh1a/head/coupler_rear"
+    },
+    "coupler_front": {
+      "parent": "hexie:block/crh1a/head/coupler_front"
+    }
+  },
+  "item_render_order": [
+    "body",
+    "cover_lower",
+    "cover_upper",
+    "coupler_rear",
+    "coupler_front"
+  ],
+  "display": {
+    "gui": {
+      "rotation": [
+        15,
+        135,
+        0
+      ],
+      "translation": [
+        0,
+        -1,
+        0
+      ],
+      "scale": [
+        0.2,
+        0.2,
+        0.2
+      ]
+    },
+    "ground": {
+      "scale": [
+        0.2,
+        0.2,
+        0.2
+      ]
+    },
+    "fixed": {
+      "scale": [
+        0.2,
+        0.2,
+        0.2
+      ]
+    },
+    "thirdperson_righthand": {
+      "rotation": [
+        15,
+        135,
+        0
+      ],
+      "scale": [
+        0.2,
+        0.2,
+        0.2
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        15,
+        135,
+        0
+      ],
+      "scale": [
+        0.2,
+        0.2,
+        0.2
+      ]
+    }
+  }
+}

@@ -63,6 +63,7 @@ public final class AssembledVehicleMotion {
         ControlKey { position = position.immutable(); }
     }
     private final Map<ControlKey, Controller> controllers = new HashMap<>();
+    private final Map<UUID, BlockPos> couplingPositions = new HashMap<>();
     private final Set<UUID> controlledCarriages = new HashSet<>();
     // Last accepted operations remain ordered when independent trains couple, even within one tick.
     private static final AtomicLong NATIVE_INPUT_SEQUENCE = new AtomicLong();
@@ -101,6 +102,7 @@ public final class AssembledVehicleMotion {
         this.sources = Map.copyOf(sources);
         if (!this.sources.keySet().equals(Set.of(carriages)))
             throw new IllegalArgumentException("Motion sources do not match its carriages");
+        this.runtime.couplingAvailability(this::couplerAvailable);
     }
 
     public static AssembledVehicleMotion create(ServerLevel level, UUID assembly,
@@ -130,6 +132,8 @@ public final class AssembledVehicleMotion {
                 var existing = controllers.get(key);
                 existing.cabConverter = host.trainControl(block.state());
                 existing.cabBlock = block.state();
+                if (existing.cabControls != null)
+                    existing.cabControls.submit(CabModule.normalize(existing.cabConverter, existing.cabControls.state()));
                 if (existing.cabTimetable == null)
                     existing.cabTimetable = new CreateCabTimetable(key, level.registryAccess(),
                             CreateConsoleTimetable.storedBlockData(level, key, block.entityData()));
@@ -146,12 +150,58 @@ public final class AssembledVehicleMotion {
             driver.cabControls = data != null && (data.contains("CabControls") || data.contains("TestControls"))
                     ? CabModule.read(data.getCompound(data.contains("CabControls") ? "CabControls" : "TestControls"))
                     : host.createCabModule();
+            driver.cabControls.submit(CabModule.normalize(driver.cabConverter, driver.cabControls.state()));
             driver.cabTimetable = new CreateCabTimetable(key, level.registryAccess(), data);
             controllers.put(key, driver);
         }
     }
 
     public VehicleRuntime runtime() { return runtime; }
+    public boolean couplerAvailable(willow.train.hexie.vehicle.runtime.CouplingEndpoint endpoint) {
+        var visual = endpoint.visual();
+        if (visual == null) return true;
+        var id = net.minecraft.resources.ResourceLocation.tryParse(visual.fixed().block());
+        var block = id == null ? null : net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(id);
+        if (!(block instanceof willow.train.hexie.blocks.coupler.CouplerBlock hook) || !hook.requiresReadyState()) return true;
+        if (!hook.allowsAdapters() && endpoint.adapter() != null) return false;
+        var info = couplerInfo(endpoint, block);
+        return info != null && hook.readyForCoupling(info.state(), info.nbt(), level.getGameTime());
+    }
+
+    /** A missing/unloaded owner is unknown, not a request to disconnect its train. */
+    private boolean couplerRequiresRelease(willow.train.hexie.vehicle.runtime.CouplingEndpoint endpoint) {
+        var visual = endpoint.visual();
+        if (visual == null) return false;
+        var id = net.minecraft.resources.ResourceLocation.tryParse(visual.fixed().block());
+        var block = id == null ? null : net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(id);
+        if (!(block instanceof willow.train.hexie.blocks.coupler.CouplerBlock hook) || !hook.hasStateDrivenRelease()) return false;
+        var info = couplerInfo(endpoint, block);
+        return info != null && hook.releaseForState(info.state(), info.nbt());
+    }
+
+    private net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo couplerInfo(
+            willow.train.hexie.vehicle.runtime.CouplingEndpoint endpoint, net.minecraft.world.level.block.Block block) {
+        for (UUID carriage : carriages) {
+            if (runtime.definition(carriage).couplings().stream().noneMatch(e -> e.id().equals(endpoint.id()))) continue;
+            if (!(level.getEntity(carriage) instanceof SnapshotCarriageEntity entity) || entity.getContraption() == null) return null;
+            BlockPos position = couplingPositions.get(endpoint.id());
+            if (position == null) {
+                position = entity.couplerAnimation().parameters().stream()
+                        .filter(value -> value.endpoint().equals(endpoint.id()))
+                        .map(SnapshotCouplerAnimation.Parameters::position).findFirst().orElse(null);
+                if (position == null) for (var candidate : entity.getContraption().getBlocks().keySet()) {
+                    if (!willow.train.hexie.vehicle.assembly.VehicleCouplingCatalog.endpointId(carriage, candidate).equals(endpoint.id())) continue;
+                    position = candidate.immutable();
+                    break;
+                }
+                if (position == null) return null;
+                couplingPositions.put(endpoint.id(), position);
+            }
+            var info = entity.getContraption().getBlocks().get(position);
+            return info != null && info.state().getBlock() == block ? info : null;
+        }
+        return null;
+    }
     public ServerLevel level() { return level; }
     public UUID assemblyId() { return assembly; }
     public Direction forward() { return forward; }
@@ -186,6 +236,7 @@ public final class AssembledVehicleMotion {
         var extended = runtime.rebind(extension.binding().path(), extension.distanceOffset());
         route = extension.binding();
         runtime = extended;
+        runtime.couplingAvailability(this::couplerAvailable);
         lastMotionFailure = null;
         return true;
     }
@@ -197,6 +248,7 @@ public final class AssembledVehicleMotion {
         catch (IllegalArgumentException | ConstraintFailure mismatch) { return false; }
         route = replacement;
         runtime = rebound;
+        runtime.couplingAvailability(this::couplerAvailable);
         lastMotionFailure = null;
         return true;
     }
@@ -236,6 +288,7 @@ public final class AssembledVehicleMotion {
         long now = level.getGameTime();
         if (lastTick != now) {
             lastTick = now;
+            runtime.releaseCouplingsIf(this::couplerRequiresRelease);
             applyCouplingControlResets();
             runtime.dynamicsMultipliers(willow.train.hexie.config.VehicleConfig.ACCELERATION_MULTIPLIER.get(),
                     willow.train.hexie.config.VehicleConfig.BRAKING_MULTIPLIER.get());
@@ -500,6 +553,8 @@ public final class AssembledVehicleMotion {
             throw new IllegalArgumentException("Coupler does not belong to the selected carriage");
         if (!firstHook.matches(secondHook))
             throw new IllegalArgumentException("车钩型号不匹配：" + firstHook.effectiveModel() + " / " + secondHook.effectiveModel());
+        if (!couplerAvailable(firstHook) || !other.couplerAvailable(secondHook))
+            throw new IllegalStateException("车钩尚未完全伸出");
         if (other == this) {
             if (approachSpeed != null) runtime.beginCoupling(firstEndpoint, secondEndpoint, approachSpeed);
             applyCouplingControlResets();
@@ -970,7 +1025,7 @@ public final class AssembledVehicleMotion {
         if (player.getVehicle() != car || cab.seatAccess().vehicle() != car) return false;
         return updateCabControls(car, cab.console(), player, (previous, speed) ->
                 CabModule.operateControls(host, block, controlId, value, previous, speed), -1, true,
-                CabModule.operatedDemands(host, block, controlId));
+                CabModule.operatedDemands(host, block, controlId), host.operatesWhenDerailed(block, controlId));
     }
 
     /** The input transport validated this physical target; operating it grants no seated keyboard bindings. */
@@ -980,7 +1035,7 @@ public final class AssembledVehicleMotion {
         if (info == null || !(info.state().getBlock() instanceof willow.train.hexie.api.cab.CabControlHost host)) return false;
         return updateCabControls(car, position, player, (previous, speed) ->
                 CabModule.operateControls(host, info.state(), controlId, value, previous, speed), -1, false,
-                CabModule.operatedDemands(host, info.state(), controlId));
+                CabModule.operatedDemands(host, info.state(), controlId), host.operatesWhenDerailed(info.state(), controlId));
     }
 
     public boolean updateCabControls(SnapshotCarriageEntity car, DrivingConsoleContext cab,
@@ -998,18 +1053,18 @@ public final class AssembledVehicleMotion {
     private boolean updateCabControls(SnapshotCarriageEntity car, BlockPos position,
             Player player, java.util.function.BiFunction<CabModule.State, Double, CabModule.State> input,
             int keyboardMask, boolean seated) {
-        return updateCabControls(car, position, player, input, keyboardMask, seated, Set.of());
+        return updateCabControls(car, position, player, input, keyboardMask, seated, Set.of(), false);
     }
 
     private boolean updateCabControls(SnapshotCarriageEntity car, BlockPos position,
             Player player, java.util.function.BiFunction<CabModule.State, Double, CabModule.State> input,
-            int keyboardMask, boolean seated, Set<CabTrainControl.Demand> operated) {
+            int keyboardMask, boolean seated, Set<CabTrainControl.Demand> operated, boolean allowDerailed) {
         var info = car.getContraption() == null ? null : car.getContraption().getBlocks().get(position);
         var state = info == null ? null : info.state();
         if (!owns(car.getUUID()) || !player.isAlive() || player.isSpectator() || player.level() != level
                 || car.level() != level || car.isRemoved()
                 || state == null || !(state.getBlock() instanceof willow.train.hexie.api.cab.CabControlHost host)
-                || isDerailed(car.getUUID())) return false;
+                || isDerailed(car.getUUID()) && !allowDerailed) return false;
         var facing = host.cabFacing(state);
         if (facing == null || !facing.getAxis().isHorizontal()) return false;
         var key = new ControlKey(car.getUUID(), position);
@@ -1026,6 +1081,7 @@ public final class AssembledVehicleMotion {
                     : host.createCabModule();
             driver.cabTimetable = new CreateCabTimetable(key, level.registryAccess(), data);
         }
+        driver.cabControls.submit(CabModule.normalize(host.trainControl(state), driver.cabControls.state()));
         var previous = driver.cabControls.state();
         int previousKeyboard = driver.cabControls.keyboardMask();
         var converted = input.apply(previous, runtime.speed(car.getUUID()));
@@ -1313,6 +1369,7 @@ public final class AssembledVehicleMotion {
             relocated.collisionEnabled(false);
             clearBoardingHistory();
             runtime = relocated;
+            runtime.couplingAvailability(this::couplerAvailable);
             route = replacementRoute;
             lastMotionFailure = null;
             // Relocation resets native key sessions, not persistent cab handles. Otherwise

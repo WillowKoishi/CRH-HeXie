@@ -26,7 +26,7 @@ import willow.train.hexie.client.render.carriage.CompatibleCarriageVisual;
 import java.util.List;
 
 /** One world-shell visual for both heads and carriage parts; no extra block entities. */
-final class CRH2ShellVisual implements EffectVisual<CRH2ShellVisual.Shell>, ShaderLightVisual {
+final class StaticShellVisual implements EffectVisual<StaticShellVisual.Shell>, ShaderLightVisual {
     private static final boolean COMPATIBLE_TRANSPARENCY = willow.train.hexie.client.render.carriage.CarriageTransparencyCompat.required();
     // Same virtual block builder/cache lifecycle as Flywheel Models.block(), with continuous
     // world lighting for models that extend well beyond their owner block.
@@ -46,7 +46,7 @@ final class CRH2ShellVisual implements EffectVisual<CRH2ShellVisual.Shell>, Shad
     record Shell(ClientLevel level, BlockPos pos, BlockState state) implements Effect {
         @Override
         public EffectVisual<?> visualize(VisualizationContext context, float partialTick) {
-            return new CRH2ShellVisual(context, this);
+            return new StaticShellVisual(context, this);
         }
     }
 
@@ -55,7 +55,7 @@ final class CRH2ShellVisual implements EffectVisual<CRH2ShellVisual.Shell>, Shad
 
     static Model model(BlockState state) { return MODELS.get(state); }
 
-    private CRH2ShellVisual(VisualizationContext context, Shell shell) {
+    private StaticShellVisual(VisualizationContext context, Shell shell) {
         Model model = model(shell.state());
         instance = context.instancerProvider().instancer(InstanceTypes.TRANSFORMED, model).createInstance();
         var origin = context.renderOrigin();
