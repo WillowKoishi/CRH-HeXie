@@ -12,8 +12,9 @@ import willow.train.hexie.Main;
 
 /** Parts extracted from the original bogey meshes, in each frame's original export coordinates. */
 public final class BogeySuspensionModels {
-    private enum Attachment { BODY, FRAME, LINK, SLEEVE }
-    private record Part(PartialModel model, Attachment attachment, Vector3f frameAnchor, Vector3f bodyAnchor) {}
+    private enum Attachment { BODY, FRAME, TRANSLATION, LINK, SLEEVE, BODY_SLEEVE, PISTON }
+    private record Part(PartialModel model, Attachment attachment, Vector3f frameAnchor, Vector3f bodyAnchor,
+                        float pistonReach) {}
     public static final class Model {
         private final String directory;
         private final double frameOffset;
@@ -21,14 +22,26 @@ public final class BogeySuspensionModels {
         private Model(String directory, double frameOffset, boolean airSpring) {
             this.directory = directory;
             this.frameOffset = frameOffset;
-            if (airSpring) attached("air_spring_upper", Attachment.BODY);
+            if (airSpring) translated("air_spring_upper", new Vector3f());
         }
         private Model attached(String name, Attachment attachment) {
-            parts.add(new Part(part(name), attachment, null, null));
+            parts.add(new Part(part(name), attachment, null, null, 0));
+            return this;
+        }
+        private Model translated(String name, Vector3f bodyAnchor) {
+            parts.add(new Part(part(name), Attachment.TRANSLATION, null, bodyAnchor, 0));
             return this;
         }
         private Model link(String name, Vector3f frame, Vector3f body, boolean stretch) {
-            parts.add(new Part(part(name), stretch ? Attachment.LINK : Attachment.SLEEVE, frame, body));
+            parts.add(new Part(part(name), stretch ? Attachment.LINK : Attachment.SLEEVE, frame, body, 0));
+            return this;
+        }
+        private Model bodySleeve(String name, Vector3f frame, Vector3f body) {
+            parts.add(new Part(part(name), Attachment.BODY_SLEEVE, frame, body, 0));
+            return this;
+        }
+        private Model piston(String name, Vector3f frame, Vector3f body, float restReach) {
+            parts.add(new Part(part(name), Attachment.PISTON, frame, body, restReach));
             return this;
         }
         private PartialModel part(String name) {
@@ -42,6 +55,8 @@ public final class BogeySuspensionModels {
     public static final Model SW220K = sw220k();
     public static final Model DT206 = emu("dt206");
     public static final Model SKTB200 = emu("sktb200");
+    public static final Model CRH1A_MOTOR = crh1a("crh1a_motor", true);
+    public static final Model CRH1A_TRAILER = crh1a("crh1a_trailer", false);
     public static final Model DF11G = df11g();
 
     private BogeySuspensionModels() {}
@@ -72,6 +87,47 @@ public final class BogeySuspensionModels {
                     .attached("rod_" + name + "_upper_mount", Attachment.BODY);
         }
         return model;
+    }
+
+    private static Model crh1a(String directory, boolean motor) {
+        // The source frame's origin is the axle centre; 7.328/16 tread height puts it on the rail.
+        var model = new Model(directory, .8006, false)
+                .attached("bolster", Attachment.BODY)
+                .attached("primary_suspension", Attachment.FRAME)
+                .attached("brakes", Attachment.FRAME)
+                .attached("anti_roll_bar", Attachment.FRAME)
+                .link("traction_rod", crh1aTractionAnchor(.5f), crh1aTractionAnchor(-10.8f), true);
+        if (motor) model.attached("motors", Attachment.FRAME);
+        for (int side : new int[] {-1, 1}) {
+            String name = side < 0 ? "left" : "right";
+            model.translated("air_spring_" + name,
+                            new Vector3f(side * 15.15f / 16, 7.5f / 16, 0))
+                    .link("vertical_damper_" + name,
+                            new Vector3f(side * 9.2f / 16, -.1f / 16, -4.5f / 16),
+                            new Vector3f(side * 9.2f / 16, 8.3f / 16, -4.5f / 16), true)
+                    .link("anti_roll_link_" + name,
+                            new Vector3f(side * 9.2f / 16, -2.8f / 16, 3.6f / 16),
+                            new Vector3f(side * 9.2f / 16, 8.3f / 16, 3.6f / 16), true);
+            var frame = crh1aDamperAnchor(side, 9.2f);
+            var body = crh1aDamperAnchor(side, -2.8f);
+            // Source piston tip is 6/16 from the frame pivot, overlapping the sleeve by .6/16.
+            model.piston("yaw_damper_" + name + "_shaft", frame, body, 6f / 16)
+                    .bodySleeve("yaw_damper_" + name + "_sleeve", frame, body)
+                    .attached("yaw_damper_" + name + "_upper_mount", Attachment.BODY);
+        }
+        return model;
+    }
+
+    private static Vector3f crh1aDamperAnchor(int side, float z) {
+        // Bake the source damper group's 5-degree X rotation around (side*21.3, 1.8, .5).
+        float sin = (float) Math.sin(Math.toRadians(5)), cos = (float) Math.cos(Math.toRadians(5));
+        return new Vector3f(side * 21.6f / 16, (1.8f - (z - .5f) * sin) / 16,
+                (.5f + (z - .5f) * cos) / 16);
+    }
+
+    private static Vector3f crh1aTractionAnchor(float z) {
+        float sin = (float) Math.sin(Math.toRadians(10)), cos = (float) Math.cos(Math.toRadians(10));
+        return new Vector3f(0, (.7f + cos - z * sin) / 16, (5.6f + sin + z * cos) / 16);
     }
 
     private static Model sw220k() {
@@ -121,8 +177,13 @@ public final class BogeySuspensionModels {
             Matrix4f transform = switch (part.attachment) {
                 case BODY -> body;
                 case FRAME -> new Matrix4f();
+                case TRANSLATION -> BogeyLinkTransform.translationAt(body, part.bodyAnchor);
                 case LINK, SLEEVE -> BogeyLinkTransform.between(part.frameAnchor, part.bodyAnchor,
                         body.transformPosition(part.bodyAnchor, new Vector3f()), part.attachment == Attachment.LINK);
+                case BODY_SLEEVE -> BogeyLinkTransform.between(part.bodyAnchor, part.frameAnchor,
+                        body.transformPosition(part.bodyAnchor, new Vector3f()), part.frameAnchor, false);
+                case PISTON -> BogeyLinkTransform.telescopicPiston(part.frameAnchor, part.bodyAnchor,
+                        body.transformPosition(part.bodyAnchor, new Vector3f()), part.pistonReach);
             };
             renderer.getTransform(part.model, pose, buffer == null).rotateY(modelYaw).translate(0, model.frameOffset, 0)
                     .transform(transform).render(pose, light, buffer);

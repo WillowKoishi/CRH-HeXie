@@ -181,7 +181,8 @@ public final class PhysicalCouplerBlockEntity extends CouplerBlockEntity
         // Ordinary blocks and captured carriage render views must never become Simurail targets.
         return !isPhysicalActor() || redstoneInput || manualRelease || level.hasNeighborSignal(getBlockPos())
                 || !("railways:knuckle".equals(effectiveModel()) || "hexie:crh2_auto".equals(effectiveModel())
-                || "hexie:crh2_semiauto".equals(effectiveModel()))
+                || "hexie:crh2_semiauto".equals(effectiveModel())
+                || willow.train.hexie.blocks.emu.crh1a.CRH1EndFaceBlock.COUPLER_MODEL.equals(effectiveModel()))
                 || getBlockState().getBlock() instanceof ModelCouplerBlock
                 && !getBlockState().getValue(BlockStateProperties.OPEN);
     }
@@ -195,6 +196,7 @@ public final class PhysicalCouplerBlockEntity extends CouplerBlockEntity
     @Override public CouplerType getCouplerType() {
         String model = effectiveModel();
         if ("railways:knuckle".equals(model)) return SimurailCouplers.KNUCKLE;
+        if (willow.train.hexie.blocks.emu.crh1a.CRH1EndFaceBlock.COUPLER_MODEL.equals(model)) return CRH1EndFacePhysical.TYPE;
         return "hexie:crh2_semiauto".equals(model) ? CRH2_SEMIAUTO : CRH2_AUTO;
     }
 

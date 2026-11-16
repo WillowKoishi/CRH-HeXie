@@ -1,6 +1,7 @@
 package willow.train.hexie.api.traincontrol;
 
 import java.util.Objects;
+import java.util.Set;
 import willow.train.hexie.api.interaction.BlockControl;
 import willow.train.hexie.api.interaction.ControlState;
 import willow.train.hexie.vehicle.runtime.VehicleRuntime;
@@ -12,6 +13,26 @@ public interface CabTrainControl {
 
     /** Project current readouts and recover physical positions missing from older saves. */
     default ControlState restore(ControlState saved, CabTrainRequest current) { return saved; }
+
+    /**
+     * Project a synchronized train demand onto this desk's physical controls. The request carries
+     * exact converted amounts; rounded detents are presentation state and must not replace them.
+     * Its service brake is the effective brake amount, including parking or a latched emergency.
+     */
+    default ControlState synchronize(ControlState saved, CabTrainRequest current) {
+        return restore(saved, current);
+    }
+
+    /** Independent enable switches remain local; a reverser-operated desk may derive its enable here. */
+    default boolean synchronizedEnabled(CabTrainRequest current) { return current.enabled(); }
+
+    /** Normalize direction for desks whose physical selector cannot represent every common state. */
+    default int normalizeDirection(CabTrainRequest current) { return current.reverser(); }
+
+    enum Demand { POWER, BRAKE, REVERSER }
+
+    /** Identify explicit demand gestures, including selecting an already displayed value. */
+    default Set<Demand> operatedDemands(BlockControl control) { return Set.of(); }
 
     /** The moved slider is already in after. The previous request always has its release pulse cleared. */
     Result operate(BlockControl control, int value, ControlState before, ControlState after, CabTrainRequest current);
@@ -30,6 +51,15 @@ public interface CabTrainControl {
     default VehicleRuntime.Control output(boolean enabled, VehicleRuntime.Control handles,
                                           VehicleRuntime.Control controlled) {
         return controlled;
+    }
+
+    /** Additional physical state for desks that regulate a driver-selected speed. */
+    record OutputContext(boolean enabled, boolean selected, boolean simple, boolean routeControl,
+                         ControlState surface, CabTrainRequest request, int direction, double speed) {}
+
+    default VehicleRuntime.Control output(OutputContext context, VehicleRuntime.Control handles,
+                                          VehicleRuntime.Control controlled) {
+        return output(context.enabled(), handles, controlled);
     }
 
     /**

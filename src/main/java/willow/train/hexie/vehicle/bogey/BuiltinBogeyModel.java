@@ -17,7 +17,9 @@ public enum BuiltinBogeyModel {
     QJ("qj", "steambogey", "hexie:qj", BuiltinBogeyProfile.QJ),
     QJ_BACKWARD("qj_backward", "steambogey", "hexie:qj_backward", BuiltinBogeyProfile.QJ),
     DT206("dt206", "crhbogey", "hexie:dt206", BuiltinBogeyProfile.DT206),
-    SKTB200("sktb200", "crhbogey", "hexie:sktb200", BuiltinBogeyProfile.SKTB200);
+    SKTB200("sktb200", "crhbogey", "hexie:sktb200", BuiltinBogeyProfile.SKTB200),
+    CRH1A_MOTOR("crh1a_motor", "crhbogey", "hexie:crh1a_motor", BuiltinBogeyProfile.CRH1A_MOTOR),
+    CRH1A_TRAILER("crh1a_trailer", "crhbogey", "hexie:crh1a_trailer", BuiltinBogeyProfile.CRH1A_TRAILER);
 
     private final ResourceLocation id, style, size;
     private final BuiltinBogeyProfile profile;

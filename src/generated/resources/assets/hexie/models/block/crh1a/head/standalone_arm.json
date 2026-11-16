@@ -1,0 +1,16 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "ambientocclusion": false,
+  "automatic_culling": false,
+  "flip_v": true,
+  "render_type": "minecraft:cutout",
+  "model": "hexie:models/block/crh1a/head/standalone_arm.obj",
+  "textures": {
+    "particle": "hexie:block/crh1a/head/crh1a_scharfenberg_coupler",
+    "t0": "hexie:block/crh1a/head/crh1a_floor",
+    "t1": "hexie:block/crh1a/head/crh1a_head",
+    "t2": "hexie:block/crh1a/head/crh1a_coupler_fairing",
+    "t3": "hexie:block/crh1a/head/crh1a_scharfenberg_coupler"
+  }
+}

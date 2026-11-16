@@ -1,6 +1,7 @@
 package willow.train.hexie.vehicle.control;
 
 import java.util.List;
+import java.util.Set;
 import willow.train.hexie.api.interaction.BlockControl;
 import willow.train.hexie.api.cab.CabNeutralPositions;
 import willow.train.hexie.api.cab.CabNeutralPositions.Detent;
@@ -53,6 +54,27 @@ public enum TestCabControls implements CabTrainControl {
         return saved.with(PARKING, current.parking() ? 1 : 0);
     }
 
+    @Override public ControlState synchronize(ControlState saved, CabTrainRequest current) {
+        int brake = current.emergencyDemand() || current.serviceBrake() > TrainControl.Source.CAB_MANUAL.serviceBrakeLimit()
+                ? EMERGENCY : Math.clamp(Math.round(current.serviceBrake()
+                        / TrainControl.Source.CAB_MANUAL.serviceBrakeLimit() * SERVICE_NOTCHES), 0, SERVICE_NOTCHES);
+        return saved.with(POWER, (int) Math.round(current.power() * 10)).with(BRAKE, brake)
+                .with(REVERSER, current.reverser()).with(PARKING, current.parking() ? 1 : 0)
+                .with(MODE, current.automatic() ? 1 : 0);
+    }
+
+    @Override public boolean synchronizedEnabled(CabTrainRequest current) { return current.reverser() != 0; }
+
+    @Override public Set<Demand> operatedDemands(BlockControl control) {
+        if (!(control instanceof TestCabButton button)) return Set.of();
+        return switch (button) {
+            case POWER_UP, POWER_DOWN -> Set.of(Demand.POWER);
+            case BRAKE_UP, BRAKE_DOWN, PARKING -> Set.of(Demand.BRAKE);
+            case REVERSER -> Set.of(Demand.REVERSER);
+            case MODE -> Set.of();
+        };
+    }
+
     private static ControlState restoreSetting(ControlState saved, String key, int fallback, int min, int max) {
         var value = saved.positions().get(key);
         return value == null || value < min || value > max ? saved.with(key, fallback) : saved;
@@ -72,12 +94,15 @@ public enum TestCabControls implements CabTrainControl {
             case PARKING -> after.with(PARKING, old.parking() ? 0 : 1);
         };
         var next = view(surface);
-        double service = (double) Math.min(next.brake(), SERVICE_NOTCHES) / SERVICE_NOTCHES
-                * TrainControl.Source.CAB_MANUAL.serviceBrakeLimit();
-        boolean emergency = next.brake() == EMERGENCY;
-        boolean release = old.brake() == EMERGENCY && !emergency;
+        boolean powerChanged = button == TestCabButton.POWER_UP || button == TestCabButton.POWER_DOWN;
+        boolean brakeChanged = button == TestCabButton.BRAKE_UP || button == TestCabButton.BRAKE_DOWN;
+        double service = brakeChanged ? (double) Math.min(next.brake(), SERVICE_NOTCHES) / SERVICE_NOTCHES
+                * TrainControl.Source.CAB_MANUAL.serviceBrakeLimit() : current.serviceBrake();
+        boolean emergency = brakeChanged ? next.brake() == EMERGENCY : current.emergencyDemand();
+        boolean release = brakeChanged && old.brake() == EMERGENCY && !emergency;
         boolean enabled = button == TestCabButton.REVERSER ? next.reverser() != 0 : current.enabled();
-        return new Result(surface, new CabTrainRequest(next.power() / 10d, service, next.reverser(), enabled,
+        return new Result(surface, new CabTrainRequest(powerChanged ? next.power() / 10d : current.power(), service,
+                button == TestCabButton.REVERSER ? next.reverser() : current.reverser(), enabled,
                 next.automatic(), next.parking(), emergency, release, current.approach()));
     }
 

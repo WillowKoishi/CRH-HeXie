@@ -63,7 +63,7 @@ public final class PanelAttachmentHit {
             int direction = markings.harmony(slot);
             if (direction == 0) continue;
             boolean right = direction == 2;
-            var logo = HarmonyMarking.layout(area.minX + slot, area.maxY, right);
+            var logo = HarmonyMarking.layout(area.minX + slot, area.maxY + surface.harmonyMarkingOffsetY(), right);
             // Bounds of nontransparent pixels in the existing 500x123 / 500x131 logo atlases.
             double left = logo.left() + logo.width() * (right ? 1 : 0) / 500;
             double end = logo.left() + logo.width() * (right ? 500 : 471) / 500;

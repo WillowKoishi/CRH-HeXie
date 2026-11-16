@@ -1,0 +1,5 @@
+# CRH1A original textures; GPL-3.0-only.
+newmtl frame
+map_Kd hexie:block/bogey/crh1a_trailer/frame
+newmtl wheel
+map_Kd hexie:block/bogey/crh1a_trailer/wheel

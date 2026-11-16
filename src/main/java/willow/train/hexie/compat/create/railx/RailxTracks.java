@@ -1,6 +1,7 @@
 package willow.train.hexie.compat.create.railx;
 
 import com.lhwdev.minecraft.railx.flexiTrack.FlexiTrackMaterial;
+import com.lhwdev.minecraft.railx.flexiTrack.FlexiTrackBlock;
 import com.lhwdev.minecraft.railx.registry.AllBlockEntityTypes;
 import com.simibubi.create.AllTags;
 import com.simibubi.create.content.trains.track.TrackBlock;
@@ -16,6 +17,7 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.MapColor;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.Tags;
@@ -30,6 +32,11 @@ public final class RailxTracks {
                         BlockEntry<RailxTrackBlock> block) {}
 
     private RailxTracks() {}
+
+    /** The placed block is authoritative even when RailX connected it without the flexible key. */
+    public static boolean isFlexible(BlockState state) {
+        return state.getBlock() instanceof FlexiTrackBlock;
+    }
 
     /** Called by the active backend for every registered HeXie railway when RailX is installed. */
     public static synchronized void addTrack(CreateRegistrate registrate, TrackMaterial material,

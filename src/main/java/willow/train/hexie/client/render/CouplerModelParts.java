@@ -14,6 +14,8 @@ interface CouplerModelParts extends SnapshotCouplerRenderer.Renderer {
     @FunctionalInterface
     interface Sink {
         void draw(PartialModel model, PoseStack pose, PartialCouplerRenderer.BellowsDeformation deformation);
+        /** A body-colored moving surface uses the shell's non-directional lighting. */
+        default void drawShell(PartialModel model, PoseStack pose) { draw(model, pose, null); }
         default void cable(PartialModel model, PoseStack pose, CableDeformation deformation) {
             throw new UnsupportedOperationException("This coupler sink does not support deforming cables");
         }
@@ -36,6 +38,10 @@ interface CouplerModelParts extends SnapshotCouplerRenderer.Renderer {
                 } else {
                     buffer.renderInto(new PoseStack(), new PartialCouplerRenderer.DeformingConsumer(consumer, pose.last(), deformation));
                 }
+            }
+            @Override public void drawShell(PartialModel model, PoseStack pose) {
+                CachedBuffers.partial(model, state).disableDiffuse().light(light).overlay(overlay)
+                        .renderInto(pose, buffers.getBuffer(RenderType.cutoutMipped()));
             }
             @Override public void cable(PartialModel model, PoseStack pose, CableDeformation deformation) {
                 CachedBuffers.partial(model, state).light(light).overlay(overlay).renderInto(new PoseStack(),

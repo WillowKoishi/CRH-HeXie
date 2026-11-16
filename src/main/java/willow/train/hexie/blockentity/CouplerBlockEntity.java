@@ -116,7 +116,7 @@ public class CouplerBlockEntity extends BlockEntity implements willow.train.hexi
     }
 
     public boolean install(CouplerAdapter value) {
-        if (value == null || !(getBlockState().getBlock() instanceof CouplerBlock coupler)
+        if (value == null || !(getBlockState().getBlock() instanceof CouplerBlock coupler) || !coupler.allowsAdapters()
                 || value.otherModel(adapter == null ? coupler.model() : adapter.otherModel(coupler.model())) == null) return false;
         adapter = CouplerAdapter.append(coupler.model(), adapter, value);
         rescueKnuckle = RescueCouplerState.sync(rescueKnuckle, adapter, coupler.model(), false,

@@ -97,7 +97,8 @@ final class VehicleContactPreparation {
             Vector velocity = reference.track().tangent().scale(speed);
             double travel = (Math.abs(speed) + accelerationBound * TICK_SECONDS) * TICK_SECONDS;
             for (var endpoint : carriage.couplings()) {
-                if (occupied.contains(endpoint.id()) || endpoint.kind() != CouplingEndpoint.Kind.RIGID) continue;
+                if (occupied.contains(endpoint.id()) || endpoint.kind() != CouplingEndpoint.Kind.RIGID
+                        || !motion.couplerAvailable(endpoint)) continue;
                 Vector facing = body.rotate(endpoint.rotated(new CouplingEndpoint.Point(0, 0, -1)));
                 result.add(new End(carriage.id(), endpoint.id(), endpoint.effectiveModel(),
                         runtime.placement().endpoints().get(endpoint.id()).complete(), facing, velocity, travel,

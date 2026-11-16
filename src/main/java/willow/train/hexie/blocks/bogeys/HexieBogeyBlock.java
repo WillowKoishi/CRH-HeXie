@@ -1,6 +1,7 @@
 package willow.train.hexie.blocks.bogeys;
 
 import com.simibubi.create.AllBlocks;
+import com.simibubi.create.content.equipment.wrench.WrenchItem;
 import com.simibubi.create.content.trains.bogey.AbstractBogeyBlock;
 import com.simibubi.create.content.trains.bogey.AbstractBogeyBlockEntity;
 import com.simibubi.create.content.trains.bogey.BogeySizes;
@@ -8,14 +9,23 @@ import com.simibubi.create.content.trains.bogey.BogeyStyle;
 import com.simibubi.create.content.trains.track.TrackMaterial;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.BlockHitResult;
 import willow.train.hexie.init.track.TrackMaterialInit;
+import willow.train.hexie.menu.BogeySelectionMenu;
 
 public abstract class HexieBogeyBlock<T extends AbstractBogeyBlockEntity> extends AbstractBogeyBlock<T> {
+    private final double wheelPointSpacing;
+    private final double wheelRadius;
     public static final net.minecraft.world.level.block.state.properties.BooleanProperty HEAD_MOUNTED =
             net.minecraft.world.level.block.state.properties.BooleanProperty.create("head_mounted");
     @Override protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition.Builder<Block, BlockState> builder) {
@@ -44,7 +54,14 @@ public abstract class HexieBogeyBlock<T extends AbstractBogeyBlockEntity> extend
         return getShape(state, world, pos, context);
     }
     protected HexieBogeyBlock(Properties properties, BogeySizes.BogeySize size) {
+        this(properties, size, 2.5, .915);
+    }
+
+    protected HexieBogeyBlock(Properties properties, BogeySizes.BogeySize size,
+                              double wheelPointSpacing, double wheelRadius) {
         super(properties.dynamicShape(), size);
+        this.wheelPointSpacing = wheelPointSpacing;
+        this.wheelRadius = wheelRadius;
         registerDefaultState(defaultBlockState().setValue(HEAD_MOUNTED, false));
     }
 
@@ -61,12 +78,12 @@ public abstract class HexieBogeyBlock<T extends AbstractBogeyBlockEntity> extend
 
     @Override
     public final double getWheelPointSpacing() {
-        return 2.5;
+        return wheelPointSpacing;
     }
 
     @Override
     public final double getWheelRadius() {
-        return 0.915;
+        return wheelRadius;
     }
 
     @Override
@@ -77,6 +94,20 @@ public abstract class HexieBogeyBlock<T extends AbstractBogeyBlockEntity> extend
     @Override
     public final ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state) {
         return AllBlocks.RAILWAY_CASING.asStack();
+    }
+
+    @Override
+    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
+                                              Player player, InteractionHand hand, BlockHitResult hit) {
+        // Handle the top before Create's useItemOn cycles the style on the server.
+        if (!player.isShiftKeyDown() && hit.getDirection() == Direction.UP && stack.getItem() instanceof WrenchItem) {
+            if (player.isSpectator() || !player.mayBuild() || state.getValue(HEAD_MOUNTED))
+                return ItemInteractionResult.FAIL;
+            if (player instanceof ServerPlayer server && (!(level.getBlockEntity(pos) instanceof HexieBogeyBlockEntity bogey)
+                    || !BogeySelectionMenu.open(server, bogey, hand))) return ItemInteractionResult.FAIL;
+            return ItemInteractionResult.sidedSuccess(level.isClientSide);
+        }
+        return super.useItemOn(stack, state, level, pos, player, hand, hit);
     }
 
     @Override

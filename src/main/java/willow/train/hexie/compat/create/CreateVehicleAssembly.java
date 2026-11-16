@@ -169,7 +169,7 @@ public final class CreateVehicleAssembly {
         var targetsBySource = new LinkedHashMap<UUID, List<CarriageSnapshot>>();
         for (var target : targets)
             targetsBySource.computeIfAbsent(sourceByCarriage.get(target.id()), ignored -> new ArrayList<>()).add(target);
-        store.checkDisassembly(level, targetsBySource);
+        store.checkDisassemblyUsing(level, targetsBySource);
         try {
             // Keep the live Create contraption and mounted storage. Its native placement handles
             // block/BE transformations, extension hooks, multiblocks, inventories and glue once.

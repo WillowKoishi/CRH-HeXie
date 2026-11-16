@@ -28,6 +28,16 @@ public class PartialModelInit {
             CRH2_CAB_DOOR_LEFT_GLASS = block("crh2a/doors/crh2a_cab_door_left_glass"),
             CRH2_CAB_DOOR_RIGHT_GLASS = block("crh2a/doors/crh2a_cab_door_right_glass"),
             CRH2_END_COUPLER = block("crh2a/endface/coupler"),
+            CRH1_END_COUPLER = block("crh1a/endface/coupler"),
+            CRH1_END_BELLOWS_LEFT = block("crh1a/endface/bellows_left"),
+            CRH1_END_BELLOWS_RIGHT = block("crh1a/endface/bellows_right"),
+            CRH1_END_BELLOWS_TOP = block("crh1a/endface/bellows_top"),
+            CRH1_END_BELLOWS_BOTTOM = block("crh1a/endface/bellows_bottom"),
+            CRH1_HEAD_COVER_UPPER = block("crh1a/head/cover_upper"),
+            CRH1_HEAD_COVER_LOWER = block("crh1a/head/cover_lower"),
+            CRH1_HEAD_COUPLER_REAR = block("crh1a/head/coupler_rear"),
+            CRH1_HEAD_COUPLER_FRONT = block("crh1a/head/coupler_front"),
+            SCHARFENBERG_COUPLER_ARM = block("crh1a/head/standalone_arm"),
             JANNEY_BASE = block("coupler/general_janney/base"),
             JANNEY_BODY = block("coupler/general_janney/body"),
             JANNEY_KNUCKLE = block("coupler/general_janney/knuckle"),
@@ -53,6 +63,10 @@ public class PartialModelInit {
             SKTB200_FRAME = block("bogey/sktb200/frame"),
             DT206_WHEEL = block("bogey/dt206/wheel"),
             SKTB200_WHEEL = block("bogey/sktb200/wheel"),
+            CRH1A_MOTOR_FRAME = block("bogey/crh1a_motor/frame"),
+            CRH1A_MOTOR_WHEEL = block("bogey/crh1a_motor/wheel"),
+            CRH1A_TRAILER_FRAME = block("bogey/crh1a_trailer/frame"),
+            CRH1A_TRAILER_WHEEL = block("bogey/crh1a_trailer/wheel"),
             HXSTANDARDBOGEY_FRAME = block("bogey/hx_standard/bogey_cw2_temple"),
             HXSTANDARDBOGEY_WHEEL = block("bogey/hx_standard/cw2_wheel"),
             DF11G_FRAME = block("bogey/df11g/df11g_bogey_temple"),
@@ -130,6 +144,7 @@ public class PartialModelInit {
     }
 
     public static void init() {
+        willow.train.hexie.client.render.blockentity.CRH1DoorRenderer.init();
         willow.train.hexie.client.render.bogey.BogeySuspensionModels.init();
     }
 }

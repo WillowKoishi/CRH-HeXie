@@ -57,7 +57,9 @@ public abstract class MixinCarriagePlayerCollision {
             target = "Lnet/minecraft/world/level/block/state/BlockState;getCollisionShape(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/phys/shapes/VoxelShape;"), remap = false)
     private static VoxelShape hexie$doorCollisionWorld(BlockState state, BlockGetter world, BlockPos localPos,
             Operation<VoxelShape> original, @Local(argsOnly = true) Contraption contraption) {
-        if (state.getBlock() instanceof CRH2DoorBlock) world = contraption.getContraptionWorld();
+        if (state.getBlock() instanceof CRH2DoorBlock
+                || state.getBlock() instanceof willow.train.hexie.blocks.emu.crh1a.CRH1DoorBlock)
+            world = contraption.getContraptionWorld();
         return original.call(state, world, localPos);
     }
 

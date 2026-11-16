@@ -90,7 +90,8 @@ public final class DrivingConsoleRenderer implements BlockEntityRenderer<Driving
             models.draw(ModelResourceLocation.standalone(part.model()), transform, RenderType.cutout());
         }
         for (var mount : surface.mounts()) {
-            if (mount.module() == Ctcs2Panel.INSTANCE)
+            if (mount.module() == Ctcs2Panel.INSTANCE
+                    && !(cab.getBlockState().getBlock() instanceof willow.train.hexie.blocks.emu.crh1a.CRH1DrivingConsoleBlock))
                 models.draw(Ctcs2DmiModule.Shell.GREY.model(), mount.transform(), RenderType.solid());
         }
     }

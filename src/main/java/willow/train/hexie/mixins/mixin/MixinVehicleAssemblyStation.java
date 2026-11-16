@@ -105,7 +105,8 @@ public abstract class MixinVehicleAssemblyStation extends SmartBlockEntity imple
             target = "Lnet/minecraft/world/level/Level;getBlockState(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/block/state/BlockState;"))
     private BlockState hexie$integralSupport(Level world, BlockPos pos, Operation<BlockState> original) {
         var state = original.call(world, pos);
-        if (!(state.getBlock() instanceof willow.train.hexie.blocks.emu.head.HeadFloorBlock)) return state;
+        if (!(state.getBlock() instanceof willow.train.hexie.blocks.emu.head.HeadFloorBlock)
+                && !(state.getBlock() instanceof willow.train.hexie.vehicle.assembly.OwnedBogeyMount)) return state;
         var support = AssemblyBogeySupport.resolve(world, pos);
         return support == null ? state : support.state();
     }

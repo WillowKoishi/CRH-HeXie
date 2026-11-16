@@ -381,12 +381,25 @@ public class HXStandardBogeyRenderer {
         private final PartialModel frame;
         private final PartialModel wheel;
         private final double frameOffset;
+        private final double axleHeight;
+        private final double axleHalfSpacing;
+        private final BogeySuspensionModels.Model suspension;
 
         public CrhTwoAxleRenderer(BogeySizes.BogeySize size, PartialModel frame, PartialModel wheel, double frameOffset) {
+            this(size, frame, wheel, AXLE_HEIGHT, frameOffset, 1.25, size.equals(BogeySizesInit.DT206)
+                    ? BogeySuspensionModels.DT206 : BogeySuspensionModels.SKTB200);
+        }
+
+        public CrhTwoAxleRenderer(BogeySizes.BogeySize size, PartialModel frame, PartialModel wheel,
+                                  double axleHeight, double frameOffset, double axleHalfSpacing,
+                                  BogeySuspensionModels.Model suspension) {
             this.size = size;
             this.frame = frame;
             this.wheel = wheel;
             this.frameOffset = frameOffset;
+            this.axleHeight = axleHeight;
+            this.axleHalfSpacing = axleHalfSpacing;
+            this.suspension = suspension;
         }
         // Exported wheel tread radius: 6.88/16; axle centres: Z = +/-20/16.
         // Original model-space alignment; SimpleBogeyRenderer applies the height increase once.
@@ -396,13 +409,12 @@ public class HXStandardBogeyRenderer {
                 int light, VertexConsumer buffer, boolean inContraption) {
             boolean instanced = buffer == null;
             getTransform(frame, pose, instanced)
-                    .translate(0, AXLE_HEIGHT + frameOffset, 0).render(pose, light, buffer);
-            BogeySuspensionModels.render(this, size.equals(BogeySizesInit.DT206)
-                    ? BogeySuspensionModels.DT206 : BogeySuspensionModels.SKTB200, data, pose, light, buffer);
+                    .translate(0, axleHeight + frameOffset, 0).render(pose, light, buffer);
+            BogeySuspensionModels.render(this, suspension, data, pose, light, buffer);
             BogeyModelData[] wheels = getTransform(wheel, pose, instanced, 2);
             for (int side : Iterate.positiveAndNegative) {
                 if (!instanced) pose.pushPose();
-                wheels[(side + 1) / 2].translate(0, AXLE_HEIGHT, side * 1.25)
+                wheels[(side + 1) / 2].translate(0, axleHeight, side * axleHalfSpacing)
                         .rotateX(wheelAngle).render(pose, light, buffer);
                 if (!instanced) pose.popPose();
             }

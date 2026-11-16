@@ -1,0 +1,10 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "flip_v": true,
+  "automatic_culling": false,
+  "model": "hexie:models/block/bogey/crh1a_trailer/yaw_damper_left_upper_mount.obj",
+  "textures": {
+    "particle": "hexie:block/bogey/crh1a_trailer/frame"
+  }
+}

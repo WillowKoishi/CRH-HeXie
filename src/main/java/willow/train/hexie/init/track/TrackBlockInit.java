@@ -34,6 +34,7 @@ import willow.train.hexie.blocks.bogeys.CRH.CRHBogeyBlock;
 import willow.train.hexie.blocks.locos.df11g.DF11GFrontBlock;
 import willow.train.hexie.init.bogeys.BogeySizesInit;
 import willow.train.hexie.item.ToolTipsItemHelper;
+import willow.train.hexie.vehicle.bogey.BuiltinBogeyProfile;
 
 
 public class TrackBlockInit {
@@ -183,6 +184,24 @@ public class TrackBlockInit {
                     .properties(p -> p.mapColor(MapColor.METAL))
                     .transform(bogeyModel("hexie:block/bogey/crh2/top"))
                     .lang("SKTB-200 Bogey")
+                    .register();
+
+    public static final BlockEntry<CRHBogeyBlock> CRH1A_MOTOR_BOGEY =
+            REGISTRATE
+                    .block("crh1a_motor_bogey", p -> new CRHBogeyBlock(p, BogeySizesInit.CRH1A_MOTOR,
+                            BuiltinBogeyProfile.CRH1A_MOTOR.geometry()))
+                    .properties(p -> p.mapColor(MapColor.METAL))
+                    .transform(bogeyModel("hexie:block/bogey/crh1a/top"))
+                    .lang("CRH1A Motor Bogey")
+                    .register();
+
+    public static final BlockEntry<CRHBogeyBlock> CRH1A_TRAILER_BOGEY =
+            REGISTRATE
+                    .block("crh1a_trailer_bogey", p -> new CRHBogeyBlock(p, BogeySizesInit.CRH1A_TRAILER,
+                            BuiltinBogeyProfile.CRH1A_TRAILER.geometry()))
+                    .properties(p -> p.mapColor(MapColor.METAL))
+                    .transform(bogeyModel("hexie:block/bogey/crh1a/top"))
+                    .lang("CRH1A Trailer Bogey")
                     .register();
 
     private static final CreateRegistrate locoREGISTRATE =

@@ -33,7 +33,7 @@ public class CustomRenderedDoorRenderer implements BlockEntityRenderer<CustomRen
             int overlay) {
         BlockState state = entity.getBlockState();
         if (!entity.isLowerSide(state)) return;
-        boolean shell = state.getBlock() instanceof CRH2DoorBlock;
+        boolean shell = isShellDoor(state);
         boolean glassOnly = CarriageBlockVisual.ownsParts(entity);
         MultiBufferSource materials = shell ? shellBuffers(entity, pose, buffer) : buffer;
         pose.pushPose();
@@ -53,9 +53,18 @@ public class CustomRenderedDoorRenderer implements BlockEntityRenderer<CustomRen
         void draw(PartialModel model, RenderType layer, PoseStack transform);
     }
 
+    static boolean isShellDoor(BlockState state) {
+        return state.getBlock() instanceof CRH2DoorBlock
+                || state.getBlock() instanceof willow.train.hexie.blocks.emu.crh1a.CRH1DoorBlock;
+    }
+
     /** Compute each authored part's local pose for both buffered and instanced rendering. */
     static void drawParts(CustomRenderedDoorEntity entity, float progress, PoseStack pose, PartRenderer renderer) {
         BlockState state = entity.getBlockState();
+        if (state.getBlock() instanceof willow.train.hexie.blocks.emu.crh1a.CRH1DoorBlock) {
+            CRH1DoorRenderer.drawParts(entity, progress, pose, renderer);
+            return;
+        }
         var facing = state.getValue(DoorBlock.FACING);
         boolean left = entity.isLeftSide(state);
         pose.translate(.5, 0, .5);
@@ -100,6 +109,12 @@ public class CustomRenderedDoorRenderer implements BlockEntityRenderer<CustomRen
     }
 
     private static MultiBufferSource shellBuffers(CustomRenderedDoorEntity entity, PoseStack pose, MultiBufferSource buffer) {
+        var crh1Lighting = CRH1DoorRenderer.lighting();
+        if (crh1Lighting != null) {
+            var toWorld = new org.joml.Matrix4f(crh1Lighting.localToWorld())
+                    .mul(new org.joml.Matrix4f(pose.last().pose()).invert());
+            return layer -> new ShellLightConsumer(buffer.getBuffer(layer), crh1Lighting.level(), toWorld);
+        }
         var lighting = willow.train.hexie.client.render.CRH2DoorRenderContext.current();
         if (lighting != null) {
             var toWorld = new org.joml.Matrix4f(lighting.localToWorld())
@@ -116,6 +131,8 @@ public class CustomRenderedDoorRenderer implements BlockEntityRenderer<CustomRen
     }
 
     @Override public net.minecraft.world.phys.AABB getRenderBoundingBox(CustomRenderedDoorEntity entity) {
+        if (entity.getBlockState().getBlock() instanceof willow.train.hexie.blocks.parts.ModelRenderBounds model)
+            return model.modelRenderBounds(entity.getBlockState()).move(entity.getBlockPos());
         return new net.minecraft.world.phys.AABB(entity.getBlockPos()).inflate(1.5);
     }
 

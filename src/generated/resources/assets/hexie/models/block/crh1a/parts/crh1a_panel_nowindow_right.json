@@ -1,0 +1,16 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:composite",
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "hexie:block/crh1a/parts/crh1a_panel_nowindow"
+  },
+  "children": {
+    "body": {
+      "parent": "hexie:block/crh1a/parts/crh1a_panel_nowindow_right_body"
+    }
+  },
+  "item_render_order": [
+    "body"
+  ]
+}

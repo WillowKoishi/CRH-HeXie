@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "hexie:block/crh1a/parts/crh1a_panel_wide_window"
+  },
+  "elements": []
+}

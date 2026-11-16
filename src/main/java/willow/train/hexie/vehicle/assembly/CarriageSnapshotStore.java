@@ -260,6 +260,13 @@ public final class CarriageSnapshotStore extends SavedData {
         for (var block : blocks(targets)) checkTarget(level, block);
     }
 
+    /** The placement backend decides how occupied cells are replaced or dropped. */
+    public void checkDisassemblyUsing(ServerLevel level, Map<UUID, List<CarriageSnapshot>> targetSnapshots) {
+        requireLevel(level);
+        var targets = disassemblyTargets(targetSnapshots).values().stream().flatMap(List::stream).toList();
+        for (var block : blocks(targets)) requireLoaded(level, block.position);
+    }
+
     /** Restore mounted storage after all blocks/BE exist, while rollback still owns the snapshots. */
     public void disassemble(ServerLevel level, UUID assemblyId, Runnable afterBlocksRestored) {
         requireLevel(level);
@@ -283,6 +290,7 @@ public final class CarriageSnapshotStore extends SavedData {
      * The supplied backend performs the entire placement lifecycle using its live block data.
      * Targets describe occupied cells for preflight/rollback only; this store must not install
      * them first, reload their block entities or repeat the backend's neighbour notifications.
+     * Existing world blocks are left to the backend's own replacement and drop rules.
      */
     public void disassembleUsing(ServerLevel level, UUID assemblyId, List<CarriageSnapshot> targets,
                                  Runnable installer) {
@@ -347,7 +355,8 @@ public final class CarriageSnapshotStore extends SavedData {
         List<PlacedBlock> blocks = blocks(targets);
         var previous = new LinkedHashMap<BlockPos, WorldBlock>();
         for (PlacedBlock block : blocks) {
-            checkTarget(level, block);
+            if (installer == null) checkTarget(level, block);
+            else requireLoaded(level, block.position);
             BlockState current = level.getBlockState(block.position);
             BlockEntity entity = level.getBlockEntity(block.position);
             previous.put(block.position, new WorldBlock(current,

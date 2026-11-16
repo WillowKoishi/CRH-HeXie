@@ -79,6 +79,8 @@ final class CreateAssemblyWorld implements AssemblyTraversal.Source<BlockPos> {
         // Supports owned by a larger part may have no collider of their own.
         boolean support = state.getBlock() instanceof HexieBogeyBlock<?>
                 || state.getBlock() instanceof willow.train.hexie.blocks.emu.head.HeadFloorBlock
+                    && AssemblyBogeySupport.isSupport(world, pos)
+                || state.getBlock() instanceof willow.train.hexie.vehicle.assembly.OwnedBogeyMount
                     && AssemblyBogeySupport.isSupport(world, pos);
         if (!support && !BlockMovementChecks.isMovementNecessary(state, world, pos))
             return AssemblyTraversal.Cell.EMPTY;
@@ -128,6 +130,7 @@ final class CreateAssemblyWorld implements AssemblyTraversal.Source<BlockPos> {
             }
         } else if(state.getBlock() instanceof willow.train.hexie.blocks.parts.PartMemberBlock
                 ||state.getBlock() instanceof willow.train.hexie.blocks.emu.head.HeadFloorBlock
+                ||state.getBlock() instanceof willow.train.hexie.blocks.parts.PartStructure part && part.isPartMember()
                 ||state.getBlock() instanceof HexieBogeyBlock<?> && state.getValue(HexieBogeyBlock.HEAD_MOUNTED)) {
             throw new IllegalStateException("车辆部件缺少所属根: "+pos);
         }

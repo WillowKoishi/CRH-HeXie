@@ -125,9 +125,12 @@ public final class ControlInputLayout {
     public boolean accepts(ControlInput input, boolean seated) {
         if (!(seated ? heldControls : worldHeldControls).containsAll(input.held())) return false;
         if (!input.hasCommand()) return true;
+        if (input.kind() == ControlInput.Kind.RELEASE_HANDLE)
+            return input.value() == 0 && bindings(seated).stream().anyMatch(binding ->
+                    binding.action() == Action.STEP_HOLD && binding.controlId().equals(input.controlId()));
         var action = switch (input.kind()) {
             case PRESS -> Action.PRESS; case SET -> Action.SET; case STEP -> Action.STEP;
-            case NONE -> throw new AssertionError();
+            case NONE, RELEASE_HANDLE -> throw new AssertionError();
         };
         return (seated ? commands : worldCommands).contains(new Command(action, input.controlId(), input.value()));
     }

@@ -51,6 +51,15 @@ public record AssemblyBogeySupport(BlockPos owner, BlockPos position, BlockState
                     ? entity.saveWithFullMetadata(entity.getLevel().registryAccess()) : entityData(state, pos, new CompoundTag());
             return new AssemblyBogeySupport(pos, pos, state, data);
         }
+        if (state.getBlock() instanceof OwnedBogeyMount mount && mount.isBogeyMount(state)) {
+            var root = mount.bogeyOwner(pos, state);
+            if (level instanceof Level world && !world.hasChunkAt(root)) return null;
+            var entity = level.getBlockEntity(root);
+            if (entity == null || entity.getLevel() == null) return null;
+            var data = entity.saveWithFullMetadata(entity.getLevel().registryAccess());
+            if (!mount.bogeyEnabled(data)) return null;
+            return new AssemblyBogeySupport(root, pos, mount.bogeyState(level.getBlockState(root)), data);
+        }
         if (!headMount(state)) return null;
         var root = HeadGeometry.owner(level, pos);
         if (root == null || !(level.getBlockEntity(root) instanceof CRH2HeadEntity head) || !head.bogeyEnabled()) return null;
@@ -82,6 +91,12 @@ public record AssemblyBogeySupport(BlockPos owner, BlockPos position, BlockState
         if (block == null) return null;
         if (block.state().getBlock() instanceof HexieBogeyBlock<?> && block.entityData() != null)
             return new AssemblyBogeySupport(pos, pos, block.state(), block.entityData());
+        if (block.state().getBlock() instanceof OwnedBogeyMount mount && mount.isBogeyMount(block.state())) {
+            var root = mount.bogeyOwner(pos, block.state());
+            var owner = blocks.apply(root);
+            if (owner == null || owner.entityData() == null || !mount.bogeyEnabled(owner.entityData())) return null;
+            return new AssemblyBogeySupport(root, pos, mount.bogeyState(owner.state()), owner.entityData());
+        }
         if (!headMount(block.state())) return null;
         var facing = block.state().getValue(CRH2HeadBlock.FACING);
         var root = pos.subtract(HeadGeometry.offset(HeadGeometry.BOGEY_PART, facing));

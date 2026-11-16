@@ -31,6 +31,7 @@ public final class VehicleRuntime {
     private final Map<UUID, UUID> endpointOwners = new HashMap<>();
     private final List<Connection> connections = new ArrayList<>();
     private final List<Approach> approaches = new ArrayList<>();
+    private final List<CouplingControlReset> couplingControlResets = new ArrayList<>();
     private final Map<UUID, Double> bogeySpeeds = new LinkedHashMap<>();
     // Dynamics owns these cursors. A failed pose evaluation must not rewind the next step.
     private final Map<UUID, Double> motionDistances = new LinkedHashMap<>();
@@ -94,6 +95,18 @@ public final class VehicleRuntime {
         brakingMultiplier = braking;
     }
     public double brakingMultiplier() { return brakingMultiplier; }
+    private Set<UUID> poweredCarriages = Set.of();
+    private double linePowerMultiplier = 1;
+
+    public void poweredCarriages(Set<UUID> carriages, double multiplier) {
+        if (!Double.isFinite(multiplier) || multiplier < 1) throw new IllegalArgumentException("Invalid wheel power multiplier");
+        poweredCarriages = Set.copyOf(carriages);
+        linePowerMultiplier = multiplier;
+    }
+
+    private double wheelPowerMultiplier(UUID carriage) {
+        return poweredCarriages.contains(carriage) ? linePowerMultiplier : 1;
+    }
     /** Backend policy: Create owns body impacts; manual and contact coupling remain active. */
     public void collisionEnabled(boolean enabled) { collisionEnabled = enabled; }
     public ConstraintFailurePolicy constraintFailurePolicy() { return ConstraintFailurePolicy.RETRY_CONSIST; }
@@ -306,7 +319,8 @@ public final class VehicleRuntime {
         var group = group(carriage);
         for (Car member : group.cars) for (BogeyDefinition bogey : member.definition.bogeys()) {
             Control control = member.controls.get(bogey.id());
-            traction += control.throttle * bogey.parameters().availableTractionN(group.speed());
+            traction += control.throttle * bogey.parameters().availableTractionN(group.speed(),
+                    wheelPowerMultiplier(member.definition.id()));
         }
         return Math.signum(traction);
     }
@@ -356,9 +370,33 @@ public final class VehicleRuntime {
 
     public List<CarriageState> states() { return cars.keySet().stream().map(this::state).toList(); }
 
+    /** A completed connection resets its joined controls once; route-domain merges do not. */
+    public record CouplingControlReset(List<UUID> carriages, double brake) {
+        public CouplingControlReset { carriages = List.copyOf(carriages); }
+    }
+
+    /** The owning adapter consumes these events to update its physical driving desks. */
+    public List<CouplingControlReset> drainCouplingControlResets() {
+        if (couplingControlResets.isEmpty()) return List.of();
+        var pending = List.copyOf(couplingControlResets);
+        couplingControlResets.clear();
+        return pending;
+    }
+
+    private java.util.function.Predicate<CouplingEndpoint> couplingAvailability = ignored -> true;
+    public void couplingAvailability(java.util.function.Predicate<CouplingEndpoint> available) {
+        couplingAvailability = java.util.Objects.requireNonNull(available);
+    }
+    public boolean couplingAvailable(CouplingEndpoint endpoint) { return couplingAvailability.test(endpoint); }
+    private void requireAvailable(UUID first, UUID second) {
+        if (!couplingAvailable(endpoint(first)) || !couplingAvailable(endpoint(second)))
+            throw new IllegalStateException("车钩尚未完全伸出");
+    }
+
     /** The registered completion regions must meet before the connected constraint is installed. */
     public void couple(UUID first, UUID second) {
         validatePair(first, second);
+        requireAvailable(first, second);
         if (!regionsMeet(placement, first, second, false))
             throw new IllegalStateException("Coupling completion regions do not overlap");
         Group a = group(owner(first)), b = group(owner(second));
@@ -380,6 +418,13 @@ public final class VehicleRuntime {
         approaches.removeIf(p -> a.contains(owner(p.first)) || a.contains(owner(p.second))
                 || b.contains(owner(p.first)) || b.contains(owner(p.second)));
         a.velocity(velocity); b.velocity(velocity);
+        var joined = new ArrayList<Car>(a.cars);
+        joined.addAll(b.cars);
+        double brake = joined.stream().flatMap(car -> car.controls.values().stream())
+                .mapToDouble(Control::brake).max().orElse(0);
+        var reset = new Control(0, brake);
+        for (Car car : joined) car.controls.replaceAll((id, previous) -> reset);
+        couplingControlResets.add(new CouplingControlReset(joined.stream().map(car -> car.definition.id()).toList(), brake));
         consistRevision++;
     }
 
@@ -403,6 +448,7 @@ public final class VehicleRuntime {
     /** Explicit shunting request: the first car and its consist approach the second endpoint. */
     public void beginCoupling(UUID first, UUID second, double approachSpeedMps) {
         validatePair(first, second);
+        requireAvailable(first, second);
         Approach approach = new Approach(first, second, approachSpeedMps);
         validateApproachParticipants(first, second);
         if (regionsMeet(placement, first, second, false)) couple(first, second);
@@ -420,6 +466,25 @@ public final class VehicleRuntime {
     public void cancelCoupling(UUID endpoint) {
         endpoint(endpoint);
         approaches.removeIf(a -> a.first.equals(endpoint) || a.second.equals(endpoint));
+    }
+
+    /** Reconcile persisted block-owned release conditions before the next motion step. */
+    public void releaseCouplingsIf(java.util.function.Predicate<CouplingEndpoint> shouldRelease) {
+        Objects.requireNonNull(shouldRelease);
+        if (connections.isEmpty() && approaches.isEmpty()) return;
+        var released = new java.util.LinkedHashSet<UUID>();
+        for (var connection : connections) {
+            if (shouldRelease.test(endpoint(connection.first))) released.add(connection.first);
+            if (shouldRelease.test(endpoint(connection.second))) released.add(connection.second);
+        }
+        for (var approach : approaches) {
+            if (shouldRelease.test(endpoint(approach.first))) released.add(approach.first);
+            if (shouldRelease.test(endpoint(approach.second))) released.add(approach.second);
+        }
+        for (UUID id : released) {
+            uncouple(id);
+            cancelCoupling(id);
+        }
     }
 
     /** Install on a free hook without moving its body, bogeys or independent dynamics cursors. */
@@ -539,6 +604,7 @@ public final class VehicleRuntime {
         rebound.collisionEnabled = collisionEnabled;
         rebound.dynamicsMultipliers(accelerationMultiplier, brakingMultiplier);
         rebound.consistRevision = consistRevision;
+        copyCouplingControlResets(rebound);
         return rebound;
     }
 
@@ -560,6 +626,7 @@ public final class VehicleRuntime {
         updated.collisionEnabled = collisionEnabled;
         updated.dynamicsMultipliers(accelerationMultiplier, brakingMultiplier);
         updated.consistRevision += consistRevision;
+        copyCouplingControlResets(updated);
         return updated;
     }
 
@@ -768,6 +835,7 @@ public final class VehicleRuntime {
         moved.collisionEnabled = collisionEnabled;
         moved.dynamicsMultipliers(accelerationMultiplier, brakingMultiplier);
         moved.consistRevision += consistRevision;
+        copyCouplingControlResets(moved);
         return moved;
     }
 
@@ -781,7 +849,29 @@ public final class VehicleRuntime {
         copied.collisionEnabled = collisionEnabled;
         copied.dynamicsMultipliers(accelerationMultiplier, brakingMultiplier);
         copied.consistRevision = consistRevision;
+        copyCouplingControlResets(copied);
         return copied;
+    }
+
+    /**
+     * Retain complete live consists without resampling their track. Removing other consists
+     * changes no solved pose; the external route may be unavailable until the next rebind.
+     * Saved-state restoration still checks ownership, connections, controls and cursors.
+     */
+    public VehicleRuntime subsetPreservingPlacement(Set<UUID> carriageIds) {
+        var copied = restoreSavedState(subsetCheckpoint(checkpoint(), carriageIds), path);
+        copied.collisionEnabled = collisionEnabled;
+        copied.dynamicsMultipliers(accelerationMultiplier, brakingMultiplier);
+        copied.consistRevision = consistRevision;
+        copyCouplingControlResets(copied);
+        return copied;
+    }
+
+    private void copyCouplingControlResets(VehicleRuntime target) {
+        for (var reset : couplingControlResets) {
+            var retained = reset.carriages().stream().filter(target.cars::containsKey).toList();
+            if (!retained.isEmpty()) target.couplingControlResets.add(new CouplingControlReset(retained, reset.brake()));
+        }
     }
 
     /** Select saved complete consists without resolving or resampling their previous route. */
@@ -1045,6 +1135,7 @@ public final class VehicleRuntime {
     private Event firstEvent(List<Group> groups, Solution end, double duration, TickMotion motion) {
         Event event = null;
         for (Approach approach : approaches) {
+            if (!couplingAvailable(endpoint(approach.first)) || !couplingAvailable(endpoint(approach.second))) continue;
             if (motion.failed(group(owner(approach.first))) || motion.failed(group(owner(approach.second)))) continue;
             var coupling = new Connection(approach.first, approach.second);
             double time = couplingContactTime(coupling, groups, end, duration, false, motion);
@@ -1061,7 +1152,8 @@ public final class VehicleRuntime {
         for (Group group : groups) {
             boolean manual = approaches.stream().anyMatch(a -> group.contains(owner(a.first)) || group.contains(owner(a.second)));
             free.add(manual || motion.failed(group) ? List.of() : group.cars.stream().flatMap(c -> c.definition.couplings().stream())
-                    .filter(e -> e.kind() == CouplingEndpoint.Kind.RIGID && !occupied.contains(e.id())).toList());
+                    .filter(e -> e.kind() == CouplingEndpoint.Kind.RIGID && !occupied.contains(e.id())
+                            && couplingAvailable(e)).toList());
         }
         for (int i = 0; i < free.size(); i++) for (int j = i + 1; j < free.size(); j++) {
             for (CouplingEndpoint a : free.get(i)) for (CouplingEndpoint b : free.get(j)) {
@@ -1322,7 +1414,8 @@ public final class VehicleRuntime {
         for (Car car : group.cars) for (BogeyDefinition bogey : car.definition.bogeys()) {
             Control control = car.controls.get(bogey.id());
             braking |= control.brake > 0;
-            traction += control.throttle * bogey.parameters().availableTractionN(group.speed());
+            traction += control.throttle * bogey.parameters().availableTractionN(group.speed(),
+                    wheelPowerMultiplier(car.definition.id()));
             opposition += control.brake * bogey.parameters().brakeForceN() + bogey.parameters().runningResistanceN(group.speed());
         }
         double direction = Math.signum(group.speed() == 0 ? traction : group.speed());
@@ -1333,7 +1426,8 @@ public final class VehicleRuntime {
         for (Car car : group.cars) for (BogeyDefinition bogey : car.definition.bogeys()) {
             BogeyParameters parameters = bogey.parameters();
             Control control = car.controls.get(bogey.id());
-            double drive = control.throttle * parameters.availableTractionN(group.speed());
+            double drive = control.throttle * parameters.availableTractionN(group.speed(),
+                    wheelPowerMultiplier(car.definition.id()));
             double brake = -direction * control.brake * parameters.brakeForceN() * scale;
             double resistance = -direction * parameters.runningResistanceN(group.speed()) * scale;
             DriveMode mode = control.brake > 0 ? DriveMode.BRAKING

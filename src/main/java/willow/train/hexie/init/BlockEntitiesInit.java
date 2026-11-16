@@ -25,6 +25,10 @@ public class BlockEntitiesInit {
                             && !(block instanceof willow.train.hexie.blocks.emu.crh2a.CRH2PanelBlock))
                             .toArray(Block[]::new)).build(null));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CRH1HeadEntity>> CRH1A_HEAD =
+            BLOCK_ENTITIES.register("crh1a_head", () -> BlockEntityType.Builder.of(
+                    CRH1HeadEntity::new, BlockInit.CRH1A_HEAD.get()).build(null));
+
     // Shell geometry remains static. These entities retain editable vehicle markings and legacy IDs.
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CRH2HeadEntity>> CRH2A_HEAD =
             BLOCK_ENTITIES.register("crh2a_head", () -> BlockEntityType.Builder.of(

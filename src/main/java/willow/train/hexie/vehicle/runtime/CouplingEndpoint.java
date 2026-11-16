@@ -92,7 +92,7 @@ public record CouplingEndpoint(UUID id, Point blockCenter, Facing facing, Axis a
 
     public String effectiveModel() { return adapter == null ? model : adapter.otherModel(model); }
     public boolean matches(CouplingEndpoint other) {
-        return other != null && kind == other.kind && effectiveModel().equals(other.effectiveModel());
+        return other != null && kind == other.kind && CouplingRules.compatible(this, other);
     }
     public CouplingEndpoint withAdapter(CouplerAdapter value) {
         return new CouplingEndpoint(id, blockCenter, facing, axis, start, complete, kind, maxExtension, model, value, visual);

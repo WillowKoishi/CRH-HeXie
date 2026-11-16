@@ -253,6 +253,10 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         compatibilityCarriage = carriage;
         trainId = carriage.train.id;
         carriageIndex = index;
+        if (!level().isClientSide && carriage.train instanceof CompatibilityTrain train
+                && index >= 0 && index < train.carriageIds.size() && train.carriageIds.get(index).equals(getUUID())
+                && train.bridge != null && train.bridge.motion().owns(getUUID()))
+            assemblyId = train.bridge.motion().sourceAssembly(getUUID());
         if (contraption instanceof SnapshotView view) {
             if (nativeManaged && !level().isClientSide) {
                 preparePersistentCargo(carriage, (ServerLevel) level());
@@ -271,6 +275,9 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         firstPositionUpdate = false;
         if (level().isClientSide) compatibilitySyncPending = true;
         else {
+            if (net.neoforged.fml.ModList.get().isLoaded("electroenergetics")) {
+                willow.train.hexie.compat.cee.CeeSnapshotTrain.bind(this, carriage);
+            }
             CreateConsoleTimetable.bindStored(this, carriage.train);
             if (restoringNativeEntity && motion() != null) {
                 motion().applyCurrent(this);
@@ -758,6 +765,8 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             if (state.getBlock() instanceof willow.train.hexie.blocks.emu.head.CRH2HeadBlock)
                 box = box.minmax(willow.train.hexie.blocks.emu.head.HeadGeometry.bounds(
                         state.getValue(willow.train.hexie.blocks.emu.head.CRH2HeadBlock.FACING)).move(block.position()));
+            if (state.getBlock() instanceof willow.train.hexie.blocks.parts.ModelRenderBounds model)
+                box = box.minmax(model.modelRenderBounds(state).move(block.position()));
             var hook = willow.train.hexie.blocks.coupler.CouplerBlock.of(state);
             if (hook != null && hook.geometry() != null)
                 box = box.minmax(hook.geometry().bounds(hook.facing(state)).move(block.position()));
@@ -768,6 +777,9 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         // Create reuses contraption.bounds when aligning its compatibility entity;
         // updating only this entity's box loses the interaction reach on that pass.
         view.expandBoundsAroundAxis(Direction.Axis.Y);
+        // Create rounds the preserved Y interval and derives its radius from block cells.
+        // Retain the original model envelope too, including fractional height and overhangs.
+        view.bounds = view.bounds.minmax(bounds);
         view.configureDirection(originalForward);
         setInitialOrientation(Direction.SOUTH);
         startAtInitialYaw();
@@ -793,11 +805,14 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
 
     public void installMotion(AssembledVehicleMotion owner) {
         ownedMotion = owner;
+        if (owner != null && owner.owns(getUUID())) assemblyId = owner.sourceAssembly(getUUID());
         pendingMotionState = null;
         pendingRelocation = null;
+        pendingSourceUnavailable = false;
     }
 
     private PendingVehicleRelocation pendingRelocation;
+    private boolean pendingSourceUnavailable;
 
     void installPendingMotion(CompoundTag saved) {
         ownedMotion = null;
@@ -890,6 +905,8 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
         public void install() {
             if (contraption != view || attempted || rolledBack || finished)
                 throw new IllegalStateException("Native disassembly plan is no longer installable");
+            // Actor shutdown or another native installation may have changed the world
+            // since preparation. Reject while the caller can still roll back the transaction.
             attempted = true;
             // stopMoving may have written final actor data. Keep the live view and storage so
             // third-party Create hooks see the same contraption that was moving in the world.
@@ -1262,7 +1279,9 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             CompoundTag working = tag.getCompound("WorkingState");
             if (stored.isPresent()) {
                 attach(stored.get(), false);
-            } else {
+            } else if (!nativeManaged) {
+                // Native carriage payloads reference one exact snapshot UUID. A retired body
+                // must not become an external structure copy of another surviving carriage.
                 CarriageSnapshot source = tag.contains("HexieStructure", Tag.TAG_COMPOUND)
                         ? CarriageSnapshot.load(tag.getCompound("HexieStructure"), registryAccess()) : null;
                 // Old blueprints lack a stable carriage key. A single-car source assembly
@@ -1301,10 +1320,12 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
             setPos(savedPosition);
             if (contraption != null && tag.contains("WorkingState")) readWorkingState(working);
             if (!importingStructure && contraption != null && tag.contains("MotionState")) {
-                try { ownedMotion = AssembledVehicleMotion.readState(server, tag.getCompound("MotionState")); }
-                catch (AssembledVehicleMotion.RouteUnavailableException temporarilyUnavailable) {
-                    // Track graph loading must not make EntityType.load discard the vehicle and inventories.
+                try { installMotion(AssembledVehicleMotion.readState(server, tag.getCompound("MotionState"))); }
+                catch (AssembledVehicleMotion.RouteUnavailableException
+                        | AssembledVehicleMotion.SourceUnavailableException temporarilyUnavailable) {
+                    // Track/source loading must not make EntityType.load discard the vehicle and inventories.
                     pendingMotionState = tag.getCompound("MotionState").copy();
+                    pendingSourceUnavailable = temporarilyUnavailable instanceof AssembledVehicleMotion.SourceUnavailableException;
                     nextMotionRetryTick = 0;
                 }
             }
@@ -1502,18 +1523,35 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
                 tryBindImportedStructure();
             }
             if (pendingMotionState != null) {
-                if (pendingRelocation == null)
-                    pendingRelocation = new PendingVehicleRelocation((ServerLevel) level(), pendingMotionState);
-                pendingRelocation.tick(this);
+                try {
+                    var previousSources = pendingMotionState.get("CarriageSources");
+                    AssembledVehicleMotion.readSources((ServerLevel) level(), pendingMotionState);
+                    if (pendingSourceUnavailable || !java.util.Objects.equals(previousSources,
+                            pendingMotionState.get("CarriageSources"))) {
+                        // New authoritative ownership is usable now, even if an earlier route
+                        // attempt scheduled a later retry. Do not keep the stale detector.
+                        nextMotionRetryTick = tickCount;
+                        pendingRelocation = null;
+                    }
+                    pendingSourceUnavailable = false;
+                    if (pendingRelocation == null && tickCount >= nextMotionRetryTick)
+                        pendingRelocation = new PendingVehicleRelocation((ServerLevel) level(), pendingMotionState);
+                } catch (AssembledVehicleMotion.SourceUnavailableException temporarilyUnavailable) {
+                    pendingSourceUnavailable = true;
+                    pendingRelocation = null;
+                    nextMotionRetryTick = tickCount + 100;
+                }
+                if (pendingRelocation != null) pendingRelocation.tick(this);
             }
             if (pendingMotionState != null && tickCount >= nextMotionRetryTick) {
                 nextMotionRetryTick = tickCount + 100;
                 try {
-                    ownedMotion = AssembledVehicleMotion.readState((ServerLevel) level(), pendingMotionState);
+                    installMotion(AssembledVehicleMotion.readState((ServerLevel) level(), pendingMotionState));
                     pendingMotionState = null;
                     pendingRelocation = null;
                     ownedMotion.applyCurrent(this);
-                } catch (AssembledVehicleMotion.RouteUnavailableException temporarilyUnavailable) {
+                } catch (AssembledVehicleMotion.RouteUnavailableException
+                        | AssembledVehicleMotion.SourceUnavailableException temporarilyUnavailable) {
                     // Keep the saved pose and working state; retry only this owner, once per five seconds.
                 }
             }
@@ -1942,7 +1980,8 @@ public final class SnapshotCarriageEntity extends CarriageContraptionEntity {
                     var previousDoors = new java.util.HashMap<BlockPos, BlockEntity>();
                     for (var be : renderedBlockEntityView)
                         if (be instanceof willow.train.hexie.blocks.base.BlockEntityAnimation
-                                && !(be.getBlockState().getBlock() instanceof willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock))
+                                && !(be.getBlockState().getBlock() instanceof willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock)
+                                && !(be.getBlockState().getBlock() instanceof willow.train.hexie.blocks.emu.crh1a.CRH1DoorBlock))
                             previousDoors.put(be.getBlockPos(), be);
                     super.resetRenderLevel();
                     for (var entry : previousDoors.entrySet()) {

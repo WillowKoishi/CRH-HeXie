@@ -1,0 +1,516 @@
+{
+  "variants": {
+    "facing=north,part=0,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window",
+      "y": 0
+    },
+    "facing=north,part=0,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_right",
+      "y": 0
+    },
+    "facing=north,part=1,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=1,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=2,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=2,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=3,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=3,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=4,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=4,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=5,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=5,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=6,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=6,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=7,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=7,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=8,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=8,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=9,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=9,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=10,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=10,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=11,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=11,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=12,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=12,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=13,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=13,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=14,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=14,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=15,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=north,part=15,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 0
+    },
+    "facing=east,part=0,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window",
+      "y": 90
+    },
+    "facing=east,part=0,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_right",
+      "y": 90
+    },
+    "facing=east,part=1,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=1,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=2,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=2,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=3,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=3,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=4,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=4,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=5,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=5,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=6,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=6,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=7,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=7,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=8,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=8,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=9,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=9,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=10,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=10,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=11,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=11,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=12,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=12,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=13,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=13,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=14,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=14,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=15,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=east,part=15,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 90
+    },
+    "facing=south,part=0,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window",
+      "y": 180
+    },
+    "facing=south,part=0,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_right",
+      "y": 180
+    },
+    "facing=south,part=1,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=1,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=2,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=2,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=3,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=3,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=4,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=4,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=5,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=5,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=6,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=6,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=7,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=7,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=8,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=8,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=9,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=9,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=10,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=10,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=11,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=11,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=12,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=12,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=13,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=13,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=14,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=14,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=15,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=south,part=15,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 180
+    },
+    "facing=west,part=0,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window",
+      "y": 270
+    },
+    "facing=west,part=0,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_right",
+      "y": 270
+    },
+    "facing=west,part=1,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=1,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=2,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=2,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=3,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=3,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=4,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=4,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=5,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=5,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=6,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=6,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=7,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=7,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=8,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=8,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=9,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=9,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=10,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=10,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=11,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=11,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=12,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=12,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=13,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=13,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=14,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=14,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=15,hinge=left": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    },
+    "facing=west,part=15,hinge=right": {
+      "model": "hexie:block/crh1a/parts/crh1a_panel_small_window_member",
+      "y": 270
+    }
+  }
+}

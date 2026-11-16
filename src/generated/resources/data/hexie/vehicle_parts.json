@@ -1,4 +1,10 @@
 {
+  "hexie:crh1a_panel_nowindow": {
+    "extension": "SIDE"
+  },
+  "hexie:crh1a_panel_small_window": {
+    "extension": "SIDE"
+  },
   "hexie:crh2a_panel_nowindow": {
     "extension": "SIDE"
   },
@@ -14,13 +20,26 @@
   "hexie:crh2a_carport_mid_antenna": {
     "extension": "ROOF"
   },
+  "hexie:crh1a_carport_mid": {
+    "extension": "ROOF",
+    "run_axis": "FACING"
+  },
+  "hexie:crh1a_carport_side": {
+    "extension": "ROOF"
+  },
   "hexie:crh2a_carport_side": {
     "extension": "ROOF"
   },
   "hexie:crh2a_skirt_normal": {
     "extension": "SKIRT"
   },
+  "hexie:crh1a_skirt": {
+    "extension": "SKIRT"
+  },
   "hexie:crh2a_floor": {
+    "extension": "FLOOR"
+  },
+  "hexie:crh1a_floor": {
     "extension": "FLOOR"
   },
   "hexie:train_bottom_panel_block": {
@@ -682,5 +701,8 @@
   "hexie:original_color_window_bsp25t_wide_sealed_blue": {
     "extension": "SIDE",
     "thin_only": true
+  },
+  "hexie:crh1a_panel_wide_window": {
+    "extension": "SIDE"
   }
 }

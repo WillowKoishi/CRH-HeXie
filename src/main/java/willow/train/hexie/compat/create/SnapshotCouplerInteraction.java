@@ -19,13 +19,13 @@ import willow.train.hexie.vehicle.runtime.CouplingEndpoint.Point;
 import willow.train.hexie.vehicle.track.TrackGeometry.Vector;
 
 /** Explicit two-click shunting of the verification coupler, through the existing interaction packet. */
-final class SnapshotCouplerInteraction {
+public final class SnapshotCouplerInteraction {
     private static final String SELECTION = "HexieSelectedCoupler";
     private static final double MAX_DISTANCE = 8;
 
     private SnapshotCouplerInteraction() {}
 
-    static boolean handle(SnapshotCarriageEntity entity, Player player, BlockPos position, InteractionHand hand) {
+    public static boolean handle(SnapshotCarriageEntity entity, Player player, BlockPos position, InteractionHand hand) {
         var info = entity.getContraption() == null ? null : entity.getContraption().getBlocks().get(position);
         UUID endpoint = VehicleCouplingCatalog.endpointId(entity.getUUID(), position);
         if (info == null || !entity.hasCoupler(position)
@@ -51,11 +51,21 @@ final class SnapshotCouplerInteraction {
         if (motion == null) return true;
         var runtime = motion.runtime();
         if (!runtime.placement().endpoints().containsKey(endpoint)) return true;
+        var hook = CouplerBlock.of(info.state());
+        if (hook != null && hook.requiresReadyState()
+                && !hook.readyForCoupling(info.state(), info.nbt(), entity.level().getGameTime())) {
+            message(player, "车钩尚未完全伸出");
+            return true;
+        }
         var data = player.getPersistentData();
         var level = (ServerLevel) entity.level();
         try {
             var held = player.getItemInHand(hand);
             if (held.getItem() instanceof CouplerAdapterItem converter) {
+                if (!CouplerBlock.of(info.state()).allowsAdapters()) {
+                    message(player, "此车钩不支持转换器");
+                    return true;
+                }
                 var adapter = converter.adapter(held);
                 if (adapter == null) throw new IllegalArgumentException("转换器参数无效");
                 CompoundTag blockData = info.nbt() == null ? new CompoundTag() : info.nbt().copy();

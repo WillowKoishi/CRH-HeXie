@@ -31,6 +31,11 @@ public enum BuiltinBogeyProfile {
     DT206(new BogeyGeometry(.43, List.of(-1.25, 1.25)),
             24000, 20000, 42531.79, 600000, 4, BOLSTERLESS, .06),
     SKTB200(new BogeyGeometry(.43, List.of(-1.25, 1.25)),
+            24000, 0, 42531.79, 0, 1, BOLSTERLESS, .06),
+    // CRH1A geometry is measured from the artwork; operating defaults follow the existing EMU balance.
+    CRH1A_MOTOR(new BogeyGeometry(7.328 / 16, List.of(-1.35, 1.35)),
+            24000, 20000, 42531.79, 600000, 4, BOLSTERLESS, .06),
+    CRH1A_TRAILER(new BogeyGeometry(7.328 / 16, List.of(-1.35, 1.35)),
             24000, 0, 42531.79, 0, 1, BOLSTERLESS, .06);
 
     private final BogeyGeometry geometry;

@@ -170,7 +170,16 @@ public final class SurfaceInputClient {
     public static boolean handleKey(int key, int scanCode, int action) {
         var physical = InputConstants.getKey(key, scanCode);
         if (action == GLFW.GLFW_RELEASE && captured.remove(physical)) {
-            if (capturesInput()) send(new ControlInput("", 0, ControlInput.Kind.NONE, heldBindings()));
+            if (capturesInput()) {
+                var released = binding(Device.KEY, key);
+                boolean anotherHeld = released != null && active.layout().bindings(active.cab != null).stream()
+                        .anyMatch(other -> other.action() == Action.STEP_HOLD && other.code() != key
+                                && other.controlId().equals(released.controlId()) && key(other) != null && physicallyDown(key(other)));
+                if (!anotherHeld && released != null && released.action() == Action.STEP_HOLD
+                        && active.control(released.controlId()) instanceof BlockControl.Handle handle && handle.hasSpringReturn())
+                    send(new ControlInput(handle.id(), 0, ControlInput.Kind.RELEASE_HANDLE, heldBindings()));
+                else send(new ControlInput("", 0, ControlInput.Kind.NONE, heldBindings()));
+            }
             return true;
         }
         if (action == GLFW.GLFW_REPEAT && captured.contains(physical)) return true;

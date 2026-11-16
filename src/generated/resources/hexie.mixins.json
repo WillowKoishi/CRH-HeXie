@@ -4,6 +4,10 @@
   "package": "willow.train.hexie.mixins.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "cee.PantographMountMixin",
+    "cee.PantographShapeMixin",
+    "cee.PantographMovementMixin",
+    "cee.CatenaryCircuitMixin",
     "MixinPartSchematicPlacement",
     "MixinPartSchematicFlight",
     "MixinPartSchematicPreflight",
@@ -57,6 +61,9 @@
     "MixinSchematicSyncPacket"
   ],
   "client": [
+    "cee.PantographRendererMixin",
+    "cee.PantographMovementRendererMixin",
+    "client.MixinSodiumChunkVertexConsumer",
     "client.MixinDrivingConsoleDismountSync",
     "client.MixinDrivingConsoleKeyboard",
     "client.MixinTextInputContainerScreen",
@@ -73,6 +80,7 @@
     "client.MixinTrainHudDirection",
     "client.MixinClientContraptionDoor",
     "client.MixinCRH2DoorRenderContext",
+    "client.MixinCRH1DoorRenderContext",
     "client.MixinSableSingleBlockShell",
     "client.MixinCarriageChildVisuals",
     "client.MixinBallastModelData",

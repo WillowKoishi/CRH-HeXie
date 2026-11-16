@@ -16,6 +16,9 @@ public class InteractionBehaviourInit {
                 willow.train.hexie.blocks.signs.PassengerDisplayPanel.supports(block)
                         || block instanceof willow.train.hexie.blocks.parts.PartMemberBlock ? passengerDisplays : null);
         var doors=new com.simibubi.create.content.contraptions.behaviour.DoorMovingInteraction();
+        var crh1DoorMembers = new willow.train.hexie.compat.create.CRH1DoorMemberInteraction();
+        MovingInteractionBehaviour.REGISTRY.registerProvider(block ->
+                block instanceof willow.train.hexie.blocks.emu.crh1a.CRH1DoorMemberBlock ? crh1DoorMembers : null);
         MovingInteractionBehaviour.REGISTRY.registerProvider(block ->
                 block instanceof willow.train.hexie.blocks.carriage.CustomRenderedDoorBlock ? doors : null);
         var timetable = new willow.train.hexie.compat.create.CreateConsoleTimetable();
@@ -24,16 +27,21 @@ public class InteractionBehaviourInit {
         var variants = new willow.train.hexie.compat.create.CreatePartVariantInteraction();
         MovingInteractionBehaviour.REGISTRY.registerProvider(block ->
                 block instanceof willow.train.hexie.blocks.parts.VariantPartBlock ? variants : null);
+        var floorSkirts = new willow.train.hexie.compat.create.CreateFloorSkirtInteraction();
+        MovingInteractionBehaviour.REGISTRY.registerProvider(block ->
+                block instanceof willow.train.hexie.blocks.emu.crh1a.CRH1FloorBlock ? floorSkirts : null);
         var endFaceVariants = new willow.train.hexie.compat.create.CreateEndFaceVariantInteraction();
         MovingInteractionBehaviour.REGISTRY.registerProvider(block ->
                 block instanceof willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock ? endFaceVariants : null);
         BlockEntitySynchronizeBehaviour besb = new BlockEntitySynchronizeBehaviour();
         var crh2Doors = new CRH2DoorMovement();
+        var crh1Doors = new willow.train.hexie.compat.create.CRH1DoorMovement();
         var passengerMovement = new willow.train.hexie.compat.create.CreatePassengerDisplayMovement();
         com.simibubi.create.api.behaviour.movement.MovementBehaviour.REGISTRY.registerProvider(
                 block -> {
                     if (willow.train.hexie.blocks.signs.PassengerDisplayPanel.supports(block)) return passengerMovement;
                     if (block instanceof CRH2DoorBlock) return crh2Doors;
+                    if (block instanceof willow.train.hexie.blocks.emu.crh1a.CRH1DoorBlock) return crh1Doors;
                     if (block instanceof willow.train.hexie.blocks.coupler.CouplerBlock hook && hook.geometry() != null) return besb;
                     if(block instanceof IBE<?> ibe &&
                             IContraptionMovementBlockEntity.class.isAssignableFrom(ibe.getBlockEntityClass())) {

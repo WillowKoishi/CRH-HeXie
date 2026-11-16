@@ -1,0 +1,17 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "ambientocclusion": false,
+  "shade_quads": false,
+  "emissive_ambient": false,
+  "automatic_culling": false,
+  "flip_v": true,
+  "model": "hexie:models/block/crh1a/endface/coupler.obj",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "particle": "hexie:block/crh1a/endface/crh1a_endface",
+    "t0": "hexie:block/crh1a/endface/crh1a_floor",
+    "t1": "hexie:block/crh1a/endface/crh1a_endface",
+    "t2": "hexie:block/crh1a/endface/crh1a_skirt"
+  }
+}

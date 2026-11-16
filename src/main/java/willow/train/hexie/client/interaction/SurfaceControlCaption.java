@@ -37,7 +37,13 @@ public final class SurfaceControlCaption {
     }
 
     static Box at(Font font, BlockControl.Handle handle, int screenWidth, int screenHeight, int mouseX, int mouseY) {
-        int leftMargin = Math.min(GAP + 8, screenWidth / 2);
+        return at(font, handle, screenWidth, screenHeight, mouseX, mouseY, Math.min(GAP + 8, screenWidth / 2));
+    }
+
+    /** A drag can reserve additional room to the left of the track for detent labels. */
+    static Box at(Font font, BlockControl.Handle handle, int screenWidth, int screenHeight, int mouseX, int mouseY,
+                  int minimumLeft) {
+        int leftMargin = Math.clamp(minimumLeft, 0, Math.max(0, screenWidth - 5));
         int available = Math.max(1, screenWidth - leftMargin - 4);
         var title = label(handle, Component.empty());
         int width = Math.max(1, Math.min(font.width(title), available));
@@ -48,7 +54,7 @@ public final class SurfaceControlCaption {
             width = Math.max(width, Math.min(natural, available));
             if (natural > available) lines = Math.max(lines, font.split(row, available).size());
         }
-        return position(screenWidth, screenHeight, mouseX, mouseY, width, lines * 10 - 2);
+        return position(screenWidth, screenHeight, mouseX, mouseY, width, lines * 10 - 2, leftMargin);
     }
 
     static Component label(BlockControl control, Component value) {
@@ -84,6 +90,11 @@ public final class SurfaceControlCaption {
 
     static Box position(int screenWidth, int screenHeight, int mouseX, int mouseY, int width, int height) {
         int leftMargin = Math.min(GAP + 8, screenWidth / 2);
+        return position(screenWidth, screenHeight, mouseX, mouseY, width, height, leftMargin);
+    }
+
+    private static Box position(int screenWidth, int screenHeight, int mouseX, int mouseY, int width, int height,
+                                int leftMargin) {
         var pos = DefaultTooltipPositioner.INSTANCE.positionTooltip(screenWidth, screenHeight, mouseX, mouseY, width, height);
         int x = Math.clamp(pos.x(), leftMargin, Math.max(leftMargin, screenWidth - width - 4));
         int y = Math.clamp(pos.y(), 4, Math.max(4, screenHeight - height - 4));

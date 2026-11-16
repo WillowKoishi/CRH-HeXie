@@ -224,6 +224,11 @@ dependencies {
     }
     compileOnly("maven.modrinth:iris:${iris_version}") { transitive = false }
     compileOnly("maven.modrinth:sodium:${sodium_api_version}") { transitive = false }
+    def cee = "maven.modrinth:create-electro-energetics:ZMfRgLy5"
+    compileOnly(cee) { transitive = false }
+    if (providers.gradleProperty('withCee').isPresent()) {
+        runtimeOnly(cee) { transitive = false }
+    }
 
     // Aviation mods are selected per run.
     aeronauticsRuntimeOnly "com.crystaelix:simurail:${simurail_version}"
@@ -245,6 +250,42 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
     options.compilerArgs.addAll '-Xmaxerrs', '10000'
 }
+
+// Common CEE mixins are applied on dedicated servers, where rendering classes are absent.
+def verifyCeeMixinSides = tasks.register('verifyCeeMixinSides') {
+    group = 'verification'
+    description = 'Checks that CEE common mixins do not link client-only rendering classes.'
+    dependsOn tasks.named('compileJava')
+    def configFile = layout.projectDirectory.file('src/generated/resources/hexie.mixins.json')
+    inputs.file(configFile)
+    inputs.files(tasks.named('compileJava', JavaCompile).flatMap { it.destinationDirectory })
+    doLast {
+        def config = new groovy.json.JsonSlurper().parse(configFile.asFile)
+        def common = config.mixins.findAll { it.startsWith('cee.') }
+        def client = config.client.findAll { it.startsWith('cee.') }
+        if (!common.contains('cee.PantographMovementMixin')
+                || !client.contains('cee.PantographMovementRendererMixin')
+                || common.contains('cee.PantographMovementRendererMixin')) {
+            throw new GradleException('CEE pantograph movement and rendering mixins must remain on their respective sides')
+        }
+        def classes = tasks.named('compileJava', JavaCompile).get().destinationDirectory.get().asFile
+        def names = common.collect { 'willow/train/hexie/mixins/mixin/' + it.replace('.', '/') }
+        names.add('willow/train/hexie/compat/cee/PantographMounting')
+        def clientOnly = ['net/minecraft/client/', 'com/mojang/blaze3d/',
+                          'com/simibubi/create/content/contraptions/render/',
+                          'com/simibubi/create/foundation/virtualWorld/']
+        names.each { name ->
+            def bytecode = new File(classes, name + '.class')
+            if (!bytecode.isFile()) throw new GradleException("Missing CEE compatibility class: ${name}")
+            def contents = new String(bytecode.bytes, java.nio.charset.StandardCharsets.ISO_8859_1)
+            def forbidden = clientOnly.find { contents.contains(it) }
+            if (forbidden != null)
+                throw new GradleException("Dedicated-server CEE class ${name} references client-only ${forbidden}")
+        }
+    }
+}
+tasks.named('check') { dependsOn verifyCeeMixinSides }
+tasks.named('jar') { dependsOn verifyCeeMixinSides }
 
 tasks.named('runServer', JavaExec).configure {
     standardInput = System.in

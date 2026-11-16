@@ -1,13 +1,18 @@
 package willow.train.hexie.init.block;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import com.google.common.base.Supplier;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -61,15 +66,45 @@ public class BlockInit {
     public static final DeferredHolder<Block, CRH2PanelBlock> CRH2A_PANEL_NOWINDOW_THICK = crh2Panel("crh2a_panel_nowindow_thick");
     public static final DeferredHolder<Block, CRH2PanelBlock> CRH2A_PANEL_SMALL_WINDOW = crh2Panel("crh2a_panel_small_window");
     public static final DeferredHolder<Block, CRH2PanelBlock> CRH2A_PANEL_WIDE_WINDOW = crh2Panel("crh2a_panel_wide_window");
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh1a.CRH1PlainPanelBlock> CRH1A_PANEL_SMALL_WINDOW =
+            register("crh1a_panel_small_window", () -> new willow.train.hexie.blocks.emu.crh1a.CRH1PlainPanelBlock(
+                    BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
+                            .sound(SoundType.METAL).noOcclusion(), "crh1a_panel_small_window"),
+                    block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh1a.CRH1PlainPanelBlock> CRH1A_PANEL_NOWINDOW =
+            register("crh1a_panel_nowindow", () -> new willow.train.hexie.blocks.emu.crh1a.CRH1PlainPanelBlock(
+                    BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
+                            .sound(SoundType.METAL).noOcclusion(), "crh1a_panel_nowindow"),
+                    block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh1a.CRH1PanelBlock> CRH1A_PANEL_WIDE_WINDOW =
+            register("crh1a_panel_wide_window", () -> new willow.train.hexie.blocks.emu.crh1a.CRH1PanelBlock(
+                    BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
+                            .sound(SoundType.METAL).noOcclusion()),
+                    block -> () -> new willow.train.hexie.item.CRH2PartItem(block.get(), new Item.Properties()));
     public static final DeferredHolder<Block, CRH2PartBlock> CRH2A_CARPORT_MID_ANTENNA =
             register("crh2a_carport_mid_antenna", () -> new willow.train.hexie.blocks.parts.VariantPartBlock(
                     BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
                             .sound(SoundType.METAL).noOcclusion(), "crh2a_carport_mid_antenna"),
                     block -> () -> new willow.train.hexie.item.CRH2PartItem(block.get(), new Item.Properties()));
+    public static final DeferredHolder<Block, CRH2PartBlock> CRH1A_CARPORT_MID = crh2Part("crh1a_carport_mid");
+    public static final DeferredHolder<Block, CRH2PartBlock> CRH1A_CARPORT_SIDE = crh2Part("crh1a_carport_side");
     public static final DeferredHolder<Block, CRH2PartBlock> CRH2A_CARPORT_SIDE = crh2Part("crh2a_carport_side");
     public static final DeferredHolder<Block, CRH2PartBlock> CRH2A_SKIRT_FORBOGEY = crh2Part("crh2a_skirt_forbogey");
     public static final DeferredHolder<Block, CRH2PartBlock> CRH2A_SKIRT_NORMAL = crh2Part("crh2a_skirt_normal");
+    public static final DeferredHolder<Block, CRH2PartBlock> CRH1A_SKIRT = crh2Part("crh1a_skirt");
     public static final DeferredHolder<Block, CRH2PartBlock> CRH2A_FLOOR = crh2Part("crh2a_floor");
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh1a.CRH1FloorBlock> CRH1A_FLOOR =
+            register("crh1a_floor", () -> new willow.train.hexie.blocks.emu.crh1a.CRH1FloorBlock(
+                    BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
+                            .sound(SoundType.METAL).noOcclusion()),
+                    block -> () -> new willow.train.hexie.item.CRH2PartItem(block.get(), new Item.Properties()));
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh1a.CRH1DoorMemberBlock> CRH1A_PASSENGER_DOOR_MEMBER =
+            BLOCKS.register("crh1a_psg_door_member", () -> new willow.train.hexie.blocks.emu.crh1a.CRH1DoorMemberBlock(
+                    BlockBehaviour.Properties.of().strength(2).sound(SoundType.METAL).noOcclusion().noLootTable()));
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh1a.CRH1DoorBlock> CRH1A_PASSENGER_DOOR =
+            register("crh1a_psg_door", () -> new willow.train.hexie.blocks.emu.crh1a.CRH1DoorBlock(
+                    BlockBehaviour.Properties.of().strength(2).sound(SoundType.METAL).noOcclusion().dynamicShape()),
+                    block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
     public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock> CRH2A_PASSENGER_DOOR =
             register("crh2a_passenger_door", () -> new willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock(
                     BlockBehaviour.Properties.of().strength(2).sound(SoundType.METAL).noOcclusion().dynamicShape(), true),
@@ -88,6 +123,18 @@ public class BlockInit {
                     BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
                             .sound(SoundType.METAL).noOcclusion()),
                     block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
+
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh1a.CRH1EndFaceBlock> CRH1A_END_FACE =
+            register("crh1a_endface", () -> new willow.train.hexie.blocks.emu.crh1a.CRH1EndFaceBlock(
+                    BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
+                            .sound(SoundType.METAL).noOcclusion()),
+                    block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
+
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.coupler.ScharfenbergCouplerBlock> SCHARFENBERG_COUPLER =
+            register("scharfenberg_coupler", () -> new willow.train.hexie.blocks.coupler.ScharfenbergCouplerBlock(
+                    BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
+                            .sound(SoundType.METAL).noOcclusion()),
+                    block -> () -> new BlockItem(block.get(), new Item.Properties()));
 
     public static final DeferredHolder<Block, willow.train.hexie.blocks.coupler.ModelCouplerBlock> CRH2A_AUTO_COUPLER =
             register("crh2a_auto_coupler", () -> new willow.train.hexie.blocks.coupler.ModelCouplerBlock(
@@ -122,6 +169,15 @@ public class BlockInit {
                 block -> () -> new willow.train.hexie.item.CRH2PartItem(block.get(), new Item.Properties()));
     }
 
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh1a.CRH1HeadBlock> CRH1A_HEAD = register("crh1a_head",
+            () -> new willow.train.hexie.blocks.emu.crh1a.CRH1HeadBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL).strength(2).sound(SoundType.METAL).noOcclusion()),
+            object -> () -> new willow.train.hexie.item.PartBlockItem(object.get(), new Item.Properties()));
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh1a.CRH1HeadFloorBlock> CRH1A_HEAD_FLOOR =
+            BLOCKS.register("crh1a_head_floor", () -> new willow.train.hexie.blocks.emu.crh1a.CRH1HeadFloorBlock(
+                    BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
+                            .sound(SoundType.METAL).noOcclusion().noLootTable()));
+
     public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.head.CRH2HeadBlock> CRH2A_HEAD = register("crh2a_head",
             () -> new willow.train.hexie.blocks.emu.head.CRH2HeadBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.METAL).strength(2).sound(SoundType.METAL).noOcclusion()),
@@ -141,15 +197,22 @@ public class BlockInit {
             object -> () -> new willow.train.hexie.item.PartBlockItem(object.get(), new Item.Properties()));
 
     public static final DeferredHolder<Block, CRH2DrivingConsoleBlock> CRH2A_DRIVING_CONSOLE =
-            crh2DrivingConsole("crh2a_driving_console", CRH2DrivingConsoleBlock::new);
+            crh2DrivingConsole("crh2a_driving_console", CRH2DrivingConsoleBlock::new,
+                    block -> new willow.train.hexie.item.PartBlockItem(block, new Item.Properties()));
     public static final DeferredHolder<Block, CRH2DrivingConsoleBlock> CRH2A_NONSTANDARD_DRIVING_CONSOLE =
-            crh2DrivingConsole("crh2a_nonstandard_driving_console", CRH2DrivingConsoleBlock::nonstandard);
+            crh2DrivingConsole("crh2a_nonstandard_driving_console", CRH2DrivingConsoleBlock::nonstandard,
+                    block -> new willow.train.hexie.item.DrivingConsoleItem(block, new Item.Properties(), CRH2A_CAB_SEAT));
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh1a.CRH1DrivingConsoleBlock> CRH1A_DRIVING_CONSOLE =
+            register("crh1a_driving_console", () -> new willow.train.hexie.blocks.emu.crh1a.CRH1DrivingConsoleBlock(
+                    BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2).sound(SoundType.METAL).noOcclusion()),
+                    block -> () -> new willow.train.hexie.item.DrivingConsoleItem(block.get(), new Item.Properties(), CRH2A_DRIVER_SEAT));
 
     private static DeferredHolder<Block, CRH2DrivingConsoleBlock> crh2DrivingConsole(
-            String name, Function<BlockBehaviour.Properties, CRH2DrivingConsoleBlock> factory) {
+            String name, Function<BlockBehaviour.Properties, CRH2DrivingConsoleBlock> factory,
+            Function<CRH2DrivingConsoleBlock, ? extends BlockItem> itemFactory) {
         return register(name, () -> factory.apply(BlockBehaviour.Properties.of()
                         .mapColor(MapColor.METAL).strength(2.0f).sound(SoundType.METAL).noOcclusion()),
-                block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
+                block -> () -> itemFactory.apply(block.get()));
     }
 
     public static final DeferredHolder<Block, TestDrivingConsoleBlock> TEST_DRIVING_CONSOLE = register("test_driving_console",
@@ -978,7 +1041,7 @@ public static final DeferredHolder<Block, HXD3DPanelBlocks> CARPORT_25BGZKT_WATE
 
     //受电弓
     public static final DeferredHolder<Block, PantographBlock> PANTOGRAPH = register("pantograph",
-            () -> new PantographBlock(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
+            () -> PantographBlock.create(BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(1.5f, 3.0f)
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion()),
             object -> () -> new ToolTipsItemHelper(object.get(), new Item.Properties()));
 
@@ -1251,7 +1314,14 @@ public static final DeferredHolder<Block, DF11GPanel3Wide> DF11G_PANEL_CR = regi
 
     public static final DeferredHolder<Block, Block> HXD3D_SLAB = register("hxd3d_slab",
             () -> new SlabBlock(BlockBehaviour.Properties.of().mapColor(MapColor.STONE).strength(1.5f, 3.0f)
-                    .sound(SoundType.POLISHED_DEEPSLATE).requiresCorrectToolForDrops()),
+                    .sound(SoundType.POLISHED_DEEPSLATE).requiresCorrectToolForDrops()) {
+                private static final VoxelShape FLOOR_COLLISION = Block.box(0, 8, 0, 16, 16, 16);
+
+                @Override
+                public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+                    return FLOOR_COLLISION;
+                }
+            },
             object -> () -> new willow.train.hexie.item.PartBlockItem(object.get(), new Item.Properties()));
 
     public static final DeferredHolder<Block, HXD3DCabDoorBlock> HXD3D_CAB_DOOR = register("hxd3d_cab_door",
@@ -1302,4 +1372,3 @@ public static final DeferredHolder<Block, DF11GPanel3Wide> DF11G_PANEL_CR = regi
     }
 
 }
-

@@ -114,6 +114,9 @@ public class Main {
         if (ModList.get().isLoaded("simurail")) {
             willow.train.hexie.compat.simurail.SimurailHeadRegistration.register(bus);
         }
+        if (ModList.get().isLoaded("electroenergetics")) {
+            willow.train.hexie.compat.cee.CeePantographCompat.register(bus);
+        }
 
         SoundsInit.register(bus);
 

@@ -20,13 +20,13 @@ public final class CreativeTabsInit {
         register("hexie_normalspeedpassagecarriagetab", Main.HEXIE_NORMAL_SPEED_PASSAGE_CARRIAGE_TAB,
                 willow.train.hexie.item.CarriagePartCatalog.creativeNames());
         register("hexie_emu", Main.HEXIE_EMU, new String[] {
-                "crh2a_head", "crh2a_physical_head", "crh2a_carport_mid_antenna", "crh2a_carport_side", "crh2a_panel_nowindow",
-                "crh2a_panel_nowindow_thick", "crh2a_panel_small_window", "crh2a_panel_wide_window",
-                "crh2a_skirt_forbogey", "crh2a_skirt_normal", "crh2a_floor", "crh2a_endface", "crh2a_auto_coupler", "crh2a_rescue_coupler",
-                "crh2a_passenger_door", "crh2a_passenger_door_wide", "crh2a_cab_door", "crh_logo", "panel_text",
+                "crh1a_head", "crh2a_head", "crh2a_physical_head", "crh2a_carport_mid_antenna", "crh1a_carport_mid", "crh1a_carport_side", "crh2a_carport_side", "crh2a_panel_nowindow",
+                "crh2a_panel_nowindow_thick", "crh2a_panel_small_window", "crh2a_panel_wide_window", "crh1a_panel_wide_window",
+                "crh2a_skirt_forbogey", "crh2a_skirt_normal", "crh1a_skirt", "crh2a_floor", "crh1a_floor", "crh2a_endface", "crh1a_endface", "crh2a_auto_coupler", "scharfenberg_coupler", "crh2a_rescue_coupler",
+                "crh1a_psg_door", "crh2a_passenger_door", "crh2a_passenger_door_wide", "crh2a_cab_door", "crh_logo", "panel_text",
                 "test_driving_console", "crh2a_driving_console", "crh2a_driver_seat",
-                "crh2a_nonstandard_driving_console", "crh2a_cab_seat",
-                "crh2a_electronic_signage", "crh2a_carriage_number_display"
+                "crh2a_nonstandard_driving_console", "crh1a_driving_console", "crh2a_cab_seat",
+                "crh2a_electronic_signage", "crh2a_carriage_number_display", "crh1a_panel_nowindow", "crh1a_panel_small_window"
         });
         register("hexie_locos", Main.HEXIE_LOCOS, new String[] {"pantograph", "carriage_type_sign", "df11g_front", "df11g_cowcatcher", "df11g_carport_1", "df11g_carport_2", "df11g_carport_general", "df11g_carport_louver", "df11g_carport_louver_2", "df11g_carport_louver_3", "df11g_carport_hexie", "df11g_panel_hexie", "df11g_panel_general", "df11g_panel_mid_general", "df11g_panel_shades", "df11g_panel_mid_window", "df11g_panel_mid_shades", "df11g_panel_cr", "df11g_panel_mid_front_2", "df11g_panel_mid_front", "df11g_end_face", "df11g_cab_door", "df11g_equip_room_door", "hxd3d_panel_red", "hxd3d_panel_hexie", "hxd3d_carport_general", "hxd3d_slab", "hxd3d_cab_door", "cr200j_front"});
         register("hexie_diet", Main.HEXIE_DIET, new String[] {"train_diet_1"});

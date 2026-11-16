@@ -28,6 +28,13 @@ public interface BlockControl {
 
         default DragSpec dragSpec() { return DragSpec.DEFAULT; }
 
+        /** Whether the mouse drag renders text beside each physical detent. */
+        default boolean showDetentLabels() { return true; }
+
+        /** A spring-loaded handle may return to another detent when the gesture ends. */
+        default boolean hasSpringReturn() { return false; }
+        default int releasedNotch(int notch) { return notch; }
+
         /**
          * Legal detents in numeric order, shared by keyboard stepping and mouse dragging.
          * Invalid or excessively large declared ranges have no interactive detents.
@@ -46,6 +53,8 @@ public interface BlockControl {
         /** Physical positions are local to the module. Existing surfaces may retain their NBT keys. */
         default String positionKey() { return id(); }
         Component notchText(int notch);
+        /** Short text for the label beside this detent on a slider. */
+        default Component detentText(int notch) { return notchText(notch); }
 
         default int notch(ControlState state) {
             int value = state.getOrDefault(positionKey(), minNotch());
