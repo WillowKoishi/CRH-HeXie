@@ -24,5 +24,24 @@
     "leaf_body",
     "frame_glass",
     "leaf_glass"
-  ]
+  ],
+  "display": {
+    "gui": {
+      "rotation": [
+        30,
+        225,
+        0
+      ],
+      "translation": [
+        3.407572,
+        -1.826015,
+        0
+      ],
+      "scale": [
+        0.207717,
+        0.207717,
+        0.207717
+      ]
+    }
+  }
 }
