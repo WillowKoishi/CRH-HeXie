@@ -1,3 +1,22 @@
 {
-  "parent": "hexie:block/crh2a/doors/crh2a_cab_door_left"
+  "parent": "hexie:block/crh2a/doors/crh2a_cab_door_left",
+  "display": {
+    "gui": {
+      "rotation": [
+        30,
+        225,
+        0
+      ],
+      "translation": [
+        3.678977,
+        -3.825823,
+        0
+      ],
+      "scale": [
+        0.528209,
+        0.528209,
+        0.528209
+      ]
+    }
+  }
 }
