@@ -2,7 +2,7 @@
 # 开发日志
 
 ### version 0.10.4-Shiroko-bata
-##### 2026.11.15
+##### 2026.11.16
 
 添加方块（组）:
 
@@ -22,9 +22,18 @@
 - 完善 CRH1A 客室门的多方块蓝图放置、成员方块交互与组装后选取，校验伸出门扇的交互距离及遮挡（WillowKoishi）
 - 为 CRH1A 端面补充独立的玩家碰撞外壳及渲染范围，适配世界及组装车厢中的显示（WillowKoishi）
 
+修复问题:
+
+- 修正 CRH1A、CRH2A 无窗 / 小窗 / 宽窗面板及 CRH2A 加厚无窗面板的物品栏预览朝向与位置（WillowKoishi）
+- 调整 CRH1A、CRH2A 头车和驾驶台，以及 CRH2A 驾驶座的物品栏图标缩放与偏移（WillowKoishi）
+- 调整 CRH1A、CRH2A 端面与裙板、CRH2A 自动车钩及沙库车钩的物品栏显示位置与比例（WillowKoishi）
+
 新增 / 修改美术资源:
 
 - 补充 CRH1A 客室门、端面、半永久车钩与内风挡的源模型、拆件模型、材质及贴图（WillowKoishi）
+- 为 CRH1A 客室门，以及 CRH2A 客室门、宽体客室门和司机室门补充物品栏专用显示配置，调整预览角度、缩放与偏移（WillowKoishi）
+- 为 CRH1A、CRH2A 端面物品补充左右手的第一、第三人称显示配置，调整持握角度、缩放与偏移（WillowKoishi）
+- 添加动车组停车位置标识牌及另一组铁路标识牌的整体源模型；本阶段为美术资源（Lacus-Mort1s）
 
 其他:
 
@@ -183,9 +192,6 @@
 - 调整车厢半砖模型（WillowKoishi）
 - 添加“奋进”铁道少女角色图片素材（AlpacaEgg）
 
-
-version 0.9.5-Plana-bata
-##### 2026.11.10
 
 其他:
 
@@ -555,17 +561,17 @@ version 0.9.5-Plana-bata
 ##### version 0.3.8-izayoi_sakuya
 
 修改机制:
-- 减少 Mixin 使用 
-- 重制资源读取方式, 期望减少资源读取的 bug 
+- 减少 Mixin 使用
+- 重制资源读取方式, 期望减少资源读取的 bug
 
 ---
 ### 2024.2.17
 ##### version 0.3.8-izayoi_sakuya
 
 修改机制:
-- 获取转向架信息暂时不再需要佩戴工程师护目镜 
-- 新版接触网支架补全 tooltips 
-- 修改 Interaction Mixin 使用 
+- 获取转向架信息暂时不再需要佩戴工程师护目镜
+- 新版接触网支架补全 tooltips
+- 修改 Interaction Mixin 使用
 
 ---
 ### 2024.2.16
@@ -576,24 +582,24 @@ version 0.9.5-Plana-bata
 - cr200j 端面(两种) (Desert_Walker)
 - cr200j 车头 (Desert_Walker)
 - cr200j 车窗 (Desert_Walker)
-- 可动方块控制器 
-- 自动控制联轴器 
-- 25z样式地毯 
+- 可动方块控制器
+- 自动控制联轴器
+- 25z样式地毯
 - 通过信号机 (Zlw380)
 - 无砟轨道 (Zlw380, WillowKoishi)
 - 无枕轨道 (Zlw310, WillowKoishi)
 - 耐候钢块(WillowKoishi)
 
 修改机制:
-- 添加可动方块自动控制与联轴 
+- 添加可动方块自动控制与联轴
 - 旧版本接触网替换为新版本接触网 (Desert_Walker)
-- 旧版本接触网废弃 
-- 塞拉门动画修改 
+- 旧版本接触网废弃
+- 塞拉门动画修改
 
 其他:
 - 添加合成表 (WillowKoishi, HTony03)
 - tag 修正 (Willowkoishi)
-- 挖掘掉落修复 
+- 挖掘掉落修复
 - 添加修改成就系统 (HTony03)
 
 ----
@@ -607,7 +613,7 @@ version 0.9.5-Plana-bata
 - 前进型动轮 (Willikoishi,Zlw380)
 
 添加功能：
-- 内置蓝图系统 
+- 内置蓝图系统
 
 
 ----
