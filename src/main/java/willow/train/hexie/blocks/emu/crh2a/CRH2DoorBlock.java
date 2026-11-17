@@ -50,6 +50,7 @@ public class CRH2DoorBlock extends CustomRenderedDoorBlock implements willow.tra
     public static final double CAB_HINGE_TOWARD_REFERENCE = 2 / 16d;
     public static final float CAB_OPEN_DEGREES = 90;
     public static final float ANIMATION_SPEED = .15f;
+    public static final int ANIMATION_TICKS = 5 * 20;
     public static float animationCurve(float progress) { return progress * progress; }
     private static final double PASSENGER_OPENING_WIDTH = 12.1 / 16d;
     public static final double SLIDE_TRAVEL = PASSENGER_OPENING_WIDTH - 0.1;
@@ -78,6 +79,7 @@ public class CRH2DoorBlock extends CustomRenderedDoorBlock implements willow.tra
         this.doorType = doorType;
     }
     public Type doorType() { return doorType; }
+    @Override public int animationDurationTicks() { return doorType == Type.CAB ? 0 : ANIMATION_TICKS; }
     public double slideTravel() { return doorType.slideTravel; }
     public double slideOffset(boolean mirrored, boolean reverse, float progress) {
         double offset = slideTravel() * animationCurve(progress);

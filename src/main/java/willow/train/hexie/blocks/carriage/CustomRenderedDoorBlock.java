@@ -124,6 +124,11 @@ public class CustomRenderedDoorBlock extends DoorBlock implements IBE<CustomRend
         return isSlideDoor;
     }
 
+    /** A positive duration opts into exact tick-counted animation; zero retains the existing chaser. */
+    public int animationDurationTicks() {
+        return 0;
+    }
+
     @Override
     public net.minecraft.world.InteractionResult useWithoutItem(net.minecraft.world.level.block.state.BlockState state,
             net.minecraft.world.level.Level level, net.minecraft.core.BlockPos pos,

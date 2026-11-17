@@ -57,6 +57,13 @@ public class CustomRenderedDoorEntity extends SmartBlockEntity implements IContr
         crh2Animation.startWithValue(previous).setValue(current);
         animation_controller = current;
     }
+
+    /** Advance on a discrete tick grid so fractional accumulation cannot add an extra endpoint tick. */
+    public static float tickProgress(float previous, boolean open, int durationTicks) {
+        if (durationTicks <= 0) throw new IllegalArgumentException("Animation duration must be positive");
+        int tick = Math.clamp(Math.round(previous * durationTicks) + (open ? 1 : -1), 0, durationTicks);
+        return tick / (float) durationTicks;
+    }
     @Override public void restoreAnimation(BlockEntity previous) {
         if(previous instanceof CustomRenderedDoorEntity source)copyAnimationFrom(source);
     }
@@ -109,10 +116,15 @@ public class CustomRenderedDoorEntity extends SmartBlockEntity implements IContr
     public void tick() {
         if(level == null) return;
         this.open = getBlockState().getValue(DoorBlock.OPEN);
-        advanceCRH2Animation();
+        advanceAnimation();
     }
 
-    private void advanceCRH2Animation() {
+    private void advanceAnimation() {
+        if (getBlockState().getBlock() instanceof CustomRenderedDoorBlock door && door.animationDurationTicks() > 0) {
+            float previous = crh2Animation.getValue();
+            setCarriageAnimation(open, previous, tickProgress(previous, open, door.animationDurationTicks()));
+            return;
+        }
         crh2Animation.chase(open ? 1 : 0,
                     getBlockState().getBlock() instanceof willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock
                             ? willow.train.hexie.blocks.emu.crh2a.CRH2DoorBlock.ANIMATION_SPEED : isSlideDoor ? .075 : .15,
@@ -151,6 +163,6 @@ public class CustomRenderedDoorEntity extends SmartBlockEntity implements IContr
     public void doMovement(Contraption contraption, BlockPos blockPos, BlockState blockState, BlockEntity blockEntity) {
         var door = (CustomRenderedDoorEntity) blockEntity;
         door.setOpen(contraption.getBlocks().get(blockPos).state().getValue(DoorBlock.OPEN));
-        door.advanceCRH2Animation();
+        door.advanceAnimation();
     }
 }

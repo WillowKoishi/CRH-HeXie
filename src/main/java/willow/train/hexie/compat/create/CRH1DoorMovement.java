@@ -2,7 +2,6 @@ package willow.train.hexie.compat.create;
 
 import com.simibubi.create.content.contraptions.Contraption;
 import com.simibubi.create.content.contraptions.behaviour.MovementContext;
-import net.createmod.catnip.animation.LerpedFloat;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
@@ -48,7 +47,7 @@ public final class CRH1DoorMovement extends BlockEntitySynchronizeBehaviour {
         if (info == null || !info.state().is(context.state.getBlock())) return;
         boolean open = info.state().getValue(DoorBlock.OPEN);
         float previous = progress(context);
-        float current = LerpedFloat.Chaser.LINEAR.chase(previous, CRH1DoorGeometry.ANIMATION_SPEED, open ? 1 : 0);
+        float current = CustomRenderedDoorEntity.tickProgress(previous, open, CRH1DoorGeometry.ANIMATION_TICKS);
         if (current != previous) context.data.putFloat(PROGRESS, current);
         if (context.world.isClientSide
                 && context.contraption.getBlockEntityClientSide(context.localPos) instanceof CustomRenderedDoorEntity display)

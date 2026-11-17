@@ -44,6 +44,7 @@ public final class CRH1DoorBlock extends CustomRenderedDoorBlock implements Nati
     }
 
     @Override public MapCodec<? extends DoorBlock> codec() { return CODEC; }
+    @Override public int animationDurationTicks() { return CRH1DoorGeometry.ANIMATION_TICKS; }
 
     @Override public BlockPos partRoot(BlockGetter world, BlockPos pos, BlockState state) { return root(state, pos); }
     @Override public boolean schematicRoot() { return true; }
@@ -72,6 +73,7 @@ public final class CRH1DoorBlock extends CustomRenderedDoorBlock implements Nati
         BlockPos root = root(state, pos);
         var owner = world.getBlockState(root);
         if (!owner.is(this)) return;
+        if (world instanceof net.minecraft.server.level.ServerLevel server) CRH1DoorRepair.schedule(server, root);
         var cells = partCells(world, root, owner);
         boolean powered = cells.keySet().stream().anyMatch(world::hasNeighborSignal);
         if (powered == owner.getValue(POWERED)) return;
@@ -84,6 +86,12 @@ public final class CRH1DoorBlock extends CustomRenderedDoorBlock implements Nati
             world.gameEvent(null, powered ? net.minecraft.world.level.gameevent.GameEvent.BLOCK_OPEN
                     : net.minecraft.world.level.gameevent.GameEvent.BLOCK_CLOSE, root);
         }
+    }
+
+    @Override protected void tick(BlockState state, net.minecraft.server.level.ServerLevel world, BlockPos pos,
+            net.minecraft.util.RandomSource random) {
+        if (CRH1DoorRepair.repair(world, pos) == CRH1DoorRepair.Result.DEFERRED)
+            world.scheduleTick(pos, this, 20);
     }
 
     private static Couple<ResourceLocation> models(String side) {

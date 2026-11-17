@@ -53,10 +53,13 @@ public final class CRH2DoorMovement extends BlockEntitySynchronizeBehaviour {
         if (context.state.getValue(DoorBlock.HALF) != DoubleBlockHalf.LOWER) return;
         // Create updates the block map on both sides. The actor's captured state can still be the old one.
         var info = context.contraption.getBlocks().get(context.localPos);
-        if (info == null || !info.state().is(context.state.getBlock())) return;
+        if (info == null || !info.state().is(context.state.getBlock())
+                || !(info.state().getBlock() instanceof CRH2DoorBlock door)) return;
         boolean open = info.state().getValue(DoorBlock.OPEN);
         float previous = progress(context);
-        float current = LerpedFloat.Chaser.LINEAR.chase(previous, CRH2DoorBlock.ANIMATION_SPEED, open ? 1 : 0);
+        int duration = door.animationDurationTicks();
+        float current = duration > 0 ? CustomRenderedDoorEntity.tickProgress(previous, open, duration)
+                : LerpedFloat.Chaser.LINEAR.chase(previous, CRH2DoorBlock.ANIMATION_SPEED, open ? 1 : 0);
         if (current != previous) context.data.putFloat(PROGRESS, current);
         if (context.world.isClientSide
                 && context.contraption.getBlockEntityClientSide(context.localPos) instanceof CustomRenderedDoorEntity display)

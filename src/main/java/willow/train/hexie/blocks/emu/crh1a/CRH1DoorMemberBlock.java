@@ -15,6 +15,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.storage.loot.LootParams;
@@ -34,6 +35,9 @@ public final class CRH1DoorMemberBlock extends Block implements PartStructure,
     }
     @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(PartMemberBlock.X, PartMemberBlock.Y, PartMemberBlock.Z);
+    }
+    @Override public BlockState rotate(BlockState state, Rotation rotation) {
+        return PartMemberBlock.withOwnerOffset(state, PartMemberBlock.ownerOffset(state).rotate(rotation));
     }
     @Override public boolean isPartMember() { return true; }
     @Override public BlockPos partRoot(BlockGetter world, BlockPos pos, BlockState state) { return PartMemberBlock.owner(pos, state); }
