@@ -25,7 +25,7 @@ public final class CRH1EndFacePhysicalRender {
                 || !physical.isPhysicallyCoupled() || physical.getLevel() == null) return null;
         var level = physical.getLevel();
         var own = physical.getBlockPos();
-        var other = physical.physicalPartner();
+        var other = physical.getCouplerPartner();
         if (other == null || !level.hasChunkAt(other)
                 || !(level.getBlockState(other).getBlock() instanceof CRH1EndFaceBlock)
                 || !SableInteractionCoordinates.contains(level, own) || !SableInteractionCoordinates.contains(level, other))

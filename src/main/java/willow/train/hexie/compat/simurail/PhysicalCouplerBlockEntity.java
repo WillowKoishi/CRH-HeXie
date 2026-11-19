@@ -8,7 +8,6 @@ import com.crystaelix.simurail.api.util.SubLevelUtil;
 import com.crystaelix.simurail.config.SimurailConfig;
 import com.crystaelix.simurail.content.SimurailCouplers;
 import com.crystaelix.simurail.content.automatic_coupler.AutomaticCoupler;
-import com.crystaelix.simurail.content.automatic_coupler.AutomaticCouplerBlockEntity;
 import com.crystaelix.simurail.content.connector.ConnectorConnectable;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.block.BlockEntitySubLevelActor;
@@ -87,7 +86,6 @@ public final class PhysicalCouplerBlockEntity extends CouplerBlockEntity
 
     @Override public boolean isCarriageView() { return carriageView; }
     public boolean isPhysicallyCoupled() { return partnerPos != null; }
-    public BlockPos physicalPartner() { return partnerPos; }
 
     @Override public void tickCoverAnimation() {
         refreshRedstoneControl();
@@ -187,6 +185,10 @@ public final class PhysicalCouplerBlockEntity extends CouplerBlockEntity
                 && !getBlockState().getValue(BlockStateProperties.OPEN);
     }
 
+    @Override public boolean canCouplerConnect() {
+        return !hasCouplerPartner() && !isPowered();
+    }
+
     private String effectiveModel() {
         var hook = hook();
         String model = hook == null ? "" : hook.model();
@@ -247,8 +249,8 @@ public final class PhysicalCouplerBlockEntity extends CouplerBlockEntity
 
     @Override public void setCouplerPartner(BlockPos pos) {
         if (isPowered() || pos == null || pos.equals(getBlockPos()) || !level.isLoaded(pos)
-                || !(level.getBlockEntity(pos) instanceof AutomaticCoupler other) || other.isPowered()
-                || other.hasCouplerPartner() || !getCouplerType().canConnectTo(other.getCouplerType())) return;
+                || !(level.getBlockEntity(pos) instanceof AutomaticCoupler other) || !other.canCouplerConnect()
+                || !getCouplerType().canConnectTo(other.getCouplerType())) return;
         SubLevel otherOwner = Sable.HELPER.getContaining(level, pos);
         if (!(otherOwner instanceof ServerSubLevel) || otherOwner == Sable.HELPER.getContaining(this)) return;
         if (partnerPos != null) removeCouplerPartner();
@@ -284,6 +286,7 @@ public final class PhysicalCouplerBlockEntity extends CouplerBlockEntity
     }
 
     @Override public boolean hasCouplerPartner() { return partnerPos != null; }
+    @Override public BlockPos getCouplerPartner() { return partnerPos; }
     @Override public boolean hasCouplerJoint() { return joint != null && joint.isValid(); }
 
     @Override public void removeCouplerJoint() {
@@ -371,9 +374,7 @@ public final class PhysicalCouplerBlockEntity extends CouplerBlockEntity
     }
 
     private boolean reciprocalPartner(AutomaticCoupler other) {
-        if (other instanceof PhysicalCouplerBlockEntity physical) return getBlockPos().equals(physical.partnerPos);
-        if (other instanceof AutomaticCouplerBlockEntity nativeCoupler) return getBlockPos().equals(nativeCoupler.getPartner());
-        return other.hasCouplerPartner();
+        return getBlockPos().equals(other.getCouplerPartner());
     }
 
     private void findPartner(ServerSubLevel self) {
@@ -391,7 +392,7 @@ public final class PhysicalCouplerBlockEntity extends CouplerBlockEntity
                     for (int z = Mth.floor(localEnd.z) - 2; z < Mth.ceil(localEnd.z) + 2; z++) {
                         cursor.set(x, y, z);
                         if (!level.isLoaded(cursor) || !(level.getBlockEntity(cursor) instanceof AutomaticCoupler candidate)
-                                || candidate.hasCouplerPartner() || candidate.isPowered()
+                                || !candidate.canCouplerConnect()
                                 || !getCouplerType().canConnectTo(candidate.getCouplerType())) continue;
                         double candidateDistance = candidate.getCouplerEndPos(candidateEnd).distanceSquared(localEnd);
                         if (candidateDistance < distance) {

@@ -42,7 +42,7 @@ side="BOTH"
 [[dependencies.hexie]]
 modId="simurail"
 type="optional"
-versionRange="[0.1.0,0.2)"
+versionRange="[0.1.4,0.2)"
 ordering="AFTER"
 side="BOTH"
 
