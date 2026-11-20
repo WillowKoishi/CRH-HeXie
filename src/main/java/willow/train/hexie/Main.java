@@ -63,6 +63,13 @@ public class Main {
                 }
             };
     public static final EMUTab HEXIE_EMU = new EMUTab();
+    public static final NormalSpeedPassageCarriageTab HEXIE_NORMAL_SPEED_PASSAGE_CARRIAGE_TAB =
+            new NormalSpeedPassageCarriageTab(MOD_ID) {
+                @Override
+                public @NotNull ItemStack makeIcon() {
+                    return super.makeIcon();
+                }
+            };
     public static final LocosTab HEXIE_LOCOS =
             new LocosTab(MOD_ID) {
                 @Override
@@ -70,18 +77,11 @@ public class Main {
                     return new ItemStack(LogoItemInit.LOCO_LOGOS.get());
                 }
             };
-    public static final NormalSpeedPassageCarriageTab HEXIE_NORMAL_SPEED_PASSAGE_CARRIAGE_TAB =
-            new NormalSpeedPassageCarriageTab(MOD_ID) {
-                @Override
-                public @NotNull ItemStack makeIcon() {
-                    return new ItemStack(LogoItemInit.SERIES_25_LOGOS.get());
-                }
-            };
     public static final DietTab HEXIE_DIET =
             new DietTab(MOD_ID) {
                 @Override
                 public @NotNull ItemStack makeIcon() {
-                    return new ItemStack(LogoItemInit.CA_25T.get());
+                    return super.makeIcon();
                 }
             };
 
@@ -92,6 +92,7 @@ public class Main {
                 willow.train.hexie.config.VehicleConfig.SPEC, "hexie-server.toml");
         bus.addListener(HexieNetworkHandler::registerPackets);
         CreativeTabsInit.register(bus);
+        StandardTrackPavingDataInit.register(bus);
 
         //InternalTestUtil.InternalTest();
 

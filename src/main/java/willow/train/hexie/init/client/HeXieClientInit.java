@@ -199,5 +199,6 @@ public class HeXieClientInit {
         event.register(
                 MenuInit.TRAIN_SPEED_SIGN_EDIT_MENU.get(), TrainSpeedSignEditScreen::new);
         event.register(MenuInit.TICKET_VENDOR_MENU.get(), TicketVendorScreen::new);
+        event.register(MenuInit.STANDARD_TRACK_PAVING_MENU.get(), StandardTrackPavingScreen::new);
     }
 }

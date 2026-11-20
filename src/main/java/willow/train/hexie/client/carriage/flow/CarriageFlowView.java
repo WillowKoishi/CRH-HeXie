@@ -18,6 +18,7 @@ public final class CarriageFlowView implements AutoCloseable {
     static final ResourceLocation SLOT_TEXTURE = ResourceLocation.withDefaultNamespace("textures/gui/container/creative_inventory/tab_items.png");
     private static final int STRIP_Y = 17;
     private static final int STRIP_HEIGHT = 18;
+    private static final int STRIP_CLICK_SLOP = 3;
     private static final int PREVIEW_TOP = 37;
     private static final int CONTROL_X = 174, CONTROL_Y = 19, CONTROL_SIZE = 14, CONTROL_PITCH = 18;
     private static final int SCHEMATIC_X = 173, SCHEMATIC_Y = 112;
@@ -39,6 +40,9 @@ public final class CarriageFlowView implements AutoCloseable {
     // Camera-only track offset; never applied to the train motion or the upper strip.
     private double panZ, panTarget;
     private boolean draggingPan;
+    private StripPress stripPress;
+    private boolean draggingStrip;
+    private long stripSelection;
     private Matrix4f selectedTransform;
     private double yaw = FRONT_YAW, fromYaw = FRONT_YAW, targetYaw = FRONT_YAW, viewStarted;
     private float shell = 1, fromShell = 1, targetShell = 1;
@@ -53,6 +57,11 @@ public final class CarriageFlowView implements AutoCloseable {
     final ResourceLocation tab;
     private record Saved(ResourceLocation model, long index, long phase, boolean open, double pan, double offset, double velocity) {}
     private record StripEntry(long index, double left, double right) {}
+    private record StripPress(double mouseX, double mouseY, double position, double clickSlopX, StripEntry entry) {
+        boolean withinClickSlop(double x, double y) {
+            return Math.abs(x - mouseX) <= clickSlopX && Math.abs(y - mouseY) <= STRIP_CLICK_SLOP;
+        }
+    }
 
     public CarriageFlowView(CreativeModeInventoryScreen host) { this.host = host; this.tab = CarriageFlowClient.tabId(host); init(); }
     private static double now() { return System.nanoTime() / 1_000_000_000.0; }
@@ -109,6 +118,8 @@ public final class CarriageFlowView implements AutoCloseable {
         }
         lastFrame = now();
         draggingPan = false;
+        stripPress = null;
+        draggingStrip = false;
         hovered = null;
     }
 
@@ -116,11 +127,13 @@ public final class CarriageFlowView implements AutoCloseable {
         double time = now();
         double elapsed = Math.min(.1, Math.max(0, time - lastFrame));
         lastFrame = time;
-        motion.advance(elapsed);
-        position = motion.position();
+        if (stripPress == null) {
+            motion.advance(elapsed);
+            position = motion.position();
+        }
         panZ += (panTarget - panZ) * (1 - Math.exp(-elapsed * 12));
         if (Math.abs(panTarget - panZ) < .0001) panZ = panTarget;
-        boolean scrolling = time - lastInput < .16;
+        boolean scrolling = draggingStrip || time - lastInput < .16;
         float opacity = scrolling ? 1 : .25f + .75f * (float) Math.min(1, Math.abs(motion.velocity()) / 12);
         neighborVisibility += (opacity - neighborVisibility) * (float) (1 - Math.exp(-elapsed * 12));
         double t = CarriageFlowLayout.ease((now() - viewStarted) / .8);
@@ -258,12 +271,13 @@ public final class CarriageFlowView implements AutoCloseable {
         selectedTransform = null;
         stripEntries.clear();
         if (layout == null) { renderControls(gui, mouseX, mouseY); return; }
+        long previewIndex = draggingStrip ? stripSelection : selected;
         gui.flush();
         scissor(gui, 9, STRIP_Y + 1, 169, 34);
         Matrix4f sideTrack = new Matrix4f(gui.pose().last().pose())
                 .translate(width / 2f, STRIP_Y + STRIP_HEIGHT, 200)
                 .scale(stripScale, -stripScale, stripScale).rotateY((float) (Math.PI / 2));
-        previews.get(layout.model(selected)).renderRails(sideTrack, (int) Math.ceil(width / (256f * stripScale)));
+        previews.get(layout.model(previewIndex)).renderRails(sideTrack, (int) Math.ceil(width / (256f * stripScale)));
         // Cover the visible strip on both sides, including repeated instances of a single model.
         double stripRadius = 81 / stripScale + maxLength / 2;
         long stripFirst = layout.floorIndex(position - stripRadius);
@@ -279,7 +293,9 @@ public final class CarriageFlowView implements AutoCloseable {
             previews.get(layout.model(index)).render(pose, 1, 1);
             stripEntries.add(new StripEntry(index, x - half, x + half));
         }
-        gui.fill(width / 2 - 1, 18, width / 2 + 1, 20, 0xff875312);
+        int markerX = width / 2;
+        if (draggingStrip) markerX += (int) Math.round((layout.center(previewIndex) - position) * stripScale);
+        gui.fill(markerX - 1, 18, markerX + 1, 20, 0xff875312);
         gui.flush();
         gui.disableScissor();
         int bottom = 106;
@@ -289,7 +305,7 @@ public final class CarriageFlowView implements AutoCloseable {
             double focusZ = focusZ() + panZ;
             Matrix4f camera = new Matrix4f(gui.pose().last().pose()).mul(localCamera(panZ));
             // Panning changes the camera for both rails and carriages; train motion remains independent.
-            previews.get(layout.model(selected)).renderRails(camera, 1);
+            previews.get(layout.model(previewIndex)).renderRails(camera, 1);
             // Visibility follows the actual train position, not the potentially distant target.
             double sceneCenter = position + focusZ;
             long first = layout.floorIndex(sceneCenter - visibleRadius - maxLength / 2);
@@ -299,9 +315,11 @@ public final class CarriageFlowView implements AutoCloseable {
                 var model = catalog.models().get(modelIndex);
                 Matrix4f transform = new Matrix4f(camera).translate(-model.width() / 2f, 0,
                         (float) (layout.center(index) - position - model.length() / 2.0));
-                if (index == selected) selectedTransform = new Matrix4f(transform);
-                previews.get(modelIndex).render(transform, index == selected ? 1 : neighborVisibility, index == selected ? shell : 1);
-                if (!draggingPan && index == selected && mouseX >= 9 && mouseX < 169 && mouseY >= PREVIEW_TOP && mouseY < bottom
+                boolean focused = index == previewIndex;
+                if (focused) selectedTransform = new Matrix4f(transform);
+                previews.get(modelIndex).render(transform, focused ? 1 : neighborVisibility, focused ? shell : 1);
+                if (focused && !draggingPan && stripPress == null
+                        && mouseX >= 9 && mouseX < 169 && mouseY >= PREVIEW_TOP && mouseY < bottom
                         && Math.abs(position - targetPosition) < .02 && (shell > .995 || shell < .005)) {
                     hovered = previews.get(modelIndex).pick(transform, mouseX + host.getGuiLeft(), mouseY + host.getGuiTop(), shell > .5);
                     hoveredTransform = transform;
@@ -420,11 +438,28 @@ public final class CarriageFlowView implements AutoCloseable {
                 selectedTransform, x + host.getGuiLeft(), y + host.getGuiTop(), shell > .5) != null;
     }
 
+    private static boolean overStrip(double x, double y) {
+        return x >= 9 && x < 169 && y >= STRIP_Y && y <= STRIP_Y + STRIP_HEIGHT;
+    }
+
+    private void dragStrip(double x, double y) {
+        if (!draggingStrip && stripPress.withinClickSlop(x, y)) return;
+        draggingStrip = true;
+        double nextPosition = stripPress.position() - (x - stripPress.mouseX()) / stripScale;
+        if (nextPosition != position) {
+            position = nextPosition;
+            stripSelection = layout.selectDuringDrag(stripSelection, position);
+            motion.restore(position, 0, targetPosition);
+        }
+        hovered = null;
+    }
+
     public boolean mouseScrolled(double x, double y, double horizontal, double vertical) {
+        if (stripPress != null) return true;
         double delta = vertical != 0 ? vertical : horizontal;
         if (delta == 0) return false;
         int step = delta > 0 ? -1 : 1;
-        if (x >= 9 && x < 169 && y >= STRIP_Y && y <= STRIP_Y + STRIP_HEIGHT) select(selected + step);
+        if (overStrip(x, y)) select(selected + step);
         else if (x >= 9 && x < 169 && y >= PREVIEW_TOP && y < 106 && layout != null) {
             // Use the same block shapes as hover picking; empty gaps belong to camera panning.
             if (overCarriage(x, y)) cycle(step);
@@ -444,8 +479,22 @@ public final class CarriageFlowView implements AutoCloseable {
             host.getMenu().setCarried(net.minecraft.world.item.ItemStack.EMPTY);
             return true;
         }
-        if (button == 0 && y >= STRIP_Y && y <= STRIP_Y + STRIP_HEIGHT) {
-            for (StripEntry entry : stripEntries) if (x >= entry.left && x <= entry.right) { select(entry.index); return true; }
+        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && layout != null && overStrip(x, y)) {
+            StripEntry clicked = null;
+            for (StripEntry entry : stripEntries) {
+                if (x >= entry.left() && x <= entry.right()) {
+                    clicked = entry;
+                    break;
+                }
+            }
+            double center = layout.center(selected);
+            double spacing = Math.min(center - layout.center(selected - 1), layout.center(selected + 1) - center);
+            double clickSlopX = Math.min(STRIP_CLICK_SLOP, spacing * stripScale / 2);
+            stripPress = new StripPress(x, y, position, clickSlopX, clicked);
+            stripSelection = selected;
+            draggingStrip = draggingPan = false;
+            hovered = null;
+            return true;
         }
         if (button == 0 && hovered != null && layout != null && y >= PREVIEW_TOP && y < height - 39) {
             var model = catalog.models().get(layout.model(selected));
@@ -468,8 +517,13 @@ public final class CarriageFlowView implements AutoCloseable {
         return false;
     }
 
-    public boolean mouseDragged(int button, double dragX, double dragY) {
-        if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT || !draggingPan || layout == null) return false;
+    public boolean mouseDragged(double x, double y, int button, double dragX, double dragY) {
+        if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT || layout == null) return false;
+        if (stripPress != null) {
+            dragStrip(x, y);
+            return true;
+        }
+        if (!draggingPan) return false;
         animate();
         var direction = localCamera(0).transformDirection(new org.joml.Vector3f(0, 0, -1));
         double lengthSquared = (double) direction.x * direction.x + (double) direction.y * direction.y;
@@ -482,14 +536,28 @@ public final class CarriageFlowView implements AutoCloseable {
         return true;
     }
 
-    public boolean mouseReleased(int button) {
-        if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT || !draggingPan) return false;
+    public boolean mouseReleased(double x, double y, int button) {
+        if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT) return false;
+        if (stripPress != null) {
+            if (draggingStrip) {
+                select(stripSelection);
+            } else if (stripPress.entry() != null && overStrip(x, y) && stripPress.withinClickSlop(x, y)) {
+                select(stripPress.entry().index());
+            }
+            stripPress = null;
+            draggingStrip = false;
+            return true;
+        }
+        if (!draggingPan) return false;
         draggingPan = false;
         return true;
     }
 
     public boolean keyPressed(int key, int scan, int modifiers) {
-        if (key == GLFW.GLFW_KEY_LEFT || key == GLFW.GLFW_KEY_RIGHT) { select(selected + (key == GLFW.GLFW_KEY_LEFT ? -1 : 1)); return true; }
+        if (key == GLFW.GLFW_KEY_LEFT || key == GLFW.GLFW_KEY_RIGHT) {
+            if (stripPress == null) select(selected + (key == GLFW.GLFW_KEY_LEFT ? -1 : 1));
+            return true;
+        }
         if (key == GLFW.GLFW_KEY_SPACE) { cycle(1); return true; }
         return false;
     }
@@ -498,6 +566,8 @@ public final class CarriageFlowView implements AutoCloseable {
     private void closeMeshes() { previews.clear(); }
     @Override public void close() {
         draggingPan = false;
+        stripPress = null;
+        draggingStrip = false;
         restoreSchematicSlot();
         if (layout != null) {
             SAVED.put(tab, new Saved(catalog.models().get(layout.model(selected)).id(), selected, phase, targetShell < .5f, panTarget,

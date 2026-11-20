@@ -1,6 +1,7 @@
 package willow.train.hexie.mixins.mixin;
 
 import com.simibubi.create.content.trains.track.TrackBlockEntity;
+import com.simibubi.create.content.trains.track.BezierConnection;
 import net.minecraft.core.*;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.*;
@@ -10,6 +11,7 @@ import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import willow.train.hexie.blocks.track.standard.BallastData;
+import willow.train.hexie.item.track.StandardTrackBallastPlacement;
 import java.util.*;
 
 @Mixin(value = TrackBlockEntity.class, remap = false)
@@ -25,7 +27,7 @@ public abstract class MixinTrackBallastData implements BallastData {
         var track = (TrackBlockEntity) (Object) this;
         track.notifyUpdate();
         net.createmod.catnip.platform.CatnipServices.PLATFORM.executeOnClientOnly(
-                () -> () -> willow.train.hexie.client.render.track.BallastCurveBuffers.changed(track));
+                () -> () -> willow.train.hexie.client.render.track.BallastTrackModel.ballastDataRead(track, true));
     }
     @Inject(method = "write", at = @At("RETURN"), require = 1)
     private void hexie$write(CompoundTag tag, HolderLookup.Provider registries, boolean packet, CallbackInfo ci) {
@@ -47,9 +49,19 @@ public abstract class MixinTrackBallastData implements BallastData {
             BlockPos pos = BlockPos.of(Long.parseLong(key));
             hexie$curves.put(relative ? origin.offset(pos) : pos, NbtUtils.readBlockState(registries.lookupOrThrow(Registries.BLOCK), curves.getCompound(key)));
         } catch (NumberFormatException ignored) { }
+        var track = (TrackBlockEntity) (Object) this;
+        net.createmod.catnip.platform.CatnipServices.PLATFORM.executeOnClientOnly(
+                () -> () -> willow.train.hexie.client.render.track.BallastTrackModel.ballastDataRead(track, packet));
     }
     @Inject(method = "removeConnection", at = @At("HEAD"), require = 1)
     private void hexie$removeTexture(BlockPos target, CallbackInfo ci) { hexie$curves.remove(target); }
+
+    @Inject(method = "addConnection", at = @At(value = "INVOKE",
+            target = "Ljava/util/Map;put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+            shift = At.Shift.AFTER), require = 1)
+    private void hexie$rememberNewCurve(BezierConnection connection, CallbackInfo ci) {
+        StandardTrackBallastPlacement.connectionAdded((TrackBlockEntity) (Object) this, connection);
+    }
 
     @Inject(method = "removeConnection", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;setBlockAndUpdate(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;)Z"), cancellable = true, require = 1)
     private void hexie$keepPaintedTrack(BlockPos target, CallbackInfo ci) {

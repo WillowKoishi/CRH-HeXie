@@ -236,13 +236,18 @@ public final class CarriageFlowClient {
         if (!active(event.getScreen())) return;
         var view = VIEWS.get(event.getScreen());
         // Keep the captured gesture while the pointer leaves the preview or crosses the carriage.
-        if (view != null && view.mouseDragged(event.getMouseButton(), event.getDragX(), event.getDragY()))
+        if (view != null && view.mouseDragged(
+                event.getMouseX() - view.host.getGuiLeft(), event.getMouseY() - view.host.getGuiTop(),
+                event.getMouseButton(), event.getDragX(), event.getDragY()))
             event.setCanceled(true);
     }
 
     private static void releaseMouse(ScreenEvent.MouseButtonReleased.Pre event) {
         var view = VIEWS.get(event.getScreen());
-        if (view != null && view.mouseReleased(event.getButton())) event.setCanceled(true);
+        if (view != null && view.mouseReleased(
+                event.getMouseX() - view.host.getGuiLeft(), event.getMouseY() - view.host.getGuiTop(),
+                event.getButton()))
+            event.setCanceled(true);
     }
 
     private static void scroll(ScreenEvent.MouseScrolled.Pre event) {

@@ -23,8 +23,19 @@ public final class BallastTrackModel extends BakedModelWrapper<BakedModel> {
         ModelData inherited=super.getModelData(world,pos,state,data);
         if (SlabTrackModels.applies(state))
             return inherited.derive().with(SlabTrackModels.POSITION, pos.immutable()).build();
+        if (inherited.has(TEXTURE)) return inherited;
         return inherited.derive().with(TEXTURE,world.getBlockEntity(pos) instanceof BallastData ballast?
                 ballast.hexie$getBallast(null):Blocks.COBBLESTONE.defaultBlockState()).build();
+    }
+
+    /** Refresh model data only after the new ballast state has been read from the server. */
+    public static void ballastDataRead(TrackBlockEntity track, boolean packet) {
+        if (packet && track.getLevel() != null && track.getLevel().isClientSide) {
+            track.requestModelDataUpdate();
+            BlockState state = track.getBlockState();
+            track.getLevel().sendBlockUpdated(track.getBlockPos(), state, state, 8);
+        }
+        BallastCurveBuffers.changed(track);
     }
     @Override public List<BakedQuad> getQuads(BlockState state,Direction side,RandomSource random,ModelData data,RenderType layer) {
         var original=super.getQuads(state,side,random,data,layer);

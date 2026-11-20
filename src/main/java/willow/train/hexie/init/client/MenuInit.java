@@ -41,6 +41,9 @@ public class MenuInit {
                     registerMenuType(TrainSpeedSignEditMenu::new, "train_speed_sign_edit_menu");
     public static final DeferredHolder<MenuType<?>, MenuType<TicketVendorMenu>> TICKET_VENDOR_MENU =
             registerMenuType(TicketVendorMenu::new, "ticket_vendor_menu");
+    public static final DeferredHolder<MenuType<?>, MenuType<StandardTrackPavingMenu>>
+            STANDARD_TRACK_PAVING_MENU =
+                    registerMenuType(StandardTrackPavingMenu::new, "standard_track_paving");
 
     private static <T extends AbstractContainerMenu> DeferredHolder<MenuType<?>, MenuType<T>> registerMenuType(
             IContainerFactory<T> factory, String name) {

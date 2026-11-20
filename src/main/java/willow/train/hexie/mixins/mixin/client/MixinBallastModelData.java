@@ -1,23 +1,24 @@
 package willow.train.hexie.mixins.mixin.client;
 
 import com.simibubi.create.content.trains.track.TrackBlockEntity;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
+import net.neoforged.neoforge.client.model.data.ModelData;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import willow.train.hexie.blocks.track.standard.BallastData;
+import willow.train.hexie.blocks.track.standard.TrackBallast;
 import willow.train.hexie.client.render.track.BallastCurveBuffers;
+import willow.train.hexie.client.render.track.BallastTrackModel;
 
 @Mixin(value=TrackBlockEntity.class,remap=false)
 public abstract class MixinBallastModelData {
-    @Inject(method="read",at=@At("RETURN"),require=1)
-    private void hexie$invalidate(CompoundTag tag,HolderLookup.Provider registries,boolean packet,CallbackInfo ci) {
-        TrackBlockEntity be=(TrackBlockEntity)(Object)this;
-        if(packet&&be.getLevel()!=null) {
-            be.requestModelDataUpdate();
-            be.getLevel().sendBlockUpdated(be.getBlockPos(),be.getBlockState(),be.getBlockState(),8);
-        }
-        BallastCurveBuffers.changed(be);
+    @Inject(method="getModelData",at=@At("RETURN"),cancellable=true,require=1)
+    private void hexie$includeBallast(CallbackInfoReturnable<ModelData> callback) {
+        TrackBlockEntity track=(TrackBlockEntity)(Object)this;
+        if (TrackBallast.enabled(track.getBlockState()))
+            callback.setReturnValue(callback.getReturnValue().derive()
+                    .with(BallastTrackModel.TEXTURE,((BallastData)track).hexie$getBallast(null)).build());
     }
 
     // initialize covers the initial NBT read performed before a level is assigned.

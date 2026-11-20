@@ -42,6 +42,17 @@ public final class CarriageFlowLayout {
         }
         return cycle * size() + low - 1;
     }
+
+    public long selectDuringDrag(long selected, double position) {
+        long left = floorIndex(position);
+        long right = left + 1;
+        double leftCenter = center(left);
+        double progress = (position - leftCenter) / (center(right) - leftCenter);
+        // The middle third retains the previous selection when the drag changes direction.
+        if (selected <= left) return progress >= 2.0 / 3.0 ? right : left;
+        return progress <= 1.0 / 3.0 ? left : right;
+    }
+
     public static double ease(double t) {
         t = Math.max(0, Math.min(1, t));
         return t * t * t * (t * (t * 6 - 15) + 10);
