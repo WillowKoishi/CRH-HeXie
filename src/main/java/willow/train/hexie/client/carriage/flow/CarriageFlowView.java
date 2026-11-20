@@ -6,6 +6,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import org.joml.Matrix4f;
@@ -14,12 +15,17 @@ import willow.train.hexie.Main;
 
 import java.util.*;
 
+import static willow.train.hexie.client.carriage.flow.CarriageFlowPanBounds.BOTTOM;
+import static willow.train.hexie.client.carriage.flow.CarriageFlowPanBounds.LEFT;
+import static willow.train.hexie.client.carriage.flow.CarriageFlowPanBounds.RIGHT;
+import static willow.train.hexie.client.carriage.flow.CarriageFlowPanBounds.TOP;
+
 public final class CarriageFlowView implements AutoCloseable {
     static final ResourceLocation SLOT_TEXTURE = ResourceLocation.withDefaultNamespace("textures/gui/container/creative_inventory/tab_items.png");
     private static final int STRIP_Y = 17;
     private static final int STRIP_HEIGHT = 18;
     private static final int STRIP_CLICK_SLOP = 3;
-    private static final int PREVIEW_TOP = 37;
+    private static final int PAN_DRAG_SLOP = 3;
     private static final int CONTROL_X = 174, CONTROL_Y = 19, CONTROL_SIZE = 14, CONTROL_PITCH = 18;
     private static final int SCHEMATIC_X = 173, SCHEMATIC_Y = 112;
     private static final float FRONT_YAW = 142;
@@ -27,6 +33,11 @@ public final class CarriageFlowView implements AutoCloseable {
     final CreativeModeInventoryScreen host;
     private final net.minecraft.client.Minecraft minecraft = net.minecraft.client.Minecraft.getInstance();
     private static final int width = 178, height = 146;
+    private static final double PAN_INERTIA_DAMPING = 6.5;
+    private static final double PAN_MAX_SPEED = 18;
+    private static final double PAN_STOP_SPEED = .08;
+    private static final double PAN_RESTRICTED_SNAP_DISTANCE = 9;
+    private static final double FOCUS_FADE_SECONDS = .35;
     private CarriageFlowAssets.Catalog catalog;
     private final List<CarriageFlowPreview> previews = new ArrayList<>();
     private CarriageFlowLayout layout;
@@ -38,8 +49,15 @@ public final class CarriageFlowView implements AutoCloseable {
     private float maxLength, focusDistance, visibleRadius;
     private long phase;
     // Camera-only track offset; never applied to the train motion or the upper strip.
-    private double panZ, panTarget;
-    private boolean draggingPan;
+    private double panZ, panTarget, panVelocity, lastPanInputTime;
+    private double panDragStartX, panDragStartY, panDragStartPosition, panDirectionY;
+    private int panScreenDirection;
+    private boolean panDraggedRight, manualPan;
+    private CarriageFlowMotion settlingPan;
+    private long previousFocus;
+    private double focusStarted = Double.NEGATIVE_INFINITY;
+    private boolean draggingPan, panSnapPending, panSnapCaptured;
+    private CarriagePress carriagePress;
     private StripPress stripPress;
     private boolean draggingStrip;
     private long stripSelection;
@@ -55,8 +73,11 @@ public final class CarriageFlowView implements AutoCloseable {
     private final List<StripEntry> stripEntries = new ArrayList<>();
     private static final Map<ResourceLocation, Saved> SAVED = new HashMap<>();
     final ResourceLocation tab;
-    private record Saved(ResourceLocation model, long index, long phase, boolean open, double pan, double offset, double velocity) {}
+    private record Saved(ResourceLocation model, long index, long phase, boolean open, double pan, double offset,
+                         double velocity, double settlingOffset, double settlingVelocity) {}
     private record StripEntry(long index, double left, double right) {}
+    private record CarriagePress(double mouseX, double mouseY, double pressedAt, long index,
+                                 CarriageFlowPreview.Hit hit) {}
     private record StripPress(double mouseX, double mouseY, double position, double clickSlopX, StripEntry entry) {
         boolean withinClickSlop(double x, double y) {
             return Math.abs(x - mouseX) <= clickSlopX && Math.abs(y - mouseY) <= STRIP_CLICK_SLOP;
@@ -77,7 +98,7 @@ public final class CarriageFlowView implements AutoCloseable {
         visibleRadius = width / sceneScale + maxWidth + maxHeight;
         stripScale = STRIP_HEIGHT / 9f;
         // Leave room for the near end below the track focus with the steeper roof view.
-        trackOriginY = PREVIEW_TOP + (106 - PREVIEW_TOP) * .65f;
+        trackOriginY = TOP + (BOTTOM - TOP) * .65f;
     }
 
     private void load() {
@@ -95,6 +116,13 @@ public final class CarriageFlowView implements AutoCloseable {
         selected = 0;
         position = targetPosition = 0;
         motion.reset();
+        panZ = panTarget = panVelocity = lastPanInputTime = 0;
+        settlingPan = null;
+        focusStarted = Double.NEGATIVE_INFINITY;
+        manualPan = false;
+        panSnapPending = false;
+        panSnapCaptured = false;
+        carriagePress = null;
         Saved saved = SAVED.get(tab);
         if (layout != null && saved != null) {
             int match = -1;
@@ -111,13 +139,20 @@ public final class CarriageFlowView implements AutoCloseable {
                 phase = saved.phase();
                 yaw = fromYaw = targetYaw = FRONT_YAW + phase * 90;
                 shell = fromShell = targetShell = saved.open() ? 0 : 1;
-                panZ = panTarget = saved.pan();
+                panTarget = saved.pan();
+                panZ = panTarget + saved.settlingOffset();
+                if (saved.settlingOffset() != 0 || saved.settlingVelocity() != 0) {
+                    settlingPan = new CarriageFlowMotion();
+                    settlingPan.restore(panZ, saved.settlingVelocity(), panTarget);
+                }
                 neighborVisibility = 1;
                 lastInput = now();
             }
         }
         lastFrame = now();
         draggingPan = false;
+        panSnapPending = false;
+        carriagePress = null;
         stripPress = null;
         draggingStrip = false;
         hovered = null;
@@ -128,36 +163,78 @@ public final class CarriageFlowView implements AutoCloseable {
         double elapsed = Math.min(.1, Math.max(0, time - lastFrame));
         lastFrame = time;
         if (stripPress == null) {
+            double previousPosition = position;
             motion.advance(elapsed);
             position = motion.position();
+            if (manualPan) {
+                // Keep a manually positioned preview steady while the strip finishes moving.
+                double shift = previousPosition - position;
+                panZ += shift;
+                panTarget += shift;
+            }
         }
-        panZ += (panTarget - panZ) * (1 - Math.exp(-elapsed * 12));
-        if (Math.abs(panTarget - panZ) < .0001) panZ = panTarget;
+        double t = CarriageFlowLayout.ease((time - viewStarted) / .8);
+        yaw = fromYaw + (targetYaw - fromYaw) * t;
+        shell = (float) (fromShell + (targetShell - fromShell) * t);
+        if (settlingPan != null) {
+            settlingPan.target(panTarget);
+            settlingPan.advance(elapsed);
+            panZ = settlingPan.position();
+            if (panZ == panTarget && settlingPan.velocity() == 0) settlingPan = null;
+        } else if (panSnapPending && Math.abs(panVelocity) >= PAN_STOP_SPEED) {
+            double decay = Math.exp(-PAN_INERTIA_DAMPING * elapsed);
+            double requested = panZ + panVelocity * (1 - decay) / PAN_INERTIA_DAMPING;
+            panVelocity *= decay;
+            if (Math.abs(panVelocity) < PAN_STOP_SPEED) panVelocity = 0;
+            movePan(requested);
+        } else if (!draggingPan) {
+            panVelocity = 0;
+            panZ += (panTarget - panZ) * (1 - Math.exp(-elapsed * 12));
+            if (Math.abs(panTarget - panZ) < .0001) panZ = panTarget;
+        }
+        if (panSnapPending && !draggingPan && panVelocity == 0) panSnapPending = false;
         boolean scrolling = draggingStrip || time - lastInput < .16;
         float opacity = scrolling ? 1 : .25f + .75f * (float) Math.min(1, Math.abs(motion.velocity()) / 12);
         neighborVisibility += (opacity - neighborVisibility) * (float) (1 - Math.exp(-elapsed * 12));
-        double t = CarriageFlowLayout.ease((now() - viewStarted) / .8);
-        yaw = fromYaw + (targetYaw - fromYaw) * t;
-        shell = (float) (fromShell + (targetShell - fromShell) * t);
     }
 
     private void select(long index) {
         if (layout == null) return;
+        panSnapPending = false;
+        carriagePress = null;
         animate();
         draggingPan = false;
-        if (selected != index) panZ = panTarget = 0;
-        selected = index;
+        focusCarriage(index);
+    }
+
+    private void focusCarriage(long index) {
+        if (index != selected) {
+            manualPan = false;
+            previousFocus = selected;
+            focusStarted = draggingStrip ? Double.NEGATIVE_INFINITY : lastFrame;
+            // Both the strip and the camera offset start their approach at the displayed pose and velocity.
+            if (settlingPan == null && (panZ != 0 || panVelocity != 0)) {
+                settlingPan = new CarriageFlowMotion();
+                settlingPan.restore(panZ, panVelocity, 0);
+            }
+            panTarget = 0;
+            selected = index;
+        }
+        panVelocity = 0;
         targetPosition = layout.center(index);
         motion.target(targetPosition);
         lastInput = now();
+        selectedTransform = null;
         hovered = null;
         syncSchematicSlot();
     }
 
     private void cycle(int delta) {
+        panSnapPending = false;
         animate();
         fromYaw = yaw;
         fromShell = shell;
+        panVelocity = 0;
         if (delta < 0) {
             if (targetShell > .5f) targetShell = 0;
             else phase--;
@@ -195,6 +272,103 @@ public final class CarriageFlowView implements AutoCloseable {
         }
         var direction = camera.transformDirection(new org.joml.Vector3f(0, 0, -1));
         return CarriageFlowPanBounds.clamp(requested, minX, maxX, minY, maxY, direction.x, direction.y);
+    }
+
+    private double panSnapPosition(int direction) {
+        if (panScreenDirection < 0) {
+            if (direction < 0 && panDraggedRight && Math.abs(Math.IEEEremainder(yaw - FRONT_YAW, 360)) < 1e-4) {
+                // Pull the carriage at the lower left into the front view.
+                return halfVisiblePanPosition(direction);
+            }
+            double length = catalog.models().get(layout.model(selected)).length();
+            return panDragStartPosition + direction * length;
+        }
+
+        if (panScreenDirection == 0) {
+            double center = layout.center(selected);
+            double midpoint = center + (layout.center(selected + direction) - center) / 2;
+            double bound = position + clampPan(direction < 0 ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY);
+            if (direction * (bound - midpoint) >= 0) return midpoint;
+        }
+        return halfVisiblePanPosition(direction);
+    }
+
+    private double halfVisiblePanPosition(int direction) {
+        double center = layout.center(selected);
+        double neighborCenter = layout.center(selected + direction);
+        var model = catalog.models().get(layout.model(selected + direction));
+        double pan = CarriageFlowPanBounds.panForHalfVisible(localCamera(0),
+                neighborCenter - position, model.width(), model.height(), model.length(), direction);
+        if (Double.isFinite(pan)) {
+            double visiblePosition = position + pan;
+            return direction < 0 ? Math.min(center, visiblePosition) : Math.max(center, visiblePosition);
+        }
+        return center + direction * Math.min(PAN_RESTRICTED_SNAP_DISTANCE, Math.abs(neighborCenter - center) / 2);
+    }
+
+    private void movePan(double requested) {
+        if (layout == null || requested == panZ) return;
+        int direction = requested < panZ ? -1 : 1;
+        double threshold = panSnapPosition(direction) - position;
+        if (direction * (requested - threshold) < 0) {
+            panZ = panTarget = requested;
+            return;
+        }
+
+        // Stop this input at the crossing even if a single mouse event spans several carriages.
+        panZ = Math.clamp(threshold, Math.min(panZ, requested), Math.max(panZ, requested));
+        if (draggingPan) {
+            draggingPan = false;
+            panSnapCaptured = true;
+            carriagePress = null;
+        }
+        panSnapPending = false;
+        focusCarriage(selected + direction);
+    }
+
+    private void holdPan() {
+        settlingPan = null;
+        panTarget = panZ;
+        panVelocity = 0;
+    }
+
+    private void startPan(double x, double y, double startedAt) {
+        panSnapPending = false;
+        animate();
+        holdPan();
+        panDragStartX = x;
+        panDragStartY = panDirectionY = y;
+        panScreenDirection = 0;
+        panDraggedRight = false;
+        panDragStartPosition = position + panZ;
+        manualPan = true;
+        lastPanInputTime = startedAt;
+        draggingPan = true;
+    }
+
+    private void updatePanDrag(double x, double y) {
+        animate();
+        // Remember the mouse's vertical direction in GUI pixels, including for the subsequent fling.
+        double dy = y - panDirectionY;
+        panDraggedRight = x - panDragStartX > PAN_DRAG_SLOP;
+        if (Math.abs(dy) >= 1 || (panScreenDirection == 0 && dy != 0)) {
+            panScreenDirection = dy < 0 ? -1 : 1;
+            panDirectionY = y;
+        }
+        var direction = localCamera(0).transformDirection(new org.joml.Vector3f(0, 0, -1));
+        double lengthSquared = (double) direction.x * direction.x + (double) direction.y * direction.y;
+        double delta = lengthSquared > 1e-8
+                ? ((x - panDragStartX) * direction.x + (y - panDragStartY) * direction.y) / lengthSquared : 0;
+        double requested = panDragStartPosition + delta - position;
+        double time = now();
+        double elapsed = time - lastPanInputTime;
+        if (elapsed > 1e-4) {
+            double sampledVelocity = Math.clamp((requested - panZ) / elapsed, -PAN_MAX_SPEED, PAN_MAX_SPEED);
+            panVelocity += (sampledVelocity - panVelocity) * (1 - Math.exp(-elapsed * 18));
+        }
+        lastPanInputTime = time;
+        hovered = null;
+        movePan(requested);
     }
 
     public void render(GuiGraphics gui, int mouseX, int mouseY) {
@@ -264,7 +438,7 @@ public final class CarriageFlowView implements AutoCloseable {
         gui.blit(SLOT_TEXTURE, 8, 17, 162, 1, 8, 17, 18, 1, 256, 256);
         gui.blit(SLOT_TEXTURE, 8, 17, 1, 90, 8, 17, 1, 18, 256, 256);
         gui.blit(SLOT_TEXTURE, 169, 17, 1, 90, 25, 17, 1, 18, 256, 256);
-        gui.blit(SLOT_TEXTURE, 8, 106, 162, 1, 8, 34, 18, 1, 256, 256);
+        gui.blit(SLOT_TEXTURE, 8, BOTTOM, 162, 1, 8, 34, 18, 1, 256, 256);
         gui.blit(SLOT_TEXTURE, 8, 34, 162, 2, 8, 34, 18, 2, 256, 256);
         gui.blit(SLOT_TEXTURE, SCHEMATIC_X - 1, SCHEMATIC_Y - 1, 8, 17, 18, 18);
         hovered = null;
@@ -298,18 +472,19 @@ public final class CarriageFlowView implements AutoCloseable {
         gui.fill(markerX - 1, 18, markerX + 1, 20, 0xff875312);
         gui.flush();
         gui.disableScissor();
-        int bottom = 106;
-        if (bottom > PREVIEW_TOP) {
+        int bottom = BOTTOM;
+        if (bottom > TOP) {
             gui.flush();
-            scissor(gui, 9, PREVIEW_TOP, 169, bottom);
+            scissor(gui, LEFT, TOP, RIGHT, bottom);
             double focusZ = focusZ() + panZ;
             Matrix4f camera = new Matrix4f(gui.pose().last().pose()).mul(localCamera(panZ));
             // Panning changes the camera for both rails and carriages; train motion remains independent.
             previews.get(layout.model(previewIndex)).renderRails(camera, 1);
-            // Visibility follows the actual train position, not the potentially distant target.
-            double sceneCenter = position + focusZ;
+            // Include camera panning when choosing which carriages are visible.
+            double sceneCenter = position + focusZ + panZ;
             long first = layout.floorIndex(sceneCenter - visibleRadius - maxLength / 2);
             long last = layout.floorIndex(sceneCenter + visibleRadius + maxLength / 2) + 1;
+            float focusBlend = draggingStrip ? 1 : (float) CarriageFlowLayout.ease((lastFrame - focusStarted) / FOCUS_FADE_SECONDS);
             for (long index = first; index <= last; index++) {
                 int modelIndex = layout.model(index);
                 var model = catalog.models().get(modelIndex);
@@ -317,9 +492,10 @@ public final class CarriageFlowView implements AutoCloseable {
                         (float) (layout.center(index) - position - model.length() / 2.0));
                 boolean focused = index == previewIndex;
                 if (focused) selectedTransform = new Matrix4f(transform);
-                previews.get(modelIndex).render(transform, focused ? 1 : neighborVisibility, focused ? shell : 1);
+                float emphasis = focused ? focusBlend : index == previousFocus ? 1 - focusBlend : 0;
+                previews.get(modelIndex).render(transform, Mth.lerp(emphasis, neighborVisibility, 1), Mth.lerp(emphasis, 1, shell));
                 if (focused && !draggingPan && stripPress == null
-                        && mouseX >= 9 && mouseX < 169 && mouseY >= PREVIEW_TOP && mouseY < bottom
+                        && mouseX >= LEFT && mouseX < RIGHT && mouseY >= TOP && mouseY < bottom
                         && Math.abs(position - targetPosition) < .02 && (shell > .995 || shell < .005)) {
                     hovered = previews.get(modelIndex).pick(transform, mouseX + host.getGuiLeft(), mouseY + host.getGuiTop(), shell > .5);
                     hoveredTransform = transform;
@@ -460,22 +636,27 @@ public final class CarriageFlowView implements AutoCloseable {
         if (delta == 0) return false;
         int step = delta > 0 ? -1 : 1;
         if (overStrip(x, y)) select(selected + step);
-        else if (x >= 9 && x < 169 && y >= PREVIEW_TOP && y < 106 && layout != null) {
+        else if (x >= LEFT && x < RIGHT && y >= TOP && y < BOTTOM && layout != null) {
             // Use the same block shapes as hover picking; empty gaps belong to camera panning.
             if (overCarriage(x, y)) cycle(step);
-            else panTarget = clampPan(panTarget + step * .5);
+            else {
+                panSnapPending = false;
+                panVelocity = 0;
+                panTarget = clampPan(panTarget + step * .5);
+            }
         }
         else return false;
         return true;
     }
 
     public boolean mouseClicked(double x, double y, int button) {
+        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) panSnapCaptured = false;
         int control = controlAt(x, y);
         if (control >= 0) {
             if (button == 0) activateControl(control);
             return true;
         }
-        if (x >= 9 && x < 169 && y >= 18 && y < 106 && !host.getMenu().getCarried().isEmpty()) {
+        if (x >= 9 && x < 169 && y >= 18 && y < BOTTOM && !host.getMenu().getCarried().isEmpty()) {
             host.getMenu().setCarried(net.minecraft.world.item.ItemStack.EMPTY);
             return true;
         }
@@ -490,54 +671,64 @@ public final class CarriageFlowView implements AutoCloseable {
             double center = layout.center(selected);
             double spacing = Math.min(center - layout.center(selected - 1), layout.center(selected + 1) - center);
             double clickSlopX = Math.min(STRIP_CLICK_SLOP, spacing * stripScale / 2);
+            panSnapPending = false;
+            carriagePress = null;
+            animate();
+            holdPan();
+            manualPan = false;
             stripPress = new StripPress(x, y, position, clickSlopX, clicked);
             stripSelection = selected;
             draggingStrip = draggingPan = false;
             hovered = null;
             return true;
         }
-        if (button == 0 && hovered != null && layout != null && y >= PREVIEW_TOP && y < height - 39) {
-            var model = catalog.models().get(layout.model(selected));
-            var items = catalog.variants(model, hovered.cell());
-            if (!items.isEmpty()) {
-                openingPalette = true;
-                minecraft.setScreen(new CarriageFlowPaletteScreen(this, items, (int) x, (int) y));
-            }
-            return true;
-        }
         if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && layout != null
-                && x >= 9 && x < 169 && y >= PREVIEW_TOP && y < 106 && !overCarriage(x, y)) {
-            animate();
-            // Take over the current camera position without finishing a queued pan first.
-            panTarget = panZ;
-            draggingPan = true;
-            hovered = null;
+                && x >= LEFT && x < RIGHT && y >= TOP && y < BOTTOM) {
+            panSnapPending = false;
+            double pressedAt = now();
+            if (hovered != null) {
+                animate();
+                holdPan();
+                carriagePress = new CarriagePress(x, y, pressedAt, selected, hovered);
+            } else {
+                carriagePress = null;
+                startPan(x, y, pressedAt);
+            }
             return true;
         }
         return false;
     }
 
     public boolean mouseDragged(double x, double y, int button, double dragX, double dragY) {
-        if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT || layout == null) return false;
+        if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT) return false;
+        if (panSnapCaptured) return true;
+        if (layout == null) return false;
         if (stripPress != null) {
             dragStrip(x, y);
             return true;
         }
-        if (!draggingPan) return false;
-        animate();
-        var direction = localCamera(0).transformDirection(new org.joml.Vector3f(0, 0, -1));
-        double lengthSquared = (double) direction.x * direction.x + (double) direction.y * direction.y;
-        if (lengthSquared > 1e-8) {
-            // Project the pointer movement onto the visible track so every view follows the mouse.
-            double delta = (dragX * direction.x + dragY * direction.y) / lengthSquared;
-            panZ = panTarget = clampPan(panZ + delta);
+        if (carriagePress != null) {
+            double pressDeltaX = x - carriagePress.mouseX();
+            double pressDeltaY = y - carriagePress.mouseY();
+            if (!draggingPan) {
+                if (Math.abs(pressDeltaX) <= PAN_DRAG_SLOP && Math.abs(pressDeltaY) <= PAN_DRAG_SLOP)
+                    return true;
+                startPan(carriagePress.mouseX(), carriagePress.mouseY(), carriagePress.pressedAt());
+            }
+            updatePanDrag(x, y);
+            return true;
         }
-        hovered = null;
+        if (!draggingPan) return false;
+        updatePanDrag(x, y);
         return true;
     }
 
     public boolean mouseReleased(double x, double y, int button) {
         if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT) return false;
+        if (panSnapCaptured) {
+            panSnapCaptured = false;
+            return true;
+        }
         if (stripPress != null) {
             if (draggingStrip) {
                 select(stripSelection);
@@ -548,8 +739,27 @@ public final class CarriageFlowView implements AutoCloseable {
             draggingStrip = false;
             return true;
         }
+        if (carriagePress != null) {
+            CarriagePress press = carriagePress;
+            carriagePress = null;
+            if (draggingPan) {
+                draggingPan = false;
+                panSnapPending = true;
+            } else if (Math.abs(x - press.mouseX()) <= PAN_DRAG_SLOP
+                    && Math.abs(y - press.mouseY()) <= PAN_DRAG_SLOP) {
+                var model = catalog.models().get(layout.model(press.index()));
+                var items = catalog.variants(model, press.hit().cell());
+                if (!items.isEmpty()) {
+                    openingPalette = true;
+                    minecraft.setScreen(new CarriageFlowPaletteScreen(this, items,
+                            (int) press.mouseX(), (int) press.mouseY()));
+                }
+            }
+            return true;
+        }
         if (!draggingPan) return false;
         draggingPan = false;
+        panSnapPending = true;
         return true;
     }
 
@@ -566,12 +776,16 @@ public final class CarriageFlowView implements AutoCloseable {
     private void closeMeshes() { previews.clear(); }
     @Override public void close() {
         draggingPan = false;
+        panSnapPending = false;
+        panSnapCaptured = false;
+        carriagePress = null;
         stripPress = null;
         draggingStrip = false;
         restoreSchematicSlot();
         if (layout != null) {
-            SAVED.put(tab, new Saved(catalog.models().get(layout.model(selected)).id(), selected, phase, targetShell < .5f, panTarget,
-                    position - targetPosition, motion.velocity()));
+            SAVED.put(tab, new Saved(catalog.models().get(layout.model(selected)).id(), selected, phase, targetShell < .5f,
+                    panTarget, position - targetPosition, motion.velocity(), settlingPan == null ? 0 : panZ - panTarget,
+                    settlingPan == null ? 0 : settlingPan.velocity()));
         }
         closeMeshes();
     }
