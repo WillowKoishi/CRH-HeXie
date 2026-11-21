@@ -12,6 +12,7 @@ import net.minecraft.resources.ResourceLocation;
 
 import willow.train.hexie.Main;
 import willow.train.hexie.client.render.bogey.DF11GBogeyRenderer;
+import willow.train.hexie.client.render.bogey.SS7DBogeyRenderer;
 import willow.train.hexie.client.render.bogey.HXStandardBogeyRenderer;
 import willow.train.hexie.init.track.TrackBlockInit;
 
@@ -39,6 +40,7 @@ public class BogeyStylesInit {
                     .displayName(Component.translatable("hexie.bogeys.styles.loco"))
                     .size(BogeySizes.SMALL, TrackBlockInit.DF11G_BOGEY, () -> () -> { var renderer = new DF11GBogeyRenderer.SmallDF11GBogeyRenderer(); return new BogeyStyle.SizeRenderer(renderer, renderer::createVisual); })
                     .size(BogeySizesInit.BACKWARD, TrackBlockInit.DF11G_BACKWARD_BOGEY, () -> () -> { var renderer = new DF11GBogeyRenderer.BackwardDF11GBogeyRenderer(); return new BogeyStyle.SizeRenderer(renderer, renderer::createVisual); })
+                    .size(BogeySizesInit.SS7D_FRONT, TrackBlockInit.SS7D_FRONT_BOGEY, () -> () -> { var renderer = new SS7DBogeyRenderer(); return new BogeyStyle.SizeRenderer(renderer, renderer::createVisual); })
                     .build();
 
     public static final BogeyStyle STEAMBOGEY =

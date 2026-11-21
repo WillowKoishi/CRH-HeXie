@@ -1,0 +1,46 @@
+{
+  "source": "ss7d_front_bogie.bbmodel",
+  "parts": {
+    "frame": {
+      "meshes": 154,
+      "faces": 1558
+    },
+    "top": {
+      "meshes": 7,
+      "faces": 74
+    },
+    "traction_left": {
+      "meshes": 1,
+      "faces": 6
+    },
+    "traction_right": {
+      "meshes": 1,
+      "faces": 6
+    },
+    "wheel_front": {
+      "meshes": 18,
+      "faces": 432
+    },
+    "wheel_rear": {
+      "meshes": 18,
+      "faces": 432
+    }
+  },
+  "wheel_radius": 0.59375,
+  "axle_positions": [
+    -1.440625,
+    1.440625
+  ],
+  "frame_offset": -0.0011499999999999844,
+  "body_top_offset": [
+    0.5,
+    -1.0089625,
+    0.5
+  ],
+  "body_top_rotation": [
+    0,
+    90,
+    0
+  ],
+  "total_meshes": 199
+}

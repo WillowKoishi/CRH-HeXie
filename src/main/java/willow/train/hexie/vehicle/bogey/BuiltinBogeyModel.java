@@ -14,6 +14,7 @@ public enum BuiltinBogeyModel {
     SW160("sw160", "hxstandardbogey", "hexie:sw160", BuiltinBogeyProfile.SW160),
     DF11G("df11g", "loco", "create:small", BuiltinBogeyProfile.DF11G),
     DF11G_BACKWARD("df11g_backward", "loco", "hexie:backward", BuiltinBogeyProfile.DF11G),
+    SS7D_FRONT("ss7d_front", "loco", "hexie:ss7d_front", BuiltinBogeyProfile.SS7D_FRONT),
     QJ("qj", "steambogey", "hexie:qj", BuiltinBogeyProfile.QJ),
     QJ_BACKWARD("qj_backward", "steambogey", "hexie:qj_backward", BuiltinBogeyProfile.QJ),
     DT206("dt206", "crhbogey", "hexie:dt206", BuiltinBogeyProfile.DT206),

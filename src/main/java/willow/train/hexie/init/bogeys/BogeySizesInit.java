@@ -9,6 +9,7 @@ public class BogeySizesInit {
     public static final BogeySizes.BogeySize EXTRA = create("extra", 6.5f / 16f);
 
     public static final BogeySizes.BogeySize BACKWARD = create("backward", 1.05F / 2);
+    public static final BogeySizes.BogeySize SS7D_FRONT = create("ss7d_front", 9.5F / 16);
 
     public static final BogeySizes.BogeySize PK209P = create("pk209p", 0.915F / 2F);
 

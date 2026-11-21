@@ -1,0 +1,11 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "flip_v": true,
+  "automatic_culling": false,
+  "ambientocclusion": false,
+  "model": "hexie:models/block/bogey/ss7d_front/frame.obj",
+  "textures": {
+    "particle": "hexie:block/bogey/ss7d_front/frame"
+  }
+}

@@ -29,6 +29,7 @@ import willow.train.hexie.api.railway.RailwayRegistry;
 import willow.train.hexie.compat.create.track.CreateRailwayBackend;
 import willow.train.hexie.railway.BuiltinRailways;
 import willow.train.hexie.blocks.bogeys.df11g.DF11GBogeyBlock;
+import willow.train.hexie.blocks.bogeys.ss7d.SS7DBogeyBlock;
 import willow.train.hexie.blocks.bogeys.standard.HXStandardBogeyBlock;
 import willow.train.hexie.blocks.bogeys.CRH.CRHBogeyBlock;
 import willow.train.hexie.blocks.locos.df11g.DF11GFrontBlock;
@@ -88,6 +89,13 @@ public class TrackBlockInit {
                     .properties(p -> p.mapColor(MapColor.PODZOL))
                     .transform(bogeyModel("hexie:block/bogey/df11g/df11g_top"))
                     .lang("DF11G Bogey")
+                    .register();
+
+    public static final BlockEntry<SS7DBogeyBlock> SS7D_FRONT_BOGEY =
+            REGISTRATE.block("ss7d_front_bogey", SS7DBogeyBlock::new)
+                    .properties(p -> p.mapColor(MapColor.METAL))
+                    .transform(bogeyModel("hexie:block/bogey/ss7d_front/top"))
+                    .lang("SS7D Front Bogey")
                     .register();
 
     public static final BlockEntry<DF11GBogeyBlock> DF11G_BACKWARD_BOGEY =

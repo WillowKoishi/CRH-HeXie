@@ -1,0 +1,4 @@
+newmtl frame
+map_Kd hexie:block/bogey/ss7d_front/frame
+newmtl wheel
+map_Kd hexie:block/bogey/ss7d_front/wheel

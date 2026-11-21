@@ -37,6 +37,7 @@ public final class HeXieSimurailCompat {
     public static final BogeyEntry SW160 = entry("sw160", BogeyStylesInit.HXSTANDARDBOGEY, BogeySizesInit.SW160);
     public static final BogeyEntry DF11G = entry("df11g", BogeyStylesInit.LOCOBOGEY, BogeySizes.SMALL);
     public static final BogeyEntry DF11G_BACKWARD = entry("df11g_backward", BogeyStylesInit.LOCOBOGEY, BogeySizesInit.BACKWARD);
+    public static final BogeyEntry SS7D_FRONT = entry("ss7d_front", BogeyStylesInit.LOCOBOGEY, BogeySizesInit.SS7D_FRONT);
     public static final BogeyEntry QJ = entry("qj", BogeyStylesInit.STEAMBOGEY, BogeySizesInit.QJ);
     public static final BogeyEntry QJ_BACKWARD = entry("qj_backward", BogeyStylesInit.STEAMBOGEY, BogeySizesInit.QJ_BACKWARD);
 
@@ -45,7 +46,7 @@ public final class HeXieSimurailCompat {
             List.of(CW2, PK209P, PK209P_NO_MOTOR, PK209P_BACKWARD, SW220K, SW220K_BACKWARD, SW160));
     public static final BogeyEntryCategory LOCO = new BogeyEntryCategory(
             Component.translatable("simurail_bogey_category.hexie.loco"),
-            List.of(DF11G, DF11G_BACKWARD));
+            List.of(DF11G, DF11G_BACKWARD, SS7D_FRONT));
     public static final BogeyEntryCategory STEAM = new BogeyEntryCategory(
             Component.translatable("simurail_bogey_category.hexie.steam"),
             List.of(QJ, QJ_BACKWARD));
@@ -88,7 +89,7 @@ public final class HeXieSimurailCompat {
     /** Nominal rolling radii and axle positions from HeXie's sizes and renderers, in blocks. */
     private static void configureParameters() {
         for (var entry : List.of(DT206, SKTB200, CRH1A_MOTOR, CRH1A_TRAILER, CW2, PK209P, PK209P_NO_MOTOR, PK209P_BACKWARD,
-                SW220K, SW220K_BACKWARD, SW160, DF11G, DF11G_BACKWARD, QJ, QJ_BACKWARD)) {
+                SW220K, SW220K_BACKWARD, SW160, DF11G, DF11G_BACKWARD, SS7D_FRONT, QJ, QJ_BACKWARD)) {
             var type = entry.type();
             var model = BuiltinBogeyModel.find(type.style().id, type.size().id());
             if (model == null) throw new IllegalStateException("Missing built-in bogey geometry: " + type);

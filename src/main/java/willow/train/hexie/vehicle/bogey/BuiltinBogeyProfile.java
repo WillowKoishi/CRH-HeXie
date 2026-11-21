@@ -24,6 +24,9 @@ public enum BuiltinBogeyProfile {
     // Game full-brake target: 160 km/h -> 850 m.
     DF11G(new BogeyGeometry(1.05 / 2, List.of(-2.0, 0.0, 2.0)),
             69000, 120000, 78291.28, 1520000, 4, BOLSTERLESS, .06),
+    // Authored two-axle geometry; initial gameplay forces/load/power follow DF11G per axle.
+    SS7D_FRONT(new BogeyGeometry(9.5 / 16, List.of(-23.05 / 16, 23.05 / 16)),
+            46000, 80000, 78291.28 * 2 / 3, 1520000.0 * 2 / 3, 4, BOLSTERLESS, .06),
     // Game full-brake target: 80 km/h -> 400 m.
     QJ(new BogeyGeometry(1.5 / 2, List.of(-3.2, -1.6, 0.0, 1.6, 3.2)),
             119390, 150000, 71753.16, 2191800, 1, BOLSTERED, 0),
