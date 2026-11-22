@@ -1,0 +1,27 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "ambientocclusion": false,
+  "shade_quads": false,
+  "automatic_culling": false,
+  "flip_v": true,
+  "render_type": "translucent",
+  "model": "hexie:models/block/locos/ss7d/head/glass.obj",
+  "textures": {
+    "particle": "hexie:block/locos/ss7d/head/ss7d_head",
+    "t0": "hexie:block/locos/ss7d/head/ss7d_head",
+    "t1": "hexie:block/locos/ss7d/head/troubleshooter",
+    "t2": "hexie:block/locos/ss7d/head/ss7d_floor2",
+    "t3": "hexie:block/locos/ss7d/head/ss7d_floor1",
+    "t4": "hexie:block/locos/ss7d/head/nameplate",
+    "t5": "hexie:block/locos/ss7d/head/big_lamp",
+    "t6": "hexie:block/locos/ss7d/head/lamp",
+    "t7": "hexie:block/locos/ss7d/head/ss7d_head_add",
+    "t8": "hexie:block/locos/ss7d/head/general_janney_coupler",
+    "t9": "hexie:block/locos/ss7d/head/ss7d_head_add2",
+    "t10": "hexie:block/locos/ss7d/head/ss7d_head_add3",
+    "t11": "hexie:block/locos/ss7d/head/windshield_wiper",
+    "t12": "hexie:block/locos/ss7d/head/ss7d_head_glass",
+    "t13": "hexie:block/locos/ss7d/head/ss7d_head_glass_frame"
+  }
+}

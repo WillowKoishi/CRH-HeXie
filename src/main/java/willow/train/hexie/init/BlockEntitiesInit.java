@@ -10,6 +10,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 
 import willow.train.hexie.Main;
 import willow.train.hexie.blocks.DrivingConsoleBlock;
+import willow.train.hexie.blocks.locos.ss7d.SS7DHeadEntity;
 import willow.train.hexie.init.block.BlockInit;
 import willow.train.hexie.init.block.CustomRenderedDoorBlockInit;
 import willow.train.hexie.blockentity.*;
@@ -28,6 +29,9 @@ public class BlockEntitiesInit {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CRH1HeadEntity>> CRH1A_HEAD =
             BLOCK_ENTITIES.register("crh1a_head", () -> BlockEntityType.Builder.of(
                     CRH1HeadEntity::new, BlockInit.CRH1A_HEAD.get()).build(null));
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SS7DHeadEntity>> SS7D_HEAD =
+            BLOCK_ENTITIES.register("ss7d_head", () -> BlockEntityType.Builder.of(
+                    SS7DHeadEntity::new, BlockInit.SS7D_HEAD.get()).build(null));
 
     // Shell geometry remains static. These entities retain editable vehicle markings and legacy IDs.
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CRH2HeadEntity>> CRH2A_HEAD =

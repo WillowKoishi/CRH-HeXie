@@ -11,6 +11,18 @@ import willow.train.hexie.compat.create.CRH2DoorMovement;
 public class InteractionBehaviourInit {
 
     public static void register() {
+        com.simibubi.create.api.behaviour.movement.MovementBehaviour.REGISTRY.register(
+                willow.train.hexie.init.block.BlockInit.SS7D_HEAD.get(),
+                new willow.train.hexie.blocks.locos.ss7d.SS7DHeadMovement());
+        MovingInteractionBehaviour.REGISTRY.register(
+                willow.train.hexie.init.block.BlockInit.SS7D_CARPORT_SIDE.get(),
+                new willow.train.hexie.blocks.locos.ss7d.SS7DSideCarportInteraction());
+        MovingInteractionBehaviour.REGISTRY.register(
+                willow.train.hexie.init.block.BlockInit.SS7D_CARPORT_MID.get(),
+                new willow.train.hexie.blocks.locos.ss7d.SS7DCenterCarportInteraction());
+        MovingInteractionBehaviour.REGISTRY.register(
+                willow.train.hexie.init.block.BlockInit.SS7D_DOOR.get(),
+                new willow.train.hexie.blocks.locos.ss7d.SS7DDoorInteraction());
         var passengerDisplays = new willow.train.hexie.compat.create.CreatePassengerDisplayInteraction();
         MovingInteractionBehaviour.REGISTRY.registerProvider(block ->
                 willow.train.hexie.blocks.signs.PassengerDisplayPanel.supports(block)

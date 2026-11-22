@@ -226,6 +226,9 @@ public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos o
                 properties.putString(willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock.VARIANT.getName(),
                         willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock.Type.ORIGINAL.getSerializedName());
             }
+            if (state.getBlock() instanceof willow.train.hexie.blocks.locos.ss7d.SS7DCenterCarportBlock)
+                properties = willow.train.hexie.blocks.locos.ss7d.SS7DCenterCarportBlock
+                        .upgradeSnapshotProperties(properties);
             if (properties.size() != state.getProperties().size())
                 throw new IllegalArgumentException("Incomplete block state properties: " + name);
             for (String key : properties.getAllKeys()) {

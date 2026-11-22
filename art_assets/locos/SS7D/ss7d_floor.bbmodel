@@ -1,0 +1,293 @@
+{
+    "meta": {
+        "format_version": "5.0",
+        "model_format": "free",
+        "box_uv": false
+    },
+    "name": "ss7d_floor",
+    "model_identifier": "",
+    "visible_box": [
+        1,
+        1,
+        0
+    ],
+    "variable_placeholders": "",
+    "multi_file_ruleset": "",
+    "variable_placeholder_buttons": [],
+    "timeline_setups": [],
+    "unhandled_root_fields": {},
+    "resolution": {
+        "width": 16,
+        "height": 16
+    },
+    "elements": [
+        {
+            "name": "floor",
+            "color": 3,
+            "origin": [
+                0,
+                14,
+                0
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "8HUR": [
+                    8,
+                    2,
+                    8
+                ],
+                "t99R": [
+                    8,
+                    2,
+                    -8
+                ],
+                "3yDb": [
+                    8,
+                    -2,
+                    8
+                ],
+                "taQt": [
+                    8,
+                    -2,
+                    -8
+                ],
+                "m1xj": [
+                    -8,
+                    2,
+                    8
+                ],
+                "aKY5": [
+                    -8,
+                    2,
+                    -8
+                ],
+                "tsIX": [
+                    -8,
+                    -2,
+                    8
+                ],
+                "wPlv": [
+                    -8,
+                    -2,
+                    -8
+                ]
+            },
+            "faces": {
+                "EKWEN8AT": {
+                    "uv": {
+                        "taQt": [
+                            17,
+                            4
+                        ],
+                        "3yDb": [
+                            33,
+                            4
+                        ],
+                        "8HUR": [
+                            33,
+                            0
+                        ],
+                        "t99R": [
+                            17,
+                            0
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "t99R",
+                        "8HUR",
+                        "3yDb",
+                        "taQt"
+                    ]
+                },
+                "gMeIF3qE": {
+                    "uv": {
+                        "wPlv": [
+                            33,
+                            9
+                        ],
+                        "aKY5": [
+                            33,
+                            5
+                        ],
+                        "m1xj": [
+                            17,
+                            5
+                        ],
+                        "tsIX": [
+                            17,
+                            9
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "tsIX",
+                        "m1xj",
+                        "aKY5",
+                        "wPlv"
+                    ]
+                },
+                "vak8mWO1": {
+                    "uv": {
+                        "aKY5": [
+                            16,
+                            0
+                        ],
+                        "t99R": [
+                            0,
+                            0
+                        ],
+                        "8HUR": [
+                            0,
+                            16
+                        ],
+                        "m1xj": [
+                            16,
+                            16
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "m1xj",
+                        "8HUR",
+                        "t99R",
+                        "aKY5"
+                    ]
+                },
+                "9ZqXGB6T": {
+                    "uv": {
+                        "wPlv": [
+                            16,
+                            33
+                        ],
+                        "tsIX": [
+                            16,
+                            17
+                        ],
+                        "3yDb": [
+                            0,
+                            17
+                        ],
+                        "taQt": [
+                            0,
+                            33
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "taQt",
+                        "3yDb",
+                        "tsIX",
+                        "wPlv"
+                    ]
+                },
+                "ZqTmlAJE": {
+                    "uv": {
+                        "tsIX": [
+                            33,
+                            14
+                        ],
+                        "m1xj": [
+                            33,
+                            10
+                        ],
+                        "8HUR": [
+                            17,
+                            10
+                        ],
+                        "3yDb": [
+                            17,
+                            14
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "3yDb",
+                        "8HUR",
+                        "m1xj",
+                        "tsIX"
+                    ]
+                },
+                "3ro0cLmy": {
+                    "uv": {
+                        "wPlv": [
+                            17,
+                            19
+                        ],
+                        "taQt": [
+                            33,
+                            19
+                        ],
+                        "t99R": [
+                            33,
+                            15
+                        ],
+                        "aKY5": [
+                            17,
+                            15
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "aKY5",
+                        "t99R",
+                        "taQt",
+                        "wPlv"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "06121649-ea9e-8a30-ed23-0436faf937d4"
+        }
+    ],
+    "groups": [],
+    "outliner": [
+        "06121649-ea9e-8a30-ed23-0436faf937d4"
+    ],
+    "textures": [
+        {
+            "name": "ss7d_floor1.png",
+            "relative_path": "ss7d_floor1.png",
+            "folder": "",
+            "namespace": "",
+            "id": "0",
+            "group": "",
+            "scope": 0,
+            "width": 64,
+            "height": 64,
+            "uv_width": 64,
+            "uv_height": 64,
+            "particle": false,
+            "use_as_default": false,
+            "layers_enabled": false,
+            "sync_to_project": "",
+            "file_format": "png",
+            "render_mode": "default",
+            "render_sides": "auto",
+            "wrap_mode": "limited",
+            "pbr_channel": "color",
+            "fps": 7,
+            "force_translucent": false,
+            "frame_time": 1,
+            "frame_order_type": "loop",
+            "frame_order": "",
+            "frame_interpolate": false,
+            "visible": true,
+            "internal": true,
+            "saved": true,
+            "uuid": "6ca74ba2-d48a-2984-7602-10d829ecabe4",
+            "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAC+klEQVR4AeyXTYpTQRDHuzsmIVmod8icQHDhYkS8gaAiHsLDuHUvooI3EHEWLgRvkCMI4yYhicmzf6099DyTDO/1e+l+jwrzpyrVVdX1RaXHPH7+sjh/8uwKj56+KI4h1MVW2c/r2ax4c3ZWC9haF8n+zGazUdPpVA0GA0e32606hlAX2zDyqdZqYDG2gIcOLQ8FyG7b71CgMvgYYlitVmo4HCpP4Q/B60CxDbEoCnUrFFh+aDH4h62lvy3QA5ZN/ucKMB6PFd30FL4cGTLgdaChztImDy53OwV+BhQeeDl6HqGPFLxh9BeLhTLGKCidJxCSDYGMM3S8LrbIX83nOgb4SAU3AeHlJE2iyKDA85zBl8Ei6+wSDJPxyZIofGHHGsAjQxceug8stk4uwXIyJEni/tcAHllZr/ydxdbJJVhOpM53v9RYdCBcevDAy70utM5dTdr8twNwzrhrrd3bgEWntXa/EurAJ2YBYnvA7UnE1wpA4tzKuMNrrZXWf5NHxhlyaIjZvftFDEJfp+avFYDLSdQnCQXIoZzB78P0zl1VB/t8nVJmWHSTyUTt7MMFSqIEQLIhkHHGUxgeii18l+EmYL1eu6ewpyReTgoZ4AnMXoCGOotfl6oOQh8peFeA0WjklpyndPoQeAJzBvUBz3981zHwflJQQ1eXy6X7DxBKd4+BpzCjD8WWoGMWILb4OBXK95jP79/qi08frvDl4zt9DKEutt5hnQWIjbdPRc2D84dFDFIF3tS9bgc04azOAsSmibtjfDRSgJgFiG1MArG2jRQgNoiU9lKAlNXP4W6ZgBy6kDIGmYCU1c/hbpmAHLqQMgaZgJTVz+Hu3k/ATUWWAny7+KpjcFOFcz+XCci9Q23HJxPQdoVz9y8TkHuH2o5PJqDtCufuXyYg9w61HZ9MQNsVzt2/TEDuHaoaX1V9mYCqFeubvkxA3zpaNR+ZgKoV65u+TEDfOlo1H5mAqhXrm75MQN86WjUfmYCqFeubvkxA1zsaG/8fAAAA//9D5qyrAAAABklEQVQDAE2aGa6F9vFfAAAAAElFTkSuQmCC"
+        }
+    ]
+}

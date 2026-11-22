@@ -1,0 +1,56 @@
+newmtl t0
+map_Kd #t0
+Kd 1 1 1
+d 1
+newmtl t1
+map_Kd #t1
+Kd 1 1 1
+d 1
+newmtl t2
+map_Kd #t2
+Kd 1 1 1
+d 1
+newmtl t3
+map_Kd #t3
+Kd 1 1 1
+d 1
+newmtl t4
+map_Kd #t4
+Kd 1 1 1
+d 1
+newmtl t5
+map_Kd #t5
+Kd 1 1 1
+d 1
+newmtl t6
+map_Kd #t6
+Kd 1 1 1
+d 1
+newmtl t7
+map_Kd #t7
+Kd 1 1 1
+d 1
+newmtl t8
+map_Kd #t8
+Kd 1 1 1
+d 1
+newmtl t9
+map_Kd #t9
+Kd 1 1 1
+d 1
+newmtl t10
+map_Kd #t10
+Kd 1 1 1
+d 1
+newmtl t11
+map_Kd #t11
+Kd 1 1 1
+d 1
+newmtl t12
+map_Kd #t12
+Kd 1 1 1
+d 1
+newmtl t13
+map_Kd #t13
+Kd 1 1 1
+d 1

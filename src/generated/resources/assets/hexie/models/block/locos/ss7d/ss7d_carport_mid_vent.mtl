@@ -1,0 +1,20 @@
+newmtl t0
+map_Kd #t0
+Kd 1 1 1
+d 1
+newmtl t1
+map_Kd #t1
+Kd 1 1 1
+d 1
+newmtl t2
+map_Kd #t2
+Kd 1 1 1
+d 1
+newmtl t3
+map_Kd #t3
+Kd 1 1 1
+d 1
+newmtl t4
+map_Kd #t4
+Kd 1 1 1
+d 1

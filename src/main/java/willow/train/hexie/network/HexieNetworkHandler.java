@@ -38,6 +38,8 @@ public final class HexieNetworkHandler {
         register(ReleaseNativeControlsPacket.class, ReleaseNativeControlsPacket::new);
         register(CarriageNumberUpdatePacket.class, CarriageNumberUpdatePacket::new);
         register(ControlInputPacket.class, ControlInputPacket::new);
+        register(willow.train.hexie.blocks.locos.ss7d.SS7DNumberUpdatePacket.class,
+                willow.train.hexie.blocks.locos.ss7d.SS7DNumberUpdatePacket::new);
         var registrar = event.registrar("15");
         registrar.playToClient(willow.train.hexie.network.s2c.ControlCapturePacket.TYPE,
                 willow.train.hexie.network.s2c.ControlCapturePacket.CODEC, (packet, context) -> packet.handle(context));

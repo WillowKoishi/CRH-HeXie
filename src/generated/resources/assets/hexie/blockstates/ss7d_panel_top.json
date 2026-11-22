@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "hexie:block/locos/ss7d/ss7d_panel_top",
+      "y": 0
+    },
+    "facing=east": {
+      "model": "hexie:block/locos/ss7d/ss7d_panel_top",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "hexie:block/locos/ss7d/ss7d_panel_top",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "hexie:block/locos/ss7d/ss7d_panel_top",
+      "y": 270
+    }
+  }
+}

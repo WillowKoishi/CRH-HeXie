@@ -42,6 +42,23 @@
   "hexie:crh1a_floor": {
     "extension": "FLOOR"
   },
+  "hexie:ss7d_floor": {
+    "extension": "FLOOR"
+  },
+  "hexie:ss7d_panel_bottom": {
+    "extension": "SIDE",
+    "thin_only": true
+  },
+  "hexie:ss7d_panel_top": {
+    "extension": "SIDE",
+    "thin_only": true
+  },
+  "hexie:ss7d_carport_side": {
+    "extension": "ROOF"
+  },
+  "hexie:ss7d_carport_mid": {
+    "extension": "ROOF"
+  },
   "hexie:train_bottom_panel_block": {
     "extension": "SIDE",
     "thin_only": true

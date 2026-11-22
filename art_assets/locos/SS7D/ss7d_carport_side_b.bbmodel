@@ -1,0 +1,786 @@
+{
+    "meta": {
+        "format_version": "5.0",
+        "model_format": "free",
+        "box_uv": false
+    },
+    "name": "ss7d_carport_side_b",
+    "model_identifier": "",
+    "visible_box": [
+        1,
+        1,
+        0
+    ],
+    "variable_placeholders": "",
+    "multi_file_ruleset": "",
+    "variable_placeholder_buttons": [],
+    "timeline_setups": [],
+    "unhandled_root_fields": {},
+    "resolution": {
+        "width": 16,
+        "height": 16
+    },
+    "elements": [
+        {
+            "name": "mesh",
+            "color": 2,
+            "origin": [
+                0,
+                0,
+                0
+            ],
+            "rotation": [
+                0.00006,
+                -89.99994,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "OazW": [
+                    -9,
+                    5.5,
+                    8
+                ],
+                "da2q": [
+                    -9,
+                    5.5,
+                    -8
+                ],
+                "KljR": [
+                    -9,
+                    0,
+                    8
+                ],
+                "FBXH": [
+                    -9,
+                    0,
+                    -8
+                ],
+                "7ALN": [
+                    -7,
+                    5.5,
+                    8
+                ],
+                "Wydx": [
+                    -7,
+                    5.5,
+                    -8
+                ],
+                "oBEt": [
+                    -7,
+                    0,
+                    8
+                ],
+                "6fhj": [
+                    -7,
+                    0,
+                    -8
+                ]
+            },
+            "faces": {
+                "D8h7jyba": {
+                    "uv": {
+                        "FBXH": [
+                            0,
+                            6
+                        ],
+                        "da2q": [
+                            0,
+                            0
+                        ],
+                        "OazW": [
+                            16,
+                            0
+                        ],
+                        "KljR": [
+                            16,
+                            6
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "KljR",
+                        "OazW",
+                        "da2q",
+                        "FBXH"
+                    ]
+                },
+                "N82v6jda": {
+                    "uv": {
+                        "6fhj": [
+                            16,
+                            13
+                        ],
+                        "oBEt": [
+                            0,
+                            13
+                        ],
+                        "7ALN": [
+                            0,
+                            7
+                        ],
+                        "Wydx": [
+                            16,
+                            7
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Wydx",
+                        "7ALN",
+                        "oBEt",
+                        "6fhj"
+                    ]
+                },
+                "nqE0Rd00": {
+                    "uv": {
+                        "Wydx": [
+                            2,
+                            14
+                        ],
+                        "7ALN": [
+                            2,
+                            30
+                        ],
+                        "OazW": [
+                            0,
+                            30
+                        ],
+                        "da2q": [
+                            0,
+                            14
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "da2q",
+                        "OazW",
+                        "7ALN",
+                        "Wydx"
+                    ]
+                },
+                "kAfo1iCJ": {
+                    "uv": {
+                        "6fhj": [
+                            5,
+                            30
+                        ],
+                        "FBXH": [
+                            3,
+                            30
+                        ],
+                        "KljR": [
+                            3,
+                            14
+                        ],
+                        "oBEt": [
+                            5,
+                            14
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "oBEt",
+                        "KljR",
+                        "FBXH",
+                        "6fhj"
+                    ]
+                },
+                "V19CKt7a": {
+                    "uv": {
+                        "oBEt": [
+                            8,
+                            20
+                        ],
+                        "KljR": [
+                            6,
+                            20
+                        ],
+                        "OazW": [
+                            6,
+                            14
+                        ],
+                        "7ALN": [
+                            8,
+                            14
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "7ALN",
+                        "OazW",
+                        "KljR",
+                        "oBEt"
+                    ]
+                },
+                "NlKoGKBF": {
+                    "uv": {
+                        "6fhj": [
+                            9,
+                            20
+                        ],
+                        "Wydx": [
+                            9,
+                            14
+                        ],
+                        "da2q": [
+                            11,
+                            14
+                        ],
+                        "FBXH": [
+                            11,
+                            20
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "FBXH",
+                        "da2q",
+                        "Wydx",
+                        "6fhj"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "256d15d3-12d7-1874-b4a4-f9d399b66684"
+        },
+        {
+            "name": "mesh",
+            "color": 6,
+            "origin": [
+                0,
+                0,
+                0
+            ],
+            "rotation": [
+                0.00006,
+                -89.99994,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "OazW": [
+                    -2,
+                    12.5,
+                    8
+                ],
+                "da2q": [
+                    -2,
+                    12.5,
+                    -8
+                ],
+                "KljR": [
+                    -9,
+                    5.5,
+                    8
+                ],
+                "FBXH": [
+                    -9,
+                    5.5,
+                    -8
+                ],
+                "7ALN": [
+                    -2,
+                    10,
+                    8
+                ],
+                "Wydx": [
+                    -2,
+                    10,
+                    -8
+                ],
+                "oBEt": [
+                    -7,
+                    5.5,
+                    8
+                ],
+                "6fhj": [
+                    -7,
+                    5.5,
+                    -8
+                ]
+            },
+            "faces": {
+                "D8h7jyba": {
+                    "uv": {
+                        "FBXH": [
+                            28,
+                            10
+                        ],
+                        "da2q": [
+                            28,
+                            0
+                        ],
+                        "OazW": [
+                            44,
+                            0
+                        ],
+                        "KljR": [
+                            44,
+                            10
+                        ]
+                    },
+                    "texture": 1,
+                    "vertices": [
+                        "KljR",
+                        "OazW",
+                        "da2q",
+                        "FBXH"
+                    ]
+                },
+                "N82v6jda": {
+                    "uv": {
+                        "6fhj": [
+                            44,
+                            18
+                        ],
+                        "oBEt": [
+                            28,
+                            18
+                        ],
+                        "7ALN": [
+                            28,
+                            11
+                        ],
+                        "Wydx": [
+                            44,
+                            11
+                        ]
+                    },
+                    "texture": 1,
+                    "vertices": [
+                        "Wydx",
+                        "7ALN",
+                        "oBEt",
+                        "6fhj"
+                    ]
+                },
+                "nqE0Rd00": {
+                    "uv": {
+                        "Wydx": [
+                            50,
+                            38
+                        ],
+                        "7ALN": [
+                            34,
+                            38
+                        ],
+                        "OazW": [
+                            34,
+                            35
+                        ],
+                        "da2q": [
+                            50,
+                            35
+                        ]
+                    },
+                    "texture": 1,
+                    "vertices": [
+                        "da2q",
+                        "OazW",
+                        "7ALN",
+                        "Wydx"
+                    ]
+                },
+                "kAfo1iCJ": {
+                    "uv": {
+                        "6fhj": [
+                            2,
+                            54
+                        ],
+                        "FBXH": [
+                            0,
+                            54
+                        ],
+                        "KljR": [
+                            0,
+                            38
+                        ],
+                        "oBEt": [
+                            2,
+                            38
+                        ]
+                    },
+                    "texture": 1,
+                    "vertices": [
+                        "oBEt",
+                        "KljR",
+                        "FBXH",
+                        "6fhj"
+                    ]
+                },
+                "V19CKt7a": {
+                    "uv": {
+                        "oBEt": [
+                            29.46447,
+                            40.41421
+                        ],
+                        "KljR": [
+                            28.05025,
+                            39
+                        ],
+                        "OazW": [
+                            37.94975,
+                            39
+                        ],
+                        "7ALN": [
+                            36.18198,
+                            40.76777
+                        ]
+                    },
+                    "texture": 1,
+                    "vertices": [
+                        "7ALN",
+                        "OazW",
+                        "KljR",
+                        "oBEt"
+                    ]
+                },
+                "NlKoGKBF": {
+                    "uv": {
+                        "6fhj": [
+                            25.35355,
+                            47.48528
+                        ],
+                        "Wydx": [
+                            25,
+                            40.76777
+                        ],
+                        "da2q": [
+                            27,
+                            39
+                        ],
+                        "FBXH": [
+                            27,
+                            48.89949
+                        ]
+                    },
+                    "texture": 1,
+                    "vertices": [
+                        "FBXH",
+                        "da2q",
+                        "Wydx",
+                        "6fhj"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "e906b36c-7587-55cc-1b6d-de217fb1424e"
+        },
+        {
+            "name": "mesh",
+            "color": 6,
+            "origin": [
+                0,
+                0,
+                0
+            ],
+            "rotation": [
+                0.00006,
+                -89.99994,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "OazW": [
+                    -2,
+                    12.5,
+                    8
+                ],
+                "da2q": [
+                    -2,
+                    12.5,
+                    -8
+                ],
+                "KljR": [
+                    -2,
+                    10,
+                    8
+                ],
+                "FBXH": [
+                    -2,
+                    10,
+                    -8
+                ],
+                "7ALN": [
+                    8,
+                    12.5,
+                    8
+                ],
+                "Wydx": [
+                    8,
+                    12.5,
+                    -8
+                ],
+                "oBEt": [
+                    8,
+                    10,
+                    8
+                ],
+                "6fhj": [
+                    8,
+                    10,
+                    -8
+                ]
+            },
+            "faces": {
+                "D8h7jyba": {
+                    "uv": {
+                        "FBXH": [
+                            0,
+                            37
+                        ],
+                        "da2q": [
+                            0,
+                            34
+                        ],
+                        "OazW": [
+                            16,
+                            34
+                        ],
+                        "KljR": [
+                            16,
+                            37
+                        ]
+                    },
+                    "texture": 1,
+                    "vertices": [
+                        "KljR",
+                        "OazW",
+                        "da2q",
+                        "FBXH"
+                    ]
+                },
+                "N82v6jda": {
+                    "uv": {
+                        "6fhj": [
+                            33,
+                            38
+                        ],
+                        "oBEt": [
+                            17,
+                            38
+                        ],
+                        "7ALN": [
+                            17,
+                            35
+                        ],
+                        "Wydx": [
+                            33,
+                            35
+                        ]
+                    },
+                    "texture": 1,
+                    "vertices": [
+                        "Wydx",
+                        "7ALN",
+                        "oBEt",
+                        "6fhj"
+                    ]
+                },
+                "nqE0Rd00": {
+                    "uv": {
+                        "Wydx": [
+                            27,
+                            0
+                        ],
+                        "7ALN": [
+                            27,
+                            16
+                        ],
+                        "OazW": [
+                            17,
+                            16
+                        ],
+                        "da2q": [
+                            17,
+                            0
+                        ]
+                    },
+                    "texture": 1,
+                    "vertices": [
+                        "da2q",
+                        "OazW",
+                        "7ALN",
+                        "Wydx"
+                    ]
+                },
+                "kAfo1iCJ": {
+                    "uv": {
+                        "6fhj": [
+                            27,
+                            33
+                        ],
+                        "FBXH": [
+                            17,
+                            33
+                        ],
+                        "KljR": [
+                            17,
+                            17
+                        ],
+                        "oBEt": [
+                            27,
+                            17
+                        ]
+                    },
+                    "texture": 1,
+                    "vertices": [
+                        "oBEt",
+                        "KljR",
+                        "FBXH",
+                        "6fhj"
+                    ]
+                },
+                "V19CKt7a": {
+                    "uv": {
+                        "oBEt": [
+                            13,
+                            41
+                        ],
+                        "KljR": [
+                            3,
+                            41
+                        ],
+                        "OazW": [
+                            3,
+                            38
+                        ],
+                        "7ALN": [
+                            13,
+                            38
+                        ]
+                    },
+                    "texture": 1,
+                    "vertices": [
+                        "7ALN",
+                        "OazW",
+                        "KljR",
+                        "oBEt"
+                    ]
+                },
+                "NlKoGKBF": {
+                    "uv": {
+                        "6fhj": [
+                            14,
+                            42
+                        ],
+                        "Wydx": [
+                            14,
+                            39
+                        ],
+                        "da2q": [
+                            24,
+                            39
+                        ],
+                        "FBXH": [
+                            24,
+                            42
+                        ]
+                    },
+                    "texture": 1,
+                    "vertices": [
+                        "FBXH",
+                        "da2q",
+                        "Wydx",
+                        "6fhj"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "bdc1f24d-c916-66e0-4cec-66eb8717c558"
+        }
+    ],
+    "groups": [],
+    "outliner": [
+        "256d15d3-12d7-1874-b4a4-f9d399b66684",
+        "e906b36c-7587-55cc-1b6d-de217fb1424e",
+        "bdc1f24d-c916-66e0-4cec-66eb8717c558"
+    ],
+    "textures": [
+        {
+            "name": "ss7d_roof2.png",
+            "relative_path": "ss7d_roof2.png",
+            "folder": "",
+            "namespace": "",
+            "id": "0",
+            "group": "",
+            "scope": 0,
+            "width": 32,
+            "height": 32,
+            "uv_width": 32,
+            "uv_height": 32,
+            "particle": false,
+            "use_as_default": false,
+            "layers_enabled": false,
+            "sync_to_project": "",
+            "file_format": "png",
+            "render_mode": "default",
+            "render_sides": "auto",
+            "wrap_mode": "limited",
+            "pbr_channel": "color",
+            "fps": 7,
+            "force_translucent": false,
+            "frame_time": 1,
+            "frame_order_type": "loop",
+            "frame_order": "",
+            "frame_interpolate": false,
+            "visible": true,
+            "internal": true,
+            "saved": true,
+            "uuid": "f9fa660f-0363-4879-e5c9-676689ef79af",
+            "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABK0lEQVR4AeyUMWoCQRSGZ0YINiFNTEgTUiaQLl1EC2sL0c7CQtDKQ1h5CAULC09gbaHgGbyDF7CRkW8QGcXF3ZnRtVjh4715M+/3n7e66r+/1pf46830T2OgiewT7TU1EJ4fRf8uXxDnyJcvkf8sCiJ7RHtNjV5fjIFLIrnnD/H0/iuI7BPtNbUQRBoIIR5HwxjIbTdxzp6ccek5ETgsjAFyBJNATwjUqv8tffA1oYajsfbB24At8Fp4E3Gx+3zy42+AL04ilPR8lLYx4Crm2mebMQbswr3z9A10O21Zr1Wd8Z2YKpUrGhBqtroayKnBec46JOk/gpC3cdHKJvC4E1gu5hJ4rkQgD83jTiD0TaP0sglkE8gmkP4EeMMB/9PpZCiB/F7cfALXLrIHAAD//8PFoGYAAAAGSURBVAMAjqHEQc0T/n0AAAAASUVORK5CYII="
+        },
+        {
+            "name": "ss7d_roof1.png",
+            "relative_path": "ss7d_roof1.png",
+            "folder": "",
+            "namespace": "",
+            "id": "1",
+            "group": "",
+            "scope": 0,
+            "width": 64,
+            "height": 64,
+            "uv_width": 64,
+            "uv_height": 64,
+            "particle": false,
+            "use_as_default": false,
+            "layers_enabled": false,
+            "sync_to_project": "",
+            "file_format": "png",
+            "render_mode": "default",
+            "render_sides": "auto",
+            "wrap_mode": "limited",
+            "pbr_channel": "color",
+            "fps": 7,
+            "force_translucent": false,
+            "frame_time": 1,
+            "frame_order_type": "loop",
+            "frame_order": "",
+            "frame_interpolate": false,
+            "visible": true,
+            "internal": true,
+            "saved": true,
+            "uuid": "22185b9c-2695-3260-01b5-5398fc5f0c17",
+            "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAEgElEQVR4Aeyav48UNxTHbe/eKReKKImiFPSp8k9EaVKkiFJcuItClCZ/QMpIqdLnD6AMEiAkEAUFDT9ETYkEoqOgQPwSBRyC2zH+eMeD1+zMeMYzs7PSrO479nt+7/m9r9/49qRT+6d+0+DU4R/6l4Pf9f7Bac3cwZeZY8MaPkCYD2MMjKn4/t+7OgXE6BKKYPPdPSGkFFLNzGBUUgqtF0LNd6zMaKHmAhs7n+2I8KOMzoGYbh7aIe/ufSbmJ74UjDsnPhezvQ9A58AawKcPKBLNFsem4EzobCGE1vk+UqBHtmOu9Qd8kb/6+qSgWK0zRAvfx9nZBfOYm8LNIFR2zCC0UGImsgJWGTwgJFB1IprjXsaRspguFcHTFUSRzNVsviQosPNFbAH2vt4V7nTP7t8QTx7cXoun928JoFV1fi5W09FGJcmlo14O+fODPlfkA3q/qCePH9kVSGTNCuaBbAbTRBlDgYU58ULIJ88f3LSzstEu9vBQfiFCSPNjIKo/sqRb6IpwDRmEEdeRENoMIdsOKNtoXeJltuhXyURTjTGQUEmATV9K28KcrpXzB63udFyCuTpqcBdelHHPRuUE5IU36QJIicm3zclnq9dIzDZRNpYAinTJMw891+l8G3cJ+rqq+eLohXh79FK4EdsvvvlOvHr2UDCuk7FF3zUsAQSlSGm+CDH3yXBtjj4W+APs3cgcXP/nWxnizplfJbh36W87Mge+7HyI0SUsAU2KhKiwKJcQax/NvS9HrJ07f1FfvnK1EfBxIEaXsAQQMCTBL4Z1bnhnE66Fl+Dq+vISJUZbfLL3aVvXWr+CACxdgcyrUNYB6AG+xLJzc5kip6IvEswXoXc2N07YTrwHRSDaQph4mM13xfHbI6vhEswW7wQ6Tt/5MUdn/8awluN72A6gEApwIwk7GZ0vo0dGH5aDjnVG4Oah3SblcG918cJZmQICxvpjOzYobtemt7JvT0HEiAG2Y4N9Bdom9ebodeHKJVUHjA8P9uXPP/3YCvgSo0skEdAmkcPTf+oUtNmzymdwAqqS2cTaRMDQrJ/7/4xMQdf5Dt4BKe8/vltPQNcFpMYbvANSE+7af3ACUt5/fLeeAN7jFIyWAP9bYddJ9hnPvgJtkm/j02chbWNbAto6h34xpPAepyDcM1UuCCD5Jijb2MUoW095//Eti1umr9MXBNQZNl13RPhj0xhD2Cv+xEwBScb6Yzs2KNoqBU0LSnn/8W26X519J69ACoFd+dYVWrbeCQFlwbdBr2irFGxDkVU5FncARrHtiK2PFAK78vXzaTJv/Qo0IcvZkpib143YDoHWBLRNjhOv842xqYsRu75CABvHIDZ4mV3dHmV+fehXCGiyQV0Rbr1JzE3YtiZgE8n2sedEQB+sblPMqQO26bRicm1qM4oO+OG/R6v/pNy0igT7QQio+5V47a+T9f+gnFBklesgBFQlsOm1iYBNn8Cm9586oO6C2vQJ9b3/1AF9Mzz2+FMHjP2E+s5v6oC+GR57/KkDxn5Cfee39R2QStB7AAAA//9oA/2aAAAABklEQVQDAMARCMyHwEi8AAAAAElFTkSuQmCC"
+        }
+    ]
+}

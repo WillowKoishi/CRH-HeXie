@@ -10,6 +10,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.DeferredHolder;
 
 import willow.train.hexie.Main;
+import willow.train.hexie.blocks.locos.ss7d.SS7DNumberMenu;
 import willow.train.hexie.menu.*;
 
 public class MenuInit {
@@ -26,6 +27,8 @@ public class MenuInit {
             registerMenuType(CarriageMarkingMenu::new, "carriage_marking");
     public static final DeferredHolder<MenuType<?>, MenuType<HeadNumberMenu>> HEAD_NUMBER_MENU =
             registerMenuType(HeadNumberMenu::new, "head_number");
+    public static final DeferredHolder<MenuType<?>, MenuType<SS7DNumberMenu>> SS7D_NUMBER_MENU =
+            registerMenuType(SS7DNumberMenu::new, "ss7d_number");
     public static final DeferredHolder<MenuType<?>, MenuType<GroundStationSignMenu>> GROUND_STATION_SIGN_MENU =
             registerMenuType(GroundStationSignMenu::new, "ground_station_sign");
     public static final DeferredHolder<MenuType<?>, MenuType<CarriageTypeSignEditMenu>>

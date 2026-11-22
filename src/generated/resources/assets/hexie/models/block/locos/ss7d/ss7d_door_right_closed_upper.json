@@ -1,0 +1,14 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "ambientocclusion": false,
+  "shade_quads": false,
+  "automatic_culling": false,
+  "flip_v": true,
+  "render_type": "cutout",
+  "model": "hexie:models/block/locos/ss7d/ss7d_door_right_closed_upper.obj",
+  "textures": {
+    "particle": "hexie:block/locos/ss7d/ss7d_door",
+    "t0": "hexie:block/locos/ss7d/ss7d_door"
+  }
+}

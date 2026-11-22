@@ -1,0 +1,202 @@
+package willow.train.hexie.blocks.locos.ss7d;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
+import willow.train.hexie.api.interaction.*;
+import willow.train.hexie.blocks.coupler.CouplerBlock;
+import willow.train.hexie.blocks.coupler.CouplerInteraction;
+import willow.train.hexie.blocks.parts.ModelRenderBounds;
+import willow.train.hexie.blocks.parts.PartInstallation;
+import willow.train.hexie.blocks.parts.PartStructure;
+import willow.train.hexie.blocks.parts.PlayerCollisionShell;
+import willow.train.hexie.blocks.parts.PlayerCollisionShells;
+import willow.train.hexie.compat.create.CreatePanelEditTarget;
+import willow.train.hexie.compat.create.SnapshotCarriageEntity;
+import willow.train.hexie.compat.create.SnapshotCouplerInteraction;
+import willow.train.hexie.compat.create.SnapshotCouplerModelInteraction;
+import willow.train.hexie.init.BlockEntitiesInit;
+import willow.train.hexie.init.block.BlockInit;
+import willow.train.hexie.interaction.ControlInputTargets;
+import willow.train.hexie.item.editable_panels.ColoredBrush;
+import willow.train.hexie.vehicle.runtime.CouplingEndpoint.Axis;
+import willow.train.hexie.vehicle.runtime.CouplingEndpoint.Point;
+
+public final class SS7DHeadBlock extends Block implements PartStructure, EntityBlock, CouplerBlock, BlockControlHost,
+        ModelRenderBounds, PlayerCollisionShell {
+    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    static final int ROOT = 4;
+    private static final ControlSurface SURFACE = new ControlSurface(
+            List.of(new ControlSurface.Part(Control.NUMBER, null, ControlSurface.NO_BODY, null),
+                    new ControlSurface.Part(Control.COUPLER, null, ControlSurface.NO_BODY, null)),
+            ControlSurface.NO_BODY, List.of());
+    static { PlayerCollisionShells.register(SS7DHeadGeometry::collisions); }
+
+    private enum Control implements BlockControl.Button {
+        NUMBER, COUPLER;
+        @Override public String id() { return this == NUMBER ? "ss7d_number" : "coupler_head"; }
+        @Override public Component nameText() {
+            return Component.translatable(this == NUMBER ? "gui.hexie.ss7d_head_number" : "interaction.hexie.coupler_head");
+        }
+        @Override public Component valueText(ControlState state) { return Component.empty(); }
+    }
+
+    public SS7DHeadBlock(Properties properties) {
+        super(properties);
+        registerDefaultState(defaultBlockState().setValue(FACING, Direction.NORTH).setValue(BlockStateProperties.OPEN, true));
+    }
+    @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        builder.add(FACING, BlockStateProperties.OPEN);
+    }
+    @Override public BlockState getStateForPlacement(BlockPlaceContext context) {
+        Direction side = context.getClickedFace();
+        return defaultBlockState().setValue(FACING, side.getAxis().isHorizontal() ? side : context.getHorizontalDirection());
+    }
+    @Override public BlockState rotate(BlockState state, Rotation rotation) {
+        return state.setValue(FACING, rotation.rotate(facing(state)));
+    }
+    @Override public BlockState mirror(BlockState state, Mirror mirror) {
+        return rotate(state, mirror.getRotation(facing(state)));
+    }
+    static BlockPos offset(int part, Direction facing) {
+        var local = new BlockPos(part % 3 - 1, 0, part / 3 - 1);
+        return local.rotate(switch (facing) {
+            case EAST -> Rotation.CLOCKWISE_90;
+            case SOUTH -> Rotation.CLOCKWISE_180;
+            case WEST -> Rotation.COUNTERCLOCKWISE_90;
+            default -> Rotation.NONE;
+        });
+    }
+    @Override public boolean schematicRoot() { return true; }
+    @Override public BlockPos partRoot(BlockGetter level, BlockPos pos, BlockState state) { return pos; }
+    @Override public Map<BlockPos, BlockState> partCells(BlockGetter level, BlockPos root, BlockState state) {
+        var cells = new LinkedHashMap<BlockPos, BlockState>();
+        for (int i = 0; i < 6; i++) {
+            var position = root.offset(offset(i, facing(state)));
+            cells.put(position, i == ROOT ? state : BlockInit.SS7D_HEAD_FLOOR.get().defaultBlockState()
+                    .setValue(FACING, facing(state)).setValue(SS7DHeadFloorBlock.PART, i));
+        }
+        return cells;
+    }
+    @Override public void onBlockStateChange(LevelReader world, BlockPos pos, BlockState before, BlockState after) {
+        if (world instanceof Level level) PartInstallation.stateChanged(level, pos, before, after);
+    }
+    @Override protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState next, boolean moving) {
+        if (!moving && !state.is(next.getBlock()))
+            PartInstallation.removeOtherCells(level, pos, partCells(level, pos, state));
+        super.onRemove(state, level, pos, next, moving);
+    }
+    @Override protected VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
+        return Shapes.block();
+    }
+    @Override public BlockEntity newBlockEntity(BlockPos pos, BlockState state) { return new SS7DHeadEntity(pos, state); }
+    @Override public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+        return level.isClientSide && type == BlockEntitiesInit.SS7D_HEAD.get()
+                ? (world, pos, blockState, entity) -> ((SS7DHeadEntity) entity).tick() : null;
+    }
+    @Override public Direction facing(BlockState state) { return state.getValue(FACING); }
+    @Override public String model() { return BlockInit.GENERAL_JANNEY_COUPLER.get().model(); }
+    @Override public willow.train.hexie.blocks.coupler.CouplerGeometry geometry() { return SS7DHeadGeometry.COUPLER; }
+    @Override public Axis axis() { return new Axis(geometry().modelAxis().x() - .5, geometry().modelAxis().z() - .5); }
+    @Override public Point start() { return complete(); }
+    @Override public Point complete() {
+        var contact = geometry().contact();
+        return new Point(contact.x - .5, contact.y - .5, contact.z - .5);
+    }
+    @Override public double maxExtension() { return 0; }
+    @Override public boolean allowsAdapters() { return false; }
+    @Override public AABB modelRenderBounds(BlockState state) { return SS7DHeadGeometry.bounds(facing(state)); }
+    @Override public List<AABB> playerCollisionBoxes(BlockState state) { return SS7DHeadGeometry.shell(facing(state)); }
+    @Override public AABB controlBounds(BlockState state) { return modelRenderBounds(state); }
+    @Override public ControlSurface surfaceGeometry(BlockState state) { return SURFACE; }
+
+    @Override public BlockControlHit pickControl(BlockControlContext target, Vec3 from, Vec3 to) {
+        var state = target.state();
+        var pos = target.position();
+        var a = CouplerInteraction.toModel(state, pos, from);
+        var b = CouplerInteraction.toModel(state, pos, to);
+        float open = CouplerInteraction.coverProgress(state);
+        var hook = target.carrier() instanceof SnapshotCarriageEntity carriage
+                ? SnapshotCouplerModelInteraction.clip(carriage, pos, state, open, target.partialTick(), from, to)
+                : CouplerInteraction.fromModel(state, pos, geometry().clipMoving(open, a, b));
+        BlockControlHit nearest = hook == null || !hook.head() ? null
+                : new BlockControlHit(Control.COUPLER, new BlockHitResult(hook.point(), hook.face(), pos, false));
+        boolean sidePlates = hasSidePlates(target);
+        for (var plate : SS7DHeadGeometry.PLATES) {
+            var local = plate.intersect(a, b, plate.surface(sidePlates));
+            if (local == null) continue;
+            var hit = CouplerInteraction.fromModel(state, pos, local);
+            if (nearest != null && nearest.blockHit().getLocation().distanceToSqr(from) <= hit.distanceToSqr(from))
+                continue;
+            var face = plate.normal().add(.5, 0, .5);
+            var normal = SS7DHeadGeometry.rotate(face, facing(state)).subtract(.5, 0, .5);
+            nearest = new BlockControlHit(Control.NUMBER, new BlockHitResult(hit,
+                    Direction.getNearest((float) normal.x, 0, (float) normal.z), pos, false));
+        }
+        return nearest;
+    }
+
+    private static boolean hasSidePlates(BlockControlContext target) {
+        if (target.carrier() instanceof com.simibubi.create.content.contraptions.AbstractContraptionEntity carrier
+                && carrier.getContraption() != null) {
+            var info = carrier.getContraption().getBlocks().get(target.position());
+            return info == null || info.nbt() == null
+                    || SS7DHeadEntity.hasSidePlates(info.nbt().getString(SS7DHeadEntity.NUMBER_TAG));
+        }
+        return !(target.blocks().getBlockEntity(target.position()) instanceof SS7DHeadEntity head)
+                || head.hasSidePlates();
+    }
+
+    @Override public InteractionResult operateControl(BlockControlUse use, BlockControl control, int value) {
+        if (!(use.player() instanceof ServerPlayer player) || player.isSpectator() || !player.mayBuild())
+            return InteractionResult.PASS;
+        var target = use.target();
+        if (control == Control.COUPLER && target.carrier() instanceof SnapshotCarriageEntity carriage)
+            return SnapshotCouplerInteraction.handle(carriage, player, target.position(), use.hand())
+                    ? InteractionResult.SUCCESS : InteractionResult.PASS;
+        if (control != Control.NUMBER || !(player.getItemInHand(use.hand()).getItem() instanceof ColoredBrush))
+            return InteractionResult.PASS;
+        // Moving controls carry a requested point. Recheck its model surface before opening an editor.
+        Vec3 eye = ControlInputTargets.toLocal(target, player, ControlInputTargets.eye(target, player));
+        Vec3 point = use.hit().getLocation();
+        var selected = pickControl(target, eye, point.add(point.subtract(eye).normalize().scale(.001)));
+        if (selected == null || selected.control() != Control.NUMBER
+                || selected.blockHit().getLocation().distanceToSqr(point) > .0001) return InteractionResult.FAIL;
+        if (target.carrier() instanceof com.simibubi.create.content.contraptions.AbstractContraptionEntity carrier) {
+            var captured = CreatePanelEditTarget.createHeadNumber(player, carrier, target.position(), target.position());
+            return captured != null && SS7DNumberMenu.openMoving(player, captured)
+                    ? InteractionResult.SUCCESS : InteractionResult.FAIL;
+        }
+        if (target.blocks().getBlockEntity(target.position()) instanceof SS7DHeadEntity head) {
+            SS7DNumberMenu.openWorld(player, head);
+            return InteractionResult.SUCCESS;
+        }
+        return InteractionResult.FAIL;
+    }
+}

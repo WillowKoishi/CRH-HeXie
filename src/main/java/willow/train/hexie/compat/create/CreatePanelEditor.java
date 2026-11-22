@@ -72,6 +72,7 @@ public final class CreatePanelEditor {
             case MARKINGS -> CarriageMarkingMenu.openMoving(player, target);
             case PANEL_TEXT -> PanelTextMenu.openMoving(player, target, target.slot());
             case HEAD_NUMBER -> HeadNumberMenu.openMoving(player, target);
+            case SS7D_NUMBER -> willow.train.hexie.blocks.locos.ss7d.SS7DNumberMenu.openMoving(player, target);
         };
     }
 }

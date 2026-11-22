@@ -82,6 +82,8 @@ public class HeXieClientInit {
         event.registerBlockEntityRenderer(BlockEntitiesInit.CRH2A_HEAD.get(), HeadNumberRenderer::new);
         event.registerBlockEntityRenderer(BlockEntitiesInit.CRH1A_HEAD.get(),
                 willow.train.hexie.client.render.blockentity.CRH1HeadRenderer::new);
+        event.registerBlockEntityRenderer(BlockEntitiesInit.SS7D_HEAD.get(),
+                willow.train.hexie.client.render.ss7d.SS7DHeadRenderer::new);
         event.registerBlockEntityRenderer(BlockEntitiesInit.DRIVING_CONSOLE.get(),
                 willow.train.hexie.client.render.blockentity.DrivingConsoleRenderer::new);
         // Entity builders run before Registrate is attached to our bus. Bind directly so the
@@ -127,6 +129,9 @@ public class HeXieClientInit {
         if (net.neoforged.fml.ModList.get().isLoaded("simurail"))
             event.enqueueWork(willow.train.hexie.compat.simurail.client.PhysicalHeadClient::registerVisuals);
         event.enqueueWork(() -> {
+            willow.train.hexie.client.render.SnapshotCouplerRenderer.register(
+                    willow.train.hexie.init.block.BlockInit.SS7D_HEAD.get(),
+                    willow.train.hexie.client.render.ss7d.SS7DHeadRenderer.coupler());
             willow.train.hexie.client.render.SnapshotCouplerRenderer.register(
                     willow.train.hexie.init.block.BlockInit.GENERAL_JANNEY_COUPLER.get(),
                     new willow.train.hexie.client.render.JanneyCouplerRenderer(
@@ -192,6 +197,7 @@ public class HeXieClientInit {
         event.register(MenuInit.PANEL_TEXT_MENU.get(), PanelTextScreen::new);
         event.register(MenuInit.CARRIAGE_MARKING_MENU.get(), CarriageMarkingScreen::new);
         event.register(MenuInit.HEAD_NUMBER_MENU.get(), HeadNumberScreen::new);
+        event.register(MenuInit.SS7D_NUMBER_MENU.get(), willow.train.hexie.client.render.ss7d.SS7DNumberScreen::new);
         event.register(MenuInit.GROUND_STATION_SIGN_MENU.get(), GroundStationSignScreen::new);
         event.register(
                 MenuInit.CARRIAGE_TYPE_SIGN_EDIT_MENU.get(), CarriageTypeSignEditScreen::new);

@@ -5,6 +5,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import willow.train.hexie.blocks.coupler.JanneyCouplerBlock;
+import willow.train.hexie.blocks.coupler.CouplerBlock;
+import willow.train.hexie.blocks.locos.ss7d.SS7DHeadBlock;
 import willow.train.hexie.blocks.coupler.RescueCouplerState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
 import willow.train.hexie.vehicle.assembly.CouplerDataRegistry;
@@ -34,12 +36,15 @@ final class JanneyCouplingState {
             var id = endpoint.id();
             boolean coupled = runtime.couplingPartner(id) != null;
             var next = info;
-            if (info.state().getBlock() instanceof JanneyCouplerBlock block) {
+            boolean integrated = info.state().getBlock() instanceof SS7DHeadBlock;
+            if (info.state().getBlock() instanceof JanneyCouplerBlock || integrated) {
                 boolean open = !coupled && endpoint.adapter() == null;
                 if (info.state().getValue(BlockStateProperties.OPEN) != open) {
-                    next = SnapshotCouplerModelInteraction.withOpen(info, open, carriage.level().getGameTime());
+                    next = integrated
+                            ? new StructureBlockInfo(info.pos(), info.state().setValue(BlockStateProperties.OPEN, open), info.nbt())
+                            : SnapshotCouplerModelInteraction.withOpen(info, open, carriage.level().getGameTime());
                     var visual = endpoint.visual();
-                    runtime.updateCouplerVisual(id, visual == null ? CouplerDataRegistry.capture(block, next.state())
+                    runtime.updateCouplerVisual(id, visual == null ? CouplerDataRegistry.capture(CouplerBlock.of(next.state()), next.state())
                             : new CouplingEndpoint.Visual(visual.facing(), withOpen(visual.fixed(), open),
                                     withOpen(visual.shiftedFixed(), open), visual.moving(), visual.origin(), visual.movingOffset()));
                 }
@@ -57,7 +62,7 @@ final class JanneyCouplingState {
     }
 
     private static CouplingEndpoint.RenderState withOpen(CouplingEndpoint.RenderState state, boolean open) {
-        if (!state.block().equals("hexie:general_janney_coupler")) return state;
+        if (!state.block().equals("hexie:general_janney_coupler") && !state.block().equals("hexie:ss7d_head")) return state;
         var properties = new HashMap<>(state.properties());
         properties.put(BlockStateProperties.OPEN.getName(), Boolean.toString(open));
         return new CouplingEndpoint.RenderState(state.block(), properties);

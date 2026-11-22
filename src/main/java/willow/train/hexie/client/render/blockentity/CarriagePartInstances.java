@@ -20,7 +20,7 @@ import willow.train.hexie.client.render.carriage.CarriageTransparencyCompat;
 import willow.train.hexie.client.render.carriage.CompatibleCarriageVisual;
 
 /** One transformed instance per authored moving part, lit by the carriage embedding. */
-final class CarriagePartInstances {
+public final class CarriagePartInstances {
     private record Part(BakedModel model, RenderType layer, boolean disableDiffuse) {
         Model bake() {
             return new BakedModelBuilder(model).materialFunc((original, shaded, ao) -> {
@@ -34,25 +34,31 @@ final class CarriagePartInstances {
 
     private static final RendererReloadCache<Part, Model> MODELS = new RendererReloadCache<>(Part::bake);
     private final VisualizationContext context;
+    private final int bias;
     private Part[] parts;
     private TransformedInstance[] instances;
     private int next;
 
-    CarriagePartInstances(VisualizationContext context, int count) {
+    public CarriagePartInstances(VisualizationContext context, int count) {
+        this(context, count, 0);
+    }
+
+    public CarriagePartInstances(VisualizationContext context, int count, int bias) {
         this.context = context;
+        this.bias = bias;
         parts = new Part[count];
         instances = new TransformedInstance[count];
     }
 
-    void start() {
+    public void start() {
         next = 0;
     }
 
-    void draw(PartialModel model, RenderType layer, PoseStack transform, boolean disableDiffuse) {
+    public void draw(PartialModel model, RenderType layer, PoseStack transform, boolean disableDiffuse) {
         draw(model.get(), layer, transform, disableDiffuse, 0xffffffff);
     }
 
-    void draw(BakedModel model, RenderType layer, PoseStack transform, boolean disableDiffuse, int color) {
+    public void draw(BakedModel model, RenderType layer, PoseStack transform, boolean disableDiffuse, int color) {
         int index = next++;
         if (index == parts.length) {
             int capacity = Math.max(4, index * 2);
@@ -63,7 +69,7 @@ final class CarriagePartInstances {
         boolean changed = part == null || part.model != model || part.layer != layer || part.disableDiffuse != disableDiffuse;
         if (changed) {
             part = new Part(model, layer, disableDiffuse);
-            var instancer = context.instancerProvider().instancer(InstanceTypes.TRANSFORMED, MODELS.get(part));
+            var instancer = context.instancerProvider().instancer(InstanceTypes.TRANSFORMED, MODELS.get(part), bias);
             if (instances[index] == null) instances[index] = instancer.createInstance();
             else instancer.stealInstance(instances[index]);
             parts[index] = part;
@@ -76,7 +82,7 @@ final class CarriagePartInstances {
         }
     }
 
-    void finish() {
+    public void finish() {
         for (int i = next; i < instances.length; i++) {
             if (instances[i] != null) {
                 instances[i].delete();
@@ -86,11 +92,11 @@ final class CarriagePartInstances {
         }
     }
 
-    void collect(Consumer<Instance> consumer) {
+    public void collect(Consumer<Instance> consumer) {
         for (var instance : instances) if (instance != null) consumer.accept(instance);
     }
 
-    void delete() {
+    public void delete() {
         next = 0;
         finish();
     }

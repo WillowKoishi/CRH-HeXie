@@ -26,6 +26,11 @@ import willow.train.hexie.blocks.emu.TestDrivingConsoleBlock;
 import willow.train.hexie.blocks.locos.hxd3d.HXD3DCabDoorBlock;
 import willow.train.hexie.blocks.locos.hxd3d.HXD3DPanelBlocks;
 import willow.train.hexie.blocks.locos.PantographBlock;
+import willow.train.hexie.blocks.locos.ss7d.SS7DHeadBlock;
+import willow.train.hexie.blocks.locos.ss7d.SS7DHeadFloorBlock;
+import willow.train.hexie.blocks.locos.ss7d.SS7DPanelBlock;
+import willow.train.hexie.blocks.locos.ss7d.SS7DCenterCarportBlock;
+import willow.train.hexie.blocks.locos.ss7d.SS7DSideCarportBlock;
 import willow.train.hexie.blocks.emu.crh2a.CRH2PanelBlock;
 import willow.train.hexie.blocks.emu.crh2a.CRH2PartBlock;
 import willow.train.hexie.blocks.locos.cr200j.CR200jPanelBlocks;
@@ -98,6 +103,39 @@ public class BlockInit {
                     BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
                             .sound(SoundType.METAL).noOcclusion()),
                     block -> () -> new willow.train.hexie.item.CRH2PartItem(block.get(), new Item.Properties()));
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.locos.ss7d.SS7DFloorBlock> SS7D_FLOOR =
+            register("ss7d_floor", () -> new willow.train.hexie.blocks.locos.ss7d.SS7DFloorBlock(
+                    BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
+                            .sound(SoundType.METAL).noOcclusion()),
+                    block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
+    public static final DeferredHolder<Block, SS7DPanelBlock> SS7D_PANEL_BOTTOM = register("ss7d_panel_bottom",
+            () -> new SS7DPanelBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
+                    .sound(SoundType.METAL).noOcclusion()),
+            block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
+    public static final DeferredHolder<Block, SS7DPanelBlock> SS7D_PANEL_TOP = register("ss7d_panel_top",
+            () -> new SS7DPanelBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
+                    .sound(SoundType.METAL).noOcclusion()),
+            block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
+    public static final DeferredHolder<Block, SS7DSideCarportBlock> SS7D_CARPORT_SIDE = register("ss7d_carport_side",
+            () -> new SS7DSideCarportBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
+                    .sound(SoundType.METAL).noOcclusion()),
+            block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
+    public static final DeferredHolder<Block, SS7DCenterCarportBlock> SS7D_CARPORT_MID = register("ss7d_carport_mid",
+            () -> new SS7DCenterCarportBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
+                    .sound(SoundType.METAL).noOcclusion()),
+            block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
+    public static final DeferredHolder<Block, willow.train.hexie.blocks.locos.ss7d.SS7DDoorBlock> SS7D_DOOR =
+            register("ss7d_door", () -> new willow.train.hexie.blocks.locos.ss7d.SS7DDoorBlock(
+                    BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(2)
+                            .sound(SoundType.METAL).noOcclusion()),
+                    block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
+    public static final DeferredHolder<Block, SS7DHeadBlock> SS7D_HEAD =
+            register("ss7d_head", () -> new SS7DHeadBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL)
+                            .strength(2).sound(SoundType.METAL).noOcclusion()),
+                    block -> () -> new willow.train.hexie.item.PartBlockItem(block.get(), new Item.Properties()));
+    public static final DeferredHolder<Block, SS7DHeadFloorBlock> SS7D_HEAD_FLOOR =
+            BLOCKS.register("ss7d_head_floor", () -> new SS7DHeadFloorBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL).strength(2).sound(SoundType.METAL).noOcclusion().noLootTable()));
     public static final DeferredHolder<Block, willow.train.hexie.blocks.emu.crh1a.CRH1DoorMemberBlock> CRH1A_PASSENGER_DOOR_MEMBER =
             BLOCKS.register("crh1a_psg_door_member", () -> new willow.train.hexie.blocks.emu.crh1a.CRH1DoorMemberBlock(
                     BlockBehaviour.Properties.of().strength(2).sound(SoundType.METAL).noOcclusion().noLootTable()));

@@ -7,6 +7,8 @@
     "cee.PantographMountMixin",
     "cee.PantographShapeMixin",
     "cee.PantographMovementMixin",
+    "paw.PantographShapeMixin",
+    "paw.PantographMovementMixin",
     "cee.CatenaryCircuitMixin",
     "MixinPartSchematicPlacement",
     "MixinPartSchematicFlight",
@@ -63,6 +65,7 @@
   "client": [
     "cee.PantographRendererMixin",
     "cee.PantographMovementRendererMixin",
+    "paw.PantographRendererMixin",
     "client.MixinSodiumChunkVertexConsumer",
     "client.MixinDrivingConsoleDismountSync",
     "client.MixinDrivingConsoleKeyboard",

@@ -1,0 +1,90 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:composite",
+  "textures": {
+    "particle": "hexie:block/locos/ss7d/head/ss7d_head"
+  },
+  "children": {
+    "body_opaque": {
+      "parent": "hexie:block/locos/ss7d/head/body_opaque"
+    },
+    "wiper_left": {
+      "parent": "hexie:block/locos/ss7d/head/wiper_left"
+    },
+    "wiper_right": {
+      "parent": "hexie:block/locos/ss7d/head/wiper_right"
+    },
+    "hook": {
+      "parent": "hexie:block/locos/ss7d/head/hook"
+    },
+    "knuckle": {
+      "parent": "hexie:block/locos/ss7d/head/knuckle"
+    },
+    "side_plates": {
+      "parent": "hexie:block/locos/ss7d/head/side_plates"
+    },
+    "air_conditioner": {
+      "parent": "hexie:block/locos/ss7d/head/air_conditioner"
+    },
+    "glass": {
+      "parent": "hexie:block/locos/ss7d/head/glass"
+    }
+  },
+  "item_render_order": [
+    "body_opaque",
+    "wiper_left",
+    "wiper_right",
+    "hook",
+    "knuckle",
+    "side_plates",
+    "air_conditioner",
+    "glass"
+  ],
+  "display": {
+    "gui": {
+      "rotation": [
+        16,
+        135,
+        0
+      ],
+      "translation": [
+        0,
+        -4,
+        0
+      ],
+      "scale": [
+        0.17,
+        0.17,
+        0.17
+      ]
+    },
+    "ground": {
+      "scale": [
+        0.16,
+        0.16,
+        0.16
+      ]
+    },
+    "fixed": {
+      "scale": [
+        0.16,
+        0.16,
+        0.16
+      ]
+    },
+    "thirdperson_righthand": {
+      "scale": [
+        0.16,
+        0.16,
+        0.16
+      ]
+    },
+    "firstperson_righthand": {
+      "scale": [
+        0.16,
+        0.16,
+        0.16
+      ]
+    }
+  }
+}

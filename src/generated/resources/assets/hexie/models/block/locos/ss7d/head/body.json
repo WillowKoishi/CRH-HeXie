@@ -1,0 +1,19 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:composite",
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "hexie:block/locos/ss7d/head/ss7d_head"
+  },
+  "children": {
+    "body_opaque": {
+      "parent": "hexie:block/locos/ss7d/head/body_opaque"
+    },
+    "air_conditioner": {
+      "parent": "hexie:block/locos/ss7d/head/air_conditioner"
+    },
+    "glass": {
+      "parent": "hexie:block/locos/ss7d/head/glass"
+    }
+  }
+}

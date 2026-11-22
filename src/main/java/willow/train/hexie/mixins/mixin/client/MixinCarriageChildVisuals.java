@@ -27,6 +27,9 @@ import willow.train.hexie.client.render.blockentity.CustomRenderedDoorRenderer;
 import willow.train.hexie.client.render.blockentity.DrivingConsoleRenderer;
 import willow.train.hexie.client.render.blockentity.LegacyCarriagePartVisual;
 import willow.train.hexie.client.render.carriage.CarriageBlockVisual;
+import willow.train.hexie.blocks.locos.ss7d.SS7DHeadEntity;
+import willow.train.hexie.client.render.ss7d.SS7DHeadRenderer;
+import willow.train.hexie.client.render.ss7d.SS7DWiperVisual;
 
 @Mixin(value = ContraptionVisual.class, remap = false)
 public abstract class MixinCarriageChildVisuals extends AbstractEntityVisual<AbstractContraptionEntity> {
@@ -50,6 +53,10 @@ public abstract class MixinCarriageChildVisuals extends AbstractEntityVisual<Abs
         } else if (block instanceof DrivingConsoleEntity console) {
             if (!(dispatcher.getRenderer(console) instanceof DrivingConsoleRenderer)) return;
             visual = CarriageConsoleVisual.create(embedding, console);
+        } else if (block instanceof SS7DHeadEntity head) {
+            if (dispatcher.getRenderer(head) == null
+                    || dispatcher.getRenderer(head).getClass() != SS7DHeadRenderer.class) return;
+            visual = SS7DWiperVisual.create(embedding, head, partial);
         } else {
             visual = LegacyCarriagePartVisual.create(embedding, block, partial);
         }

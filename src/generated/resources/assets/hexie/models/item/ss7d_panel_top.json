@@ -1,0 +1,31 @@
+{
+  "parent": "hexie:block/locos/ss7d/ss7d_panel_top",
+  "display": {
+    "gui": {
+      "rotation": [
+        10,
+        0,
+        0
+      ],
+      "scale": [
+        0.625,
+        0.625,
+        0.625
+      ]
+    },
+    "ground": {
+      "scale": [
+        0.25,
+        0.25,
+        0.25
+      ]
+    },
+    "fixed": {
+      "scale": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    }
+  }
+}

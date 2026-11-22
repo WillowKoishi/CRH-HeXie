@@ -1,0 +1,18 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "ambientocclusion": false,
+  "shade_quads": false,
+  "automatic_culling": false,
+  "flip_v": true,
+  "render_type": "cutout",
+  "model": "hexie:models/block/locos/ss7d/ss7d_carport_mid_cables.obj",
+  "textures": {
+    "particle": "hexie:block/locos/ss7d/ss7d_carport_mid_0",
+    "t0": "hexie:block/locos/ss7d/ss7d_carport_mid_0",
+    "t1": "hexie:block/locos/ss7d/ss7d_carport_mid_1",
+    "t2": "hexie:block/locos/ss7d/ss7d_carport_mid_2",
+    "t3": "hexie:block/locos/ss7d/ss7d_carport_mid_3",
+    "t4": "hexie:block/locos/ss7d/ss7d_carport_mid_4"
+  }
+}

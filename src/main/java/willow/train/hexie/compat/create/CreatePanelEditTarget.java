@@ -17,6 +17,7 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
 import willow.train.hexie.blockentity.*;
+import willow.train.hexie.blocks.locos.ss7d.SS7DHeadEntity;
 import willow.train.hexie.blocks.parts.PartStructures;
 import willow.train.hexie.blocks.parts.VehicleMarkings;
 import willow.train.hexie.blocks.signs.PanelAttachmentHit;
@@ -26,7 +27,7 @@ import willow.train.hexie.network.s2c.PanelEditPacket;
 
 /** A detached menu copy may change content; its placement and unrelated captured data never leave the server copy. */
 public final class CreatePanelEditTarget implements BlockEntityEditMenu.Target {
-    public enum ContentType { CARRIAGE_NUMBER, CARRIAGE_TYPE, LACQUERED, SPEED, MARKINGS, PANEL_TEXT, HEAD_NUMBER }
+    public enum ContentType { CARRIAGE_NUMBER, CARRIAGE_TYPE, LACQUERED, SPEED, MARKINGS, PANEL_TEXT, HEAD_NUMBER, SS7D_NUMBER }
 
     private final ServerPlayer owner;
     private final AbstractContraptionEntity carrier;
@@ -71,7 +72,8 @@ public final class CreatePanelEditTarget implements BlockEntityEditMenu.Target {
             BlockPos rootPos, BlockPos clickedPos) {
         var entity = capturedEntity(carrier, rootPos);
         return create(player, carrier, rootPos, clickedPos,
-                entity instanceof CRH2HeadEntity ? ContentType.HEAD_NUMBER : null, 0, entity);
+                entity instanceof SS7DHeadEntity ? ContentType.SS7D_NUMBER
+                        : entity instanceof CRH2HeadEntity ? ContentType.HEAD_NUMBER : null, 0, entity);
     }
 
     private static CreatePanelEditTarget create(ServerPlayer player, AbstractContraptionEntity carrier,
@@ -129,7 +131,11 @@ public final class CreatePanelEditTarget implements BlockEntityEditMenu.Target {
             CompoundTag payload, HolderLookup.Provider registries) {
         var previous = contraption.getBlocks().get(pos);
         if (previous == null || slot < 0 || slot > 1) return false;
-        var current = loadEntity(previous, registries);
+        // Create sends a display update tag to clients, which does not contain the
+        // block-entity ID required by loadStatic. The block's factory is the source
+        // of truth for its type; existing content remains in the captured tag.
+        var current = previous.state().getBlock() instanceof EntityBlock factory
+                ? factory.newBlockEntity(pos, previous.state()) : null;
         if (!matches(current, type)) return false;
         var normalized = contents(type, slot, payload);
         if (normalized == null || !normalized.equals(payload)) return false;
@@ -174,6 +180,7 @@ public final class CreatePanelEditTarget implements BlockEntityEditMenu.Target {
             case SPEED -> entity instanceof TrainSpeedSignEntity;
             case MARKINGS, PANEL_TEXT -> entity instanceof VehicleMarkings;
             case HEAD_NUMBER -> entity instanceof CRH2HeadEntity;
+            case SS7D_NUMBER -> entity instanceof SS7DHeadEntity;
         };
     }
 
@@ -193,6 +200,22 @@ public final class CreatePanelEditTarget implements BlockEntityEditMenu.Target {
             case SPEED -> { if (!text(data, result, "content", 384)) return null; integer(data, result, "color"); }
             case MARKINGS -> { for (int i = 0; i < 3; i++) if (!text(data, result, "CarriageMarking" + i, 128)) return null; }
             case HEAD_NUMBER -> { if (!text(data, result, "HeadNumber", CRH2HeadEntity.MAX_LENGTH)) return null; }
+            case SS7D_NUMBER -> {
+                String key = SS7DHeadEntity.NUMBER_TAG;
+                String digits = data.getString(key);
+                if (!SS7DHeadEntity.validDigits(digits)) return null;
+                result.putString(key, digits);
+                String bureau = data.getString(SS7DHeadEntity.BUREAU_TAG);
+                String depot = data.getString(SS7DHeadEntity.DEPOT_TAG);
+                if (!data.contains(SS7DHeadEntity.BUREAU_TAG, Tag.TAG_STRING)
+                        || !data.contains(SS7DHeadEntity.DEPOT_TAG, Tag.TAG_STRING)
+                        || !data.contains(SS7DHeadEntity.DEPOT_VISIBLE_TAG, Tag.TAG_BYTE)
+                        || !SS7DHeadEntity.validUnit(bureau) || !SS7DHeadEntity.validUnit(depot)) return null;
+                result.putString(SS7DHeadEntity.BUREAU_TAG, bureau);
+                result.putString(SS7DHeadEntity.DEPOT_TAG, depot);
+                result.putBoolean(SS7DHeadEntity.DEPOT_VISIBLE_TAG,
+                        data.getBoolean(SS7DHeadEntity.DEPOT_VISIBLE_TAG));
+            }
             case PANEL_TEXT -> {
                 if (slot < 0 || slot > 1 || !data.contains("PanelText" + slot, Tag.TAG_COMPOUND)) return null;
                 var source = data.getCompound("PanelText" + slot); var label = new CompoundTag();
