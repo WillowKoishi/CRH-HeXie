@@ -1,6 +1,9 @@
 {
   "block.hexie.ss7d_front_bogey": "SS7D Front Bogey",
   "block.hexie.ss7d_floor": "SS7D Locomotive Floor",
+  "block.hexie.ss7d_floor.tooltip.summary": "A locomotive floor with optional underbody equipment.",
+  "block.hexie.ss7d_floor.tooltip.condition1": "Using the Harmony Wrench",
+  "block.hexie.ss7d_floor.tooltip.behaviour1": "Right-click to cycle the empty underbody and four equipment orientations.",
   "block.hexie.ss7d_panel_top": "SS7D Upper Body Panel",
   "block.hexie.ss7d_panel_bottom": "SS7D Lower Body Panel",
   "block.hexie.ss7d_carport_side": "SS7D Side Roof",
@@ -28,6 +31,7 @@
   "gui.hexie.ss7d_bureau": "Railway bureau",
   "gui.hexie.ss7d_depot": "Locomotive depot",
   "gui.hexie.ss7d_hide_depot": "Hide bureau and depot",
+  "gui.hexie.ss7d_second_end": "End II (unchecked: I)",
   "simurail_bogey_entry.hexie.ss7d_front": "SS7D (Front Bogey)",
   "block.hexie.crh1a_head": "CRH1A Head",
   "block.hexie.crh1a_psg_door": "CRH1A Passenger Door",

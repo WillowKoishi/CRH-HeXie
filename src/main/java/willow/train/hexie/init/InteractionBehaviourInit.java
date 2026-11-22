@@ -21,6 +21,9 @@ public class InteractionBehaviourInit {
                 willow.train.hexie.init.block.BlockInit.SS7D_CARPORT_MID.get(),
                 new willow.train.hexie.blocks.locos.ss7d.SS7DCenterCarportInteraction());
         MovingInteractionBehaviour.REGISTRY.register(
+                willow.train.hexie.init.block.BlockInit.SS7D_FLOOR.get(),
+                new willow.train.hexie.blocks.locos.ss7d.SS7DFloorInteraction());
+        MovingInteractionBehaviour.REGISTRY.register(
                 willow.train.hexie.init.block.BlockInit.SS7D_DOOR.get(),
                 new willow.train.hexie.blocks.locos.ss7d.SS7DDoorInteraction());
         var passengerDisplays = new willow.train.hexie.compat.create.CreatePassengerDisplayInteraction();

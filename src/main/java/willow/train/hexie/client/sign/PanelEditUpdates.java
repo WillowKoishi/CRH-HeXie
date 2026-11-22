@@ -23,6 +23,7 @@ public final class PanelEditUpdates {
                 head.updateDepot(packet.content().getString(SS7DHeadEntity.BUREAU_TAG),
                         packet.content().getString(SS7DHeadEntity.DEPOT_TAG),
                         packet.content().getBoolean(SS7DHeadEntity.DEPOT_VISIBLE_TAG));
+                head.updateSecondEnd(packet.content().getBoolean(SS7DHeadEntity.SECOND_END_TAG));
                 head.setChanged();
             } else {
                 entity.loadWithComponents(contraption.getBlocks().get(packet.rootPos()).nbt(), level.registryAccess());

@@ -210,11 +210,13 @@ public final class CreatePanelEditTarget implements BlockEntityEditMenu.Target {
                 if (!data.contains(SS7DHeadEntity.BUREAU_TAG, Tag.TAG_STRING)
                         || !data.contains(SS7DHeadEntity.DEPOT_TAG, Tag.TAG_STRING)
                         || !data.contains(SS7DHeadEntity.DEPOT_VISIBLE_TAG, Tag.TAG_BYTE)
+                        || !data.contains(SS7DHeadEntity.SECOND_END_TAG, Tag.TAG_BYTE)
                         || !SS7DHeadEntity.validUnit(bureau) || !SS7DHeadEntity.validUnit(depot)) return null;
                 result.putString(SS7DHeadEntity.BUREAU_TAG, bureau);
                 result.putString(SS7DHeadEntity.DEPOT_TAG, depot);
                 result.putBoolean(SS7DHeadEntity.DEPOT_VISIBLE_TAG,
                         data.getBoolean(SS7DHeadEntity.DEPOT_VISIBLE_TAG));
+                result.putBoolean(SS7DHeadEntity.SECOND_END_TAG, data.getBoolean(SS7DHeadEntity.SECOND_END_TAG));
             }
             case PANEL_TEXT -> {
                 if (slot < 0 || slot > 1 || !data.contains("PanelText" + slot, Tag.TAG_COMPOUND)) return null;

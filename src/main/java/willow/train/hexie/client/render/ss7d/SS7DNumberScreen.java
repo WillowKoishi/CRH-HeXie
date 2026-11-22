@@ -17,11 +17,12 @@ public final class SS7DNumberScreen extends TextInputScreen<SS7DNumberMenu> {
     private EditBox bureau;
     private EditBox depot;
     private Checkbox hideDepot;
+    private Checkbox secondEnd;
 
     public SS7DNumberScreen(SS7DNumberMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
         imageWidth = 184;
-        imageHeight = 152;
+        imageHeight = 174;
     }
 
     @Override protected void init() {
@@ -30,6 +31,7 @@ public final class SS7DNumberScreen extends TextInputScreen<SS7DNumberMenu> {
         String bureauText = bureau == null ? menu.initialBureau : bureau.getValue();
         String depotText = depot == null ? menu.initialDepot : depot.getValue();
         boolean hidden = hideDepot == null ? !menu.initialDepotVisible : hideDepot.selected();
+        boolean endTwo = secondEnd == null ? menu.initialSecondEnd : secondEnd.selected();
         digits = new EditBox(font, leftPos + 64, topPos + 28, 98, 20, title);
         digits.setMaxLength(4);
         digits.setFilter(s -> s.chars().allMatch(c -> c >= '0' && c <= '9'));
@@ -52,18 +54,21 @@ public final class SS7DNumberScreen extends TextInputScreen<SS7DNumberMenu> {
         hideDepot = addRenderableWidget(Checkbox.builder(
                         Component.translatable("gui.hexie.ss7d_hide_depot"), font)
                 .pos(leftPos + 12, topPos + 95).selected(hidden).build());
+        secondEnd = addRenderableWidget(Checkbox.builder(
+                        Component.translatable("gui.hexie.ss7d_second_end"), font)
+                .pos(leftPos + 12, topPos + 117).selected(endTwo).build());
         var confirm = addRenderableWidget(Button.builder(
                 Component.translatable("container.hexie.carriage_type_sign_edit_menu.confirm"), b -> {
                     String value = digits.getValue();
                     if (!SS7DHeadEntity.validDigits(value)) return;
                     HexieNetworkHandler.sendToServer(new SS7DNumberUpdatePacket(menu.containerId, value,
-                            bureau.getValue(), depot.getValue(), !hideDepot.selected()));
+                            bureau.getValue(), depot.getValue(), !hideDepot.selected(), secondEnd.selected()));
                     onClose();
-                }).bounds(leftPos + 12, topPos + 122, 76, 20).build());
+                }).bounds(leftPos + 12, topPos + 144, 76, 20).build());
         confirm.active = SS7DHeadEntity.validDigits(text);
         digits.setResponder(value -> confirm.active = SS7DHeadEntity.validDigits(value));
         addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), b -> onClose())
-                .bounds(leftPos + 96, topPos + 122, 76, 20).build());
+                .bounds(leftPos + 96, topPos + 144, 76, 20).build());
         setInitialFocus(digits);
     }
 

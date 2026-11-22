@@ -48,8 +48,10 @@ public final class SS7DHeadRenderer implements BlockEntityRenderer<SS7DHeadEntit
         if (!head.isCarriageView()) hook(state, pose, buffers, light, overlay);
         for (var plate : SS7DHeadGeometry.PLATES) {
             drawPlate(plate, head.digits(), sidePlates, pose, buffers, light);
-            if (head.depotVisible() && plate.isSide())
-                drawDepot(plate, head.depotLabel(), pose, buffers, light);
+            if (plate.isSide()) {
+                if (head.depotVisible()) drawDepot(plate, head.depotLabel(), pose, buffers, light);
+                drawEndLabel(plate, head.endLabel(), pose, buffers, light);
+            }
         }
         pose.popPose();
     }
@@ -126,6 +128,21 @@ public final class SS7DHeadRenderer implements BlockEntityRenderer<SS7DHeadEntit
         pose.mulPose(Axis.YP.rotation((float) Math.atan2(plate.normal().x, plate.normal().z)));
         float height = .15f;
         float width = .64f;
+        float inkHeight = SignTextRenderer.height(DEPOT_FONT, text, height, width);
+        SignTextRenderer.drawLine(DEPOT_FONT, text, pose, buffers, 0, inkHeight / 2,
+                height, width, PLATE_LETTERING, light, SignTextRenderer.Alignment.CENTER, true);
+        pose.popPose();
+    }
+
+    /** The cab-end mark is below the depot inscription and toward the locomotive front. */
+    private static void drawEndLabel(SS7DHeadGeometry.Plate plate, String text, PoseStack pose,
+                                     MultiBufferSource buffers, int light) {
+        pose.pushPose();
+        var side = plate.printedCenter();
+        pose.translate(side.x, 1.1125, side.z - .203125);
+        pose.mulPose(Axis.YP.rotation((float) Math.atan2(plate.normal().x, plate.normal().z)));
+        float height = .11f;
+        float width = .14f;
         float inkHeight = SignTextRenderer.height(DEPOT_FONT, text, height, width);
         SignTextRenderer.drawLine(DEPOT_FONT, text, pose, buffers, 0, inkHeight / 2,
                 height, width, PLATE_LETTERING, light, SignTextRenderer.Alignment.CENTER, true);

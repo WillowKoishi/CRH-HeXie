@@ -1,20 +1,200 @@
 {
-  "variants": {
-    "facing=north": {
-      "model": "hexie:block/locos/ss7d/ss7d_floor",
-      "y": 90
+  "multipart": [
+    {
+      "when": {
+        "facing": "north"
+      },
+      "apply": {
+        "model": "hexie:block/locos/ss7d/ss7d_floor",
+        "y": 90
+      }
     },
-    "facing=east": {
-      "model": "hexie:block/locos/ss7d/ss7d_floor",
-      "y": 180
+    {
+      "when": {
+        "facing": "north",
+        "equipment": "1"
+      },
+      "apply": {
+        "model": "hexie:block/locos/ss7d/ss7d_floor_equipment",
+        "y": 90
+      }
     },
-    "facing=south": {
-      "model": "hexie:block/locos/ss7d/ss7d_floor",
-      "y": 270
+    {
+      "when": {
+        "facing": "north",
+        "equipment": "2"
+      },
+      "apply": {
+        "model": "hexie:block/locos/ss7d/ss7d_floor_equipment",
+        "y": 180
+      }
     },
-    "facing=west": {
-      "model": "hexie:block/locos/ss7d/ss7d_floor",
-      "y": 0
+    {
+      "when": {
+        "facing": "north",
+        "equipment": "3"
+      },
+      "apply": {
+        "model": "hexie:block/locos/ss7d/ss7d_floor_equipment",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "equipment": "4"
+      },
+      "apply": {
+        "model": "hexie:block/locos/ss7d/ss7d_floor_equipment",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "east"
+      },
+      "apply": {
+        "model": "hexie:block/locos/ss7d/ss7d_floor",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "equipment": "1"
+      },
+      "apply": {
+        "model": "hexie:block/locos/ss7d/ss7d_floor_equipment",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "equipment": "2"
+      },
+      "apply": {
+        "model": "hexie:block/locos/ss7d/ss7d_floor_equipment",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "equipment": "3"
+      },
+      "apply": {
+        "model": "hexie:block/locos/ss7d/ss7d_floor_equipment",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "equipment": "4"
+      },
+      "apply": {
+        "model": "hexie:block/locos/ss7d/ss7d_floor_equipment",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south"
+      },
+      "apply": {
+        "model": "hexie:block/locos/ss7d/ss7d_floor",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "equipment": "1"
+      },
+      "apply": {
+        "model": "hexie:block/locos/ss7d/ss7d_floor_equipment",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "equipment": "2"
+      },
+      "apply": {
+        "model": "hexie:block/locos/ss7d/ss7d_floor_equipment",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "equipment": "3"
+      },
+      "apply": {
+        "model": "hexie:block/locos/ss7d/ss7d_floor_equipment",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "equipment": "4"
+      },
+      "apply": {
+        "model": "hexie:block/locos/ss7d/ss7d_floor_equipment",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west"
+      },
+      "apply": {
+        "model": "hexie:block/locos/ss7d/ss7d_floor",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "equipment": "1"
+      },
+      "apply": {
+        "model": "hexie:block/locos/ss7d/ss7d_floor_equipment",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "equipment": "2"
+      },
+      "apply": {
+        "model": "hexie:block/locos/ss7d/ss7d_floor_equipment",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "equipment": "3"
+      },
+      "apply": {
+        "model": "hexie:block/locos/ss7d/ss7d_floor_equipment",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "equipment": "4"
+      },
+      "apply": {
+        "model": "hexie:block/locos/ss7d/ss7d_floor_equipment",
+        "y": 270
+      }
     }
-  }
+  ]
 }

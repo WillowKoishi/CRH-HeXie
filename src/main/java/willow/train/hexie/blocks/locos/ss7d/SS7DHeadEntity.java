@@ -18,6 +18,7 @@ public final class SS7DHeadEntity extends SmartBlockEntity implements CarriageVi
     public static final String BUREAU_TAG = "SS7DBureau";
     public static final String DEPOT_TAG = "SS7DDepot";
     public static final String DEPOT_VISIBLE_TAG = "SS7DDepotVisible";
+    public static final String SECOND_END_TAG = "SS7DSecondEnd";
     public static final int MAX_UNIT_LENGTH = 12;
     public static final Vec3 RAIN_PROBE = new Vec3(.5, 3.25, -.73);
     private SS7DWipers wipers = new SS7DWipers();
@@ -25,6 +26,7 @@ public final class SS7DHeadEntity extends SmartBlockEntity implements CarriageVi
     private String bureau = "";
     private String depot = "";
     private boolean depotVisible = true;
+    private boolean secondEnd;
     private boolean carriageView;
 
     public SS7DHeadEntity(BlockPos pos, BlockState state) {
@@ -38,6 +40,8 @@ public final class SS7DHeadEntity extends SmartBlockEntity implements CarriageVi
     public String bureau() { return bureau; }
     public String depot() { return depot; }
     public boolean depotVisible() { return depotVisible; }
+    public boolean secondEnd() { return secondEnd; }
+    public String endLabel() { return secondEnd ? "II" : "I"; }
     public String depotLabel() {
         return (bureau.isBlank() ? "X" : bureau) + "局" + (depot.isBlank() ? "X" : depot) + "段";
     }
@@ -56,6 +60,7 @@ public final class SS7DHeadEntity extends SmartBlockEntity implements CarriageVi
     public void updateDigits(String value) {
         if (validDigits(value)) digits = value;
     }
+    public void updateSecondEnd(boolean value) { secondEnd = value; }
     public void updateDepot(String bureau, String depot, boolean visible) {
         if (!validUnit(bureau) || !validUnit(depot)) return;
         this.bureau = bureau.strip();
@@ -82,6 +87,8 @@ public final class SS7DHeadEntity extends SmartBlockEntity implements CarriageVi
         bureau = validUnit(loadedBureau) ? loadedBureau.strip() : "";
         depot = validUnit(loadedDepot) ? loadedDepot.strip() : "";
         depotVisible = !tag.contains(DEPOT_VISIBLE_TAG, Tag.TAG_BYTE) || tag.getBoolean(DEPOT_VISIBLE_TAG);
+        // Existing heads have no end marker field and therefore default to end I.
+        secondEnd = tag.getBoolean(SECOND_END_TAG);
     }
     @Override protected void write(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
         super.write(tag, registries, clientPacket);
@@ -97,5 +104,6 @@ public final class SS7DHeadEntity extends SmartBlockEntity implements CarriageVi
         tag.putString(BUREAU_TAG, bureau);
         tag.putString(DEPOT_TAG, depot);
         tag.putBoolean(DEPOT_VISIBLE_TAG, depotVisible);
+        tag.putBoolean(SECOND_END_TAG, secondEnd);
     }
 }

@@ -1,0 +1,15 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "neoforge:obj",
+  "ambientocclusion": false,
+  "shade_quads": false,
+  "emissive_ambient": false,
+  "automatic_culling": false,
+  "flip_v": true,
+  "model": "hexie:models/block/locos/ss7d/ss7d_floor_equipment.obj",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "particle": "hexie:block/locos/ss7d/ss7d_floor_equipment",
+    "t0": "hexie:block/locos/ss7d/ss7d_floor_equipment"
+  }
+}

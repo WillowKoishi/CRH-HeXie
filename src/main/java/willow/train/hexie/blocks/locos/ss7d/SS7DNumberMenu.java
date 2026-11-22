@@ -16,6 +16,7 @@ public final class SS7DNumberMenu extends BlockEntityEditMenu<SS7DHeadEntity> {
     public final String initialBureau;
     public final String initialDepot;
     public final boolean initialDepotVisible;
+    public final boolean initialSecondEnd;
 
     public SS7DNumberMenu(int id, Inventory inventory, FriendlyByteBuf buf) {
         super(MenuInit.SS7D_NUMBER_MENU.get(), id, null, SS7DHeadEntity.class);
@@ -23,6 +24,7 @@ public final class SS7DNumberMenu extends BlockEntityEditMenu<SS7DHeadEntity> {
         initialBureau = buf.readUtf(SS7DHeadEntity.MAX_UNIT_LENGTH);
         initialDepot = buf.readUtf(SS7DHeadEntity.MAX_UNIT_LENGTH);
         initialDepotVisible = buf.readBoolean();
+        initialSecondEnd = buf.readBoolean();
     }
     private SS7DNumberMenu(int id, SS7DHeadEntity head) {
         super(MenuInit.SS7D_NUMBER_MENU.get(), id, head, SS7DHeadEntity.class);
@@ -30,6 +32,7 @@ public final class SS7DNumberMenu extends BlockEntityEditMenu<SS7DHeadEntity> {
         initialBureau = head.bureau();
         initialDepot = head.depot();
         initialDepotVisible = head.depotVisible();
+        initialSecondEnd = head.secondEnd();
     }
     public static void openWorld(ServerPlayer player, SS7DHeadEntity head) {
         player.openMenu(new SimpleMenuProvider((id, inv, p) -> new SS7DNumberMenu(id, head), TITLE),
@@ -49,6 +52,7 @@ public final class SS7DNumberMenu extends BlockEntityEditMenu<SS7DHeadEntity> {
         buf.writeUtf(head.bureau(), SS7DHeadEntity.MAX_UNIT_LENGTH);
         buf.writeUtf(head.depot(), SS7DHeadEntity.MAX_UNIT_LENGTH);
         buf.writeBoolean(head.depotVisible());
+        buf.writeBoolean(head.secondEnd());
     }
     @Override public boolean stillValid(Player player) {
         if (!(player.getMainHandItem().getItem() instanceof ColoredBrush)

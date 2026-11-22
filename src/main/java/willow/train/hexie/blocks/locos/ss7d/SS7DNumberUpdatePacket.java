@@ -5,10 +5,10 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import willow.train.hexie.network.c2s.HexiePacket;
 
 public record SS7DNumberUpdatePacket(int menuId, String digits, String bureau, String depot,
-                                     boolean depotVisible) implements HexiePacket {
+                                     boolean depotVisible, boolean secondEnd) implements HexiePacket {
     public SS7DNumberUpdatePacket(FriendlyByteBuf buf) {
         this(buf.readVarInt(), buf.readUtf(4), buf.readUtf(SS7DHeadEntity.MAX_UNIT_LENGTH),
-                buf.readUtf(SS7DHeadEntity.MAX_UNIT_LENGTH), buf.readBoolean());
+                buf.readUtf(SS7DHeadEntity.MAX_UNIT_LENGTH), buf.readBoolean(), buf.readBoolean());
     }
     @Override public void encode(FriendlyByteBuf buf) {
         buf.writeVarInt(menuId);
@@ -16,6 +16,7 @@ public record SS7DNumberUpdatePacket(int menuId, String digits, String bureau, S
         buf.writeUtf(bureau, SS7DHeadEntity.MAX_UNIT_LENGTH);
         buf.writeUtf(depot, SS7DHeadEntity.MAX_UNIT_LENGTH);
         buf.writeBoolean(depotVisible);
+        buf.writeBoolean(secondEnd);
     }
     @Override public boolean handle(IPayloadContext context) {
         context.enqueueWork(() -> {
@@ -27,6 +28,7 @@ public record SS7DNumberUpdatePacket(int menuId, String digits, String bureau, S
             var head = menu.editTarget();
             head.updateDigits(digits);
             head.updateDepot(bureau, depot, depotVisible);
+            head.updateSecondEnd(secondEnd);
             if (menu.contentOnly()) menu.commitEdit(player);
             else {
                 head.setChanged();
