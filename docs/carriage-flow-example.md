@@ -1,4 +1,4 @@
-# 车窗流（Carriage Flow）资源包配置
+# 车厢流（Carriage Flow）资源包配置
 
 ```text
 // 客户端资源包：使用 assets/。
