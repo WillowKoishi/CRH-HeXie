@@ -135,15 +135,25 @@ repositories {
 }
 
 sourceSets {
+    client {
+        java.setSrcDirs([])
+        resources.setSrcDirs([])
+        runtimeClasspath += sourceSets.main.runtimeClasspath
+    }
     aeronautics {
         java.setSrcDirs([])
         resources.setSrcDirs([])
         runtimeClasspath += sourceSets.main.runtimeClasspath
     }
-    aeronauticsRailx {
+    clientAeronautics {
         java.setSrcDirs([])
         resources.setSrcDirs([])
         runtimeClasspath += sourceSets.aeronautics.runtimeClasspath
+    }
+    aeronauticsRailx {
+        java.setSrcDirs([])
+        resources.setSrcDirs([])
+        runtimeClasspath += sourceSets.clientAeronautics.runtimeClasspath
     }
 }
 
@@ -165,13 +175,13 @@ neoForge {
         }
         client {
             client()
-            sourceSet = sourceSets.main
+            sourceSet = sourceSets.client
             ideName = 'Client - Create'
             gameDirectory = layout.projectDirectory.dir('run-1.21.1/client-create').asFile
         }
         clientAeronautics {
             client()
-            sourceSet = sourceSets.aeronautics
+            sourceSet = sourceSets.clientAeronautics
             ideName = 'Client - Create + Aeronautics'
             gameDirectory = layout.projectDirectory.dir('run-1.21.1/client').asFile
         }
@@ -229,6 +239,10 @@ dependencies {
     if (providers.gradleProperty('withCee').isPresent()) {
         runtimeOnly(cee) { transitive = false }
     }
+
+    // Client-only development mods; the aviation and RailX clients inherit their base stacks.
+    clientRuntimeOnly "maven.modrinth:patchouli:${patchouli_version}"
+    clientAeronauticsRuntimeOnly "maven.modrinth:patchouli:${patchouli_version}"
 
     // Aviation mods are selected per run.
     aeronauticsRuntimeOnly "com.crystaelix:simurail:${simurail_version}"
