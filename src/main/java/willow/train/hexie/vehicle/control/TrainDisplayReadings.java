@@ -31,7 +31,7 @@ public final class TrainDisplayReadings {
                 if (target == null || point.distanceM() < target.distanceM())
                     target = new DmiState.Target(point.speedKmh() == 0 ? DmiState.TargetKind.SIGNAL
                             : DmiState.TargetKind.SPEED_RESTRICTION,
-                            point.speedKmh() == 0 ? "信号停车点" : "", point.distanceM(), point.speedKmh());
+                            "", point.distanceM(), point.speedKmh());
             }
             return new Route(target, station == null ? stationLabel : station.name(),
                     TrainControl.LINE_SPEED_LIMIT_KMH, status, profile);

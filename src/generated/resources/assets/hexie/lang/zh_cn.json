@@ -825,5 +825,22 @@
   "gui.hexie.bogey_selection.axle_spacing": "有效轴距",
   "gui.hexie.bogey_selection.track_type": "轨道类型",
   "gui.hexie.bogey_selection.addon": "扩展转向架",
-  "create.train.status.hexie.multiple_timetables": "列车有多个时刻表"
+  "create.train.status.hexie.multiple_timetables": "列车有多个时刻表",
+  "gui.hexie.driving_hud.day": "第 %s 天",
+  "gui.hexie.driving_hud.status": "运行状态",
+  "gui.hexie.driving_hud.stop_position": "停车位置",
+  "gui.hexie.driving_hud.ahead_target": "前方目标",
+  "gui.hexie.driving_hud.train_running": "列车运行中",
+  "gui.hexie.driving_hud.station": "车站",
+  "gui.hexie.driving_hud.signal": "信号停车点",
+  "gui.hexie.driving_hud.speed_restriction": "限速点",
+  "gui.hexie.driving_hud.distance": "距离 %s",
+  "gui.hexie.driving_hud.distance_km": "%s 千米",
+  "gui.hexie.driving_hud.distance_m": "%s 米",
+  "gui.hexie.driving_hud.current_speed": "当前速度",
+  "gui.hexie.driving_hud.target_speed": "目标速度",
+  "gui.hexie.driving_hud.unit_kmh": "KM/H",
+  "gui.hexie.driving_hud.traction": "牵引",
+  "gui.hexie.driving_hud.brake": "制动",
+  "gui.hexie.driving_hud.tab_hint": "按 Tab 键开关 HUD 显示"
 }

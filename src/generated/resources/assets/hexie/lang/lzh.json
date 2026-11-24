@@ -778,5 +778,22 @@
   "block.hexie.crh1a_trailer_bogey": "CRH1A 拖车台车",
   "simurail_bogey_entry.hexie.crh1a_trailer": "CRH1A 拖车台车",
   "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_crh1a_trailer.bogey.name": "CRH1A 拖车台车",
-  "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_crh1a_trailer.bogey.cart": "所宜车式: · CRH1A"
+  "container.hexie.bogey_check_overlay.hexie_crhbogey.hexie_crh1a_trailer.bogey.cart": "所宜车式: · CRH1A",
+  "gui.hexie.driving_hud.day": "第 %s 日",
+  "gui.hexie.driving_hud.status": "运行之状",
+  "gui.hexie.driving_hud.stop_position": "停车之所",
+  "gui.hexie.driving_hud.ahead_target": "前方之目标",
+  "gui.hexie.driving_hud.train_running": "列车运行中",
+  "gui.hexie.driving_hud.station": "车站",
+  "gui.hexie.driving_hud.signal": "信号止车处",
+  "gui.hexie.driving_hud.speed_restriction": "限速之处",
+  "gui.hexie.driving_hud.distance": "相距 %s",
+  "gui.hexie.driving_hud.distance_km": "%s 千米",
+  "gui.hexie.driving_hud.distance_m": "%s 米",
+  "gui.hexie.driving_hud.current_speed": "今之速度",
+  "gui.hexie.driving_hud.target_speed": "目标之速",
+  "gui.hexie.driving_hud.unit_kmh": "KM/H",
+  "gui.hexie.driving_hud.traction": "牵引",
+  "gui.hexie.driving_hud.brake": "制动",
+  "gui.hexie.driving_hud.tab_hint": "按 Tab 键以显隐 HUD"
 }

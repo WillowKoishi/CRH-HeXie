@@ -856,5 +856,22 @@
   "gui.hexie.bogey_selection.axle_spacing": "Effective axle spacing",
   "gui.hexie.bogey_selection.track_type": "Track type",
   "gui.hexie.bogey_selection.addon": "Addon Bogeys",
-  "create.train.status.hexie.multiple_timetables": "The train has multiple timetables"
+  "create.train.status.hexie.multiple_timetables": "The train has multiple timetables",
+  "gui.hexie.driving_hud.day": "Day %s",
+  "gui.hexie.driving_hud.status": "Status",
+  "gui.hexie.driving_hud.stop_position": "Stop position",
+  "gui.hexie.driving_hud.ahead_target": "Next target",
+  "gui.hexie.driving_hud.train_running": "Train running",
+  "gui.hexie.driving_hud.station": "Station",
+  "gui.hexie.driving_hud.signal": "Signal stop",
+  "gui.hexie.driving_hud.speed_restriction": "Speed limit",
+  "gui.hexie.driving_hud.distance": "Distance %s",
+  "gui.hexie.driving_hud.distance_km": "%s km",
+  "gui.hexie.driving_hud.distance_m": "%s m",
+  "gui.hexie.driving_hud.current_speed": "Current speed",
+  "gui.hexie.driving_hud.target_speed": "Target speed",
+  "gui.hexie.driving_hud.unit_kmh": "KM/H",
+  "gui.hexie.driving_hud.traction": "Traction",
+  "gui.hexie.driving_hud.brake": "Brake",
+  "gui.hexie.driving_hud.tab_hint": "Press Tab to toggle HUD"
 }
