@@ -1,8 +1,30 @@
 
 # 开发日志
 
+### version 0.11.1-nonomi-bata
+##### 2026.11.24
+
+添加功能:
+
+- 驾驶台乘坐时显示驾驶 HUD，提供游戏时间、运行目标、当前与目标速度、牵引或制动状态，并可按 Tab 切换显示（WillowKoishi）
+- 可调式色灯信号机设置新增区段／连锁信号模式选项，并同步信号类型及相应状态提示（WillowKoishi）
+
+修改机制:
+
+- 驾驶 HUD 按目标类型显示车站、信号停车点或限速点；统一读取原生列车与快照列车的速度、限速和牵引／制动数据（WillowKoishi）
+- 驾驶 HUD 使用拉丁字母与简体中文专用字体，按需加载字形并在字体不可用时回退到游戏字体（WillowKoishi）
+
+新增 / 修改数据资源:
+
+- 新增 Patchouli《和谐图鉴》手册入口及机车、女仆、其他、总览分类框架（WillowKoishi）
+
+其他:
+
+- 为 Create、Aeronautics 及其客户端运行配置拆分 Gradle source set，并添加客户端 Patchouli 依赖（WillowKoishi）
+
+---
 ### version 0.11.0-nonomi-bata
-##### 2026.11.22
+##### 2026.11.23
 
 添加方块（组）:
 
@@ -33,10 +55,12 @@
 新增 / 修改美术资源:
 
 - 补充韶山 7D 车头、车门、车厢板、地板和车棚的源模型、拆件模型与贴图，并加入司机室空调、车顶线路、车底设备、车号及局段字样资源（AlpacaEgg、WillowKoishi）
+- 更新车厢部件源模型 art_assets/wow.bbmodel（WillowKoishi）
 
 其他:
 
 - 将运行日志目录 logs/ 加入 Git 忽略规则（WillowKoishi）
+- 将车窗流资源包配置文档标题中的「车窗流」改为「车厢流」（WillowKoishi）
 
 ---
 ### version 0.10.6-Shiroko-bata
