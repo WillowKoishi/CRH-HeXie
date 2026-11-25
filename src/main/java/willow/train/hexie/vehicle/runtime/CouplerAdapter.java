@@ -1,20 +1,23 @@
 package willow.train.hexie.vehicle.runtime;
 
+import willow.train.hexie.bridge.vehicle.CouplingBridge;
+import willow.train.hexie.core.api.vehicle.Point3;
+
 /** One reversible adapter mounted on the original hook head. Thickness is measured in blocks. */
 public record CouplerAdapter(String itemId, String firstModel, String secondModel, double thickness,
-                             java.util.List<CouplerAdapter> layers, CouplingEndpoint.Point offset) {
+                             java.util.List<CouplerAdapter> layers, Point3 offset) implements CouplingBridge.CouplerAdapterView {
     public CouplerAdapter(String itemId, String firstModel, String secondModel, double thickness) {
-        this(itemId, firstModel, secondModel, thickness, java.util.List.of(), new CouplingEndpoint.Point(0, 0, -thickness));
+        this(itemId, firstModel, secondModel, thickness, java.util.List.of(), new Point3(0, 0, -thickness));
     }
 
     public CouplerAdapter(String itemId, String firstModel, String secondModel, double thickness,
                           java.util.List<CouplerAdapter> layers) {
         this(itemId, firstModel, secondModel, thickness, layers,
-                layers.isEmpty() ? new CouplingEndpoint.Point(0, 0, -thickness) : offsetOf(firstModel, layers));
+                layers.isEmpty() ? new Point3(0, 0, -thickness) : offsetOf(firstModel, layers));
     }
 
     public CouplerAdapter(String itemId, String firstModel, String secondModel, double thickness,
-                          CouplingEndpoint.Point offset) {
+                          Point3 offset) {
         this(itemId, firstModel, secondModel, thickness, java.util.List.of(), offset);
     }
 
@@ -72,14 +75,14 @@ public record CouplerAdapter(String itemId, String firstModel, String secondMode
     public CouplerAdapter outer() { return items().getLast(); }
 
     /** Local north remains outward. Reversing the rigid adapter changes its interface height sign. */
-    public CouplingEndpoint.Point offsetFrom(String mountedModel) {
+    public Point3 offsetFrom(String mountedModel) {
         if (firstModel.equals(mountedModel)) return offset;
-        if (secondModel.equals(mountedModel)) return new CouplingEndpoint.Point(offset.x(), -offset.y(), offset.z());
+        if (secondModel.equals(mountedModel)) return new Point3(offset.x(), -offset.y(), offset.z());
         throw new IllegalArgumentException("Adapter does not match its mounting interface");
     }
 
-    private static CouplingEndpoint.Point offsetOf(String baseModel, java.util.List<CouplerAdapter> layers) {
-        var result = new CouplingEndpoint.Point(0, 0, 0);
+    private static Point3 offsetOf(String baseModel, java.util.List<CouplerAdapter> layers) {
+        var result = new Point3(0, 0, 0);
         String model = baseModel;
         for (var layer : layers) {
             result = result.plus(layer.offsetFrom(model));

@@ -4,16 +4,16 @@ import com.simibubi.create.content.trains.bogey.BogeyBlockEntityRenderer;
 import java.util.stream.Collectors;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.ModelEvent;
-import willow.train.hexie.api.bogey.BogeyHandle;
-import willow.train.hexie.api.bogey.BogeyRegistry;
-import willow.train.hexie.bogey.client.BogeyAnimations;
+import willow.train.hexie.bridge.HexieBridges;
+import willow.train.hexie.core.api.bogey.BogeyHandle;
+import willow.train.hexie.core.api.bogey.BogeyRegistry;
 
 /** Client registrations for the backend-owned block entities of declaratively registered bogeys. */
 public final class CreateAddonBogeyClient {
     private CreateAddonBogeyClient() {}
 
     public static void registerAdditional(ModelEvent.RegisterAdditional event) {
-        BogeyAnimations.freeze(BogeyRegistry.entries().stream().map(BogeyHandle::id).collect(Collectors.toSet()));
+        HexieBridges.Client.bogeyRegistryClient().bogeyAnimations().freeze(BogeyRegistry.entries().stream().map(BogeyHandle::id).collect(Collectors.toSet()));
     }
 
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {

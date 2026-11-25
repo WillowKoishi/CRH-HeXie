@@ -1,8 +1,8 @@
 package willow.train.hexie.vehicle.runtime;
 
+import willow.train.hexie.bridge.railway.TrackGeometryView.Vector;
+import willow.train.hexie.core.api.vehicle.Point3;
 import willow.train.hexie.vehicle.kinematics.VehicleConstraintSolver.BodyPose;
-import willow.train.hexie.vehicle.runtime.CouplingEndpoint.Point;
-import willow.train.hexie.vehicle.track.TrackGeometry.Vector;
 
 /** The hook's block cross-section, partitioned by its start, completion and pivot planes. */
 public record CouplingRegion(Vector centre, Vector right, Vector up, Vector depth, double halfDepth) {
@@ -10,10 +10,10 @@ public record CouplingRegion(Vector centre, Vector right, Vector up, Vector dept
         double front = engagement ? hook.start().z() - (hook.adapter() == null ? 0 : hook.adapter().thickness())
                 : hook.effectiveComplete().z();
         double back = hook.axis().z();
-        var offset = hook.adapter() == null ? new Point(0, 0, 0) : hook.adapter().offsetFrom(hook.model());
-        Point middle = hook.blockCenter().plus(hook.rotated(new Point(offset.x(), -floorOffset + offset.y(), (front + back) * .5)));
-        return new CouplingRegion(body.transform(middle), body.rotate(hook.rotated(new Point(1, 0, 0))),
-                body.rotate(hook.rotated(new Point(0, 1, 0))), body.rotate(hook.rotated(new Point(0, 0, 1))),
+        var offset = hook.adapter() == null ? new Point3(0, 0, 0) : hook.adapter().offsetFrom(hook.model());
+        Point3 middle = hook.blockCenter().plus(hook.rotated(new Point3(offset.x(), -floorOffset + offset.y(), (front + back) * .5)));
+        return new CouplingRegion(body.transform(middle), body.rotate(hook.rotated(new Point3(1, 0, 0))),
+                body.rotate(hook.rotated(new Point3(0, 1, 0))), body.rotate(hook.rotated(new Point3(0, 0, 1))),
                 Math.abs(back - front) * .5);
     }
 

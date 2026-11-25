@@ -1,6 +1,6 @@
 package willow.train.hexie.compat.create.railx;
 
-import willow.train.hexie.compat.create.TrackRailSurface;
+import willow.train.hexie.compat.create.track.TrackRailSurface;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -33,9 +33,9 @@ import com.simibubi.create.content.trains.graph.TrackNode;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.phys.Vec3;
-import willow.train.hexie.compat.create.CreateRouteBinding;
-import willow.train.hexie.compat.create.CreateTrackCompatibility;
-import willow.train.hexie.compat.create.SnapshotCarriageEntity;
+import willow.train.hexie.compat.create.signal.CreateRouteBinding;
+import willow.train.hexie.compat.create.track.CreateTrackCompatibility;
+import willow.train.hexie.compat.create.motion.SnapshotCarriageEntity;
 
 /** Loaded only after the RailX mod guard. Does not invoke either mod's train physics. */
 public final class RailxTrackCompatibility {

@@ -32,19 +32,20 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import org.joml.Quaterniond;
 import org.joml.Vector3d;
-import willow.train.hexie.blockentity.CouplerBlockEntity;
-import willow.train.hexie.blocks.base.CarriageViewBlockEntity;
-import willow.train.hexie.blocks.coupler.CouplerBlock;
-import willow.train.hexie.blocks.coupler.ModelCouplerBlock;
-import willow.train.hexie.vehicle.runtime.CouplerAdapter;
-import willow.train.hexie.vehicle.runtime.CouplingEndpoint;
-
 import java.util.List;
 import java.util.UUID;
+import willow.train.hexie.bridge.HexieBridges;
+import willow.train.hexie.bridge.vehicle.CouplingBridge.CouplerAdapterView;
+import willow.train.hexie.bridge.world.BlockEntityViews.CarriageViewBlockEntityView;
+import willow.train.hexie.bridge.world.CarriageBlockBridge.CRH1EndFaceBlockOperations;
+import willow.train.hexie.bridge.world.CouplerBlockBridge.CouplerBlockView;
+import willow.train.hexie.bridge.world.CouplerBlockBridge.ModelCouplerBlockView;
+import willow.train.hexie.bridge.world.base.CouplerBlockEntityBase;
+import willow.train.hexie.core.api.vehicle.Point3;
 
 /** Optional Simurail mechanics for the existing HeXie coupler blocks. */
-public final class PhysicalCouplerBlockEntity extends CouplerBlockEntity
-        implements AutomaticCoupler, BlockEntitySubLevelActor, CarriageViewBlockEntity {
+public final class PhysicalCouplerBlockEntity extends CouplerBlockEntityBase
+        implements AutomaticCoupler, BlockEntitySubLevelActor, CarriageViewBlockEntityView {
     private static final String PHYSICS_DATA = "HexiePhysicalCoupler";
     // The automatic and semiautomatic heads retain their separate HeXie mating identities.
     private static final CouplerType CRH2_AUTO = new CouplerType(
@@ -68,7 +69,7 @@ public final class PhysicalCouplerBlockEntity extends CouplerBlockEntity
     private final Quaterniond partnerJointRotation = new Quaterniond();
 
     public PhysicalCouplerBlockEntity(BlockPos pos, BlockState state) {
-        super(pos, state);
+        this(HexieBridges.worldRegistry().blockEntitiesInit().coupler(), pos, state);
     }
 
     public PhysicalCouplerBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
@@ -103,11 +104,11 @@ public final class PhysicalCouplerBlockEntity extends CouplerBlockEntity
         return true;
     }
 
-    @Override public boolean install(CouplerAdapter adapter) {
+    @Override public boolean install(CouplerAdapterView adapter) {
         return partnerPos == null && super.install(adapter);
     }
 
-    @Override public CouplerAdapter removeOuter() {
+    @Override public CouplerAdapterView removeOuter() {
         return partnerPos == null ? super.removeOuter() : null;
     }
 
@@ -168,7 +169,7 @@ public final class PhysicalCouplerBlockEntity extends CouplerBlockEntity
                 && Sable.HELPER.getContaining(this) instanceof ServerSubLevel;
     }
 
-    private CouplerBlock hook() { return CouplerBlock.of(getBlockState()); }
+    private CouplerBlockView hook() { return HexieBridges.couplerBlock().couplerBlock().of(getBlockState()); }
 
     @Override public Direction getFacing() {
         var hook = hook();
@@ -180,8 +181,8 @@ public final class PhysicalCouplerBlockEntity extends CouplerBlockEntity
         return !isPhysicalActor() || redstoneInput || manualRelease || level.hasNeighborSignal(getBlockPos())
                 || !("railways:knuckle".equals(effectiveModel()) || "hexie:crh2_auto".equals(effectiveModel())
                 || "hexie:crh2_semiauto".equals(effectiveModel())
-                || willow.train.hexie.blocks.emu.crh1a.CRH1EndFaceBlock.COUPLER_MODEL.equals(effectiveModel()))
-                || getBlockState().getBlock() instanceof ModelCouplerBlock
+                || CRH1EndFaceBlockOperations.COUPLER_MODEL.equals(effectiveModel()))
+                || getBlockState().getBlock() instanceof ModelCouplerBlockView
                 && !getBlockState().getValue(BlockStateProperties.OPEN);
     }
 
@@ -198,21 +199,21 @@ public final class PhysicalCouplerBlockEntity extends CouplerBlockEntity
     @Override public CouplerType getCouplerType() {
         String model = effectiveModel();
         if ("railways:knuckle".equals(model)) return SimurailCouplers.KNUCKLE;
-        if (willow.train.hexie.blocks.emu.crh1a.CRH1EndFaceBlock.COUPLER_MODEL.equals(model)) return CRH1EndFacePhysical.TYPE;
+        if (CRH1EndFaceBlockOperations.COUPLER_MODEL.equals(model)) return CRH1EndFacePhysical.TYPE;
         return "hexie:crh2_semiauto".equals(model) ? CRH2_SEMIAUTO : CRH2_AUTO;
     }
 
     // The installed HeXie head and adapter determine its type; native wrench type cycling is disabled.
     @Override public void setCouplerType(CouplerType type) { }
 
-    private CouplingEndpoint.Point effectiveContact() {
+    private Point3 effectiveContact() {
         var hook = hook();
-        if (hook == null) return new CouplingEndpoint.Point(0, 0, 0);
+        if (hook == null) return new Point3(0, 0, 0);
         var point = hook.complete();
         return adapter() == null ? point : point.plus(adapter().offsetFrom(hook.model()));
     }
 
-    private Vector3d toStorage(CouplingEndpoint.Point point, Vector3d dest) {
+    private Vector3d toStorage(Point3 point, Vector3d dest) {
         double x = point.x(), z = point.z();
         switch (getFacing()) {
             case EAST -> { x = -point.z(); z = point.x(); }
@@ -228,7 +229,7 @@ public final class PhysicalCouplerBlockEntity extends CouplerBlockEntity
 
     @Override public Vector3d getCouplerJointPos(Vector3d dest) {
         var hook = hook();
-        return toStorage(hook == null ? new CouplingEndpoint.Point(0, 0, 0)
+        return toStorage(hook == null ? new Point3(0, 0, 0)
                 : hook.axis().atHeight(effectiveContact().y()), dest);
     }
 
@@ -434,7 +435,7 @@ public final class PhysicalCouplerBlockEntity extends CouplerBlockEntity
     @Override public BlockPos getConnectedBogeyPos() { return null; }
     @Override public boolean getConnectedBogeyFront() { return false; }
 
-    @Override protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+    @Override public void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         if (carriageView) return;
         var data = new CompoundTag();
@@ -446,7 +447,7 @@ public final class PhysicalCouplerBlockEntity extends CouplerBlockEntity
         tag.put(PHYSICS_DATA, data);
     }
 
-    @Override protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+    @Override public void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         removeCouplerJoint();
         var data = tag.getCompound(PHYSICS_DATA);

@@ -1,5 +1,7 @@
 package willow.train.hexie.vehicle.control;
 
+import willow.train.hexie.core.api.cab.CabState;
+import willow.train.hexie.core.api.traincontrol.TrainCommand;
 import willow.train.hexie.vehicle.runtime.VehicleRuntime;
 
 /** Shared actuator limits. Does not perform ATP intervention or own route navigation. */
@@ -29,11 +31,11 @@ public final class TrainControl {
     }
 
     /** Inputs span the available handle travel; a full service handle maps to the source's cap. */
-    public static VehicleRuntime.Control service(Source source, double signedPower, double serviceBrake) {
+    public static TrainCommand service(Source source, double signedPower, double serviceBrake) {
         if (source == null || !Double.isFinite(signedPower) || Math.abs(signedPower) > 1
                 || !Double.isFinite(serviceBrake) || serviceBrake < 0 || serviceBrake > 1)
             throw new IllegalArgumentException("Invalid train control input");
-        return CabController.manual(new CabController.Input(Math.abs(signedPower) * source.powerLimit,
+        return CabController.manual(new CabState.Input(Math.abs(signedPower) * source.powerLimit,
                 serviceBrake * source.serviceBrakeLimit, (int) Math.signum(signedPower)));
     }
 
@@ -46,12 +48,12 @@ public final class TrainControl {
     }
 
     /** Schedule/approach adapters supply targets, not velocities to assign directly. */
-    public static VehicleRuntime.Control targetSpeed(Source source, double speed, double target, boolean braking) {
+    public static TrainCommand targetSpeed(Source source, double speed, double target, boolean braking) {
         if (!Double.isFinite(speed) || !Double.isFinite(target))
             throw new IllegalArgumentException("Non-finite speed target");
         boolean slowing = braking || speed * target < 0 || Math.abs(speed) > Math.abs(target) + .05;
         return service(source, slowing || Math.abs(target - speed) < .05 ? 0 : Math.signum(target), slowing ? 1 : 0);
     }
 
-    public static VehicleRuntime.Control fullBrake() { return new VehicleRuntime.Control(0, 1); }
+    public static TrainCommand fullBrake() { return new TrainCommand(0, 1); }
 }

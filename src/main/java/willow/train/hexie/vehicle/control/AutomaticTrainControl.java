@@ -1,9 +1,13 @@
 package willow.train.hexie.vehicle.control;
 
+// split from willow/train/hexie/vehicle/control/AutomaticTrainControl.java
+
 import java.util.ArrayList;
 import java.util.Objects;
-import willow.train.hexie.api.cab.DmiState;
-import willow.train.hexie.vehicle.runtime.VehicleRuntime;
+import willow.train.hexie.bridge.vehicle.CabControlBridge;
+import willow.train.hexie.core.api.cab.CtcsProfile;
+import willow.train.hexie.core.api.cab.TrainControlLimits;
+import willow.train.hexie.core.api.traincontrol.TrainCommand;
 
 /** Our automatic driving policy. Receives route facts, never a backend's throttle or desired velocity. */
 public final class AutomaticTrainControl {
@@ -11,15 +15,15 @@ public final class AutomaticTrainControl {
 
     /** SI units. Route constraints are observations, never the DMI's calculated speed envelope. */
     public record Target(int direction, double distanceM, double speedLimitMps, boolean station, boolean stop,
-                         CtcsControl.Profile constraints, TrainControlLimits limits) {
+                         CtcsProfile.Profile constraints, TrainControlLimits limits) implements CabControlBridge.AutomaticTrainControlTargetView {
         public Target(int direction, double distanceM, double speedLimitMps, boolean station) {
             this(direction, distanceM, speedLimitMps, station, true);
         }
         public Target(int direction, double distanceM, double speedLimitMps, boolean station, boolean stop) {
-            this(direction, distanceM, speedLimitMps, station, stop, CtcsControl.Profile.EMPTY);
+            this(direction, distanceM, speedLimitMps, station, stop, CtcsProfile.Profile.EMPTY);
         }
         public Target(int direction, double distanceM, double speedLimitMps, boolean station, boolean stop,
-                      CtcsControl.Profile constraints) {
+                      CtcsProfile.Profile constraints) {
             this(direction, distanceM, speedLimitMps, station, stop, constraints, null);
         }
         public Target {
@@ -46,57 +50,36 @@ public final class AutomaticTrainControl {
     /** Select the automatic endpoint from the same route observations used by the display. */
     public static Target fromRoute(TrainDisplayReadings.Route route, int direction, boolean navigating,
                                    boolean waypointTransition, double speed) {
-        return fromRoute(route, direction, navigating, waypointTransition, speed, null);
+        return AutomaticTrainTargets.fromRoute(route, direction, navigating, waypointTransition, speed);
     }
 
     public static Target fromRoute(TrainDisplayReadings.Route route, int direction, boolean navigating,
                                    boolean waypointTransition, double speed, TrainControlLimits limits) {
-        Objects.requireNonNull(route);
-        if (!Double.isFinite(speed)) throw new IllegalArgumentException("Non-finite speed");
-        if (!navigating)
-            return waypointTransition ? new Target(direction, 0, Math.abs(speed), false, false, route.ctcs(), limits) : null;
-        var endpoint = route.target();
-        var constraints = route.ctcs();
-        // A nonzero endpoint is a speed restriction, not a zero-speed station/signal stop.
-        if (endpoint != null && endpoint.speedKmh() > 0) {
-            var point = new CtcsControl.SpeedTarget(endpoint.distanceM(), endpoint.speedKmh());
-            if (!constraints.targets().contains(point)) {
-                var points = new ArrayList<>(constraints.targets());
-                points.add(point);
-                constraints = new CtcsControl.Profile(constraints.code(), points);
-            }
-        }
-        return new Target(direction, endpoint == null ? 0 : endpoint.distanceM(),
-                route.lineLimitKmh() < 0 ? Double.POSITIVE_INFINITY : route.lineLimitKmh() / 3.6,
-                endpoint != null && endpoint.kind() == DmiState.TargetKind.STATION,
-                endpoint != null && endpoint.speedKmh() == 0, constraints, limits);
+        return AutomaticTrainTargets.fromRoute(route, direction, navigating, waypointTransition, speed, limits);
     }
 
-    public static VehicleRuntime.Control update(TrainControl.Source source, double speed,
+    public static TrainCommand update(TrainControl.Source source, double speed,
                                                 Target target, double serviceDeceleration) {
         return update(source, speed, target, serviceDeceleration, StationStopControl.State.RUNNING);
     }
 
     /** Create commands slightly past the marker; the physical route captures the exact station point. */
     public static Target stationApproach(Target target) {
-        if (target == null || !target.station() || !target.stop()) return target;
-        // Only the station endpoint moves. Signal constraints keep their actual distances.
-        return new Target(target.direction(), target.distanceM() + .25, target.speedLimitMps(),
-                true, true, target.constraints(), target.limits());
+        return AutomaticTrainTargets.stationApproach(target);
     }
 
-    public static VehicleRuntime.Control update(TrainControl.Source source, double speed,
+    public static TrainCommand update(TrainControl.Source source, double speed,
                                                 Target target, double serviceDeceleration,
                                                 StationStopControl.State stationStop) {
         return update(source, speed, target, serviceDeceleration, stationStop, PlanningCurve.DEFAULT);
     }
 
-    public static VehicleRuntime.Control update(TrainControl.Source source, double speed,
+    public static TrainCommand update(TrainControl.Source source, double speed,
                                                 Target target, double serviceDeceleration, PlanningCurve curve) {
         return update(source, speed, target, serviceDeceleration, StationStopControl.State.RUNNING, curve);
     }
 
-    public static VehicleRuntime.Control update(TrainControl.Source source, double speed,
+    public static TrainCommand update(TrainControl.Source source, double speed,
                                                 Target target, double serviceDeceleration,
                                                 StationStopControl.State stationStop, PlanningCurve curve) {
         Objects.requireNonNull(curve);
@@ -131,7 +114,7 @@ public final class AutomaticTrainControl {
         if (desired == 0 && Math.abs(speed) < .02) return TrainControl.service(source, 0, 1);
         if (error > .02)
             return TrainControl.service(source, target.direction() * Math.clamp(error / .5, 0, 1), 0);
-        return VehicleRuntime.Control.NEUTRAL;
+        return TrainCommand.NEUTRAL;
     }
 
     public static double guidanceSpeed(Target target, double serviceDeceleration) {
@@ -159,13 +142,13 @@ public final class AutomaticTrainControl {
     }
 
     private static Target anticipate(Target target, double responseDistance) {
-        var points = new ArrayList<CtcsControl.SpeedTarget>();
+        var points = new ArrayList<CtcsProfile.SpeedTarget>();
         for (var point : target.constraints().targets())
-            points.add(new CtcsControl.SpeedTarget(Math.max(0, point.distanceM()
+            points.add(new CtcsProfile.SpeedTarget(Math.max(0, point.distanceM()
                     - (isStationEndpoint(target, point) ? 0 : responseDistance)), point.speedKmh()));
         return new Target(target.direction(), target.station() && target.stop() ? target.distanceM()
                 : Math.max(0, target.distanceM() - responseDistance), target.speedLimitMps(), target.station(), target.stop(),
-                new CtcsControl.Profile(target.constraints().code(), points), target.limits());
+                new CtcsProfile.Profile(target.constraints().code(), points), target.limits());
     }
 
     private static double requiredDeceleration(Target target, double speed) {
@@ -197,11 +180,11 @@ public final class AutomaticTrainControl {
         return Math.max(0, target.distanceM() - (target.station() ? 0 : .5));
     }
 
-    private static double constraintDistance(Target target, CtcsControl.SpeedTarget point) {
+    private static double constraintDistance(Target target, CtcsProfile.SpeedTarget point) {
         return Math.max(0, point.distanceM() - (point.speedKmh() == 0 && !isStationEndpoint(target, point) ? .5 : 0));
     }
 
-    private static boolean isStationEndpoint(Target target, CtcsControl.SpeedTarget point) {
+    private static boolean isStationEndpoint(Target target, CtcsProfile.SpeedTarget point) {
         return target.station() && target.stop() && point.speedKmh() == 0 && point.distanceM() == target.distanceM();
     }
 

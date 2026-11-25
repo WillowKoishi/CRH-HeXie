@@ -1,5 +1,7 @@
 package willow.train.hexie.vehicle.assembly;
 
+// split from willow/train/hexie/vehicle/assembly/CarriageSnapshot.java
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -9,22 +11,21 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.phys.AABB;
-import willow.train.hexie.blocks.coupler.AbstractCouplerBlock;
-import willow.train.hexie.blocks.signs.PanelDisplayMount;
-import willow.train.hexie.blocks.signs.PanelDisplayColumn;
-import willow.train.hexie.blocks.signs.PassengerDisplayPanel;
+import willow.train.hexie.bridge.HexieBridges;
+import willow.train.hexie.bridge.vehicle.CarriageSnapshotView;
+import willow.train.hexie.bridge.vehicle.VehicleBridge;
+import willow.train.hexie.bridge.world.CarriageBlockBridge;
+import willow.train.hexie.bridge.world.CouplerBlockBridge;
 
 /** Immutable structure data. Capturing or decoding this record never places or removes blocks. */
 public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos origin,
-                               List<Block> blocks, List<BlockPos> supports, List<AABB> glue) {
+                               List<Block> blocks, List<BlockPos> supports, List<AABB> glue) implements CarriageSnapshotView {
     public static final int SCHEMA_VERSION = 2;
 
     public CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos origin,
@@ -39,7 +40,7 @@ public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos o
         // Known additive entities can be absent from snapshots captured before their introduction.
         var upgradedBlocks = new ArrayList<Block>(blocks.size());
         for (Block block : blocks) {
-            if (canInitializeEntity(block.state()) && block.entityData == null) {
+            if (canInitializeEntity(block.state()) && block.entityData() == null) {
                 BlockPos world = absolute(origin, block.position());
                 var data = new CompoundTag();
                 var entity = ((net.minecraft.world.level.block.EntityBlock) block.state().getBlock()).newBlockEntity(world, block.state());
@@ -50,7 +51,8 @@ public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos o
             }
             upgradedBlocks.add(block);
         }
-        blocks = List.copyOf(willow.train.hexie.blocks.emu.head.HeadBogeyMigration.snapshot(upgradedBlocks));
+        blocks = HexieBridges.carriageBlock().headBogeyMigration().snapshot(List.copyOf(upgradedBlocks)).stream()
+                .map(Block::fromView).toList();
         supports = supports.stream().map(BlockPos::immutable).toList();
         glue = List.copyOf(glue);
         for (AABB box : glue)
@@ -65,10 +67,10 @@ public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos o
             if (!positions.add(block.position()))
                 throw new IllegalArgumentException("Duplicate block position: " + block.position());
             BlockPos world = absolute(origin, block.position());
-            if (block.entityData != null) {
-                if (block.entityData.getInt("x") != world.getX()
-                        || block.entityData.getInt("y") != world.getY()
-                        || block.entityData.getInt("z") != world.getZ())
+            if (block.entityData() != null) {
+                if (block.entityData().getInt("x") != world.getX()
+                        || block.entityData().getInt("y") != world.getY()
+                        || block.entityData().getInt("z") != world.getZ())
                     throw new IllegalArgumentException("Block entity coordinates do not match its block");
             }
         }
@@ -81,7 +83,11 @@ public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos o
     }
 
     /** Block entity NBT retains complete original-world metadata, including id and coordinates. */
-    public record Block(BlockPos position, BlockState state, CompoundTag entityData) {
+    public record Block(BlockPos position, BlockState state, CompoundTag entityData) implements VehicleBridge.CarriageSnapshotBlockView {
+        public static Block fromView(VehicleBridge.CarriageSnapshotBlockView block) {
+            return block instanceof Block captured ? captured : new Block(block.position(), block.state(), block.entityData());
+        }
+
         public Block {
             position = Objects.requireNonNull(position, "position").immutable();
             Objects.requireNonNull(state, "state");
@@ -109,145 +115,22 @@ public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos o
     }
 
     public CompoundTag save(RegistryAccess registries) {
-        var root = new CompoundTag();
-        root.putInt("Schema", SCHEMA_VERSION);
-        root.putUUID("Id", id);
-        root.putString("Dimension", dimension.location().toString());
-        root.putIntArray("Origin", coordinates(origin));
-        var blockList = new ListTag();
-        for (Block block : blocks) {
-            var tag = new CompoundTag();
-            tag.putIntArray("Pos", coordinates(block.position()));
-            var state = new CompoundTag();
-            var name = validateBlock(block, registries);
-            state.putString("Name", name.toString());
-            var properties = new CompoundTag();
-            block.state().getValues().forEach((property, value) ->
-                    properties.putString(property.getName(), propertyName(property, value)));
-            if (!properties.isEmpty()) state.put("Properties", properties);
-            tag.put("State", state);
-            if (block.entityData != null) {
-                tag.put("BlockEntity", block.entityData.copy());
-            }
-            blockList.add(tag);
-        }
-        root.put("Blocks", blockList);
-        var supportList = new ListTag();
-        for (BlockPos support : supports) {
-            var tag = new CompoundTag();
-            tag.putIntArray("Pos", coordinates(support));
-            supportList.add(tag);
-        }
-        root.put("Supports", supportList);
-        var glueList = new ListTag();
-        for (AABB box : glue) {
-            var tag = new CompoundTag();
-            tag.putDouble("MinX", box.minX); tag.putDouble("MinY", box.minY); tag.putDouble("MinZ", box.minZ);
-            tag.putDouble("MaxX", box.maxX); tag.putDouble("MaxY", box.maxY); tag.putDouble("MaxZ", box.maxZ);
-            glueList.add(tag);
-        }
-        root.put("Glue", glueList);
-        return root;
+        return CarriageSnapshotNbt.save(this, registries);
     }
 
     /** Strict decoding: unknown blocks/properties must not silently turn into air or defaults. */
     public static CarriageSnapshot load(CompoundTag root, RegistryAccess registries) {
-        require(root, "Schema", Tag.TAG_INT);
-        if (root.getInt("Schema") < 1 || root.getInt("Schema") > SCHEMA_VERSION)
-            throw new IllegalArgumentException("Unsupported carriage snapshot schema: " + root.getInt("Schema"));
-        if (!root.hasUUID("Id")) throw new IllegalArgumentException("Missing or invalid carriage UUID");
-        require(root, "Dimension", Tag.TAG_STRING);
-        var dimension = ResourceKey.create(Registries.DIMENSION, identifier(root.getString("Dimension")));
-        var blocks = new ArrayList<Block>();
-        for (Tag item : list(root, "Blocks")) {
-            var tag = (CompoundTag) item;
-            require(tag, "State", Tag.TAG_COMPOUND);
-            BlockState state = readState(tag.getCompound("State"), registries);
-            CompoundTag entity = null;
-            if (tag.contains("BlockEntity")) {
-                require(tag, "BlockEntity", Tag.TAG_COMPOUND);
-                entity = tag.getCompound("BlockEntity");
-                validateEntityType(state, entity, registries);
-            }
-            blocks.add(new Block(position(tag, "Pos"), state, entity));
-        }
-        var supports = new ArrayList<BlockPos>();
-        for (Tag item : list(root, "Supports")) supports.add(position((CompoundTag) item, "Pos"));
-        var glue = new ArrayList<AABB>();
-        if (root.getInt("Schema") >= 2) for (Tag item : list(root, "Glue")) {
-            var tag = (CompoundTag) item;
-            for (String key : List.of("MinX", "MinY", "MinZ", "MaxX", "MaxY", "MaxZ")) require(tag, key, Tag.TAG_DOUBLE);
-            glue.add(new AABB(tag.getDouble("MinX"), tag.getDouble("MinY"), tag.getDouble("MinZ"),
-                    tag.getDouble("MaxX"), tag.getDouble("MaxY"), tag.getDouble("MaxZ")));
-        }
-        return new CarriageSnapshot(root.getUUID("Id"), dimension, position(root, "Origin"), blocks, supports, glue);
+        return CarriageSnapshotNbt.load(root, registries);
     }
 
     public static BlockState readState(CompoundTag tag, RegistryAccess registries) {
-        require(tag, "Name", Tag.TAG_STRING);
-        var name = identifier(tag.getString("Name"));
-        var registry = registries.registryOrThrow(Registries.BLOCK);
-        if (!registry.containsKey(name)) throw new IllegalArgumentException("Unknown block: " + name);
-        BlockState state = registry.get(name).defaultBlockState();
-        if (!state.getProperties().isEmpty() && !tag.contains("Properties", Tag.TAG_COMPOUND))
-            throw new IllegalArgumentException("Missing block state properties: " + name);
-        if (tag.contains("Properties")) {
-            require(tag, "Properties", Tag.TAG_COMPOUND);
-            var properties = tag.getCompound("Properties");
-            // This additive flag did not exist before integral heads. Its absence means
-            // an ordinary bogey; all pre-existing style and geometry fields stay strict.
-            if (state.getBlock() instanceof willow.train.hexie.blocks.bogeys.HexieBogeyBlock<?>
-                    && !properties.contains("head_mounted")) {
-                properties = properties.copy();
-                properties.putString("head_mounted", "false");
-            }
-            if(state.hasProperty(willow.train.hexie.blocks.parts.LegacyPartLayout.OCCUPIED)&&!properties.contains("occupied")) {
-                properties=properties.copy();
-                // Old snapshots remain single-root layouts. Their cells are not invented during decoding.
-                properties.putString("occupied","false");
-            }
-            // Pre-display panels had no attachments. Only this known additive field defaults;
-            // existing facing/hinge fields and explicit display values remain strictly validated.
-            if (state.getBlock() instanceof PassengerDisplayPanel && state.hasProperty(PanelDisplayMount.PROPERTY)
-                    && !properties.contains(PanelDisplayMount.PROPERTY.getName())) {
-                properties = properties.copy();
-                properties.putString(PanelDisplayMount.PROPERTY.getName(), PanelDisplayMount.NONE.getSerializedName());
-            }
-            // Older display mounts did not record the clicked column. Keep them on the root cell.
-            if (state.getBlock() instanceof PassengerDisplayPanel && state.hasProperty(PanelDisplayColumn.PROPERTY)
-                    && !properties.contains(PanelDisplayColumn.PROPERTY.getName())) {
-                properties = properties.copy();
-                properties.putString(PanelDisplayColumn.PROPERTY.getName(), PanelDisplayColumn.ROOT.getSerializedName());
-            }
-            // Before connector variants existed, this block used the original bare end wall.
-            if (state.getBlock() instanceof willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock
-                    && !properties.contains(willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock.VARIANT.getName())) {
-                properties = properties.copy();
-                properties.putString(willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock.VARIANT.getName(),
-                        willow.train.hexie.blocks.emu.crh2a.CRH2EndFaceBlock.Type.ORIGINAL.getSerializedName());
-            }
-            if (state.getBlock() instanceof willow.train.hexie.blocks.locos.ss7d.SS7DCenterCarportBlock)
-                properties = willow.train.hexie.blocks.locos.ss7d.SS7DCenterCarportBlock
-                        .upgradeSnapshotProperties(properties);
-            if (state.getBlock() instanceof willow.train.hexie.blocks.locos.ss7d.SS7DFloorBlock)
-                properties = willow.train.hexie.blocks.locos.ss7d.SS7DFloorBlock
-                        .upgradeSnapshotProperties(properties);
-            if (properties.size() != state.getProperties().size())
-                throw new IllegalArgumentException("Incomplete block state properties: " + name);
-            for (String key : properties.getAllKeys()) {
-                require(properties, key, Tag.TAG_STRING);
-                Property<?> property = state.getBlock().getStateDefinition().getProperty(key);
-                if (property == null) throw new IllegalArgumentException("Unknown block property: " + key);
-                state = withProperty(state, property, properties.getString(key));
-            }
-        }
-        return state;
+        return CarriageSnapshotNbt.readState(tag, registries);
     }
 
     private static boolean canInitializeEntity(BlockState state) {
-        return state.getBlock() instanceof AbstractCouplerBlock
-                || state.getBlock() instanceof willow.train.hexie.blocks.emu.head.CRH2HeadBlock
-                || PassengerDisplayPanel.supports(state.getBlock());
+        return state.getBlock() instanceof CouplerBlockBridge.AbstractCouplerBlockView
+                || state.getBlock() instanceof CarriageBlockBridge.CRH2HeadBlockView
+                || HexieBridges.signBlock().passengerDisplayPanel().supports(state.getBlock());
     }
 
     public static void validateEntityType(BlockState state, CompoundTag tag, RegistryAccess registries) {
@@ -258,49 +141,22 @@ public record CarriageSnapshot(UUID id, ResourceKey<Level> dimension, BlockPos o
             throw new IllegalArgumentException("Invalid block entity type for block: " + name);
     }
 
-    private static ResourceLocation validateBlock(Block block, RegistryAccess registries) {
+    static ResourceLocation validateBlock(Block block, RegistryAccess registries) {
         var registry = registries.registryOrThrow(Registries.BLOCK);
         var name = registry.getKey(block.state().getBlock());
         if (name == null || registry.get(name) != block.state().getBlock())
             throw new IllegalArgumentException("Unregistered captured block");
-        if (block.entityData != null) validateEntityType(block.state(), block.entityData, registries);
+        if (block.entityData() != null) validateEntityType(block.state(), block.entityData(), registries);
         return name;
     }
 
-    private static <T extends Comparable<T>> BlockState withProperty(BlockState state, Property<T> property, String value) {
-        return state.setValue(property, property.getValue(value)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid property value: " + property.getName() + "=" + value)));
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T extends Comparable<T>> String propertyName(Property<T> property, Comparable<?> value) {
-        return property.getName((T) value);
-    }
-
-    private static ListTag list(CompoundTag root, String key) {
-        require(root, key, Tag.TAG_LIST);
-        ListTag value = (ListTag) root.get(key);
-        if (!value.isEmpty() && value.getElementType() != Tag.TAG_COMPOUND)
-            throw new IllegalArgumentException("Invalid list entries: " + key);
-        return value;
-    }
-
-    private static BlockPos position(CompoundTag tag, String key) {
-        require(tag, key, Tag.TAG_INT_ARRAY);
-        int[] xyz = tag.getIntArray(key);
-        if (xyz.length != 3) throw new IllegalArgumentException("Invalid position: " + key);
-        return new BlockPos(xyz[0], xyz[1], xyz[2]);
-    }
-
-    private static int[] coordinates(BlockPos pos) { return new int[] {pos.getX(), pos.getY(), pos.getZ()}; }
-
-    private static ResourceLocation identifier(String text) {
+    static ResourceLocation identifier(String text) {
         var value = ResourceLocation.tryParse(text);
         if (value == null || !text.contains(":")) throw new IllegalArgumentException("Invalid identifier: " + text);
         return value;
     }
 
-    private static void require(CompoundTag tag, String key, int type) {
+    static void require(CompoundTag tag, String key, int type) {
         if (!tag.contains(key, type)) throw new IllegalArgumentException("Missing or invalid field: " + key);
     }
 

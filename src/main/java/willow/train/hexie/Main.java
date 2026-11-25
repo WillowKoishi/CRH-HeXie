@@ -1,42 +1,76 @@
 package willow.train.hexie;
 
-import com.simibubi.create.foundation.data.CreateRegistrate;
-import net.minecraft.resources.ResourceKey;
+import java.util.Random;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.CreativeModeTab;
-import net.minecraft.world.item.ItemStack;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
-import org.jetbrains.annotations.NotNull;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.common.NeoForge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import willow.train.hexie.compat.HeXieSimurailCompat;
-import willow.train.hexie.creative.*;
-import willow.train.hexie.init.*;
-import willow.train.hexie.init.block.BlockInit;
-import willow.train.hexie.init.bogeys.BogeyEntityInit;
-import willow.train.hexie.init.bogeys.BogeySizesInit;
-import willow.train.hexie.init.bogeys.BogeyStylesInit;
-import willow.train.hexie.init.client.HeXieClientInit;
-import willow.train.hexie.init.client.MenuInit;
-import willow.train.hexie.init.item.AllItemsInit;
-import willow.train.hexie.init.item.LogoItemInit;
-import willow.train.hexie.init.recipe.RecipeInit;
-import willow.train.hexie.init.recipe.RecipeSerializerInit;
-import willow.train.hexie.init.semaphore.SemaphoreBlockInit;
-import willow.train.hexie.init.semaphore.SemaphoreEntityInit;
-import willow.train.hexie.init.track.TrackBlockInit;
-import willow.train.hexie.init.track.TrackItems;
-import willow.train.hexie.init.track.TrackMaterialInit;
-import willow.train.hexie.network.HexieNetworkHandler;
-import willow.train.hexie.util.enums.PanelTypesUtil;
-
-import java.util.Random;
+import willow.train.hexie.bridge.HexieBridges;
+import willow.train.hexie.bridge.bootstrap.ModBootstrapBridge;
+import willow.train.hexie.compat.bridge.CompatBridgeBootstrap;
+import willow.train.hexie.compat.cee.CeePantographCompat;
+import willow.train.hexie.compat.common.HeXieSimurailCompat;
+import willow.train.hexie.compat.create.CreateBootstrap;
+import willow.train.hexie.compat.create.block.CreateClipboardCompat;
+import willow.train.hexie.compat.create.block.CreateHeadTransformCompat;
+import willow.train.hexie.compat.create.block.CreatePanelPlacementHelper;
+import willow.train.hexie.compat.create.block.CreateSchematicDataCompat;
+import willow.train.hexie.compat.create.block.CreateSchematicItemInit;
+import willow.train.hexie.compat.create.block.CreateSchematicRequirements;
+import willow.train.hexie.compat.create.block.CreateWrenchCompat;
+import willow.train.hexie.compat.create.contraption.CreateInteractionBehaviourInit;
+import willow.train.hexie.compat.create.interaction.CreateControlInputTargets;
+import willow.train.hexie.compat.create.player.CreateDrivingConsoleSeats;
+import willow.train.hexie.compat.create.railx.RailxTracks;
+import willow.train.hexie.compat.create.signal.SemaphoreBlockInit;
+import willow.train.hexie.compat.create.signal.SemaphoreEntityInit;
+import willow.train.hexie.compat.create.track.CreateRailwayResources;
+import willow.train.hexie.compat.create.track.CreateTrackBlockInit;
+import willow.train.hexie.compat.create.track.StandardTrackPavingDataInit;
+import willow.train.hexie.compat.create.track.TrackItems;
+import willow.train.hexie.compat.create.track.TrackMaterialInit;
+import willow.train.hexie.compat.sable.SableControlInputCoordinates;
+import willow.train.hexie.compat.simurail.SimurailHeadRegistration;
+import willow.train.hexie.core.config.VehicleConfig;
+import willow.train.hexie.core.util.general.CreativeTabGroup;
+import willow.train.hexie.interaction.bridge.InteractionBridgeBootstrap;
+import willow.train.hexie.railway.bridge.RailwayBridgeBootstrap;
+import willow.train.hexie.railway.graph.RailwayResourcePack;
+import willow.train.hexie.railway.track.registry.TrackBlockInit;
+import willow.train.hexie.render.bridge.RenderBridgeBootstrap;
+import willow.train.hexie.render.init.HeXieClientInit;
+import willow.train.hexie.render.rendererbridge.HexieRendererBridge;
+import willow.train.hexie.render.sticker.StickerWorldRenderer;
+import willow.train.hexie.sync.bridge.SyncBridgeBootstrap;
+import willow.train.hexie.sync.channel.HexieNetworkHandler;
+import willow.train.hexie.ui.bridge.UiBridgeBootstrap;
+import willow.train.hexie.ui.menu.MenuInit;
+import willow.train.hexie.vehicle.bogey.registry.BogeyEntityInit;
+import willow.train.hexie.vehicle.bridge.VehicleBridgeBootstrap;
+import willow.train.hexie.world.blocks.carriage.PanelTypesUtil;
+import willow.train.hexie.world.bridge.WorldBridgeBootstrap;
+import willow.train.hexie.world.placement.TrainPanelPlacement;
+import willow.train.hexie.world.registry.blocks.BlockInit;
+import willow.train.hexie.world.registry.core.BlockEntitiesInit;
+import willow.train.hexie.world.registry.core.CreativeTabsInit;
+import willow.train.hexie.world.registry.core.EffectInit;
+import willow.train.hexie.world.registry.core.EntityInit;
+import willow.train.hexie.world.registry.core.SoundsInit;
+import willow.train.hexie.world.registry.creative.HexieCreativeTabs;
+import willow.train.hexie.world.registry.items.AllItemsInit;
+import willow.train.hexie.world.registry.recipes.RecipeInit;
+import willow.train.hexie.world.registry.recipes.RecipeSerializerInit;
+import willow.train.hexie.world.sticker.StickerAttachments;
+import willow.train.hexie.compat.create.bogey.BogeySizesInit;
+import willow.train.hexie.compat.create.bogey.BogeyStylesInit;
+import willow.train.hexie.core.resources.BogeyResources;
 
 @Mod("hexie")
 public class Main {
@@ -48,51 +82,40 @@ public class Main {
     public static IEventBus bus;
     private static ModContainer modContainer;
 
-    private static final CreateRegistrate REGISTRATE = CreateRegistrate.create(MOD_ID);
-
-    static {
-        REGISTRATE.defaultCreativeTab((ResourceKey<CreativeModeTab>) null);
-    }
-
     public static PanelTypesUtil PANEL_TYPE_UTIL;
-    public static final MainTab HEXIE_MAIN =
-            new MainTab(MOD_ID) {
-                @Override
-                public @NotNull ItemStack makeIcon() {
-                    return super.makeIcon();
-                }
-            };
-    public static final EMUTab HEXIE_EMU = new EMUTab();
-    public static final NormalSpeedPassageCarriageTab HEXIE_NORMAL_SPEED_PASSAGE_CARRIAGE_TAB =
-            new NormalSpeedPassageCarriageTab(MOD_ID) {
-                @Override
-                public @NotNull ItemStack makeIcon() {
-                    return super.makeIcon();
-                }
-            };
-    public static final LocosTab HEXIE_LOCOS =
-            new LocosTab(MOD_ID) {
-                @Override
-                public @NotNull ItemStack makeIcon() {
-                    return new ItemStack(LogoItemInit.LOCO_LOGOS.get());
-                }
-            };
-    public static final DietTab HEXIE_DIET =
-            new DietTab(MOD_ID) {
-                @Override
-                public @NotNull ItemStack makeIcon() {
-                    return super.makeIcon();
-                }
-            };
 
     public Main(IEventBus modBus, ModContainer container) {
         bus = modBus;
         modContainer = container;
+        boolean createLoaded = CreateBootstrap.isCreateLoaded();
+        HexieBridges.registerModBootstrap(new ModBootstrapBridge() {
+            @Override public IEventBus modBus() { return modBus; }
+            @Override public boolean isCreateLoaded() { return createLoaded; }
+            @Override public CreativeTabGroup hexieMain() { return HexieCreativeTabs.HEXIE_MAIN; }
+            @Override public CreativeTabGroup hexieEmu() { return HexieCreativeTabs.HEXIE_EMU; }
+            @Override public CreativeTabGroup hexieNormalSpeedPassageCarriageTab() {
+                return HexieCreativeTabs.HEXIE_NORMAL_SPEED_PASSAGE_CARRIAGE_TAB;
+            }
+            @Override public CreativeTabGroup hexieLocos() { return HexieCreativeTabs.HEXIE_LOCOS; }
+            @Override public CreativeTabGroup hexieDiet() { return HexieCreativeTabs.HEXIE_DIET; }
+            @Override public PanelTypesUtil panelTypes() { return PANEL_TYPE_UTIL; }
+        });
+        RailwayBridgeBootstrap.install();
+        VehicleBridgeBootstrap.install();
+        WorldBridgeBootstrap.install();
+        InteractionBridgeBootstrap.install();
+        SyncBridgeBootstrap.install();
+        UiBridgeBootstrap.install();
+        CompatBridgeBootstrap.install();
+        if (FMLEnvironment.dist == Dist.CLIENT) ClientSetup.install();
+
         container.registerConfig(net.neoforged.fml.config.ModConfig.Type.SERVER,
-                willow.train.hexie.config.VehicleConfig.SPEC, "hexie-server.toml");
+                VehicleConfig.SPEC, "hexie-server.toml");
         bus.addListener(HexieNetworkHandler::registerPackets);
         CreativeTabsInit.register(bus);
-        StandardTrackPavingDataInit.register(bus);
+        if (createLoaded) {
+            CreateSetup.registerItemData(bus);
+        }
 
         //InternalTestUtil.InternalTest();
 
@@ -102,21 +125,25 @@ public class Main {
 
         BlockEntitiesInit.BLOCK_ENTITIES.register(bus);
 
+        StickerAttachments.register(bus);
+
         EntityInit.ENTITY_TYPES.register(bus);
 
-        modSetup();
+        // Self-registered bogeys, locomotive fronts, and bogey block entities always register via NeoForge.
+        TrackBlockInit.register(bus);
+        BogeyEntityInit.register(bus);
 
-        willow.train.hexie.railway.RailwayResourcePack.register(bus,
-                willow.train.hexie.compat.create.track.CreateRailwayResources::resources);
+        if (createLoaded) {
+            CreateSetup.register(bus);
+        } else {
+            RailwayResourcePack.register(bus, BogeyResources::resources);
+        }
 
-        if (ModList.get().isLoaded("railx")) {
-            willow.train.hexie.compat.create.railx.RailxTracks.register(bus);
+        if (createLoaded && ModList.get().isLoaded("simurail")) {
+            SimurailHeadRegistration.register(bus);
         }
-        if (ModList.get().isLoaded("simurail")) {
-            willow.train.hexie.compat.simurail.SimurailHeadRegistration.register(bus);
-        }
-        if (ModList.get().isLoaded("electroenergetics")) {
-            willow.train.hexie.compat.cee.CeePantographCompat.register(bus);
+        if (createLoaded && ModList.get().isLoaded("electroenergetics")) {
+            CeePantographCompat.register(bus);
         }
 
         SoundsInit.register(bus);
@@ -127,14 +154,9 @@ public class Main {
 
         RecipeSerializerInit.register(bus);
 
-        REGISTRATE.registerEventListeners(bus);
-
         bus.addListener(this::setup);
 
-        if (FMLEnvironment.dist == Dist.CLIENT) {
-            Runnable clientSetup = HeXieClientInit::init;
-            clientSetup.run();
-        }
+        if (FMLEnvironment.dist == Dist.CLIENT) ClientSetup.registerListeners(modBus);
 
         MenuInit.register(bus);
 
@@ -142,22 +164,15 @@ public class Main {
     }
 
     protected void setup(final FMLCommonSetupEvent event) {
-        if (ModList.get().isLoaded("create")) {
-            event.enqueueWork(willow.train.hexie.compat.create.CreateDrivingConsoleSeats::register);
-            event.enqueueWork(willow.train.hexie.compat.create.CreateControlInputTargets::register);
+        if (CreateBootstrap.isCreateLoaded()) {
+            CreateSetup.registerCommonSetup(event);
         }
         if (ModList.get().isLoaded("sable")) {
-            event.enqueueWork(willow.train.hexie.compat.sable.SableControlInputCoordinates::register);
+            event.enqueueWork(SableControlInputCoordinates::register);
         }
-        event.enqueueWork(InteractionBehaviourInit::register);
-        event.enqueueWork(willow.train.hexie.blocks.carriage.TrainPanelPlacement::register);
-        if (ModList.get().isLoaded("simurail")) {
+        if (CreateBootstrap.isCreateLoaded() && ModList.get().isLoaded("simurail")) {
             event.enqueueWork(HeXieSimurailCompat::register);
         }
-    }
-
-    public static CreateRegistrate registrate() {
-        return REGISTRATE;
     }
 
     public static ResourceLocation asResource(String name) {
@@ -165,14 +180,75 @@ public class Main {
     }
 
     public static void modSetup() {
-        TrackMaterialInit.register();
-        BogeyStylesInit.register();
-        TrackItems.register();
-        BogeySizesInit.register();
-        TrackBlockInit.register();
-        BogeyEntityInit.register();
-        SemaphoreBlockInit.register();
-        SemaphoreEntityInit.register();
-        //HXConfig.register(modContainer);
+        if (CreateBootstrap.isCreateLoaded()) {
+            CreateSetup.registerObjects();
+        }
+    }
+
+    private static final class CreateSetup {
+        static void registerItemData(IEventBus modBus) {
+            StandardTrackPavingDataInit.register(modBus);
+            CreateSchematicItemInit.register();
+        }
+
+        static void register(IEventBus modBus) {
+            EntityInit.registerCreateEntities();
+            registerObjects();
+            RailwayResourcePack.register(modBus, CreateRailwayResources::resources);
+            if (ModList.get().isLoaded("railx")) {
+                RailxTracks.register(modBus);
+            }
+            CreateBootstrap.registerEventListeners(modBus);
+        }
+
+        static void registerCommonSetup(FMLCommonSetupEvent event) {
+            event.enqueueWork(CreateInteractionBehaviourInit::register);
+            event.enqueueWork(() -> TrainPanelPlacement.register(CreatePanelPlacementHelper.register()));
+            event.enqueueWork(CreateDrivingConsoleSeats::register);
+            event.enqueueWork(CreateControlInputTargets::register);
+            event.enqueueWork(CreateWrenchCompat::register);
+            event.enqueueWork(CreateClipboardCompat::register);
+            event.enqueueWork(CreateHeadTransformCompat::register);
+            event.enqueueWork(CreateSchematicRequirements::register);
+            event.enqueueWork(CreateSchematicDataCompat::register);
+        }
+
+        static void registerObjects() {
+            TrackMaterialInit.register();
+            BogeyStylesInit.register();
+            TrackItems.register();
+            BogeySizesInit.register();
+            CreateTrackBlockInit.register();
+            SemaphoreBlockInit.register();
+            SemaphoreEntityInit.register();
+            CreateSchematicItemInit.register();
+        }
+    }
+
+    private static final class ClientSetup {
+        static void install() {
+            VehicleBridgeBootstrap.installClient();
+            WorldBridgeBootstrap.installClient();
+            InteractionBridgeBootstrap.installClient();
+            SyncBridgeBootstrap.installClient();
+            UiBridgeBootstrap.installClient();
+            CompatBridgeBootstrap.installClient();
+            if (CreateBootstrap.isCreateLoaded()) RenderBridgeBootstrap.installClient();
+        }
+
+        static void registerListeners(IEventBus modBus) {
+            HexieRendererBridge.install(modBus);
+            StickerWorldRenderer.install();
+            if (CreateBootstrap.isCreateLoaded()) {
+                HeXieClientInit.init(modBus, UiBridgeBootstrap::registerScreens);
+            } else {
+                var ui = HexieBridges.Client.clientCarriageUi();
+                ui.hudFonts().register(modBus);
+                ui.carriageFlowClient().register(modBus);
+                ui.registerInventoryEvents(NeoForge.EVENT_BUS);
+                modBus.addListener(UiBridgeBootstrap::registerScreens);
+                modBus.addListener(HexieBridges.Client.surfaceInputClient().surfaceControlCaption()::register);
+            }
+        }
     }
 }

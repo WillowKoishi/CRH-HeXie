@@ -1,0 +1,13 @@
+{
+  "loader": "neoforge:composite",
+  "children": {
+    "frame": {"parent": "hexie:block/bogey/sw220k/sw220k", "transform": {"translation": [0, 0.635, 0]}},
+    "air_spring_upper": {"parent": "hexie:block/bogey/sw220k/air_spring_upper", "transform": {"translation": [0, 0.635, 0]}},
+    "traction_rod_left": {"parent": "hexie:block/bogey/sw220k/traction_rod_left", "transform": {"translation": [0, 0.635, 0]}},
+    "traction_frame_mount_left": {"parent": "hexie:block/bogey/sw220k/traction_frame_mount_left", "transform": {"translation": [0, 0.635, 0]}},
+    "traction_rod_right": {"parent": "hexie:block/bogey/sw220k/traction_rod_right", "transform": {"translation": [0, 0.635, 0]}},
+    "traction_frame_mount_right": {"parent": "hexie:block/bogey/sw220k/traction_frame_mount_right", "transform": {"translation": [0, 0.635, 0]}},
+    "front_axle": {"parent": "hexie:block/bogey/pk209p/pk209p_wheel2", "transform": {"translation": [0, 0.805, 1.25]}},
+    "rear_axle": {"parent": "hexie:block/bogey/pk209p/pk209p_wheel2", "transform": {"translation": [0, 0.805, -1.25]}}
+  }
+}

@@ -1,0 +1,121 @@
+package willow.train.hexie.render.track;
+
+import com.simibubi.create.content.trains.track.*;
+import java.util.*;
+import java.util.function.UnaryOperator;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.core.*;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.inventory.InventoryMenu;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.client.model.data.ModelData;
+import static willow.train.hexie.render.track.BallastMesh.*;
+
+// split from willow/train/hexie/client/render/track/BallastModels.java
+
+
+public final class BallastModels {
+    /** A block face can occupy just one panel of a sprite shared by several block models. */
+    public static final class Material {
+        private final TextureAtlasSprite sprite;
+        private final int color;
+        private final float[] uv = new float[8];
+
+        Material(TextureAtlasSprite sprite, int color, BakedQuad face) {
+            this.sprite = sprite;
+            this.color = color;
+            for (int i = 0; i < 4; i++) {
+                if (face == null) {
+                    uv[2 * i] = sprite.getU(i >= 2 ? 1 : 0);
+                    uv[2 * i + 1] = sprite.getV(i == 1 || i == 2 ? 1 : 0);
+                } else {
+                    var vertices = face.getVertices();
+                    int offset = i * (vertices.length / 4);
+                    uv[2 * i] = Float.intBitsToFloat(vertices[offset + 4]);
+                    uv[2 * i + 1] = Float.intBitsToFloat(vertices[offset + 5]);
+                }
+            }
+        }
+
+        public TextureAtlasSprite sprite() { return sprite; }
+        public int color() { return color; }
+        public float atlasU(double u, double v) { return interpolate(0, u, v); }
+        public float atlasV(double u, double v) { return interpolate(1, u, v); }
+
+        ResourceLocation curveTexture(boolean repeating) {
+            return CurveBedTexture.forFace(sprite, uv, repeating);
+        }
+
+        private float interpolate(int c, double u, double v) {
+            // Use the model's four atlas coordinates, including its rotation, mirroring and baked UV inset.
+            u = .0001 + Math.clamp(u, 0, 1) * .9998;
+            v = .0001 + Math.clamp(v, 0, 1) * .9998;
+            double first = uv[c] + u * (uv[6 + c] - uv[c]);
+            double last = uv[2 + c] + u * (uv[4 + c] - uv[2 + c]);
+            return (float) (first + v * (last - first));
+        }
+    }
+    private record Key(TrackShape shape, BlockState texture) {}
+    private static final Map<Key,List<BakedQuad>> STRAIGHTS = new java.util.concurrent.ConcurrentHashMap<>();
+    public static void clear() { STRAIGHTS.clear(); SlabTrackModels.clear(); }
+    public static Material material(BlockState state) {
+        var mc=Minecraft.getInstance();
+        var model=mc.getBlockRenderer().getBlockModel(state);
+        var top=model.getQuads(state,Direction.UP,RandomSource.create(42),ModelData.EMPTY,null);
+        BakedQuad face = top.isEmpty() ? null : top.getFirst();
+        if (face == null) {
+            var unculled = model.getQuads(state,null,RandomSource.create(42),ModelData.EMPTY,null);
+            face = unculled.stream().filter(q -> q.getDirection() == Direction.UP).findFirst()
+                    .orElse(unculled.isEmpty() ? null : unculled.getFirst());
+        }
+        if (face == null) {
+            for (var side : Direction.values()) {
+                var quads = model.getQuads(state,side,RandomSource.create(42),ModelData.EMPTY,null);
+                if (!quads.isEmpty()) { face = quads.getFirst(); break; }
+            }
+        }
+        if (face == null) return new Material(mc.getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
+                .apply(MissingTextureAtlasSprite.getLocation()), 0xffffff, null);
+        int color=face.isTinted()?mc.getBlockColors().getColor(state,null,null,face.getTintIndex()):0xffffff;
+        return new Material(face.getSprite(),color,face);
+    }
+    public static List<BakedQuad> straight(TrackShape shape,BlockState texture) {
+        return STRAIGHTS.computeIfAbsent(new Key(shape,texture),
+                key -> bakeStraight(shape, texture, UnaryOperator.identity()));
+    }
+    public static List<BakedQuad> bakeStraight(TrackShape shape, BlockState texture, UnaryOperator<Point> renderPosition) {
+        if(shape==TrackShape.NONE)return List.of();
+        List<BakedQuad> result=new ArrayList<>();
+        var material=material(texture);
+        for(Vec3 axis:shape.getAxes()) {
+            Vec3 center=new Vec3(.5,axis.y==0?0:.5,.5);
+            Point side=point(new Vec3(axis.z,0,-axis.x).normalize());
+            var mesh=sweep(List.of(new Frame(point(center.subtract(axis.scale(.5))),side),
+                    new Frame(point(center.add(axis.scale(.5))),side)), renderPosition);
+            for(Quad quad:mesh)result.add(bake(quad,material));
+        }
+        return List.copyOf(result);
+    }
+    static Point point(Vec3 v){return new Point(v.x,v.y,v.z);}
+    static BakedQuad bake(Quad quad,Material material) {
+        int[] data=new int[32];
+        Vertex[] vertices={quad.a(),quad.b(),quad.c(),quad.d()};
+        Point n=quad.normal();
+        int normal=((byte)(n.x()*127)&255)|(((byte)(n.y()*127)&255)<<8)|(((byte)(n.z()*127)&255)<<16);
+        int rgb=material.color();
+        int color=0xff000000|((rgb&255)<<16)|(rgb&0xff00)|((rgb>>16)&255);
+        for(int i=0;i<4;i++) {
+            Vertex v=vertices[i];int o=i*8;
+            data[o]=Float.floatToRawIntBits((float)v.p().x()); data[o+1]=Float.floatToRawIntBits((float)v.p().y());
+            data[o+2]=Float.floatToRawIntBits((float)v.p().z());data[o+3]=color;
+            data[o+4]=Float.floatToRawIntBits(material.atlasU(v.u(),v.v()));
+            data[o+5]=Float.floatToRawIntBits(material.atlasV(v.u(),v.v()));data[o+7]=normal;
+        }
+        return new BakedQuad(data,-1,Direction.getNearest((float)n.x(),(float)n.y(),(float)n.z()),material.sprite(),true);
+    }
+}

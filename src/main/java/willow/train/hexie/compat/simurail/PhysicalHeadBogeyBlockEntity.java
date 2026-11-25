@@ -13,19 +13,20 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
-import willow.train.hexie.blockentity.CRH2HeadEntity;
-import willow.train.hexie.blocks.base.CarriageViewBlockEntity;
-import willow.train.hexie.blocks.bogeys.BogeyFloorData;
-import willow.train.hexie.blocks.emu.head.CRH2HeadBlock;
-import willow.train.hexie.blocks.emu.head.HeadBogey;
-import willow.train.hexie.compat.HeXieSimurailCompat;
+import willow.train.hexie.bridge.HexieBridges;
+import willow.train.hexie.bridge.compat.SimurailBridge.HeadController;
+import willow.train.hexie.bridge.world.BlockEntityViews.CRH2HeadEntityView;
+import willow.train.hexie.bridge.world.BlockEntityViews.CarriageViewBlockEntityView;
+import willow.train.hexie.bridge.world.CarriageBlockBridge.PhysicalHeadBlockView;
+import willow.train.hexie.compat.common.HeXieSimurailCompat;
 
 /** Native Simurail controller identity and physical attachment use distinct, persistent frames. */
-public final class PhysicalHeadBogeyBlockEntity extends PhysicsBogeyBlockEntity implements CarriageViewBlockEntity {
+public final class PhysicalHeadBogeyBlockEntity extends PhysicsBogeyBlockEntity implements CarriageViewBlockEntityView, HeadController {
     private static final String HEAD_DATA = "HexieHeadBogeyData";
     private static final String HEAD_ENABLED = "HexieHeadBogeyEnabled";
     private static final String MANUAL_ENABLED = "HexieManualEnabled";
@@ -39,7 +40,7 @@ public final class PhysicalHeadBogeyBlockEntity extends PhysicsBogeyBlockEntity 
 
     public PhysicalHeadBogeyBlockEntity(BlockPos pos, BlockState state) {
         super(SimurailHeadRegistration.PHYSICAL_HEAD_BOGEY_ENTITY.get(), pos, state);
-        headData = HeadBogey.defaultData(getFacing());
+        headData = HexieBridges.carriageBlock().headBogey().defaultData(getFacing());
         options.type = new BogeySubtype(HeXieSimurailCompat.DT206.type());
         options.enabled = false;
         updateAttachment(false);
@@ -51,19 +52,20 @@ public final class PhysicalHeadBogeyBlockEntity extends PhysicsBogeyBlockEntity 
         return new Vec3(localCenter.x() - getBlockPos().getX() - .5, localCenter.y() - getBlockPos().getY() - .5,
                 localCenter.z() - getBlockPos().getZ() - .5);
     }
+    @Override public BlockEntity asBlockEntity() { return this; }
     @Override public void markCarriageView() { carriageView = true; LOADED_BOGEYS.remove(this); }
     @Override public boolean isCarriageView() { return carriageView; }
     public AbstractComputerBehaviour computerBehaviour() { return computerBehaviour; }
 
-    private CRH2HeadEntity head() {
+    private CRH2HeadEntityView head() {
         if (level == null || !level.hasChunkAt(headRoot())) return null;
         var state = level.getBlockState(headRoot());
-        return state.getBlock() instanceof PhysicalHeadBlock && state.getValue(CRH2HeadBlock.FACING) == getFacing()
-                && level.getBlockEntity(headRoot()) instanceof CRH2HeadEntity head ? head : null;
+        return state.getBlock() instanceof PhysicalHeadBlockView && state.getValue(HexieBridges.carriageBlock().crh2HeadBlock().facing()) == getFacing()
+                && level.getBlockEntity(headRoot()) instanceof CRH2HeadEntityView head ? head : null;
     }
 
-    public void syncFromHead(CRH2HeadEntity head) {
-        if (syncingHead || carriageView || level == null || level.isClientSide || !head.getBlockPos().equals(headRoot())) return;
+    public void syncFromHead(CRH2HeadEntityView head) {
+        if (syncingHead || carriageView || level == null || level.isClientSide || !head.asBlockEntity().getBlockPos().equals(headRoot())) return;
         syncingHead = true;
         try {
             var settings = head.physicalBogeyData();
@@ -71,7 +73,7 @@ public final class PhysicalHeadBogeyBlockEntity extends PhysicsBogeyBlockEntity 
             if (restored) restoreSettings(settings);
             headSettingsRead = true;
             var data = head.bogeyData();
-            boolean heightChanged = BogeyFloorData.heightFromBogeyData(data) != BogeyFloorData.heightFromBogeyData(headData);
+            boolean heightChanged = HexieBridges.worldBlock().bogeyFloorData().heightFromBogeyData(data) != HexieBridges.worldBlock().bogeyFloorData().heightFromBogeyData(headData);
             boolean changed = restored || headEnabled != head.bogeyEnabled() || !data.equals(headData);
             if (changed) {
                 headData = data; headEnabled = head.bogeyEnabled();
@@ -81,7 +83,7 @@ public final class PhysicalHeadBogeyBlockEntity extends PhysicsBogeyBlockEntity 
                 var next = new PhysicsBogeyOptions().set(options);
                 next.type = new BogeySubtype(options.type.type(), extra);
                 next.enabled = manualEnabled && headEnabled;
-                if (heightChanged) next.setAxleOffset((float) BogeyFloorData.offset(BogeyFloorData.heightFromBogeyData(headData)));
+                if (heightChanged) next.setAxleOffset((float) HexieBridges.worldBlock().bogeyFloorData().offset(HexieBridges.worldBlock().bogeyFloorData().heightFromBogeyData(headData)));
                 applyOptions(next);
                 updateAttachment(true);
                 setChanged(); sendData();
@@ -102,8 +104,8 @@ public final class PhysicalHeadBogeyBlockEntity extends PhysicsBogeyBlockEntity 
 
     private void updateAttachment(boolean rebuild) {
         if (localCenter == null || headData == null) return;
-        var mount = HeadBogey.mount(headRoot(), getFacing());
-        var delta = BogeyFloorData.displacement(HeadBogey.state(getFacing()), BogeyFloorData.longitudinal(headData));
+        var mount = HexieBridges.carriageBlock().headBogey().mount(headRoot(), getFacing());
+        var delta = HexieBridges.worldBlock().bogeyFloorData().displacement(HexieBridges.carriageBlock().headBogey().state(getFacing()), HexieBridges.worldBlock().bogeyFloorData().longitudinal(headData));
         var next = new Vector3d(mount.getX() + .5 + delta.x, mount.getY() + .5, mount.getZ() + .5 + delta.z);
         if (localCenter.equals(next, 1e-9)) return;
         // Simurail 0.1 initializes this protected final reference with JOMLConversion.atCenterOf, a Vector3d.
@@ -193,13 +195,13 @@ public final class PhysicalHeadBogeyBlockEntity extends PhysicsBogeyBlockEntity 
                 ? Component.Serializer.fromJson(data.getString("custom_name"), level.registryAccess()) : null;
         bogeyData = null; copiedSettings = data.copy();
     }
-    private void pushSettings(CRH2HeadEntity owner) {
+    private void pushSettings(CRH2HeadEntityView owner) {
         if (!headSettingsRead || carriageView || level == null || level.isClientSide) return;
         var data = safeSettings();
         copiedSettings = data.copy();
         if (!data.equals(owner.physicalBogeyData())) owner.updatePhysicalBogeyData(data);
     }
-    private CRH2HeadEntity ensureHeadSettings() {
+    private CRH2HeadEntityView ensureHeadSettings() {
         var owner = head();
         if (owner != null && !headSettingsRead && !syncingHead) syncFromHead(owner);
         return owner;
@@ -217,7 +219,7 @@ public final class PhysicalHeadBogeyBlockEntity extends PhysicsBogeyBlockEntity 
         headSettingsRead = false;
         copiedSettings = new CompoundTag();
         super.read(tag, registries, clientPacket);
-        headData = tag.contains(HEAD_DATA) ? HeadBogey.normalizedData(tag.getCompound(HEAD_DATA), getFacing()) : HeadBogey.defaultData(getFacing());
+        headData = tag.contains(HEAD_DATA) ? HexieBridges.carriageBlock().headBogey().normalizedData(tag.getCompound(HEAD_DATA), getFacing()) : HexieBridges.carriageBlock().headBogey().defaultData(getFacing());
         headEnabled = tag.getBoolean(HEAD_ENABLED);
         manualEnabled = tag.contains(MANUAL_ENABLED) ? tag.getBoolean(MANUAL_ENABLED) : options.enabled;
         updateAttachment(initialized && !clientPacket);

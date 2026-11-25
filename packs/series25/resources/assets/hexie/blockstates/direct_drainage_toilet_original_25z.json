@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "hexie:block/carriage/facilities/direct_drainage_toilet_original_25z",
+      "y": 270
+    },
+    "facing=north": {
+      "model": "hexie:block/carriage/facilities/direct_drainage_toilet_original_25z",
+      "y": 180
+    },
+    "facing=south": {
+      "model": "hexie:block/carriage/facilities/direct_drainage_toilet_original_25z",
+      "y": 0
+    },
+    "facing=west": {
+      "model": "hexie:block/carriage/facilities/direct_drainage_toilet_original_25z",
+      "y": 90
+    }
+  }
+}

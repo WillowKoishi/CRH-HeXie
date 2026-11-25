@@ -7,24 +7,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.DoubleUnaryOperator;
+import static willow.train.hexie.vehicle.kinematics.VehicleConstraintSolver.*;
+import willow.train.hexie.bridge.railway.TrackGeometryView;
+import willow.train.hexie.bridge.railway.TrackGeometryView.Vector;
+import willow.train.hexie.bridge.railway.TrackPathView;
+import willow.train.hexie.bridge.vehicle.CouplingBridge;
+import willow.train.hexie.core.api.bogey.BogeyModel;
+import willow.train.hexie.core.api.vehicle.Point3;
 import willow.train.hexie.vehicle.runtime.BogeyDefinition;
-import willow.train.hexie.vehicle.runtime.BogeyMount;
 import willow.train.hexie.vehicle.runtime.CarriageDefinition;
 import willow.train.hexie.vehicle.runtime.CouplingEndpoint;
-import willow.train.hexie.vehicle.runtime.CouplingEndpoint.Point;
 import willow.train.hexie.vehicle.runtime.VehicleRuntime;
-import willow.train.hexie.vehicle.track.TrackGeometry;
-import willow.train.hexie.vehicle.track.TrackGeometry.Vector;
-import willow.train.hexie.vehicle.track.TrackPath;
-import static willow.train.hexie.vehicle.kinematics.VehicleConstraintSolver.*;
 
 /** End-support suspension participates in the rigid pose; intermediate supports follow that pose. */
 final class RigidCarriageSolver {
     private static final double TOLERANCE = 1e-8;
-    private final TrackPath path;
+    private final TrackPathView path;
     private final Map<Double, TrackReference> trackCache = new HashMap<>();
 
-    RigidCarriageSolver(TrackPath path) { this.path = path; }
+    RigidCarriageSolver(TrackPathView path) { this.path = path; }
 
     Solution solve(CarriageDefinition car, List<VehicleRuntime.Connection> connections,
                    Map<UUID, Double> proposed, Map<UUID, Double> pinned, FixedEndpoint parent) {
@@ -49,19 +50,19 @@ final class RigidCarriageSolver {
                 last = low;
             }
             distance = proposed.get(first.id());
-            if (coupling.kind() != CouplingEndpoint.Kind.RIGID || parent.definition().kind() != CouplingEndpoint.Kind.RIGID)
+            if (coupling.kind() != CouplingBridge.CouplingEndpointKind.RIGID || parent.definition().kind() != CouplingBridge.CouplingEndpointKind.RIGID)
                 throw new ConstraintFailure("Articulated joints require their registered constraint adapter");
             if (!coupling.matches(parent.definition()))
                 throw new IllegalArgumentException("Coupler models do not match");
             parentLength = length(vector(parent.definition().effectiveComplete()).subtract(vector(parent.definition().axisPoint())));
             ownLength = length(vector(coupling.effectiveComplete()).subtract(vector(coupling.axisPoint())));
             Vector parentPivot = parent.body().transform(parent.definition().localPivot());
-            Point ownPivot = coupling.localPivot();
+            Point3 ownPivot = coupling.localPivot();
             double linkLength = parentLength + ownLength;
             closure = new CouplerClosure(parentPivot, ownPivot, linkLength,
                     coupling.maxExtension() + parent.definition().maxExtension(),
                     Math.max(1, car.frontExtent() + car.rearExtent()),
-                    coupling.facing() == CouplingEndpoint.Facing.NORTH ? -1 : 1);
+                    coupling.facing() == CouplingBridge.CouplingEndpointFacing.NORTH ? -1 : 1);
         }
         CoupledShape coupled = closure == null ? new CoupledShape(shape(first, last, distance), false)
                 : coupledShape(first, last, distance, closure);
@@ -220,7 +221,7 @@ final class RigidCarriageSolver {
     private static BogeyPosition position(BogeyDefinition bogey, RailPoint point, BodyPose pose) {
         Vector attachment = pose.transform(bogey.mount().bodyPoint());
         Vector delta = attachment.subtract(point.pivot);
-        Vector right = point.frame.rotate(new Point(1, 0, 0));
+        Vector right = point.frame.rotate(new Point3(1, 0, 0));
         double lateral = delta.dot(right), vertical = delta.dot(point.sample.normal());
         double suspension = Math.clamp(lateral, -limit(bogey), limit(bogey));
         // Keep longitudinal departure too: dropping it disconnects the bogey from its body.
@@ -230,7 +231,7 @@ final class RigidCarriageSolver {
     }
 
     private static double limit(BogeyDefinition bogey) {
-        return bogey.mount().type() == BogeyMount.Type.BOLSTERLESS ? bogey.mount().lateralLimit() : 0;
+        return bogey.mount().type() == BogeyModel.MountType.BOLSTERLESS ? bogey.mount().lateralLimit() : 0;
     }
 
     private Shape shape(BogeyDefinition first, BogeyDefinition last, double distance) {
@@ -285,12 +286,12 @@ final class RigidCarriageSolver {
         double firstLimit = limit(first), lastLimit = limit(last);
         if (firstLimit == 0 && lastLimit == 0) return new EndAttachments(a.pivot, b.pivot);
         var middle = track((a.distance + b.distance) * .5);
-        Point firstPivot = first.mount().trackPivot(), lastPivot = last.mount().trackPivot();
-        Point middlePivot = new Point((firstPivot.x() + lastPivot.x()) * .5,
+        Point3 firstPivot = first.mount().trackPivot(), lastPivot = last.mount().trackPivot();
+        Point3 middlePivot = new Point3((firstPivot.x() + lastPivot.x()) * .5,
                 (firstPivot.y() + lastPivot.y()) * .5, (firstPivot.z() + lastPivot.z()) * .5);
         Vector sagitta = middle.frame.transform(middlePivot).subtract(add(a.pivot, b.pivot).scale(.5));
-        Vector firstRight = a.frame.rotate(new Point(1, 0, 0));
-        Vector lastRight = b.frame.rotate(new Point(1, 0, 0));
+        Vector firstRight = a.frame.rotate(new Point3(1, 0, 0));
+        Vector lastRight = b.frame.rotate(new Point3(1, 0, 0));
         return new EndAttachments(add(a.pivot, firstRight.scale(Math.clamp(sagitta.dot(firstRight), -firstLimit, firstLimit))),
                 add(b.pivot, lastRight.scale(Math.clamp(sagitta.dot(lastRight), -lastLimit, lastLimit))));
     }
@@ -370,13 +371,13 @@ final class RigidCarriageSolver {
         return new EndpointPose(pose.transform(endpoint.localPivot()), pose.transform(endpoint.localStart()),
                 pose.transform(endpoint.localComplete()));
     }
-    private record RailPoint(double distance, TrackGeometry.Sample sample, BodyPose frame, Vector pivot) {}
-    private record TrackReference(TrackGeometry.Sample sample, BodyPose frame) {}
+    private record RailPoint(double distance, TrackGeometryView.Sample sample, BodyPose frame, Vector pivot) {}
+    private record TrackReference(TrackGeometryView.Sample sample, BodyPose frame) {}
     private record Shape(BodyPose pose, RailPoint first, RailPoint last) {}
     private record EndAttachments(Vector first, Vector last) {}
     private record CoupledShape(Shape shape, boolean broken) {}
     private record Placed(Shape shape, Map<UUID, BogeyPosition> positions) {}
     private record RootResult(double distance, double error) {}
-    private record CouplerClosure(Vector parentPivot, Point localPivot, double length, double extension,
+    private record CouplerClosure(Vector parentPivot, Point3 localPivot, double length, double extension,
                                   double maximumStep, int branch) {}
 }

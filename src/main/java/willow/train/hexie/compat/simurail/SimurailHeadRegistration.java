@@ -14,21 +14,23 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import willow.train.hexie.Main;
-import willow.train.hexie.item.CRH2HeadItem;
+import net.minecraft.world.item.BlockItem;
+import willow.train.hexie.bridge.HexieBridges;
+import willow.train.hexie.core.HexieConstants;
 
 /** Loaded during registration only when Simurail and its required physics dependencies are present. */
 public final class SimurailHeadRegistration {
-    private static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(Registries.BLOCK, Main.MOD_ID);
-    private static final DeferredRegister<Item> ITEMS = DeferredRegister.create(Registries.ITEM, Main.MOD_ID);
-    private static final DeferredRegister<BlockEntityType<?>> ENTITIES = DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, Main.MOD_ID);
+    private static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(Registries.BLOCK, HexieConstants.MOD_ID);
+    private static final DeferredRegister<Item> ITEMS = DeferredRegister.create(Registries.ITEM, HexieConstants.MOD_ID);
+    private static final DeferredRegister<BlockEntityType<?>> ENTITIES = DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, HexieConstants.MOD_ID);
 
-    public static final DeferredHolder<Block, PhysicalHeadBlock> PHYSICAL_HEAD = BLOCKS.register("crh2a_physical_head",
-            () -> new PhysicalHeadBlock(properties()));
+    public static final DeferredHolder<Block, Block> PHYSICAL_HEAD = BLOCKS.register("crh2a_physical_head",
+            () -> HexieBridges.carriageBlock().crh2HeadBlock().createPhysical(properties(),
+                    () -> SimurailHeadRegistration.PHYSICAL_HEAD_BOGEY.get()));
     public static final DeferredHolder<Block, PhysicalHeadBogeyBlock> PHYSICAL_HEAD_BOGEY = BLOCKS.register("crh2a_physical_head_bogey",
             () -> new PhysicalHeadBogeyBlock(properties().noLootTable()));
-    public static final DeferredHolder<Item, CRH2HeadItem> PHYSICAL_HEAD_ITEM = ITEMS.register("crh2a_physical_head",
-            () -> new CRH2HeadItem(PHYSICAL_HEAD.get(), new Item.Properties()));
+    public static final DeferredHolder<Item, BlockItem> PHYSICAL_HEAD_ITEM = ITEMS.register("crh2a_physical_head",
+            () -> HexieBridges.itemFactory().createCRH2HeadItem(PHYSICAL_HEAD.get(), new Item.Properties()));
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PhysicsBogeyBlockEntity>> PHYSICAL_HEAD_BOGEY_ENTITY =
             ENTITIES.register("crh2a_physical_head_bogey", () -> BlockEntityType.Builder.<PhysicsBogeyBlockEntity>of(
                     PhysicalHeadBogeyBlockEntity::new, PHYSICAL_HEAD_BOGEY.get()).build(null));

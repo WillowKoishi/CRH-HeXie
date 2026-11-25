@@ -1,0 +1,132 @@
+// Enforces strict zero-cross-domain-import architecture across all 10 HeXie zones:
+//   L0: core/       -> zero hexie.* dependencies
+//   L1: bridge/     -> core/ and bridge/ only
+//   L2: railway/, vehicle/, world/, interaction/, sync/, ui/, render/, compat/
+//                   -> own domain + core/ + bridge/ ONLY (0 cross-domain imports, 0 cross-domain FQNs, 0 Main refs)
+//   L3: Main.java   -> composition root wiring domains into bridge/
+
+import java.util.regex.Pattern
+
+tasks.register('checkDomainBoundaries') {
+    group = 'verification'
+    description = 'Enforces the ten domain boundaries and confines optional library references to compat and render.'
+
+    def builtinPacks = ['crh1a', 'crh2a', 'cr200j', 'series25', 'ss7d', 'df11g', 'hxd3d', 'qj']
+    def javaRoots = [layout.projectDirectory.dir('src/main/java/willow/train/hexie').asFile] +
+            builtinPacks.collect { pack -> layout.projectDirectory.dir("packs/${pack}/java/willow/train/hexie").asFile }
+    javaRoots.each { root -> if (root.exists()) inputs.dir(root) }
+
+    doLast {
+        def domains = ['railway', 'vehicle', 'world', 'interaction', 'sync', 'ui', 'render', 'compat'] as Set
+        def allZones = (domains + ['core', 'bridge']) as Set
+
+        def importPattern = Pattern.compile(/^\s*import\s+(?:static\s+)?(willow\.train\.hexie\.[A-Za-z0-9_.*]+)\s*;/, Pattern.MULTILINE)
+        def fqnPattern = Pattern.compile(/\bwillow\.train\.hexie\.([A-Za-z0-9_]+)(?:\.([A-Za-z0-9_]+))?/)
+        def stringLiteralOrComment = Pattern.compile(/\/\/[^\r\n]*|\/\*[\s\S]*?\*\/|"""(?:\\.|(?!""")[\s\S])*"""|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/)
+        def optionalLibrary = Pattern.compile(/\b(?:com\s*\.\s*simibubi\s*\.\s*create|net\s*\.\s*createmod|dev\s*\.\s*engine_room|com\s*\.\s*tterrag\s*\.\s*registrate)\b/)
+        def rendererApi = Pattern.compile(/\b(?:dev\s*\.\s*hexie\s*\.\s*renderer|willow\s*\.\s*train\s*\.\s*hexie\s*\.\s*mc\s*\.\s*client\s*\.\s*renderbridge)\b/)
+
+        def violations = []
+        def scannedFiles = 0
+
+        def zonesProp = providers.gradleProperty('checkOnlyZones').orNull
+        def filterZones = (zonesProp != null && !zonesProp.trim().isEmpty())
+            ? (zonesProp.split(',').collect { it.trim() }.findAll { !it.isEmpty() } as Set)
+            : null
+
+        javaRoots.each { File javaRoot ->
+            if (!javaRoot.exists()) return
+            fileTree(dir: javaRoot, include: '**/*.java').each { File f ->
+                scannedFiles++
+                def rel = javaRoot.toPath().relativize(f.toPath()).toString().replace('\\', '/')
+                def parts = rel.split('/')
+                def srcZone = (parts.length == 1) ? 'entry' : parts[0]
+
+                def code = stringLiteralOrComment.matcher(f.getText('UTF-8')).replaceAll(' ')
+                if (!(srcZone in ['compat', 'render'] || rel.startsWith('bridge/compat/') || rel.startsWith('bridge/render/'))) {
+                    def leak = optionalLibrary.matcher(code)
+                    while (leak.find()) {
+                        violations << "${rel}: optional library '${leak.group()}' outside compat and render"
+                    }
+                }
+                if (!rel.startsWith('render/rendererbridge/')) {
+                    def rleak = rendererApi.matcher(code)
+                    while (rleak.find()) {
+                        violations << "${rel}: hexie-renderer reference '${rleak.group()}' outside render/rendererbridge/ (Rule A5)"
+                    }
+                }
+
+                if (filterZones != null && !filterZones.contains(srcZone)) {
+                    return
+                }
+
+                // Main.java is the sole L3 composition root
+                if (srcZone == 'entry' && rel == 'Main.java') {
+                    return
+                }
+
+                if (!allZones.contains(srcZone)) {
+                    violations << "${rel}: resides in unknown top-level zone '${srcZone}'"
+                    return
+                }
+
+                // Strip package declaration line
+                def codeNoPkg = code.replaceFirst(/^\s*package\s+[A-Za-z0-9_.]+\s*;/, '')
+
+                def checkTarget = { String targetZone, String targetSecond, String kind, String ref ->
+                    if (targetZone == 'Main') {
+                        violations << "${rel}: forbidden ${kind} reference to Main (${ref}) — use core.HexieConstants or bridge.bootstrap"
+                        return
+                    }
+                    if (srcZone == 'core') {
+                        if (targetZone != 'core') {
+                            violations << "${rel}: L0 core cannot reference '${targetZone}' (${kind}: ${ref})"
+                        }
+                        return
+                    }
+                    if (srcZone == 'bridge') {
+                        if (targetZone != 'core' && targetZone != 'bridge') {
+                            violations << "${rel}: L1 bridge cannot reference implementation domain '${targetZone}' (${kind}: ${ref})"
+                        }
+                        return
+                    }
+                    // Rule A5: external hexie-renderer §5.6 RenderBridge API (willow.train.hexie.mc.client.renderbridge.*)
+                    // is permitted ONLY inside render/rendererbridge/.
+                    if (rel.startsWith('render/rendererbridge/') && targetZone == 'mc') {
+                        return
+                    }
+                    // L2 business/compat domain: ONLY core, bridge, or itself!
+                    if (targetZone != 'core' && targetZone != 'bridge' && targetZone != srcZone) {
+                        violations << "${rel}: domain '${srcZone}' cannot reference domain '${targetZone}' (${kind}: ${ref}) — route through willow.train.hexie.bridge.*"
+                    }
+                }
+
+                def im = importPattern.matcher(codeNoPkg)
+                while (im.find()) {
+                    def fqn = im.group(1)
+                    def segs = fqn.substring('willow.train.hexie.'.length()).split('\\.')
+                    checkTarget(segs[0], segs.length > 1 ? segs[1] : '', 'import', fqn)
+                }
+
+                // Also scan remaining code body (without import lines) for inline FQNs
+                def bodyOnly = importPattern.matcher(codeNoPkg).replaceAll('')
+                def fm = fqnPattern.matcher(bodyOnly)
+                while (fm.find()) {
+                    checkTarget(fm.group(1), fm.group(2) ?: '', 'FQN', fm.group(0))
+                }
+            }
+        }
+
+        if (!violations.isEmpty()) {
+            def preview = violations.take(40).join('\n  ')
+            throw new GradleException(
+                "Domain boundary violation(s) detected: ${violations.size()} total.\n  ${preview}" +
+                (violations.size() > 40 ? "\n  ... (+${violations.size() - 40} more)" : '')
+            )
+        }
+        logger.lifecycle("checkDomainBoundaries: PASS (${scannedFiles} Java files across src + ${builtinPacks.size()} packs; 0 cross-domain violations, 0 Create/Flywheel/Catnip/Registrate leaks outside compat & render)")
+    }
+}
+
+tasks.named('check') { dependsOn tasks.named('checkDomainBoundaries') }
+tasks.named('jar') { dependsOn tasks.named('checkDomainBoundaries') }

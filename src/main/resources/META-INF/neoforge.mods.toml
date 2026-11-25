@@ -15,8 +15,26 @@ description = '''
 这是一个为机械动力mod而制作的装饰类方块mod（暂定） 因为本人是java初学者，不怎么会编程,还请谅解(^^;;;
 '''
 
+[modproperties.hexie]
+"sodium:config_api_user"="dev.hexie.renderer.sodium.HexieConfig"
+
 [[mixins]]
 config="hexie.mixins.json"
+
+[[mixins]]
+config="hexie-sodium.mixins.json"
+
+[[mixins]]
+config="hexie-iris.mixins.json"
+
+[[mixins]]
+config="hexie-sable.mixins.json"
+
+[[mixins]]
+config="hexie-flywheel.mixins.json"
+
+[[accessTransformers]]
+file="META-INF/accesstransformer.cfg"
 
 [[dependencies.hexie]]
 modId="neoforge"
@@ -34,7 +52,7 @@ side="BOTH"
 
 [[dependencies.hexie]]
 modId="create"
-type="required"
+type="optional"
 versionRange="[6.0.10,6.1)"
 ordering="AFTER"
 side="BOTH"

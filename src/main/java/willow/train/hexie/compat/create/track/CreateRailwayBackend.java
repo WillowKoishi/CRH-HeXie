@@ -1,7 +1,5 @@
 package willow.train.hexie.compat.create.track;
 
-import static com.simibubi.create.foundation.data.TagGen.pickaxeOnly;
-
 import com.simibubi.create.AllTags;
 import com.simibubi.create.content.trains.track.TrackBlock;
 import com.simibubi.create.content.trains.track.TrackMaterial;
@@ -9,27 +7,35 @@ import com.simibubi.create.content.trains.track.TrackMaterialFactory;
 import com.simibubi.create.content.trains.track.TrackShape;
 import com.simibubi.create.foundation.data.CreateRegistrate;
 import com.tterrag.registrate.providers.DataGenContext;
+import com.tterrag.registrate.providers.ProviderType;
 import com.tterrag.registrate.providers.RegistrateBlockstateProvider;
 import com.tterrag.registrate.util.entry.BlockEntry;
+import com.tterrag.registrate.util.nullness.NonNullSupplier;
 import dev.engine_room.flywheel.lib.model.baked.PartialModel;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.block.Blocks;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.material.MapColor;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModList;
-import willow.train.hexie.Main;
-import willow.train.hexie.compat.create.CreateBlockReservations;
-import willow.train.hexie.api.railway.RailwayDefinition;
-import willow.train.hexie.api.railway.RailwayHandle;
 import net.neoforged.neoforge.client.model.generators.ConfiguredModel;
 import net.neoforged.neoforge.client.model.generators.ModelFile;
-import willow.train.hexie.item.track.StandardTrackItem;
+import net.neoforged.neoforge.common.Tags;
+import willow.train.hexie.bridge.HexieBridges;
+import willow.train.hexie.compat.create.CreateBootstrap;
+import willow.train.hexie.compat.create.railx.RailxTracks;
+import willow.train.hexie.compat.create.signal.CreateBlockReservations;
+import willow.train.hexie.core.HexieConstants;
+import willow.train.hexie.core.api.railway.RailwayDefinition.Bed;
+import willow.train.hexie.core.api.railway.RailwayDefinition;
+import willow.train.hexie.core.api.railway.RailwayHandle;
 
 /** The active backend owns all Create registration and optional compatibility details. */
 public final class CreateRailwayBackend {
@@ -46,8 +52,10 @@ public final class CreateRailwayBackend {
         var existing = MATERIALS.get(id);
         if (existing != null) return existing;
         var models = definition.models();
+        // Create deduplicates block-entity suppliers by identity when it enumerates material aliases.
+        NonNullSupplier<TrackBlock> block = () -> (TrackBlock) BuiltInRegistries.BLOCK.get(definition.blockId());
         var material = TrackMaterialFactory.make(id).lang(definition.displayName())
-                .block(() -> () -> (TrackBlock) BuiltInRegistries.BLOCK.get(definition.blockId()))
+                .block(() -> block)
                 .particle(CreateRailwayResources.particle(models.particle()))
                 .trackType(CreateRailwayTrackType.STANDARD).sleeper(Blocks.ANDESITE_SLAB)
                 .customModels(() -> () -> PartialModel.of(models.sleeper()),
@@ -73,9 +81,9 @@ public final class CreateRailwayBackend {
         return DEFINITIONS.containsKey(material);
     }
 
-    public static synchronized RailwayDefinition.Bed bed(TrackMaterial material) {
+    public static synchronized Bed bed(TrackMaterial material) {
         var definition = DEFINITIONS.get(material);
-        return definition == null ? RailwayDefinition.Bed.NONE : definition.bed();
+        return definition == null ? Bed.NONE : definition.bed();
     }
 
     public static synchronized double surfaceHeight(TrackMaterial material) {
@@ -100,14 +108,19 @@ public final class CreateRailwayBackend {
     }
 
     public static synchronized RailwayHandle register(IEventBus bus, ResourceLocation id, RailwayDefinition definition) {
+        if (!ModList.get().isLoaded("create")) throw new IllegalStateException("Track registration requires Create");
         var owner = ModList.get().getModContainerById(id.getNamespace())
                 .orElseThrow(() -> new IllegalArgumentException("Railway namespace is not a loaded mod: " + id.getNamespace()));
         if (owner.getEventBus() != bus)
             throw new IllegalArgumentException("Use the owning mod's event bus to register its railways: " + id);
         // Reject material conflicts before reserving IDs shared with add-on bogey registration.
         validateMaterial(id, definition);
+        String legacyPath = CreateRailwayResources.LEGACY_MATERIAL_PATHS.get(id);
+        if (legacyPath != null && TrackMaterial.ALL.containsKey(id.withPath(legacyPath))) {
+            throw new IllegalArgumentException("Railway material alias already in use: " + id.withPath(legacyPath));
+        }
         boolean railx = ModList.get().isLoaded("railx");
-        var hiddenId = ResourceLocation.fromNamespaceAndPath(id.getNamespace(), "railx_" + id.getPath() + "_track");
+        var hiddenId = CreateRailwayResources.railxBlockId(id);
         CreateBlockReservations.reserve("railway " + id, railx
                 ? java.util.List.of(definition.blockId(), hiddenId) : java.util.List.of(definition.blockId()));
         var registrate = registrate(bus, id.getNamespace());
@@ -116,27 +129,43 @@ public final class CreateRailwayBackend {
                 .initialProperties(() -> Blocks.STONE)
                 .properties(properties -> properties.mapColor(MapColor.METAL)
                         .strength(0.8F).sound(SoundType.METAL).noOcclusion().forceSolidOn())
-                .transform(pickaxeOnly())
                 .blockstate(CreateRailwayBackend::generateBlockstate)
-                .tag(AllTags.AllBlockTags.TRACKS.tag)
-                .tag(AllTags.AllBlockTags.GIRDABLE_TRACKS.tag)
-                .tag(net.neoforged.neoforge.common.Tags.Blocks.RELOCATION_NOT_SUPPORTED)
-                .lang(definition.displayName() + " Train Track")
+                .setData(ProviderType.BLOCK_TAGS, (context, provider) -> {
+                    var blockId = context.getId();
+                    provider.addTag(AllTags.AllBlockTags.TRACKS.tag).addOptional(blockId);
+                    provider.addTag(AllTags.AllBlockTags.GIRDABLE_TRACKS.tag).addOptional(blockId);
+                    provider.addTag(BlockTags.MINEABLE_WITH_PICKAXE).addOptional(blockId);
+                    provider.addTag(Tags.Blocks.RELOCATION_NOT_SUPPORTED).addOptional(blockId);
+                })
+                .lang(CreateRailwayResources.trackName(id, definition))
                 .onRegister(CreateRegistrate.blockModel(() ->
-                        willow.train.hexie.client.render.track.BallastTrackModel::create))
+                        HexieBridges.Client.trackRender().ballastTrackModel()::create))
                 .item(StandardTrackItem::new)
-                .tag(AllTags.AllItemTags.TRACKS.tag)
+                .setData(ProviderType.ITEM_TAGS, (context, provider) ->
+                        provider.addTag(AllTags.AllItemTags.TRACKS.tag).addOptional(context.getId()))
                 .model((context, provider) -> provider.generated(context, definition.models().itemTexture()))
                 .build().register();
         BLOCKS.put(id, block);
         if (railx) {
-            willow.train.hexie.compat.create.railx.RailxTracks.addTrack(registrate, material, block);
+            RailxTracks.addTrack(registrate, material, block);
+        }
+        if (legacyPath != null) {
+            // Create reads saved graph/curve materials from its own map, outside NeoForge registries.
+            TrackMaterial.ALL.put(id.withPath(legacyPath), material);
+            var oldBlock = id.withPath(legacyPath + "_track");
+            var newBlock = definition.blockId();
+            registrate.addRegisterCallback(newBlock.getPath(), Registries.BLOCK,
+                    entry -> BuiltInRegistries.BLOCK.addAlias(oldBlock, newBlock));
+            registrate.addRegisterCallback(newBlock.getPath(), Registries.ITEM,
+                    entry -> BuiltInRegistries.ITEM.addAlias(oldBlock, newBlock));
+            if (railx) registrate.addRegisterCallback(hiddenId.getPath(), Registries.BLOCK,
+                    entry -> BuiltInRegistries.BLOCK.addAlias(oldBlock.withPrefix("railx_"), hiddenId));
         }
         return new RailwayHandle(id, definition, block::get, () -> block.get().asItem());
     }
 
     private static CreateRegistrate registrate(IEventBus bus, String namespace) {
-        if (namespace.equals(Main.MOD_ID)) return Main.registrate();
+        if (namespace.equals(HexieConstants.MOD_ID)) return CreateBootstrap.registrate();
         var previous = BUSES.putIfAbsent(namespace, bus);
         if (previous != null && previous != bus)
             throw new IllegalArgumentException("Railways in one namespace must use the same mod event bus: " + namespace);

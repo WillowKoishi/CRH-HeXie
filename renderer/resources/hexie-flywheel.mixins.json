@@ -1,0 +1,15 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "dev.hexie.renderer.flywheel.mixin",
+  "plugin": "dev.hexie.renderer.neoforge.CompatMixins",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "FlywheelCompilationMixin",
+    "FlywheelIndirectMixin",
+    "FlywheelInstancedMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

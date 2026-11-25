@@ -1,10 +1,22 @@
 {
   "values": [
     "hexie:ss7d_front_bogey",
-    "hexie:adjustable_semaphore",
-    "hexie:standard_track",
-    "hexie:ballastless_track",
-    "hexie:tieless_track",
+    {
+      "id": "hexie:create_adjustable_semaphore",
+      "required": false
+    },
+    {
+      "id": "hexie:create_standard_track",
+      "required": false
+    },
+    {
+      "id": "hexie:create_ballastless_track",
+      "required": false
+    },
+    {
+      "id": "hexie:create_tieless_track",
+      "required": false
+    },
     "hexie:hx_standard_bogey",
     "hexie:df11g_bogey",
     "hexie:df11g_backward_bogey",
@@ -22,7 +34,10 @@
     "hexie:crh1a_trailer_bogey",
     "hexie:df11g_front2",
     "hexie:hxd3d_front",
-    "hexie:hx_semaphore",
+    {
+      "id": "hexie:create_hx_semaphore",
+      "required": false
+    },
     "hexie:weathering_resistant_steel_block_0",
     "hexie:exposed_weathering_steel_block",
     "hexie:yellowing_weathering_steel_block",
@@ -36,15 +51,15 @@
     "hexie:waxed_stably_rusted_weathering_steel_block",
     "hexie:waxed_fully_rusted_weathering_steel_block",
     {
-      "id": "hexie:railx_standard_track",
+      "id": "hexie:railx_create_standard_track",
       "required": false
     },
     {
-      "id": "hexie:railx_ballastless_track",
+      "id": "hexie:railx_create_ballastless_track",
       "required": false
     },
     {
-      "id": "hexie:railx_tieless_track",
+      "id": "hexie:railx_create_tieless_track",
       "required": false
     }
   ]

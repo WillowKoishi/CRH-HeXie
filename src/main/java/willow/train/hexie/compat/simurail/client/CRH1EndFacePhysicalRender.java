@@ -8,13 +8,14 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix3f;
 import org.joml.Quaternionf;
-import willow.train.hexie.blocks.emu.crh1a.CRH1EndFaceBlock;
-import willow.train.hexie.compat.create.SnapshotCouplerAnimation;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
+import willow.train.hexie.bridge.HexieBridges;
+import willow.train.hexie.bridge.world.CarriageBlockBridge.CRH1EndFaceBlockView;
+import willow.train.hexie.compat.create.motion.SnapshotCouplerAnimation;
 import willow.train.hexie.compat.sable.SableInteractionCoordinates;
 import willow.train.hexie.compat.sable.SableInteractionCoordinates.Frame;
 import willow.train.hexie.compat.simurail.PhysicalCouplerBlockEntity;
-import willow.train.hexie.vehicle.runtime.CouplerAngles;
-import willow.train.hexie.vehicle.runtime.CouplingEndpoint.Point;
+import willow.train.hexie.core.api.vehicle.Point3;
 
 /** Convert two interpolated Sable body poses into the existing gangway contact representation. */
 public final class CRH1EndFacePhysicalRender {
@@ -27,19 +28,19 @@ public final class CRH1EndFacePhysicalRender {
         var own = physical.getBlockPos();
         var other = physical.getCouplerPartner();
         if (other == null || !level.hasChunkAt(other)
-                || !(level.getBlockState(other).getBlock() instanceof CRH1EndFaceBlock)
+                || !(level.getBlockState(other).getBlock() instanceof CRH1EndFaceBlockView)
                 || !SableInteractionCoordinates.contains(level, own) || !SableInteractionCoordinates.contains(level, other))
             return null;
         var ownFrame = SableInteractionCoordinates.render(level, own, partialTick);
         var otherFrame = SableInteractionCoordinates.render(level, other, partialTick);
         var partner = relativePose(own, physical.getFacing(), ownFrame, other,
-                level.getBlockState(other).getValue(CRH1EndFaceBlock.FACING), otherFrame);
+                level.getBlockState(other).getValue(HorizontalDirectionalBlock.FACING), otherFrame);
         UUID endpoint = UUID.nameUUIDFromBytes(("crh1a:" + own.asLong()).getBytes(StandardCharsets.UTF_8));
-        return new SnapshotCouplerAnimation.Parameters(endpoint, own, 0, CouplerAngles.ZERO, null, true, partner);
+        return new SnapshotCouplerAnimation.Parameters(endpoint, own, 0, HexieBridges.coupling().couplerAngles().zero(), null, true, partner);
     }
 
-    public static SnapshotCouplerAnimation.PartnerPose relativePose(BlockPos own, Direction ownFacing, Frame ownFrame,
-            BlockPos other, Direction otherFacing, Frame otherFrame) {
+    public static SnapshotCouplerAnimation.PartnerPose relativePose(BlockPos own, Direction ownFacing, SableInteractionCoordinates.Frame ownFrame,
+            BlockPos other, Direction otherFacing, SableInteractionCoordinates.Frame otherFrame) {
         Vec3 origin = transform(Vec3.ZERO, own, ownFacing, ownFrame, other, otherFacing, otherFrame);
         Vec3 x = transform(new Vec3(1, 0, 0), own, ownFacing, ownFrame, other, otherFacing, otherFrame).subtract(origin).normalize();
         Vec3 y = transform(new Vec3(0, 1, 0), own, ownFacing, ownFrame, other, otherFacing, otherFrame).subtract(origin).normalize();
@@ -49,12 +50,12 @@ public final class CRH1EndFacePhysicalRender {
                 .m20((float) z.x).m21((float) z.y).m22((float) z.z);
         var rotation = new Quaternionf().setFromNormalized(matrix).normalize();
         UUID endpoint = UUID.nameUUIDFromBytes(("crh1a:" + other.asLong()).getBytes(StandardCharsets.UTF_8));
-        return new SnapshotCouplerAnimation.PartnerPose(endpoint, new Point(origin.x, origin.y, origin.z),
+        return new SnapshotCouplerAnimation.PartnerPose(endpoint, new Point3(origin.x, origin.y, origin.z),
                 rotation.x, rotation.y, rotation.z, rotation.w);
     }
 
-    private static Vec3 transform(Vec3 point, BlockPos own, Direction ownFacing, Frame ownFrame,
-                                  BlockPos other, Direction otherFacing, Frame otherFrame) {
+    private static Vec3 transform(Vec3 point, BlockPos own, Direction ownFacing, SableInteractionCoordinates.Frame ownFrame,
+                                  BlockPos other, Direction otherFacing, SableInteractionCoordinates.Frame otherFrame) {
         Vec3 otherStorage = rotate(point, otherFacing).add(other.getX(), other.getY(), other.getZ());
         Vec3 ownStorage = ownFrame.toStorage(otherFrame.toWorld(otherStorage))
                 .subtract(own.getX(), own.getY(), own.getZ());

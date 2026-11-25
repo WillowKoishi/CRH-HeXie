@@ -18,13 +18,16 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import willow.train.hexie.Main;
-import willow.train.hexie.blocks.locos.PantographBlock;
-import willow.train.hexie.init.block.BlockInit;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import willow.train.hexie.bridge.HexieBridges;
+import willow.train.hexie.bridge.world.CarriageBlockBridge.PantographBlockView;
+import willow.train.hexie.bridge.world.base.PantographBlockBase;
+import willow.train.hexie.core.HexieConstants;
+import willow.train.hexie.core.api.vehicle.TractionPowerSources;
 
 public final class CeePantographCompat {
     private static final DeferredRegister<PantographType> TYPES =
-            DeferredRegister.create(CEERegistries.PANTOGRAPH_TYPE.key(), Main.MOD_ID);
+            DeferredRegister.create(CEERegistries.PANTOGRAPH_TYPE.key(), HexieConstants.MOD_ID);
     // fixed head sits two blocks up and slightly forward
     private static final Supplier<PantographType> FIXED_HEAD = TYPES.register(
             "fixed_head", () -> new PantographType(0.25f, -0.10f, 1.875f, 0.5f));
@@ -36,20 +39,20 @@ public final class CeePantographCompat {
         bus.addListener(CeePantographCompat::setup);
     }
 
-    public static PantographBlock createBlock(PantographBlock.Properties properties) {
+    public static PantographBlockView createBlock(BlockBehaviour.Properties properties) {
         return new CompatiblePantographBlock(properties);
     }
 
     private static void setup(FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
-            willow.train.hexie.api.vehicle.TractionPowerSources.register(CeeSnapshotTrain::hasLinePower);
-            var pantograph = BlockInit.PANTOGRAPH.get();
+            TractionPowerSources.register(CeeSnapshotTrain::hasLinePower);
+            var pantograph = HexieBridges.worldRegistry().blockInit().pantograph();
             MovementBehaviour.REGISTRY.register(pantograph, new FixedHeadMovement());
             MovingInteractionBehaviour.REGISTRY.register(pantograph, new TogglePantograph());
         });
     }
 
-    private static final class CompatiblePantographBlock extends PantographBlock implements IPantographBlock {
+    private static final class CompatiblePantographBlock extends PantographBlockBase implements IPantographBlock {
         private CompatiblePantographBlock(Properties properties) {
             super(properties);
         }
@@ -64,7 +67,7 @@ public final class CeePantographCompat {
         @Override
         public void startMoving(MovementContext context) {
             if (!context.world.isClientSide && context.contraption instanceof IPantographList pantographs) {
-                pantographs.changePantographState(context.localPos, context.state.getValue(PantographBlock.OPEN));
+                pantographs.changePantographState(context.localPos, context.state.getValue(HexieBridges.carriageBlock().pantographBlock().open()));
             }
         }
 
@@ -82,7 +85,7 @@ public final class CeePantographCompat {
             var info = context.contraption.getBlocks().get(context.localPos);
             boolean active = !context.disabled && info != null
                     && info.state().getBlock() instanceof CompatiblePantographBlock
-                    && info.state().getValue(PantographBlock.OPEN);
+                    && info.state().getValue(HexieBridges.carriageBlock().pantographBlock().open());
             pantographs.changePantographState(context.localPos, active);
         }
     }
@@ -97,7 +100,7 @@ public final class CeePantographCompat {
             var info = entity.getContraption().getBlocks().get(pos);
             if (info == null || !(info.state().getBlock() instanceof CompatiblePantographBlock)) return false;
             if (!entity.level().isClientSide) {
-                BlockState state = info.state().cycle(PantographBlock.OPEN);
+                BlockState state = info.state().cycle(HexieBridges.carriageBlock().pantographBlock().open());
                 entity.setBlock(pos, new StructureBlockInfo(pos, state, info.nbt()));
             }
             return true;

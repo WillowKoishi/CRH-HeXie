@@ -2,8 +2,11 @@ package willow.train.hexie.vehicle.control;
 
 import java.util.Map;
 import java.util.UUID;
-import willow.train.hexie.api.cab.CabDisplayState;
-import willow.train.hexie.api.cab.DmiState;
+import willow.train.hexie.bridge.vehicle.CabControlBridge;
+import willow.train.hexie.core.api.cab.CabDisplayState;
+import willow.train.hexie.core.api.cab.CtcsProfile;
+import willow.train.hexie.core.api.cab.DmiState;
+import willow.train.hexie.core.api.cab.TrainControlLimits;
 import willow.train.hexie.vehicle.runtime.VehicleRuntime;
 
 /** Projects our own consist physics and backend-supplied route observations into DMI readings. */
@@ -12,14 +15,14 @@ public final class TrainDisplayReadings {
 
     /** A route adapter supplies facts only; mode and actuator limits belong to the controller. */
     public record Route(DmiState.Target target, String station, double lineLimitKmh, String status,
-                        CtcsControl.Profile ctcs, StationStopControl.State stationStop) {
+                        CtcsProfile.Profile ctcs, CabControlBridge.StationStopControlStateView stationStop) implements CabControlBridge.TrainDisplayReadingsRouteView {
         public Route(DmiState.Target target, String station, double lineLimitKmh, String status) {
-            this(target, station, lineLimitKmh, status, CtcsControl.Profile.EMPTY);
+            this(target, station, lineLimitKmh, status, CtcsProfile.Profile.EMPTY);
         }
-        public Route(DmiState.Target target, String station, double lineLimitKmh, String status, CtcsControl.Profile ctcs) {
+        public Route(DmiState.Target target, String station, double lineLimitKmh, String status, CtcsProfile.Profile ctcs) {
             this(target, station, lineLimitKmh, status, ctcs, StationStopControl.State.RUNNING);
         }
-        public Route withStationStop(StationStopControl.State stop) {
+        public Route withStationStop(CabControlBridge.StationStopControlStateView stop) {
             return new Route(target, station, lineLimitKmh, status, ctcs, stop);
         }
         /** One interpretation of observed route facts, shared by automatic control and displays. */
@@ -48,7 +51,7 @@ public final class TrainDisplayReadings {
                                         DmiState.Mode mode, Route route, String trainNumber) {
         var state = runtime.consistReadings(member);
         // Capability limits do not change with the active cab, its handles or automatic running plan.
-        var limits = TrainControlLimits.capture(runtime, member);
+        var limits = willow.train.hexie.vehicle.control.TrainControlLimits.capture(runtime, member);
         return new CabDisplayState(state.speed() * 3.6, Map.of(), project(mode, route, limits.deceleration(0),
                 state.traction(), state.brake(), trainNumber, "", "", limits));
     }
@@ -71,8 +74,8 @@ public final class TrainDisplayReadings {
         var station = waiting ? route.stationStop().stationName() : route.station();
         var target = waiting ? new DmiState.Target(DmiState.TargetKind.STATION, station, 0, 0) : route.target();
         // Station dwell is a shared operating constraint, not a fabricated wayside signal aspect.
-        var profile = waiting ? new CtcsControl.Profile(route.ctcs().code(),
-                java.util.List.of(new CtcsControl.SpeedTarget(0, 0))) : route.ctcs();
+        var profile = waiting ? new CtcsProfile.Profile(route.ctcs().code(),
+                java.util.List.of(new CtcsProfile.SpeedTarget(0, 0))) : route.ctcs();
         return new DmiState(mode, target, waiting ? 0 : TrainControl.LINE_SPEED_LIMIT_KMH, deceleration, traction, brake,
                 route.status(), station, trainNumber, time, kilometerMarker, profile, null, limits);
     }

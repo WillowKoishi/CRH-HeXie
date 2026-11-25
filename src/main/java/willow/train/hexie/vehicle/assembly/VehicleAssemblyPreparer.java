@@ -7,7 +7,11 @@ import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import willow.train.hexie.blocks.bogeys.BogeyFloorData;
+import net.minecraft.world.level.block.Block;
+import willow.train.hexie.bridge.HexieBridges;
+import willow.train.hexie.bridge.vehicle.VehicleBridge;
+import willow.train.hexie.core.api.vehicle.Point3;
+import willow.train.hexie.core.util.station.Connections;
 import willow.train.hexie.vehicle.runtime.BogeyDefinition;
 import willow.train.hexie.vehicle.runtime.BogeyMount;
 import willow.train.hexie.vehicle.runtime.CarriageDefinition;
@@ -23,9 +27,9 @@ public final class VehicleAssemblyPreparer {
         List<CouplingEndpoint> decode(CarriageSnapshot snapshot, Direction forward);
     }
 
-    public record Carriage(CarriageSnapshot structure, CarriageDefinition definition, double initialDistance) {}
+    public record Carriage(CarriageSnapshot structure, CarriageDefinition definition, double initialDistance) implements VehicleBridge.VehicleAssemblyPreparerCarriageView {}
 
-    public record Prepared(Direction forward, List<Carriage> carriages) {
+    public record Prepared(Direction forward, List<Carriage> carriages) implements VehicleBridge.VehicleAssemblyPreparerPreparedView {
         public Prepared { carriages = List.copyOf(carriages); }
     }
 
@@ -52,19 +56,19 @@ public final class VehicleAssemblyPreparer {
                 var support = AssemblyBogeySupport.resolve(snapshot, position);
                 if (support != null) byPosition.put(position, support.capturedBlock());
             }
-            int floorHeight = BogeyFloorData.value(byPosition.get(snapshot.supports().getFirst()).entityData());
+            int floorHeight = HexieBridges.worldBlock().bogeyFloorData().value(byPosition.get(snapshot.supports().getFirst()).entityData());
             for (var position : snapshot.supports())
-                if (BogeyFloorData.value(byPosition.get(position).entityData()) != floorHeight)
+                if (HexieBridges.worldBlock().bogeyFloorData().value(byPosition.get(position).entityData()) != floorHeight)
                     throw new IllegalArgumentException("同一节车厢的转向架地板高度设置不一致，请统一后再组装。");
-            double floorOffset = BogeyFloorData.offset(floorHeight);
+            double floorOffset = HexieBridges.worldBlock().bogeyFloorData().offset(floorHeight);
             var bogeys = new ArrayList<BogeyDefinition>();
             for (var position : snapshot.supports()) {
                 var model = catalog.resolve(byPosition.get(position));
                 UUID id = UUID.nameUUIDFromBytes((snapshot.id() + ":bogey:" + position.asLong()).getBytes(StandardCharsets.UTF_8));
                 var captured = byPosition.get(position);
-                var displacement = BogeyFloorData.displacement(captured.state(), BogeyFloorData.longitudinalFromEntity(captured.entityData()));
+                var displacement = HexieBridges.worldBlock().bogeyFloorData().displacement(captured.state(), HexieBridges.worldBlock().bogeyFloorData().longitudinalFromEntity(captured.entityData()));
                 var bodyPoint = northForward(position, forward).plus(model.pivot()).plus(northForward(displacement, forward));
-                var trackPivot = model.pivot().plus(new CouplingEndpoint.Point(0, model.blockCenterHeight(), 0));
+                var trackPivot = model.pivot().plus(new Point3(0, model.blockCenterHeight(), 0));
                 var mount = new BogeyMount(bodyPoint, trackPivot, model.type(), model.lateralLimit());
                 bogeys.add(new BogeyDefinition(id, model.id().toString(), -bodyPoint.z(),
                         model.geometry(), model.operating(), mount));
@@ -89,16 +93,16 @@ public final class VehicleAssemblyPreparer {
     }
 
     /** Coordinates are between block centres, so their common half-block offset cancels. */
-    private static CouplingEndpoint.Point northForward(BlockPos position, Direction forward) {
+    private static Point3 northForward(BlockPos position, Direction forward) {
         return northForward(new net.minecraft.world.phys.Vec3(position.getX(), position.getY(), position.getZ()), forward);
     }
 
-    public static CouplingEndpoint.Point northForward(net.minecraft.world.phys.Vec3 position, Direction forward) {
+    public static Point3 northForward(net.minecraft.world.phys.Vec3 position, Direction forward) {
         return switch (forward) {
-            case NORTH -> new CouplingEndpoint.Point(position.x, position.y, position.z);
-            case EAST -> new CouplingEndpoint.Point(position.z, position.y, -position.x);
-            case SOUTH -> new CouplingEndpoint.Point(-position.x, position.y, -position.z);
-            case WEST -> new CouplingEndpoint.Point(-position.z, position.y, position.x);
+            case NORTH -> new Point3(position.x, position.y, position.z);
+            case EAST -> new Point3(position.z, position.y, -position.x);
+            case SOUTH -> new Point3(-position.x, position.y, -position.z);
+            case WEST -> new Point3(-position.z, position.y, position.x);
             default -> throw new IllegalArgumentException("Carriage forward direction must be horizontal");
         };
     }

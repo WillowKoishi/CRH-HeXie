@@ -2,16 +2,17 @@ package willow.train.hexie.vehicle.control;
 
 import java.util.List;
 import java.util.Set;
-import willow.train.hexie.api.interaction.BlockControl;
-import willow.train.hexie.api.cab.CabNeutralPositions;
-import willow.train.hexie.api.cab.CabNeutralPositions.Detent;
-import willow.train.hexie.api.interaction.ControlState;
-import willow.train.hexie.api.traincontrol.CabTrainControl;
-import willow.train.hexie.api.traincontrol.CabTrainRequest;
-import willow.train.hexie.vehicle.runtime.VehicleRuntime;
+import willow.train.hexie.bridge.vehicle.CabControlBridge;
+import willow.train.hexie.core.api.cab.CabNeutralPositions;
+import willow.train.hexie.core.api.cab.CabNeutralPositions.Detent;
+import willow.train.hexie.core.api.cab.CabState;
+import willow.train.hexie.core.api.interaction.BlockControl;
+import willow.train.hexie.core.api.interaction.ControlState;
+import willow.train.hexie.core.api.traincontrol.CabTrainRequest;
+import willow.train.hexie.core.api.traincontrol.TrainCommand;
 
 /** The test surface owns ten service notches, emergency notch 11 and its handle-return gesture. */
-public enum TestCabControls implements CabTrainControl {
+public enum TestCabControls implements CabControlBridge.TestCabControlsView {
     INSTANCE;
 
     private static final List<TestCabButton> BUTTONS = List.of(TestCabButton.values());
@@ -21,11 +22,11 @@ public enum TestCabControls implements CabTrainControl {
     public static final CabNeutralPositions NEUTRAL_POSITIONS = new CabNeutralPositions(
             new Detent(POWER, 0), new Detent(REVERSER, 0));
 
-    public record View(int power, int brake, int reverser, boolean automatic, boolean parking) {}
+    public record View(int power, int brake, int reverser, boolean automatic, boolean parking) implements CabControlBridge.TestCabControlsViewView {}
 
     /** This desk continues its handle brake demand after its reverser is cut out. */
-    @Override public VehicleRuntime.Control output(boolean enabled, VehicleRuntime.Control handles,
-                                                  VehicleRuntime.Control controlled) {
+    @Override public TrainCommand output(boolean enabled, TrainCommand handles,
+                                                  TrainCommand controlled) {
         return enabled ? controlled : handles;
     }
 
@@ -38,7 +39,7 @@ public enum TestCabControls implements CabTrainControl {
                 surface.getOrDefault(REVERSER, 0), surface.getOrDefault(MODE, 0) == 1, surface.getOrDefault(PARKING, 0) == 1);
     }
 
-    public static View view(CabModule.State state) {
+    public static View view(CabState state) {
         return view(state.surface(INSTANCE));
     }
 
@@ -119,7 +120,7 @@ public enum TestCabControls implements CabTrainControl {
     }
 
     /** Compatibility entry for older test callers that identify buttons by their number. */
-    public static CabModule.State apply(CabModule.State previous, int action, double speed) {
+    public static CabState apply(CabState previous, int action, double speed) {
         if (action == -1 || action == 7 || action == 8)
             return previous.withApproach(action == 7);
         if (action < 0 || action > 6) throw new IllegalArgumentException("Unknown test cab action");

@@ -19,9 +19,9 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import willow.train.hexie.init.track.TrackMaterialInit;
+import willow.train.hexie.bridge.railway.TrackRegistryBridge;
 import willow.train.hexie.compat.create.track.CreateRailwayBackend;
-import willow.train.hexie.blocks.track.standard.TrackBallast;
+import willow.train.hexie.compat.create.track.TrackBallast;
 
 /** RailX owns flexible placement and connections; the original material owns the rail models. */
 public final class RailxTrackBlock extends FlexiTrackBlock {
@@ -81,6 +81,6 @@ public final class RailxTrackBlock extends FlexiTrackBlock {
 
     private static double heightIncrease(TrackMaterial material) {
         return CreateRailwayBackend.supports(material) ? CreateRailwayBackend.heightIncrease(material)
-                : TrackMaterialInit.RAIL_HEIGHT_INCREASE;
+                : TrackRegistryBridge.RAIL_HEIGHT_INCREASE;
     }
 }

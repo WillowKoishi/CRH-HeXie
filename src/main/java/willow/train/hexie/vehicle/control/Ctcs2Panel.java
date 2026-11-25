@@ -2,14 +2,14 @@ package willow.train.hexie.vehicle.control;
 
 import java.util.List;
 import net.minecraft.network.chat.Component;
-import willow.train.hexie.api.interaction.BlockControl;
-import willow.train.hexie.api.interaction.ControlSurface;
-import willow.train.hexie.api.interaction.ControlState;
-import willow.train.hexie.api.traincontrol.CabTrainControl;
-import willow.train.hexie.api.traincontrol.CabTrainRequest;
+import willow.train.hexie.bridge.vehicle.CabControlBridge;
+import willow.train.hexie.core.api.interaction.BlockControl;
+import willow.train.hexie.core.api.interaction.ControlState;
+import willow.train.hexie.core.api.interaction.ControlSurface;
+import willow.train.hexie.core.api.traincontrol.CabTrainRequest;
 
 /** The controls of the CTCS2-200H panel, in the shell's local coordinates. */
-public enum Ctcs2Panel implements ControlSurface.Module, CabTrainControl {
+public enum Ctcs2Panel implements CabControlBridge.Ctcs2PanelView {
     INSTANCE;
 
     /** LCD soft keys, top to bottom. The display can show legends before a function is connected. */

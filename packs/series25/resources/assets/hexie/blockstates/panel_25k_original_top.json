@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "hexie:block/carriage/carriage25k/panel_25k_original_top",
+      "y": 270
+    },
+    "facing=north": {
+      "model": "hexie:block/carriage/carriage25k/panel_25k_original_top",
+      "y": 180
+    },
+    "facing=south": {
+      "model": "hexie:block/carriage/carriage25k/panel_25k_original_top",
+      "y": 0
+    },
+    "facing=west": {
+      "model": "hexie:block/carriage/carriage25k/panel_25k_original_top",
+      "y": 90
+    }
+  }
+}

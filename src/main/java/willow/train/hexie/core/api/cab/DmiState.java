@@ -1,0 +1,68 @@
+package willow.train.hexie.core.api.cab;
+
+import java.util.Objects;
+
+/** Backend-neutral readings. No target / a negative line limit means unavailable, never zero. */
+public record DmiState(Mode mode, Target target, double lineLimitKmh, double serviceDeceleration,
+                       double traction, double brake, String compatibilityStatus,
+                       String stationName, String trainNumber, String time, String kilometerMarker,
+                       CtcsProfile.Profile ctcs, DmiSpeedReadings speedReadings,
+                       TrainControlLimits limits) {
+    /** Compatibility entry for display providers which do not supply a consist capability snapshot. */
+    public DmiState(Mode mode, Target target, double lineLimitKmh, double serviceDeceleration,
+                    double traction, double brake, String compatibilityStatus,
+                    String stationName, String trainNumber, String time, String kilometerMarker,
+                    CtcsProfile.Profile ctcs, DmiSpeedReadings speedReadings) {
+        this(mode, target, lineLimitKmh, serviceDeceleration, traction, brake, compatibilityStatus,
+                stationName, trainNumber, time, kilometerMarker, ctcs, speedReadings, null);
+    }
+    /** A null speed readout retains the shared advisory envelope; explicit NONE suppresses its markers. */
+    public DmiState(Mode mode, Target target, double lineLimitKmh, double serviceDeceleration,
+                    double traction, double brake, String compatibilityStatus,
+                    String stationName, String trainNumber, String time, String kilometerMarker,
+                    CtcsProfile.Profile ctcs) {
+        this(mode, target, lineLimitKmh, serviceDeceleration, traction, brake, compatibilityStatus,
+                stationName, trainNumber, time, kilometerMarker, ctcs, null);
+    }
+    public DmiState(Mode mode, Target target, double lineLimitKmh, double serviceDeceleration,
+                    double traction, double brake, String compatibilityStatus,
+                    String stationName, String trainNumber, String time, String kilometerMarker) {
+        this(mode, target, lineLimitKmh, serviceDeceleration, traction, brake, compatibilityStatus,
+                stationName, trainNumber, time, kilometerMarker,
+                CtcsProfile.Profile.EMPTY);
+    }
+    public enum Mode { UNKNOWN, MANUAL, AUTOMATIC }
+    public enum TargetKind { STATION, SIGNAL, SPEED_RESTRICTION }
+
+    /** Distance in metres along the selected direction of travel, speed in km/h. */
+    public record Target(TargetKind kind, String name, double distanceM, double speedKmh) {
+        public Target {
+            Objects.requireNonNull(kind);
+            Objects.requireNonNull(name);
+            if (!Double.isFinite(distanceM) || distanceM < 0 || !Double.isFinite(speedKmh) || speedKmh < 0)
+                throw new IllegalArgumentException("Invalid DMI target");
+        }
+    }
+
+    public DmiState {
+        Objects.requireNonNull(mode);
+        Objects.requireNonNull(ctcs);
+        Objects.requireNonNull(compatibilityStatus);
+        Objects.requireNonNull(stationName);
+        Objects.requireNonNull(trainNumber);
+        Objects.requireNonNull(time);
+        Objects.requireNonNull(kilometerMarker);
+        if (!Double.isFinite(lineLimitKmh) || lineLimitKmh < 0) lineLimitKmh = -1;
+        if (!Double.isFinite(serviceDeceleration) || serviceDeceleration < 0) serviceDeceleration = 0;
+        traction = fraction(traction);
+        brake = fraction(brake);
+    }
+
+    private static double fraction(double value) {
+        return Double.isFinite(value) ? Math.clamp(value, 0, 1) : 0;
+    }
+
+    public static DmiState unavailable() {
+        return new DmiState(Mode.UNKNOWN, null, -1, 0, 0, 0, "", "", "", "", "");
+    }
+}

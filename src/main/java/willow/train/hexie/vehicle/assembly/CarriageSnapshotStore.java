@@ -1,39 +1,36 @@
 package willow.train.hexie.vehicle.assembly;
 
-import com.mojang.logging.LogUtils;
+// split from willow/train/hexie/vehicle/assembly/CarriageSnapshotStore.java
+
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.storage.DimensionDataStorage;
 import net.minecraft.world.level.storage.LevelResource;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.BaseRailBlock;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import willow.train.hexie.blocks.track.standard.StandardTrackBlock;
-import org.slf4j.Logger;
+import willow.train.hexie.bridge.vehicle.CarriageSnapshotView;
+import willow.train.hexie.bridge.vehicle.VehicleBridge;
+import willow.train.hexie.vehicle.assembly.CarriageWorldBlocks.PlacedBlock;
 
 /**
  * Per-dimension snapshots and lightweight active assembly ownership. Block/BE installation failures
@@ -41,21 +38,30 @@ import org.slf4j.Logger;
  * including neighbour notifications; standalone restoration notifies after the world commit.
  * Persistence is ordinary SavedData/world saving, not crash-atomic across chunk and entity files.
  */
-public final class CarriageSnapshotStore extends SavedData {
-    private static final Logger LOGGER = LogUtils.getLogger();
+public final class CarriageSnapshotStore extends SavedData implements VehicleBridge.CarriageSnapshotStoreView {
+    private final CarriageAssemblyTransactions transactions = new CarriageAssemblyTransactions(this);
+    private final CarriageWorldBlocks worldBlocks = new CarriageWorldBlocks(this);
+
     public static final String DATA_NAME = "hexie_carriage_snapshots";
     public static final int SCHEMA_VERSION = 2;
-    private static final int MOVE_FLAGS = Block.UPDATE_MOVE_BY_PISTON | Block.UPDATE_SUPPRESS_DROPS
-            | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_CLIENTS | Block.UPDATE_IMMEDIATE;
 
-    private final ResourceKey<Level> dimension;
-    private final RegistryAccess registries;
+    private long syncGeneration;
+
+    @Override public long syncGeneration() { return syncGeneration; }
+
+    @Override public void setDirty(boolean dirty) {
+        super.setDirty(dirty);
+        if (dirty) syncGeneration++;
+    }
+
+    final ResourceKey<Level> dimension;
+    final RegistryAccess registries;
     private final Thread serverThread;
-    private final LinkedHashMap<UUID, CarriageSnapshot> snapshots = new LinkedHashMap<>();
-    private final LinkedHashMap<UUID, ActiveAssembly> active = new LinkedHashMap<>();
+    final LinkedHashMap<UUID, CarriageSnapshot> snapshots = new LinkedHashMap<>();
+    final LinkedHashMap<UUID, ActiveAssembly> active = new LinkedHashMap<>();
 
     /** Carriage UUIDs reference the one snapshot map; no duplicate block/NBT data is held here. */
-    public record ActiveAssembly(UUID id, UUID owner, BlockPos station, Direction forward, List<UUID> carriages) {
+    public record ActiveAssembly(UUID id, UUID owner, BlockPos station, Direction forward, List<UUID> carriages) implements VehicleBridge.CarriageSnapshotStoreActiveAssemblyView {
         public ActiveAssembly {
             Objects.requireNonNull(id); Objects.requireNonNull(owner); Objects.requireNonNull(forward);
             station = Objects.requireNonNull(station).immutable();
@@ -134,7 +140,8 @@ public final class CarriageSnapshotStore extends SavedData {
 
     /** Register an already captured structure without reading or changing world blocks. */
     public ActiveAssembly importAssembly(UUID assemblyId, UUID owner, BlockPos reference, Direction forward,
-                                         List<CarriageSnapshot> structures) {
+                                         List<CarriageSnapshotView> structuresView) {
+        var structures = structuresView.stream().map(CarriageSnapshot.class::cast).toList();
         requireServerThread();
         if (active.containsKey(Objects.requireNonNull(assemblyId)))
             throw new IllegalArgumentException("Assembly identity already exists");
@@ -150,71 +157,30 @@ public final class CarriageSnapshotStore extends SavedData {
 
     public ActiveAssembly assemble(ServerLevel level, UUID owner, BlockPos station,
                                    VehicleAssemblyPreparer.Prepared prepared) {
-        return assemble(level, owner, station, prepared.forward(),
-                prepared.carriages().stream().map(VehicleAssemblyPreparer.Carriage::structure).toList());
+        return transactions.assemble(level, owner, station, prepared);
     }
 
     /** Preflight everything, retain snapshots, then remove the source blocks in this same tick. */
     public ActiveAssembly assemble(ServerLevel level, UUID owner, BlockPos station, Direction forward,
                                    List<CarriageSnapshot> additions) {
-        return assemble(level, UUID.randomUUID(), owner, station, forward, additions);
+        return transactions.assemble(level, owner, station, forward, additions);
     }
 
     /** The caller may allocate ownership before mounting storage from still-present world entities. */
     public ActiveAssembly assemble(ServerLevel level, UUID assemblyId, UUID owner, BlockPos station,
-                                   Direction forward, List<CarriageSnapshot> additions) {
-        requireLevel(level);
-        if (active.containsKey(Objects.requireNonNull(assemblyId)))
-            throw new IllegalArgumentException("Assembly identity already exists");
-        additions = List.copyOf(additions);
-        var entry = new ActiveAssembly(assemblyId, owner, station, forward,
-                additions.stream().map(CarriageSnapshot::id).toList());
-        List<PlacedBlock> blocks = blocks(additions);
-        for (PlacedBlock block : blocks) {
-            requireLoaded(level, block.position);
-            if (!level.getBlockState(block.position).equals(block.block.state()))
-                throw new IllegalStateException("Assembly source changed: " + block.position);
-            var entity = level.getBlockEntity(block.position);
-            var expected = block.block.entityData();
-            if (expected == null ? entity != null : entity == null
-                    || !expected.equals(entity.saveWithFullMetadata(registries)))
-                throw new IllegalStateException("Assembly block entity changed: " + block.position);
-        }
-        boolean wasDirty = isDirty();
-        addAll(additions);
-        active.put(entry.id(), entry);
-        var changed = new ArrayList<PlacedBlock>();
-        try {
-            for (PlacedBlock block : blocks) {
-                changed.add(block);
-                replace(level, block.position, vacantState(block.block.state()));
-            }
-        } catch (RuntimeException failure) {
-            try {
-                restore(level, changed);
-                active.remove(entry.id());
-                entry.carriages().forEach(snapshots::remove);
-                setDirty(wasDirty);
-                notifyNeighbours(level, changed, block -> vacantState(block.block.state()));
-            } catch (RuntimeException rollbackFailure) {
-                // Retain the only complete snapshots if a third-party block also rejects rollback.
-                failure.addSuppressed(rollbackFailure);
-                setDirty();
-            }
-            throw failure;
-        }
-        setDirty();
-        notifyNeighbours(level, blocks, block -> block.block.state());
-        return entry;
+                                   Direction forward, List<CarriageSnapshotView> additionsView) {
+        var additions = additionsView.stream().map(CarriageSnapshot.class::cast).toList();
+        return transactions.assemble(level, assemblyId, owner, station, forward, additions);
     }
 
     /** Restores at the captured positions only; a conflicting or unloaded target changes nothing. */
     public void disassemble(ServerLevel level, UUID assemblyId) {
-        disassemble(level, assemblyId, () -> { });
+        transactions.disassemble(level, assemblyId);
     }
 
     /** Only block states and block-entity data can change while the captured body is assembled. */
-    public void updateSnapshots(UUID assemblyId, List<CarriageSnapshot> replacements) {
+    public void updateSnapshots(UUID assemblyId, List<CarriageSnapshotView> replacementsView) {
+        var replacements = replacementsView.stream().map(CarriageSnapshot.class::cast).toList();
         requireServerThread();
         var entry = active(assemblyId).orElseThrow(() -> new IllegalArgumentException("Unknown active assembly"));
         var pending = new LinkedHashMap<UUID, CarriageSnapshot>();
@@ -243,35 +209,28 @@ public final class CarriageSnapshotStore extends SavedData {
 
     /** Action-time check before stopping behaviours; does not load chunks or mutate the world. */
     public void checkDisassembly(ServerLevel level, UUID assemblyId) {
-        requireLevel(level);
-        var entry = active(assemblyId).orElseThrow(() -> new IllegalArgumentException("Unknown active assembly"));
-        for (var block : blocks(entry.carriages().stream().map(snapshots::get).toList())) checkTarget(level, block);
+        transactions.checkDisassembly(level, assemblyId);
     }
 
     /** Preflight a transformed subset without publishing its destination as the saved source. */
     public void checkDisassembly(ServerLevel level, UUID assemblyId, List<CarriageSnapshot> targetSnapshots) {
-        checkDisassembly(level, Map.of(assemblyId, targetSnapshots));
+        transactions.checkDisassembly(level, assemblyId, targetSnapshots);
     }
 
     /** Check the complete consist, including overlaps between different source assemblies. */
     public void checkDisassembly(ServerLevel level, Map<UUID, List<CarriageSnapshot>> targetSnapshots) {
-        requireLevel(level);
-        var targets = disassemblyTargets(targetSnapshots).values().stream().flatMap(List::stream).toList();
-        for (var block : blocks(targets)) checkTarget(level, block);
+        transactions.checkDisassembly(level, targetSnapshots);
     }
 
     /** The placement backend decides how occupied cells are replaced or dropped. */
-    public void checkDisassemblyUsing(ServerLevel level, Map<UUID, List<CarriageSnapshot>> targetSnapshots) {
-        requireLevel(level);
-        var targets = disassemblyTargets(targetSnapshots).values().stream().flatMap(List::stream).toList();
-        for (var block : blocks(targets)) requireLoaded(level, block.position);
+    public void checkDisassemblyUsing(ServerLevel level, Map<UUID, List<CarriageSnapshotView>> targetSnapshotsView) {
+        var targetSnapshots = snapshotGroups(targetSnapshotsView);
+        transactions.checkDisassemblyUsing(level, targetSnapshots);
     }
 
     /** Restore mounted storage after all blocks/BE exist, while rollback still owns the snapshots. */
     public void disassemble(ServerLevel level, UUID assemblyId, Runnable afterBlocksRestored) {
-        requireLevel(level);
-        ActiveAssembly entry = active(assemblyId).orElseThrow(() -> new IllegalArgumentException("Unknown active assembly"));
-        disassemble(level, entry, entry.carriages().stream().map(snapshots::get).toList(), null, afterBlocksRestored);
+        transactions.disassemble(level, assemblyId, afterBlocksRestored);
     }
 
     /**
@@ -281,9 +240,7 @@ public final class CarriageSnapshotStore extends SavedData {
      */
     public void disassemble(ServerLevel level, UUID assemblyId, List<CarriageSnapshot> targetSnapshots,
                             Runnable afterInstall) {
-        requireLevel(level);
-        var entry = active(assemblyId).orElseThrow(() -> new IllegalArgumentException("Unknown active assembly"));
-        disassemble(level, entry, disassemblyTargets(entry, targetSnapshots), null, afterInstall);
+        transactions.disassemble(level, assemblyId, targetSnapshots, afterInstall);
     }
 
     /**
@@ -294,183 +251,38 @@ public final class CarriageSnapshotStore extends SavedData {
      */
     public void disassembleUsing(ServerLevel level, UUID assemblyId, List<CarriageSnapshot> targets,
                                  Runnable installer) {
-        disassembleUsing(level, Map.of(assemblyId, targets), installer);
+        transactions.disassembleUsing(level, assemblyId, targets, installer);
     }
 
     /** All source memberships commit together after one native installation/rollback boundary. */
-    public void disassembleUsing(ServerLevel level, Map<UUID, List<CarriageSnapshot>> targets,
+    public void disassembleUsing(ServerLevel level, Map<UUID, List<CarriageSnapshotView>> targetsView,
                                  Runnable installer) {
-        requireLevel(level);
-        disassemble(level, disassemblyTargets(targets), Objects.requireNonNull(installer), () -> { });
+        var targets = snapshotGroups(targetsView);
+        transactions.disassembleUsing(level, targets, installer);
     }
 
-    private Map<ActiveAssembly, List<CarriageSnapshot>> disassemblyTargets(
-            Map<UUID, List<CarriageSnapshot>> targetsByAssembly) {
-        if (targetsByAssembly.isEmpty()) throw new IllegalArgumentException("Disassembly needs an assembly");
-        var groups = new LinkedHashMap<ActiveAssembly, List<CarriageSnapshot>>();
-        var identities = new HashSet<UUID>();
-        for (var group : targetsByAssembly.entrySet()) {
-            var entry = active(group.getKey()).orElseThrow(() -> new IllegalArgumentException("Unknown active assembly"));
-            var targets = disassemblyTargets(entry, group.getValue());
-            for (var target : targets)
-                if (!identities.add(target.id())) throw new IllegalArgumentException("Duplicate disassembly carriage");
-            groups.put(entry, targets);
-        }
-        return groups;
+    static void checkTarget(ServerLevel level, PlacedBlock block) {
+        CarriageWorldBlocks.checkTarget(level, block);
     }
 
-    private List<CarriageSnapshot> disassemblyTargets(ActiveAssembly entry, List<CarriageSnapshot> targets) {
-        targets = List.copyOf(targets);
-        if (targets.isEmpty()) throw new IllegalArgumentException("Disassembly needs a carriage");
-        var identities = new HashSet<UUID>();
-        for (var target : targets) {
-            var original = snapshots.get(target.id());
-            if (!entry.carriages().contains(target.id()) || original == null
-                    || !identities.add(target.id()) || !dimension.equals(target.dimension()))
-                throw new IllegalArgumentException("Disassembly target is not a unique member of this assembly");
-            if (target.blocks().size() != original.blocks().size() || target.supports().size() != original.supports().size())
-                throw new IllegalArgumentException("Disassembly transform cannot add or remove captured blocks/supports");
-            var types = new java.util.HashMap<Block, Integer>();
-            for (var block : original.blocks()) types.merge(block.state().getBlock(), 1, Integer::sum);
-            for (var block : target.blocks()) {
-                Integer count = types.get(block.state().getBlock());
-                if (count == null) throw new IllegalArgumentException("Disassembly transform changed captured block types");
-                if (count == 1) types.remove(block.state().getBlock());
-                else types.put(block.state().getBlock(), count - 1);
-            }
-            target.validate(registries);
-        }
-        return targets;
+    List<PlacedBlock> blocks(List<CarriageSnapshot> values) {
+        return worldBlocks.blocks(values);
     }
 
-    private void disassemble(ServerLevel level, ActiveAssembly entry, List<CarriageSnapshot> targets,
-                             Runnable installer, Runnable afterInstall) {
-        disassemble(level, Map.of(entry, targets), installer, afterInstall);
+    static BlockState vacantState(BlockState state) {
+        return CarriageWorldBlocks.vacantState(state);
     }
 
-    private void disassemble(ServerLevel level, Map<ActiveAssembly, List<CarriageSnapshot>> groups,
-                             Runnable installer, Runnable afterInstall) {
-        Objects.requireNonNull(afterInstall);
-        var targets = groups.values().stream().flatMap(List::stream).toList();
-        List<PlacedBlock> blocks = blocks(targets);
-        var previous = new LinkedHashMap<BlockPos, WorldBlock>();
-        for (PlacedBlock block : blocks) {
-            if (installer == null) checkTarget(level, block);
-            else requireLoaded(level, block.position);
-            BlockState current = level.getBlockState(block.position);
-            BlockEntity entity = level.getBlockEntity(block.position);
-            previous.put(block.position, new WorldBlock(current,
-                    entity == null ? null : entity.saveWithFullMetadata(registries)));
-        }
-        var changed = new ArrayList<PlacedBlock>();
-        try {
-            if (installer != null) {
-                // The backend may throw after any cell. Back up its whole destination before entry.
-                changed.addAll(blocks);
-                installer.run();
-            } else {
-                // Install every state before loading block entities, so neighbouring parts already exist.
-                for (PlacedBlock block : blocks) {
-                    changed.add(block);
-                    replace(level, block.position, block.block.state());
-                }
-                restoreEntities(level, blocks);
-            }
-            afterInstall.run();
-        } catch (RuntimeException failure) {
-            // Attempt every changed cell even if a third-party callback rejects one rollback.
-            // The authoritative snapshots/membership have not been touched at this point.
-            for (PlacedBlock block : changed.reversed()) {
-                try { replace(level, block.position, previous.get(block.position).state); }
-                catch (RuntimeException rollbackFailure) { failure.addSuppressed(rollbackFailure); }
-            }
-            for (PlacedBlock block : changed) {
-                var prior = previous.get(block.position);
-                if (prior.entityData == null) continue;
-                try {
-                    var entity = BlockEntity.loadStatic(block.position, prior.state, prior.entityData, registries);
-                    if (entity == null) throw new IllegalStateException("Rollback block entity is missing: " + block.position);
-                    level.setBlockEntity(entity);
-                    entity.setChanged();
-                } catch (RuntimeException rollbackFailure) { failure.addSuppressed(rollbackFailure); }
-            }
-            notifyNeighbours(level, changed, block -> block.block.state());
-            throw failure;
-        }
-        var removed = new HashSet<UUID>();
-        for (var target : targets) removed.add(target.id());
-        for (var entry : groups.keySet()) {
-            var remaining = entry.carriages().stream().filter(id -> !removed.contains(id)).toList();
-            if (remaining.isEmpty()) active.remove(entry.id());
-            else active.put(entry.id(), new ActiveAssembly(entry.id(), entry.owner(), entry.station(), entry.forward(), remaining));
-        }
-        for (var target : targets) snapshots.remove(target.id());
-        setDirty();
-        if (installer == null) notifyNeighbours(level, blocks, block -> previous.get(block.position).state);
+    static void replace(ServerLevel level, BlockPos position, BlockState state) {
+        CarriageWorldBlocks.replace(level, position, state);
     }
 
-    private record WorldBlock(BlockState state, CompoundTag entityData) { }
-
-    private static void checkTarget(ServerLevel level, PlacedBlock block) {
-        requireLoaded(level, block.position);
-        BlockState current = level.getBlockState(block.position);
-        if ((!current.isAir() && !current.equals(vacantState(block.block.state())))
-                || level.getBlockEntity(block.position) != null)
-            throw new IllegalStateException("Disassembly target is occupied: " + block.position);
+    static void restore(ServerLevel level, List<PlacedBlock> blocks) {
+        CarriageWorldBlocks.restore(level, blocks);
     }
 
-    private List<PlacedBlock> blocks(List<CarriageSnapshot> values) {
-        var result = new ArrayList<PlacedBlock>();
-        var positions = new HashSet<BlockPos>();
-        for (CarriageSnapshot snapshot : values) {
-            if (snapshot == null || !dimension.equals(snapshot.dimension()))
-                throw new IllegalArgumentException("Assembly snapshot dimension or reference is invalid");
-            for (var block : snapshot.blocks()) {
-                if (block.state().getBlock() instanceof StandardTrackBlock || block.state().getBlock() instanceof BaseRailBlock)
-                    throw new IllegalArgumentException("Tracks cannot be part of an assembled carriage");
-                BlockPos position = new BlockPos(Math.addExact(snapshot.origin().getX(), block.position().getX()),
-                        Math.addExact(snapshot.origin().getY(), block.position().getY()),
-                        Math.addExact(snapshot.origin().getZ(), block.position().getZ()));
-                if (!positions.add(position)) throw new IllegalArgumentException("Overlapping assembly snapshots");
-                result.add(new PlacedBlock(position, block));
-            }
-        }
-        return result;
-    }
-
-    private static BlockState vacantState(BlockState state) {
-        return state.hasProperty(BlockStateProperties.WATERLOGGED) && state.getValue(BlockStateProperties.WATERLOGGED)
-                ? Blocks.WATER.defaultBlockState() : Blocks.AIR.defaultBlockState();
-    }
-
-    private static void replace(ServerLevel level, BlockPos position, BlockState state) {
-        // Removing the entity first prevents container onRemove hooks from dropping copied inventory.
-        level.removeBlockEntity(position);
-        level.setBlock(position, state, MOVE_FLAGS);
-        if (!level.getBlockState(position).equals(state))
-            throw new IllegalStateException("Block refused assembly state change: " + position);
-    }
-
-    private static void restore(ServerLevel level, List<PlacedBlock> blocks) {
-        for (PlacedBlock block : blocks) replace(level, block.position, block.block.state());
-        restoreEntities(level, blocks);
-    }
-
-    private static void restoreEntities(ServerLevel level, List<PlacedBlock> blocks) {
-        for (PlacedBlock block : blocks) {
-            var data = block.block.entityData();
-            if (data == null) continue;
-            var entity = level.getBlockEntity(block.position);
-            // A removal callback can fail after dropping the entity but before changing its state.
-            // Re-setting that same state need not create an entity, so restore it explicitly here.
-            if (entity == null) {
-                entity = BlockEntity.loadStatic(block.position, block.block.state(), data, level.registryAccess());
-                if (entity == null) throw new IllegalStateException("Restored block entity is missing: " + block.position);
-                level.setBlockEntity(entity);
-            } else entity.loadWithComponents(data, level.registryAccess());
-            entity.setChanged();
-            level.sendBlockUpdated(block.position, block.block.state(), block.block.state(), Block.UPDATE_CLIENTS);
-        }
+    static void restoreEntities(ServerLevel level, List<PlacedBlock> blocks) {
+        CarriageWorldBlocks.restoreEntities(level, blocks);
     }
 
     /**
@@ -480,38 +292,14 @@ public final class CarriageSnapshotStore extends SavedData {
      * External neighbour callbacks can create drops or scheduled ticks, so their exceptions cannot
      * undo the committed batch. Log them and continue notifying its other positions instead.
      */
-    private static void notifyNeighbours(ServerLevel level, List<PlacedBlock> blocks,
+    static void notifyNeighbours(ServerLevel level, List<PlacedBlock> blocks,
                                          Function<PlacedBlock, BlockState> previous) {
-        int shapeFlags = Block.UPDATE_MOVE_BY_PISTON | Block.UPDATE_CLIENTS;
-        for (PlacedBlock block : blocks) {
-            try {
-                BlockState oldState = previous.apply(block);
-                BlockState current = level.getBlockState(block.position);
-                level.blockUpdated(block.position, oldState.getBlock());
-                if (current.hasAnalogOutputSignal())
-                    level.updateNeighbourForOutputSignal(block.position, current.getBlock());
-                oldState.updateIndirectNeighbourShapes(level, block.position, shapeFlags);
-                current.updateNeighbourShapes(level, block.position, shapeFlags);
-                current.updateIndirectNeighbourShapes(level, block.position, shapeFlags);
-            } catch (RuntimeException failure) {
-                LOGGER.error("Neighbour notification failed after committed carriage block change at {}", block.position, failure);
-            }
-        }
+        CarriageWorldBlocks.notifyNeighbours(level, blocks, previous);
     }
 
-    private static void requireLoaded(ServerLevel level, BlockPos position) {
-        if (level.isOutsideBuildHeight(position) || !level.isLoaded(position))
-            throw new IllegalStateException("Assembly target is outside the loaded world: " + position);
+    static void requireLoaded(ServerLevel level, BlockPos position) {
+        CarriageWorldBlocks.requireLoaded(level, position);
     }
-
-    private void requireLevel(ServerLevel level) {
-        requireServerThread();
-        requireServerThread(level);
-        if (!dimension.equals(level.dimension()) || registries != level.registryAccess())
-            throw new IllegalArgumentException("Assembly store belongs to another level");
-    }
-
-    private record PlacedBlock(BlockPos position, CarriageSnapshot.Block block) { }
 
     /** Validate the entire batch before insertion; never replace an existing identity. */
     public void addAll(List<CarriageSnapshot> additions) {
@@ -630,11 +418,17 @@ public final class CarriageSnapshotStore extends SavedData {
         return result;
     }
 
-    private void requireServerThread() {
+    void requireServerThread() {
         if (Thread.currentThread() != serverThread) throw new IllegalStateException("Server thread required");
     }
 
-    private static void requireServerThread(ServerLevel level) {
+    static void requireServerThread(ServerLevel level) {
         if (!level.getServer().isSameThread()) throw new IllegalStateException("Server thread required");
+    }
+
+    private static Map<UUID, List<CarriageSnapshot>> snapshotGroups(Map<UUID, List<CarriageSnapshotView>> groups) {
+        var result = new java.util.LinkedHashMap<UUID, List<CarriageSnapshot>>();
+        groups.forEach((id, snapshots) -> result.put(id, snapshots.stream().map(CarriageSnapshot.class::cast).toList()));
+        return result;
     }
 }

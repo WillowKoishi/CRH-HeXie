@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "hexie:block/carport_bsp25t_centre",
+      "y": 270
+    },
+    "facing=north": {
+      "model": "hexie:block/carport_bsp25t_centre",
+      "y": 180
+    },
+    "facing=south": {
+      "model": "hexie:block/carport_bsp25t_centre",
+      "y": 0
+    },
+    "facing=west": {
+      "model": "hexie:block/carport_bsp25t_centre",
+      "y": 90
+    }
+  }
+}
