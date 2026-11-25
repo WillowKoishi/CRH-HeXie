@@ -4,17 +4,13 @@
 ### version 1.0.0-hoshino-alpha
 ##### 2026.11.26
 
-其他:
-
-- 将开发版本号从 0.11.4-nonomi-bata 更新为 1.0.0-hoshino-alpha（WillowKoishi）
-
----
-### version 0.11.4-nonomi-bata
-##### 2026.11.26
-
 添加方块（组）:
 
 - 新增 CR200J 车头及面板方块，并加入对应方块实体和专用渲染（HachimiYang）
+
+添加功能:
+
+- 首次进入标题界面时显示 v1.0 系列早期开发版本的稳定性提示，提供中、英、法、西、德、日六种语言文本及确认按钮（WillowKoishi）
 
 修改机制:
 
@@ -24,6 +20,8 @@
 其他:
 
 - 加入 JUnit 5 测试运行配置，并处理 Sodium 0.8.13 的嵌套模组包以支持客户端开发运行配置（HachimiYang）
+- 将开发版本号从 0.11.2-nonomi-bata 更新为 0.11.4-nonomi-bata（HachimiYang）
+- 将开发版本号从 0.11.4-nonomi-bata 更新为 1.0.0-hoshino-alpha（WillowKoishi）
 
 ---
 ### version 0.11.2-nonomi-bata
