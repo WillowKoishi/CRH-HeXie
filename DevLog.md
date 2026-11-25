@@ -1,8 +1,46 @@
 
 # 开发日志
 
+### version 1.0.0-hoshino-alpha
+##### 2026.11.26
+
+其他:
+
+- 将开发版本号从 0.11.4-nonomi-bata 更新为 1.0.0-hoshino-alpha（WillowKoishi）
+
+---
+### version 0.11.4-nonomi-bata
+##### 2026.11.26
+
+添加方块（组）:
+
+- 新增 CR200J 车头及面板方块，并加入对应方块实体和专用渲染（HachimiYang）
+
+修改机制:
+
+- 将内置车型和转向架的代码及资源整理到按车型划分的 `packs/` 源目录，并将渲染代码集中到 `renderer/`；保留 `hexie` 注册 ID 和资源路径以兼容既有存档（HachimiYang）
+- 新增 Gradle `checkDomainBoundaries` 任务，检查十个代码域的引用边界及可选依赖引用范围（HachimiYang）
+
+其他:
+
+- 加入 JUnit 5 测试运行配置，并处理 Sodium 0.8.13 的嵌套模组包以支持客户端开发运行配置（HachimiYang）
+
+---
+### version 0.11.2-nonomi-bata
+##### 2026.11.26
+
+新增 / 修改美术资源:
+
+- 新增 25G 客车整车 Blockbench 源模型及车棚、厢板、地板贴图（WillowKoishi）
+- 补充 209P、CW-2、SW160、SW220K 转向架的源模型、OBJ/MTL 游戏模型与车轮资源，并整理至 `normal_speed_bogies_refresh/`；另添加椅子 22 源模型（WillowKoishi）
+
+其他:
+
+- 更新 README 英文项目标题与介绍，补充铁路系统、MTCS-200、CarriageFlow 及模组兼容性说明与配图（WillowKoishi）
+
+---
 ### version 0.11.1-nonomi-bata
-##### 2026.11.24
+##### 2026.11.25
 
 添加功能:
 
