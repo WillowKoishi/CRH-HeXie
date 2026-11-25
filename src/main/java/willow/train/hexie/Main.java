@@ -52,6 +52,7 @@ import willow.train.hexie.sync.bridge.SyncBridgeBootstrap;
 import willow.train.hexie.sync.channel.HexieNetworkHandler;
 import willow.train.hexie.ui.bridge.UiBridgeBootstrap;
 import willow.train.hexie.ui.menu.MenuInit;
+import willow.train.hexie.ui.screens.StartupWarningScreen;
 import willow.train.hexie.vehicle.bogey.registry.BogeyEntityInit;
 import willow.train.hexie.vehicle.bridge.VehicleBridgeBootstrap;
 import willow.train.hexie.world.blocks.carriage.PanelTypesUtil;
@@ -237,6 +238,7 @@ public class Main {
         }
 
         static void registerListeners(IEventBus modBus) {
+            StartupWarningScreen.register();
             HexieRendererBridge.install(modBus);
             StickerWorldRenderer.install();
             if (CreateBootstrap.isCreateLoaded()) {
@@ -251,4 +253,5 @@ public class Main {
             }
         }
     }
+
 }
