@@ -1,0 +1,10 @@
+{
+  "name": "patchouli.hexie.name",
+  "landing_text": "patchouli.hexie.landing_text",
+  "model": "hexie:crh_logo",
+  "creative_tab": "hexie:hexie_main",
+  "show_progress": true,
+  "use_resource_pack": true,
+  "i18n": false,
+  "version": 1
+}

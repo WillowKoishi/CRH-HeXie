@@ -1,6 +1,7 @@
 package willow.train.hexie.event.client;
 
 import com.simibubi.create.CreateClient;
+import com.simibubi.create.content.trains.signal.SignalBlock;
 import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour;
 import com.simibubi.create.foundation.blockEntity.behaviour.ValueSettingsScreen;
 import com.simibubi.create.foundation.blockEntity.behaviour.ValueSettingsBehaviour;
@@ -46,7 +47,8 @@ public final class SemaphoreScreenEvents {
                 && minecraft.level.getBlockEntity(hit.getBlockPos()) instanceof AdjustableSignalBlockEntity signal) {
             event.setNewScreen(new AdjustableSemaphoreSettingsScreen(hit.getBlockPos(),
                     behaviour.createBoard(minecraft.player, hit), behaviour.getValueSettings(),
-                    behaviour::newSettingHovered, behaviour.netId(), signal.orientation.isTrackAligned()));
+                    behaviour::newSettingHovered, behaviour.netId(), signal.orientation.isTrackAligned(),
+                    signal.getBlockState().getValue(SignalBlock.TYPE) == SignalBlock.SignalType.CROSS_SIGNAL));
         } else {
             event.setNewScreen(new CenteredSemaphoreValueSettingsScreen(hit.getBlockPos(),
                 behaviour.createBoard(minecraft.player, hit), behaviour.getValueSettings(),

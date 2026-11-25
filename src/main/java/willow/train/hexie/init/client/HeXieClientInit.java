@@ -40,6 +40,7 @@ public class HeXieClientInit {
         willow.train.hexie.compat.HeXieSimulatedClientCompat.register(Main.bus);
         willow.train.hexie.client.render.carriage.CarriageTransparencyCompat.register(Main.bus);
         willow.train.hexie.client.sign.SignTextClient.register(Main.bus);
+        willow.train.hexie.client.hud.HudFonts.register(Main.bus);
         willow.train.hexie.client.carriage.flow.CarriageFlowClient.register(Main.bus);
         Main.bus.addListener(HeXieClientInit::registerBlockExtensions);
         Main.bus.addListener(HeXieClientInit::registerMenus);

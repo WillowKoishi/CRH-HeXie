@@ -1,17 +1,27 @@
 package willow.train.hexie.blocks.semaphore.through;
 
 import com.mojang.serialization.MapCodec;
+import com.simibubi.create.content.trains.signal.SignalBlock;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
 import willow.train.hexie.init.semaphore.SemaphoreEntityInit;
 
 public class AdjustableSignalBlock extends ThroughSignalBlock {
     public AdjustableSignalBlock(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        super.createBlockStateDefinition(builder);
+        // Create uses this property to restore the signal type when a track point is recreated.
+        builder.add(SignalBlock.TYPE);
     }
 
     @Override
