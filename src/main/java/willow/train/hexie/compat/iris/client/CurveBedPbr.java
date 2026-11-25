@@ -9,16 +9,18 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.server.packs.resources.ResourceManager;
-import willow.train.hexie.client.render.track.CurveBedTexture;
+import willow.train.hexie.bridge.HexieBridges;
+import willow.train.hexie.bridge.render.TrackRenderBridge.CurveBedTextureView;
 
 public final class CurveBedPbr {
     private CurveBedPbr() {}
 
     public static void register() {
-        PBRTextureLoaderRegistry.INSTANCE.register(CurveBedTexture.class, CurveBedPbr::load);
+        PBRTextureLoaderRegistry.INSTANCE.register(HexieBridges.Client.trackRender().curveBedTextureClass(),
+                (texture, resources, consumer) -> load((CurveBedTextureView) texture, resources, consumer));
     }
 
-    private static void load(CurveBedTexture tile, ResourceManager resources, PBRTextureConsumer consumer) {
+    private static void load(CurveBedTextureView tile, ResourceManager resources, PBRTextureConsumer consumer) {
         var sprite = tile.sourceSprite();
         var atlas = Minecraft.getInstance().getTextureManager().getTexture(sprite.atlasLocation());
         var manager = PBRTextureManager.INSTANCE;
@@ -42,8 +44,8 @@ public final class CurveBedPbr {
         consumer.acceptSpecularTexture(specular);
     }
 
-    private static AbstractTexture channel(CurveBedTexture tile, AbstractTexture source,
+    private static AbstractTexture channel(CurveBedTextureView tile, AbstractTexture source,
                                            TextureAtlasSprite sprite, AbstractTexture fallback) {
-        return source instanceof PBRAtlasTexture && sprite != null ? tile.companion(source, sprite) : fallback;
+        return source instanceof PBRAtlasTexture && sprite != null ? (AbstractTexture) tile.companion(source, sprite) : fallback;
     }
 }

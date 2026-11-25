@@ -2,9 +2,10 @@ package willow.train.hexie.vehicle.player;
 
 import java.util.UUID;
 import net.minecraft.world.phys.Vec3;
+import willow.train.hexie.bridge.vehicle.PlayerCarriageBridge;
 
 /** Connection bookkeeping for client-resolved carriage movement. */
-public interface CarriedPlayerConnection {
+public interface CarriedPlayerConnection extends PlayerCarriageBridge.CarriedPlayerConnectionView {
     boolean hexie$canCarry();
     void hexie$grounded();
     boolean hexie$acceptCarriageMovement(Vec3 world, Vec3 localMovement, Vec3 worldMovement,

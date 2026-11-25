@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Block;
 
 /** Server-thread capture phase. Produces data only; no block removal, entities or station hook. */
 public final class AssemblyCapture {

@@ -1,0 +1,16 @@
+{
+  "loader": "neoforge:composite",
+  "textures": { "particle": "minecraft:block/cobblestone" },
+  "children": {
+    "rails": {
+      "parent": "hexie:block/track/standard/z_ortho",
+      "textures": { "particle": "minecraft:block/cobblestone" }
+    },
+    "ballast": {
+      "loader": "neoforge:obj",
+      "model": "hexie:models/block/carriage_preview/ballast.obj",
+      "flip_v": true,
+      "render_type": "minecraft:cutout_mipped"
+    }
+  }
+}

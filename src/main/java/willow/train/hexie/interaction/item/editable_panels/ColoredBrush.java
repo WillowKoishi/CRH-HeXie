@@ -1,0 +1,109 @@
+package willow.train.hexie.interaction.item.editable_panels;
+
+import java.util.List;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.Level;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import willow.train.hexie.bridge.HexieBridges;
+import willow.train.hexie.bridge.interaction.ToolOpsBridge.ColoredBrushView;
+import willow.train.hexie.core.util.general.ItemData;
+
+public class ColoredBrush extends Item implements ColoredBrushView {
+
+    public ColoredBrush(Properties pProperties) {
+        super(pProperties);
+    }
+
+    @Override
+    public void appendHoverText(
+            @NotNull ItemStack p_41421_,
+            @Nullable TooltipContext p_41422_,
+            List<Component> tooltips,
+            TooltipFlag p_41424_) {
+        tooltips.add(
+                Component.translatable("item.hexie.colored_brush.tooltip_1")
+                        .withStyle(ChatFormatting.RED));
+        tooltips.add(
+                Component.translatable("item.hexie.colored_brush.tooltip_2")
+                        .withStyle(ChatFormatting.GOLD));
+        tooltips.add(
+                Component.translatable("item.hexie.colored_brush.tooltip_3")
+                        .withStyle(ChatFormatting.GREEN));
+        tooltips.add(
+                Component.translatable("item.hexie.colored_brush.tooltip_4")
+                        .withStyle(ChatFormatting.BLUE));
+        super.appendHoverText(p_41421_, p_41422_, tooltips, p_41424_);
+    }
+
+    @Override
+    public net.minecraft.world.InteractionResultHolder<ItemStack> use(net.minecraft.world.level.Level level,
+            net.minecraft.world.entity.player.Player player, net.minecraft.world.InteractionHand hand) {
+        var result = HexieBridges.partBlock().headNumberInteraction().open(level, player,
+                HexieBridges.partBlock().headNumberInteraction().pick(level, player));
+        return new net.minecraft.world.InteractionResultHolder<>(result, player.getItemInHand(hand));
+    }
+
+    @Override
+    public InteractionResult useOn(UseOnContext pContext) {
+        if (pContext.getPlayer() == null) return InteractionResult.PASS;
+        var root = HexieBridges.partBlock().headNumberInteraction().pick(pContext.getLevel(), pContext.getPlayer());
+        if (root == null) root = HexieBridges.carriageBlock().headGeometry().owner(pContext.getLevel(), pContext.getClickedPos());
+        if (root != null) return HexieBridges.partBlock().headNumberInteraction().open(pContext.getLevel(), pContext.getPlayer(), root);
+        return InteractionResult.PASS;
+    }
+
+    @Override
+    public ItemStack getDefaultInstance() {
+        ItemStack stack = super.getDefaultInstance();
+        ItemData.updateTag(stack, data -> data.putInt("durability", 256));
+        return stack;
+    }
+
+    @Override
+    public void onCraftedBy(ItemStack stack, Level pLevel, Player pPlayer) {
+        ItemData.updateTag(stack, data -> data.putInt("durability", 256));
+        super.onCraftedBy(stack, pLevel, pPlayer);
+    }
+
+    public static int getDurability(ItemStack stack) {
+        if(!stack.is(HexieBridges.worldRegistry().editablePanelItemInit().coloredBrush())) return -1;
+        return ItemData.getTag(stack).getInt("durability");
+    }
+
+    @Override
+    public boolean isBarVisible(ItemStack pStack) {
+        if(!pStack.is(HexieBridges.worldRegistry().editablePanelItemInit().coloredBrush())) return false;
+        return ItemData.getTag(pStack).getInt("durability") < 256;
+    }
+
+    @Override
+    public int getBarWidth(ItemStack pStack) {
+        if(!pStack.is(HexieBridges.worldRegistry().editablePanelItemInit().coloredBrush())) return 0;
+        return Math.round(((float) ItemData.getTag(pStack).getInt("durability"))/256 * 13f);
+    }
+
+    @Override
+    public int getBarColor(ItemStack pStack) {
+        float percentage = ((float) ItemData.getTag(pStack).getInt("durability"))/256;
+        float f = Math.max(0.0F, percentage);
+        return Mth.hsvToRgb(f / 3.0F, 1.0F, 1.0F);
+    }
+
+    public static ItemStack onEffectiveUse(ItemStack stack) {
+        if(!stack.is(HexieBridges.worldRegistry().editablePanelItemInit().coloredBrush())) return stack;
+        int durability = getDurability(stack);
+        if(durability < 2)
+            return HexieBridges.worldRegistry().editablePanelItemInit().brush().getDefaultInstance();
+        ItemData.updateTag(stack, data -> data.putInt("durability", durability - 1));
+        return stack;
+    }
+}

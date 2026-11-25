@@ -1,18 +1,27 @@
 {
   "values": [
-    "hexie:standard_track",
-    "hexie:ballastless_track",
-    "hexie:tieless_track",
     {
-      "id": "hexie:railx_standard_track",
+      "id": "hexie:create_standard_track",
       "required": false
     },
     {
-      "id": "hexie:railx_ballastless_track",
+      "id": "hexie:create_ballastless_track",
       "required": false
     },
     {
-      "id": "hexie:railx_tieless_track",
+      "id": "hexie:create_tieless_track",
+      "required": false
+    },
+    {
+      "id": "hexie:railx_create_standard_track",
+      "required": false
+    },
+    {
+      "id": "hexie:railx_create_ballastless_track",
+      "required": false
+    },
+    {
+      "id": "hexie:railx_create_tieless_track",
       "required": false
     }
   ]

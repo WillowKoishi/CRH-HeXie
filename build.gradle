@@ -92,8 +92,19 @@ tasks.named('assemble') {
     dependsOn releasePackages
 }
 
+// Built-in rolling-stock packs (each owning its own vehicle + bogey java/ and resources/ roots).
+// Registry IDs and asset paths remain under namespace 'hexie' for full save compatibility.
+def builtinPacks = ['crh1a', 'crh2a', 'cr200j', 'series25', 'ss7d', 'df11g', 'hxd3d', 'qj']
+
+sourceSets.main.java {
+    srcDir 'renderer/java'
+    builtinPacks.each { pack -> srcDir "packs/${pack}/java" }
+}
+
 sourceSets.main.resources {
     srcDir 'src/generated/resources'
+    srcDir 'renderer/resources'
+    builtinPacks.each { pack -> srcDir "packs/${pack}/resources" }
     exclude '**/.cache/**', '**/*.bbmodel'
 }
 
@@ -159,6 +170,7 @@ sourceSets {
 
 neoForge {
     version = neo_version
+    accessTransformers.from('src/main/resources/META-INF/accesstransformer.cfg')
 
     runs {
         configureEach {
@@ -204,6 +216,9 @@ neoForge {
                             .getOrElse('build/generated/datagen')).absolutePath,
                     '--existing', file('src/main/resources').absolutePath,
                     '--existing', file('src/generated/resources').absolutePath
+            builtinPacks.each { pack ->
+                programArguments.addAll '--existing', file("packs/${pack}/resources").absolutePath
+            }
         }
     }
     mods {
@@ -234,6 +249,26 @@ dependencies {
     }
     compileOnly("maven.modrinth:iris:${iris_version}") { transitive = false }
     compileOnly("maven.modrinth:sodium:${sodium_api_version}") { transitive = false }
+    // Sodium 0.8.13 wraps its mod classes inside META-INF/jarjar/net.caffeinemc.sodium-neoforge-0.8.13+mc1.21.1-mod.jar
+    def sodium08Outer = configurations.detachedConfiguration(dependencies.create("maven.modrinth:sodium:uMOpc5uV"))
+    sodium08Outer.transitive = false
+    def sodium08Inner = layout.buildDirectory.file('extracted-deps/sodium-neoforge-0.8.13+mc1.21.1-mod.jar').get().asFile
+    if (!sodium08Inner.isFile()) {
+        sodium08Inner.parentFile.mkdirs()
+        def outerJar = sodium08Outer.singleFile
+        def zip = new java.util.zip.ZipFile(outerJar)
+        try {
+            def entry = zip.getEntry('META-INF/jarjar/net.caffeinemc.sodium-neoforge-0.8.13+mc1.21.1-mod.jar')
+            if (entry != null) {
+                zip.getInputStream(entry).withCloseable { ins ->
+                    sodium08Inner.withOutputStream { outs -> outs << ins }
+                }
+            }
+        } finally {
+            zip.close()
+        }
+    }
+    compileOnly files(sodium08Inner)
     def cee = "maven.modrinth:create-electro-energetics:ZMfRgLy5"
     compileOnly(cee) { transitive = false }
     if (providers.gradleProperty('withCee').isPresent()) {
@@ -241,6 +276,7 @@ dependencies {
     }
 
     // Client-only development mods; the aviation and RailX clients inherit their base stacks.
+    // Sodium 0.8.13 is staged into run mods/ below (placing jar-in-jar Sodium on clientRuntimeClasspath causes JarSelector to drop its nested mod jar).
     clientRuntimeOnly "maven.modrinth:patchouli:${patchouli_version}"
     clientAeronauticsRuntimeOnly "maven.modrinth:patchouli:${patchouli_version}"
 
@@ -251,6 +287,28 @@ dependencies {
     aeronauticsRuntimeOnly("maven.modrinth:copycats:${copycats_version}") { transitive = false }
     aeronauticsRailxRuntimeOnly "com.lhwdev.minecraft.railx:railx:${railx_version}"
     aeronauticsRailxRuntimeOnly "thedarkcolour:kotlinforforge-neoforge:${railx_kotlinforforge_version}"
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testImplementation 'com.google.code.gson:gson:2.10.1'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+def sodium08Runtime = configurations.detachedConfiguration(dependencies.create("maven.modrinth:sodium:uMOpc5uV"))
+sodium08Runtime.transitive = false
+def stageClientCreateSodium = tasks.register('stageClientCreateSodium', Copy) {
+    from(sodium08Runtime) { rename { 'sodium-neoforge-0.8.13+mc1.21.1.jar' } }
+    into layout.projectDirectory.dir('run-1.21.1/client-create/mods')
+}
+def stageClientAeronauticsSodium = tasks.register('stageClientAeronauticsSodium', Copy) {
+    from(sodium08Runtime) { rename { 'sodium-neoforge-0.8.13+mc1.21.1.jar' } }
+    into layout.projectDirectory.dir('run-1.21.1/client/mods')
+}
+tasks.matching { it.name == 'prepareClientRun' }.configureEach { dependsOn stageClientCreateSodium }
+tasks.matching { it.name == 'prepareClientAeronauticsRun' || it.name == 'prepareClientAeronauticsRailxRun' }
+        .configureEach { dependsOn stageClientAeronauticsSodium }
+
+tasks.named('test', Test).configure {
+    useJUnitPlatform()
 }
 
 tasks.named('processResources', ProcessResources).configure {
@@ -263,6 +321,11 @@ tasks.named('processResources', ProcessResources).configure {
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
     options.compilerArgs.addAll '-Xmaxerrs', '10000'
+    def zonesProp = providers.gradleProperty('compileOnlyZones').orNull
+    if (zonesProp != null && !zonesProp.trim().isEmpty()) {
+        def allowedZones = zonesProp.split(',').collect { it.trim() }.findAll { !it.isEmpty() }
+        include(allowedZones.collect { z -> z == 'entry' ? 'willow/train/hexie/Main.java' : "willow/train/hexie/${z}/**/*.java" })
+    }
 }
 
 // Common CEE mixins are applied on dedicated servers, where rendering classes are absent.
@@ -276,14 +339,14 @@ def verifyCeeMixinSides = tasks.register('verifyCeeMixinSides') {
     doLast {
         def config = new groovy.json.JsonSlurper().parse(configFile.asFile)
         def common = config.mixins.findAll { it.startsWith('cee.') }
-        def client = config.client.findAll { it.startsWith('cee.') }
+        def client = config.client.findAll { it.startsWith('client.cee.') }
         if (!common.contains('cee.PantographMovementMixin')
-                || !client.contains('cee.PantographMovementRendererMixin')
-                || common.contains('cee.PantographMovementRendererMixin')) {
+                || !client.contains('client.cee.PantographMovementRendererMixin')
+                || common.contains('client.cee.PantographMovementRendererMixin')) {
             throw new GradleException('CEE pantograph movement and rendering mixins must remain on their respective sides')
         }
         def classes = tasks.named('compileJava', JavaCompile).get().destinationDirectory.get().asFile
-        def names = common.collect { 'willow/train/hexie/mixins/mixin/' + it.replace('.', '/') }
+        def names = common.collect { 'willow/train/hexie/compat/mixins/' + it.replace('.', '/') }
         names.add('willow/train/hexie/compat/cee/PantographMounting')
         def clientOnly = ['net/minecraft/client/', 'com/mojang/blaze3d/',
                           'com/simibubi/create/content/contraptions/render/',
@@ -300,6 +363,8 @@ def verifyCeeMixinSides = tasks.register('verifyCeeMixinSides') {
 }
 tasks.named('check') { dependsOn verifyCeeMixinSides }
 tasks.named('jar') { dependsOn verifyCeeMixinSides }
+
+apply from: 'gradle/domain-boundaries.gradle'
 
 tasks.named('runServer', JavaExec).configure {
     standardInput = System.in

@@ -3,14 +3,16 @@ package willow.train.hexie.vehicle.assembly;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.UUID;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.Tag;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.storage.LevelResource;
+import willow.train.hexie.bridge.HexieBridges;
+import willow.train.hexie.bridge.world.CarriageBlockBridge;
 
 /** Repairs known obsolete structure data only after backing up the complete original payload. */
 public final class MissingBlockMigration {
@@ -57,7 +59,7 @@ public final class MissingBlockMigration {
         var name = ResourceLocation.tryParse(state.getString("Name"));
         var registry = level.registryAccess().registryOrThrow(Registries.BLOCK);
         if (name == null || !registry.containsKey(name)
-                || !(registry.get(name) instanceof willow.train.hexie.blocks.emu.crh2a.CRH2PanelBlock)
+                || !(registry.get(name) instanceof CarriageBlockBridge.CRH2PanelBlockView)
                 || !state.contains("Properties", Tag.TAG_COMPOUND)) return false;
         var properties = state.getCompound("Properties");
         if (properties.contains("hinge")) return false;
@@ -71,7 +73,7 @@ public final class MissingBlockMigration {
         var state=entry.getCompound("State");var name=ResourceLocation.tryParse(state.getString("Name"));
         var registry=level.registryAccess().registryOrThrow(Registries.BLOCK);
         if(name==null||!registry.containsKey(name)||!registry.get(name).defaultBlockState().hasProperty(
-                willow.train.hexie.blocks.parts.LegacyPartLayout.OCCUPIED))return false;
+                HexieBridges.partBlock().legacyPartLayout().occupied()))return false;
         var properties=state.getCompound("Properties");
         if(properties.contains("occupied"))return false;
         properties.putString("occupied","false");state.put("Properties",properties);return true;
@@ -85,9 +87,9 @@ public final class MissingBlockMigration {
         if (name == null || !registry.containsKey(name)) return false;
         var block = registry.get(name);
         String entityId = entry.getCompound("BlockEntity").getString("id");
-        boolean retired = block instanceof willow.train.hexie.blocks.emu.crh2a.CRH2PartBlock
+        boolean retired = block instanceof CarriageBlockBridge.CRH2PartBlockView
                 && entityId.equals("hexie:crh2a_part")
-                || block instanceof willow.train.hexie.blocks.emu.head.CRH2HeadBlock
+                || block instanceof CarriageBlockBridge.CRH2HeadBlockView
                 && entityId.equals("hexie:crh2a_head");
         if (!retired || block.defaultBlockState().hasBlockEntity()) return false;
         entry.remove("BlockEntity");

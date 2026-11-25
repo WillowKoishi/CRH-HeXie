@@ -17,6 +17,8 @@ import org.joml.Matrix4fc;
 import org.joml.Quaterniondc;
 import org.joml.Quaternionf;
 import org.joml.Vector3dc;
+import willow.train.hexie.bridge.render.SableClientBridge.SableRenderEmbeddingBindingView;
+import willow.train.hexie.bridge.render.SableClientBridge.SableRenderEmbeddingHandleView;
 
 /** Plot embeddings for effects, which Sable's block-entity visual integration does not wrap. */
 public final class SableRenderEmbedding {
@@ -40,7 +42,7 @@ public final class SableRenderEmbedding {
     }
 
     /** Identity is the plot instance, so all its block owners can share one effect and embedding. */
-    public static final class Handle {
+    public static final class Handle implements SableRenderEmbeddingHandleView {
         private final Object subLevel;
         private final Object container;
         private final BlockPos origin;
@@ -78,7 +80,7 @@ public final class SableRenderEmbedding {
     }
 
     /** One mutable transform per plot; updates allocate no matrices, vectors or reflection arguments. */
-    public static final class Binding {
+    public static final class Binding implements SableRenderEmbeddingBindingView {
         private final Handle handle;
         private final VisualizationContext parent;
         private final VisualEmbedding embedding;

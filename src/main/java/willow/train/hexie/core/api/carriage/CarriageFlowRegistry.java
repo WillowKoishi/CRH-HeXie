@@ -1,0 +1,41 @@
+package willow.train.hexie.core.api.carriage;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.function.Predicate;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.state.BlockState;
+
+/** Client asset declarations. Register during mod construction, before opening the carriage flow.
+ * The directory is relative to assets/<namespace>/ and contains carriage.json and structures.
+ * Optional schematic_icon names a PNG relative to that directory; title names the portable blueprint.
+ * PNGs under carriage_ui/models are included in the item atlas, including resource-pack additions.
+ * Resource-pack declarations in carriage_ui/types/*.json can override these registrations.
+ */
+public final class CarriageFlowRegistry {
+    /** Identifies the isolated level passed to block entity renderers on a carriage page. */
+    public interface PreviewLevel {}
+
+    private static final Map<ResourceLocation, ResourceLocation> ENTRIES = new LinkedHashMap<>();
+
+    private static volatile Predicate<BlockState> trackPredicate = state -> false;
+
+    public static synchronized void registerTrackPredicate(Predicate<BlockState> predicate) {
+        trackPredicate = trackPredicate.or(predicate);
+    }
+
+    public static boolean isRegisteredTrack(BlockState state) {
+        return trackPredicate.test(state);
+    }
+
+    private CarriageFlowRegistry() {}
+
+    public static synchronized void register(ResourceLocation model, ResourceLocation assetDirectory) {
+        if (ENTRIES.putIfAbsent(model, assetDirectory) != null)
+            throw new IllegalArgumentException("Duplicate carriage model: " + model);
+    }
+
+    public static synchronized Map<ResourceLocation, ResourceLocation> entries() {
+        return Map.copyOf(ENTRIES);
+    }
+}

@@ -1,0 +1,261 @@
+package willow.train.hexie.ui.flow;
+
+import com.google.gson.*;
+import java.io.*;
+import java.util.*;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.model.ModelResourceLocation;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.*;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.BaseRailBlock;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.Property;
+import net.neoforged.fml.ModList;
+import org.jetbrains.annotations.Nullable;
+import willow.train.hexie.bridge.HexieBridges;
+import willow.train.hexie.bridge.compat.CreateCarriageBridge.PrefabSchematicOperations;
+import willow.train.hexie.core.HexieConstants;
+import willow.train.hexie.core.api.carriage.CarriageFlowRegistry;
+
+/** Resource-only models; nothing is placed into the player's world. */
+public final class CarriageFlowAssets {
+    public record Cell(BlockPos pos, BlockState state, CompoundTag data, boolean shell) {}
+    public record Model(ResourceLocation id, Component title, double frontGap, double rearGap,
+                        int width, int height, int length, List<Cell> cells,
+                        Map<ResourceLocation, List<ResourceLocation>> assignments,
+                        Map<ResourceLocation, List<ResourceLocation>> groups, BlockState track, ItemStack schematic,
+                        @Nullable ModelResourceLocation trackModel) {
+        public Model(ResourceLocation id, Component title, double frontGap, double rearGap,
+                     int width, int height, int length, List<Cell> cells,
+                     Map<ResourceLocation, List<ResourceLocation>> assignments,
+                     Map<ResourceLocation, List<ResourceLocation>> groups, BlockState track, ItemStack schematic) {
+            this(id, title, frontGap, rearGap, width, height, length, cells, assignments, groups, track, schematic, null);
+        }
+
+        public List<ResourceLocation> variantIds(ResourceLocation block) {
+            Set<ResourceLocation> ids = new LinkedHashSet<>();
+            for (ResourceLocation group : assignments.getOrDefault(block, List.of()))
+                ids.addAll(groups.getOrDefault(group, List.of()));
+            if (ids.isEmpty()) ids.add(block);
+            return List.copyOf(ids);
+        }
+    }
+    public record Catalog(List<Model> models, List<String> errors) {
+        public List<ItemStack> variants(Model model, Cell cell) {
+            ResourceLocation block = BuiltInRegistries.BLOCK.getKey(cell.state().getBlock());
+            List<ItemStack> result = new ArrayList<>();
+            for (ResourceLocation id : model.variantIds(block)) {
+                ItemStack stack = new ItemStack(BuiltInRegistries.BLOCK.get(id));
+                if (!stack.isEmpty() && stack.isItemEnabled(Minecraft.getInstance().player.connection.enabledFeatures()))
+                    result.add(stack);
+            }
+            return result;
+        }
+    }
+
+    private CarriageFlowAssets() {}
+
+    public static Catalog load(ResourceManager resources, List<ResourceLocation> requested) {
+        Map<ResourceLocation, ResourceLocation> declarations = new TreeMap<>(Comparator.comparing(ResourceLocation::toString));
+        declarations.putAll(CarriageFlowRegistry.entries());
+        List<String> errors = new ArrayList<>();
+        resources.listResources("carriage_ui/types", id -> id.getPath().endsWith(".json")).forEach((id, resource) -> {
+            try (Reader reader = resource.openAsReader()) {
+                JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
+                String path = id.getPath();
+                ResourceLocation modelId = ResourceLocation.fromNamespaceAndPath(id.getNamespace(),
+                        path.substring("carriage_ui/types/".length(), path.length() - 5));
+                declarations.put(modelId, ResourceLocation.parse(json.get("assets").getAsString()));
+            } catch (Exception e) { report(errors, id, e); }
+        });
+        List<Model> models = new ArrayList<>();
+        requested.forEach(id -> {
+            ResourceLocation directory = declarations.get(id);
+            if (directory == null) { errors.add("Missing carriage declaration: " + id); HexieConstants.LOGGER.warn("Missing carriage declaration: {}", id); return; }
+            try {
+                JsonObject json = readJson(resources, child(directory, "carriage.json"));
+                if (json.get("format").getAsInt() != 1) throw new IOException("Unsupported carriage format");
+                Map<ResourceLocation, List<ResourceLocation>> assignments = new LinkedHashMap<>();
+                Map<ResourceLocation, List<ResourceLocation>> localGroups = new LinkedHashMap<>();
+                if (json.has("groups")) for (var entry : json.getAsJsonObject("groups").entrySet()) {
+                    ResourceLocation group = ResourceLocation.parse(entry.getKey());
+                    List<ResourceLocation> members = new ArrayList<>();
+                    for (JsonElement value : entry.getValue().getAsJsonArray()) {
+                        ResourceLocation block = ResourceLocation.parse(value.getAsString());
+                        if (missingCreateBlock(block)) continue;
+                        if (!BuiltInRegistries.BLOCK.containsKey(block)) throw new IOException("Unknown group block " + block);
+                        members.add(block);
+                        assignments.computeIfAbsent(block, k -> new ArrayList<>()).add(group);
+                    }
+                    localGroups.put(group, List.copyOf(members));
+                }
+                List<Cell> cells = new ArrayList<>();
+                int[] bounds = {0, 0, 0};
+                readStructure(resources, child(directory, json.get("exterior").getAsString()), true, cells, bounds);
+                readStructure(resources, child(directory, json.get("interior").getAsString()), false, cells, bounds);
+                Set<BlockPos> occupied = new HashSet<>();
+                for (Cell cell : cells) if (!occupied.add(cell.pos())) throw new IOException("Overlapping shell/interior at " + cell.pos());
+                if (cells.isEmpty()) throw new IOException("Empty carriage");
+                double front = gap(json, "front_gap"), rear = gap(json, "rear_gap");
+                if (front + bounds[2] / 2.0 < .125 || rear + bounds[2] / 2.0 < .125)
+                    throw new IOException("Gap would overlap carriage centers");
+                Component title = json.has("title_key") ? Component.translatable(json.get("title_key").getAsString())
+                        : Component.literal(json.get("title").getAsString());
+                var track = readTrack(json.getAsJsonObject("track"));
+                ItemStack schematic = readSchematic(resources, directory, json, title, errors);
+                assignments.replaceAll((block, memberships) -> List.copyOf(memberships));
+                models.add(new Model(id, title, front, rear, bounds[0], bounds[1], bounds[2], List.copyOf(cells),
+                        Map.copyOf(assignments), Map.copyOf(localGroups), track.state(), schematic, track.model()));
+            } catch (Exception e) { report(errors, id, e); }
+        });
+        return new Catalog(List.copyOf(models), List.copyOf(errors));
+    }
+
+    private static ItemStack readSchematic(ResourceManager resources, ResourceLocation directory,
+                                           JsonObject json, Component title, List<String> errors) {
+        if (!json.has("schematic") || !ModList.get().isLoaded("create")) return ItemStack.EMPTY;
+        try {
+            String name = json.get("schematic").getAsString();
+            if (name.isBlank()) return ItemStack.EMPTY;
+            ResourceLocation resource = child(directory, name);
+            if (!name.endsWith(".nbt")) throw new IOException("Schematic must be a compressed .nbt file: " + name);
+            ResourceLocation icon = null;
+            if (json.has("schematic_icon")) {
+                String iconName = json.get("schematic_icon").getAsString();
+                if (!iconName.endsWith(".png")) throw new IOException("Schematic icon must be a .png file: " + iconName);
+                icon = child(directory, iconName);
+                resources.getResourceOrThrow(icon);
+            }
+            try (InputStream stream = resources.getResourceOrThrow(resource).open()) {
+                ItemStack schematic = HexieBridges.createCarriage().prefabSchematic().create(resource, stream.readNBytes(PrefabSchematicOperations.MAX_COMPRESSED_BYTES + 1));
+                schematic.set(DataComponents.ITEM_NAME, title.copy());
+                if (icon != null) HexieBridges.createCarriage().prefabSchematic().setIcon(schematic, icon);
+                return schematic;
+            }
+        } catch (Exception e) {
+            // An optional blueprint must not prevent the carriage itself from being browsed.
+            report(errors, directory, e);
+            return ItemStack.EMPTY;
+        }
+    }
+
+    private static double gap(JsonObject json, String name) throws IOException {
+        double value = json.has(name) ? json.get(name).getAsDouble() : .5;
+        if (!Double.isFinite(value) || Math.abs(value) > 256) throw new IOException("Invalid " + name);
+        return value;
+    }
+
+    public static boolean isTrack(BlockState state) {
+        return state.getBlock() instanceof BaseRailBlock
+                || CarriageFlowRegistry.isRegisteredTrack(state);
+    }
+
+    private record Track(BlockState state, @Nullable ModelResourceLocation model) {}
+
+    private static Track readTrack(JsonObject json) throws IOException {
+        if (json == null) throw new IOException("Missing registered track");
+        ResourceLocation id = ResourceLocation.parse(json.get("block").getAsString());
+        if (!BuiltInRegistries.BLOCK.containsKey(id)) {
+            if (!ModList.get().isLoaded("create")) {
+                var model = id.equals(HexieConstants.asResource("create_standard_track")) ? CarriageFlowModels.STANDARD_TRACK : null;
+                return new Track(Blocks.RAIL.defaultBlockState(), model);
+            }
+            throw new IOException("Unknown track " + id);
+        }
+        BlockState state = BuiltInRegistries.BLOCK.get(id).defaultBlockState();
+        if (!isTrack(state)) throw new IOException("Registered track must be a vanilla/Create track: " + id);
+        Property<?> shape = state.getBlock().getStateDefinition().getProperty("shape");
+        if (shape != null && shape.getValue("zo").isPresent())
+            state = withValue(state, shape, "zo");
+        if (json.has("properties")) for (var entry : json.getAsJsonObject("properties").entrySet()) {
+            Property<?> property = state.getBlock().getStateDefinition().getProperty(entry.getKey());
+            if (property == null) throw new IOException("Unknown track property " + entry.getKey());
+            state = withValue(state, property, entry.getValue().getAsString());
+        }
+        return new Track(state, null);
+    }
+
+    private static ResourceLocation child(ResourceLocation directory, String name) throws IOException {
+        if (name.startsWith("/") || name.contains("..") || name.contains(":")) throw new IOException("Asset must be relative: " + name);
+        return ResourceLocation.fromNamespaceAndPath(directory.getNamespace(), directory.getPath() + "/" + name);
+    }
+
+    private static JsonObject readJson(ResourceManager resources, ResourceLocation id) throws IOException {
+        try (Reader reader = resources.getResourceOrThrow(id).openAsReader()) {
+            return JsonParser.parseReader(reader).getAsJsonObject();
+        }
+    }
+
+    // Optional fittings in a saved carriage have no block or inventory item in a Create-free registry.
+    private static boolean missingCreateBlock(ResourceLocation id) {
+        return id.getNamespace().equals("create") && !ModList.get().isLoaded("create")
+                && !BuiltInRegistries.BLOCK.containsKey(id);
+    }
+
+    private static void readStructure(ResourceManager resources, ResourceLocation id, boolean shell,
+                                      List<Cell> cells, int[] bounds) throws IOException {
+        CompoundTag root;
+        try (InputStream stream = resources.getResourceOrThrow(id).open()) {
+            root = NbtIo.readCompressed(stream, NbtAccounter.create(32L * 1024 * 1024));
+        }
+        ListTag size = root.getList("size", Tag.TAG_INT);
+        if (size.size() != 3) throw new IOException("Missing structure size: " + id);
+        for (int i = 0; i < 3; i++) {
+            if (size.getInt(i) < 1 || size.getInt(i) > 256) throw new IOException("Structure dimension outside 1..256");
+            // Both layers must share an origin AND the complete bounding box.
+            if (bounds[i] != 0 && bounds[i] != size.getInt(i)) throw new IOException("Layer sizes differ");
+            bounds[i] = size.getInt(i);
+        }
+        List<BlockState> palette = new ArrayList<>();
+        for (Tag tag : root.getList("palette", Tag.TAG_COMPOUND)) {
+            CompoundTag entry = (CompoundTag) tag;
+            ResourceLocation blockId = ResourceLocation.parse(entry.getString("Name"));
+            if (missingCreateBlock(blockId)) {
+                // Keep the palette indices of every subsequent block intact.
+                palette.add(Blocks.AIR.defaultBlockState());
+                continue;
+            }
+            if (!BuiltInRegistries.BLOCK.containsKey(blockId)) throw new IOException("Unknown structure block " + blockId);
+            BlockState state = BuiltInRegistries.BLOCK.get(blockId).defaultBlockState();
+            CompoundTag props = entry.getCompound("Properties");
+            for (String name : props.getAllKeys()) {
+                Property<?> property = state.getBlock().getStateDefinition().getProperty(name);
+                if (property == null) throw new IOException("Unknown property " + blockId + "/" + name);
+                state = withValue(state, property, props.getString(name));
+            }
+            palette.add(state);
+        }
+        ListTag blocks = root.getList("blocks", Tag.TAG_COMPOUND);
+        if (blocks.size() + cells.size() > 32768) throw new IOException("Carriage exceeds 32768 blocks");
+        for (Tag tag : blocks) {
+            CompoundTag block = (CompoundTag) tag;
+            int index = block.getInt("state");
+            if (index < 0 || index >= palette.size()) throw new IOException("Invalid palette index");
+            BlockState state = palette.get(index);
+            if (state.isAir() || isTrack(state)) continue;
+            ListTag pos = block.getList("pos", Tag.TAG_INT);
+            if (pos.size() != 3) throw new IOException("Invalid block position");
+            for (int i = 0; i < 3; i++) if (pos.getInt(i) < 0 || pos.getInt(i) >= bounds[i])
+                throw new IOException("Block outside declared bounds");
+            cells.add(new Cell(new BlockPos(pos.getInt(0), pos.getInt(1), pos.getInt(2)), state,
+                    block.contains("nbt") ? block.getCompound("nbt").copy() : null, shell));
+        }
+    }
+
+    private static <T extends Comparable<T>> BlockState withValue(BlockState state, Property<T> property, String value) throws IOException {
+        T parsed = property.getValue(value).orElseThrow(() -> new IOException("Invalid property value: " + property.getName() + "=" + value));
+        return state.setValue(property, parsed);
+    }
+
+    private static void report(List<String> errors, ResourceLocation id, Exception error) {
+        errors.add(id + ": " + error.getMessage());
+        HexieConstants.LOGGER.warn("Could not load carriage {}", id, error);
+    }
+}

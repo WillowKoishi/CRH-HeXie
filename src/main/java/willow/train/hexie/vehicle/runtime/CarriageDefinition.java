@@ -4,11 +4,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import willow.train.hexie.bridge.vehicle.VehicleBridge;
+import willow.train.hexie.core.api.vehicle.Point3;
 
 /** One frozen carriage structure. Its UUID is also the corresponding CarriageSnapshot UUID. */
 public record CarriageDefinition(UUID id, List<BogeyDefinition> bogeys,
                                  List<CouplingEndpoint> couplings, double rearExtent, double frontExtent,
-                                 double floorOffset) {
+                                 double floorOffset) implements VehicleBridge.CarriageDefinitionView {
     public CarriageDefinition(UUID id, List<BogeyDefinition> bogeys, List<CouplingEndpoint> couplings,
                               double rearExtent, double frontExtent) {
         this(id, bogeys, couplings, rearExtent, frontExtent, 0);
@@ -38,7 +40,7 @@ public record CarriageDefinition(UUID id, List<BogeyDefinition> bogeys,
     public CarriageDefinition withFloorOffset(double next) {
         if (!Double.isFinite(next)) throw new IllegalArgumentException("Non-finite carriage floor offset");
         if (next == floorOffset) return this;
-        var shift = new CouplingEndpoint.Point(0, floorOffset - next, 0);
+        var shift = new Point3(0, floorOffset - next, 0);
         var shiftedBogeys = bogeys.stream().map(b -> new BogeyDefinition(b.id(), b.modelId(), b.offset(),
                 b.geometry(), b.parameters(), new BogeyMount(b.mount().bodyPoint().plus(shift), b.mount().trackPivot(),
                 b.mount().type(), b.mount().lateralLimit()))).toList();

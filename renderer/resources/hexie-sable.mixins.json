@@ -1,0 +1,17 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.hexie.renderer.sable.mixin",
+  "plugin": "dev.hexie.renderer.neoforge.CompatMixins",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "ShipDispatcherMixin",
+    "ShipPoseMixin",
+    "SingleShipPoseMixin",
+    "ShipShaderMixin",
+    "VeilShipProgramMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

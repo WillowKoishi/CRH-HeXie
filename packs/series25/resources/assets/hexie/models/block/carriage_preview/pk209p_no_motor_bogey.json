@@ -1,0 +1,13 @@
+{
+  "loader": "neoforge:composite",
+  "children": {
+    "frame": {"parent": "hexie:block/bogey/pk209p/pk209_nomotor", "transform": {"translation": [0, 0.91, 0]}},
+    "bolster": {"parent": "hexie:block/bogey/pk209p/bolster", "transform": {"translation": [0, 0.91, 0]}},
+    "longitudinal_link_left": {"parent": "hexie:block/bogey/pk209p/longitudinal_link_left", "transform": {"translation": [0, 0.91, 0]}},
+    "longitudinal_link_mount_left": {"parent": "hexie:block/bogey/pk209p/longitudinal_link_mount_left", "transform": {"translation": [0, 0.91, 0]}},
+    "longitudinal_link_right": {"parent": "hexie:block/bogey/pk209p/longitudinal_link_right", "transform": {"translation": [0, 0.91, 0]}},
+    "longitudinal_link_mount_right": {"parent": "hexie:block/bogey/pk209p/longitudinal_link_mount_right", "transform": {"translation": [0, 0.91, 0]}},
+    "front_axle": {"parent": "hexie:block/bogey/pk209p/pk209p_wheel2", "transform": {"translation": [0, 0.8, 1.2]}},
+    "rear_axle": {"parent": "hexie:block/bogey/pk209p/pk209p_wheel2", "transform": {"translation": [0, 0.8, -1.2]}}
+  }
+}

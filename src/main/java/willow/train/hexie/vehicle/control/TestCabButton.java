@@ -1,11 +1,11 @@
 package willow.train.hexie.vehicle.control;
 
 import net.minecraft.network.chat.Component;
-import willow.train.hexie.api.interaction.BlockControl;
-import willow.train.hexie.api.interaction.ControlState;
+import willow.train.hexie.bridge.vehicle.CabControlBridge;
+import willow.train.hexie.core.api.interaction.ControlState;
 
 /** The test panel's momentary buttons, including the readout beside each one. */
-public enum TestCabButton implements BlockControl.Button {
+public enum TestCabButton implements CabControlBridge.TestCabButtonView {
     POWER_UP("power_up"), POWER_DOWN("power_down"), BRAKE_UP("brake_up"), BRAKE_DOWN("brake_down"),
     REVERSER("reverser"), MODE("mode"), PARKING("parking");
 

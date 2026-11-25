@@ -7,9 +7,9 @@ import dev.simulated_team.simulated.index.SimBlockMovementChecks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import willow.train.hexie.blocks.emu.head.HeadFloorBlock;
-import willow.train.hexie.blocks.parts.PartInstallation;
-import willow.train.hexie.blocks.parts.PartStructures;
+import willow.train.hexie.bridge.HexieBridges;
+import willow.train.hexie.bridge.world.CarriageBlockBridge.HeadFloorBlockView;
+import willow.train.hexie.bridge.world.CarriageBlockBridge.PhysicalHeadBlockView;
 
 /** Keep one physical fishhead together when Simulated discovers its movable structure. */
 public final class PhysicalHeadAssembly {
@@ -25,8 +25,8 @@ public final class PhysicalHeadAssembly {
 
     private static Iterable<BlockPos> additionalBlocks(BlockState state, Level level, BlockPos pos, Set<BlockPos> visited) {
         if (!candidate(state)) return List.of();
-        var root = PartStructures.resolve(level, pos, state);
-        if (root == null || !(root.structure() instanceof PhysicalHeadBlock)) return List.of();
+        var root = HexieBridges.partBlock().partStructures().resolve(level, pos, state);
+        if (root == null || !(root.structure() instanceof PhysicalHeadBlockView)) return List.of();
 
         var members = new ArrayList<BlockPos>();
         for (var cell : root.structure().partCells(level, root.pos(), root.state()).entrySet()) {
@@ -41,15 +41,15 @@ public final class PhysicalHeadAssembly {
     /** Reject a damaged or partly unloaded head before Simulated starts moving any of its cells. */
     public static boolean movementAllowed(BlockState state, Level level, BlockPos pos) {
         if (!candidate(state)) return true;
-        var root = PartStructures.resolve(level, pos, state);
-        if (root == null) return !(state.getBlock() instanceof PhysicalHeadBlock)
+        var root = HexieBridges.partBlock().partStructures().resolve(level, pos, state);
+        if (root == null) return !(state.getBlock() instanceof PhysicalHeadBlockView)
                 && !(state.getBlock() instanceof PhysicalHeadBogeyBlock);
-        return !(root.structure() instanceof PhysicalHeadBlock)
-                || PartInstallation.complete(level, root.pos(), root.state(), root.structure());
+        return !(root.structure() instanceof PhysicalHeadBlockView)
+                || HexieBridges.partBlock().partInstallation().complete(level, root.pos(), root.state(), root.structure());
     }
 
     private static boolean candidate(BlockState state) {
-        return state.getBlock() instanceof PhysicalHeadBlock || state.getBlock() instanceof PhysicalHeadBogeyBlock
-                || state.getBlock() instanceof HeadFloorBlock;
+        return state.getBlock() instanceof PhysicalHeadBlockView || state.getBlock() instanceof PhysicalHeadBogeyBlock
+                || state.getBlock() instanceof HeadFloorBlockView;
     }
 }

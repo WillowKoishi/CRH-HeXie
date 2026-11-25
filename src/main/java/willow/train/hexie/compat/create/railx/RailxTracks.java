@@ -22,6 +22,7 @@ import net.minecraft.world.level.material.MapColor;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.Tags;
 import net.neoforged.neoforge.event.BlockEntityTypeAddBlocksEvent;
+import willow.train.hexie.compat.create.track.CreateRailwayResources;
 
 /** RailX's hidden placement variants retain our materials and original track items. */
 public final class RailxTracks {
@@ -41,17 +42,14 @@ public final class RailxTracks {
     /** Called by the active backend for every registered HeXie railway when RailX is installed. */
     public static synchronized void addTrack(CreateRegistrate registrate, TrackMaterial material,
                                             BlockEntry<TrackBlock> original) {
-        var id = ResourceLocation.fromNamespaceAndPath(material.id.getNamespace(),
-                "railx_" + material.resourceName() + "_track");
+        var id = CreateRailwayResources.railxBlockId(material.id);
         if (ENTRIES.containsKey(id)) throw new IllegalArgumentException("Duplicate RailX railway: " + id);
         var entry = registrate.block(id.getPath(), properties -> new RailxTrackBlock(properties, material))
                 .initialProperties(() -> Blocks.STONE)
                 .properties(properties -> properties.mapColor(MapColor.METAL)
                         .strength(.8f).sound(SoundType.METAL).noOcclusion().forceSolidOn())
                 .blockstate((context, provider) -> provider.simpleBlock(context.getEntry(),
-                        provider.models().getExistingFile(ResourceLocation.fromNamespaceAndPath(
-                                material.id.getNamespace(),
-                                "block/track/generated/" + material.resourceName() + "/x_ortho"))))
+                        provider.models().getExistingFile(CreateRailwayResources.blockModel(material.id, "x_ortho"))))
                 .loot((provider, block) -> provider.dropOther(block, original.get()))
                 // The block shares the original description ID; do not regenerate its translation.
                 .setData(ProviderType.LANG, (context, provider) -> {})

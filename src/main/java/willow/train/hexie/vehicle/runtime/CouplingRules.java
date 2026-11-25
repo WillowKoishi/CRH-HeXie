@@ -2,6 +2,7 @@ package willow.train.hexie.vehicle.runtime;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import willow.train.hexie.bridge.vehicle.CouplingEndpointView;
 
 /** Coupling types can opt into direct mating without adapter-based substitution. */
 public final class CouplingRules {
@@ -11,7 +12,7 @@ public final class CouplingRules {
         CouplerAdapter.requireIdentifier(model, "coupling model");
         DIRECT_ONLY.add(model);
     }
-    public static boolean compatible(CouplingEndpoint first, CouplingEndpoint second) {
+    public static boolean compatible(CouplingEndpointView first, CouplingEndpointView second) {
         if (DIRECT_ONLY.contains(first.model()) || DIRECT_ONLY.contains(second.model())
                 || DIRECT_ONLY.contains(first.effectiveModel()) || DIRECT_ONLY.contains(second.effectiveModel()))
             return first.adapter() == null && second.adapter() == null && first.model().equals(second.model());

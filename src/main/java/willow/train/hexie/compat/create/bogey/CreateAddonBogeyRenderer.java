@@ -8,12 +8,13 @@ import java.util.Objects;
 import java.util.OptionalDouble;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
-import willow.train.hexie.api.bogey.BogeyRegistry;
-import willow.train.hexie.api.bogey.client.BogeyAnimationContext;
-import willow.train.hexie.bogey.client.BogeyAnimations;
-import willow.train.hexie.blocks.bogeys.BogeyFloorData;
-import willow.train.hexie.client.render.bogey.BogeySuspensionPose;
-import willow.train.hexie.client.render.bogey.SimpleBogeyRenderer;
+import willow.train.hexie.bridge.HexieBridges;
+import willow.train.hexie.bridge.render.BogeyRenderBridge.PartAnimation;
+import willow.train.hexie.bridge.render.BogeyRenderBridge.SimpleBogeyRendererView;
+import willow.train.hexie.bridge.render.CreateTrainClientBridge.CreateAddonBogeyRendererSampleScopeView;
+import willow.train.hexie.bridge.world.WorldBlockBridge.BogeyFloorDataOperations;
+import willow.train.hexie.core.api.bogey.BogeyAnimationContext;
+import willow.train.hexie.core.api.bogey.BogeyRegistry;
 
 /** Invokes add-on-owned part animation through HeXie's existing ordinary and instanced lifecycles. */
 public final class CreateAddonBogeyRenderer {
@@ -22,7 +23,8 @@ public final class CreateAddonBogeyRenderer {
     private CreateAddonBogeyRenderer() {}
 
     public static BogeyStyle.SizeRenderer create(ResourceLocation id) {
-        var renderer = new Renderer(Objects.requireNonNull(id));
+        var renderer = HexieBridges.Client.bogeyRender().createSimpleRenderer(BogeySizes.SMALL,
+                new Renderer(Objects.requireNonNull(id)));
         return new BogeyStyle.SizeRenderer(renderer, renderer::createVisual);
     }
 
@@ -35,7 +37,7 @@ public final class CreateAddonBogeyRenderer {
         return new SampleScope(previous);
     }
 
-    public static final class SampleScope implements AutoCloseable {
+    public static final class SampleScope implements CreateAddonBogeyRendererSampleScopeView {
         private final Sample previous;
         private SampleScope(Sample previous) { this.previous = previous; }
         @Override public void close() {
@@ -44,18 +46,16 @@ public final class CreateAddonBogeyRenderer {
         }
     }
 
-    private static final class Renderer extends SimpleBogeyRenderer {
+    private static final class Renderer implements PartAnimation {
         private final ResourceLocation id;
         private volatile double radius = Double.NaN;
         private Renderer(ResourceLocation id) { this.id = id; }
 
-        @Override public BogeySizes.BogeySize getSize() { return BogeySizes.SMALL; }
-
-        @Override public void render(CompoundTag data, float wheelAngle, PoseStack pose,
+        @Override public void render(SimpleBogeyRendererView renderer, CompoundTag data, float wheelAngle, PoseStack pose,
                 int light, VertexConsumer buffer, boolean inContraption) {
-            var registration = BogeyAnimations.find(id).orElseThrow(() ->
+            var registration = HexieBridges.Client.bogeyRegistryClient().bogeyAnimations().find(id).orElseThrow(() ->
                     new IllegalStateException("Missing client bogey animation registration: " + id));
-            boolean reversed = data.getBoolean(BogeyFloorData.REVERSED);
+            boolean reversed = data.getBoolean(BogeyFloorDataOperations.REVERSED);
             double direction = reversed ? -1 : 1;
             Sample sample = SAMPLE.get();
             var speed = sample != null ? OptionalDouble.of(sample.speedBlocksPerTick * 20 * direction)
@@ -63,16 +63,16 @@ public final class CreateAddonBogeyRenderer {
             var phase = sample != null
                     ? OptionalDouble.of(-Math.toRadians(sample.wheelAngle) * radius() * direction)
                     : OptionalDouble.empty();
-            var context = new BogeyAnimationContext(id, data, BogeySuspensionPose.inModelSpace(data, 0),
-                    inContraption, reversed, BogeyFloorData.offset(BogeyFloorData.heightFromBogeyData(data)),
-                    BogeyFloorData.LONGITUDINAL_SETTING.blocks(BogeyFloorData.longitudinal(data)), wheelAngle,
+            var context = new BogeyAnimationContext(id, data, HexieBridges.Client.bogeyRender().bogeySuspensionPose().inModelSpace(data, 0),
+                    inContraption, reversed, HexieBridges.worldBlock().bogeyFloorData().offset(HexieBridges.worldBlock().bogeyFloorData().heightFromBogeyData(data)),
+                    HexieBridges.worldBlock().bogeyFloorData().longitudinalSetting().blocks(HexieBridges.worldBlock().bogeyFloorData().longitudinal(data)), wheelAngle,
                     speed, phase, sample == null ? OptionalDouble.empty() : OptionalDouble.of(sample.partialTick));
             registration.animator().render(context, (model, transform) -> {
                 if (!registration.models().contains(Objects.requireNonNull(model)))
                     throw new IllegalArgumentException("Bogey " + id + " did not declare part model " + model);
                 if (!Objects.requireNonNull(transform).isFinite())
                     throw new IllegalArgumentException("Non-finite part transform for bogey " + id);
-                getTransform(CreateBogeyAnimationBackend.model(model), pose, buffer == null)
+                renderer.getTransform(CreateBogeyAnimationBackend.model(model), pose, buffer == null)
                         .transform(transform).render(pose, light, buffer);
             });
         }

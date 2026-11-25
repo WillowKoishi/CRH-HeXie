@@ -16,8 +16,9 @@ import java.util.HashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import willow.train.hexie.blocks.locos.PantographBlock;
-import willow.train.hexie.compat.create.SnapshotCarriageEntity;
+import willow.train.hexie.bridge.HexieBridges;
+import willow.train.hexie.bridge.world.CarriageBlockBridge.PantographBlockView;
+import willow.train.hexie.compat.create.motion.SnapshotCarriageEntity;
 
 public final class CeeSnapshotTrain {
     private CeeSnapshotTrain() {}
@@ -74,7 +75,7 @@ public final class CeeSnapshotTrain {
                     && existing.type == type && existing.facingForward == forward) {
                 pantographs.add(existing);
             } else {
-                boolean active = !(state.getBlock() instanceof PantographBlock) || state.getValue(PantographBlock.OPEN);
+                boolean active = !(state.getBlock() instanceof PantographBlockView) || state.getValue(HexieBridges.carriageBlock().pantographBlock().open());
                 pantographs.add(new TrainPantographEntry(pos, rotated, type, active, forward));
             }
         }

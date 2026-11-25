@@ -1,5 +1,7 @@
 package willow.train.hexie.vehicle.assembly;
 
+// split from willow/train/hexie/vehicle/assembly/VehicleRuntimeNbt.java
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -7,15 +9,28 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.LongTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.LongTag;
 import net.minecraft.nbt.Tag;
-import willow.train.hexie.vehicle.bogey.BogeyGeometry;
-import willow.train.hexie.vehicle.runtime.*;
+import net.minecraft.world.level.block.Block;
+import willow.train.hexie.bridge.HexieBridges;
+import willow.train.hexie.bridge.railway.TrackGeometryView;
+import willow.train.hexie.bridge.railway.TrackGeometryView.Vector;
+import willow.train.hexie.bridge.railway.TrackPathView;
+import willow.train.hexie.bridge.vehicle.CouplingBridge;
+import willow.train.hexie.core.api.bogey.BogeyGeometry;
+import willow.train.hexie.core.api.bogey.BogeyModel;
+import willow.train.hexie.core.api.bogey.BogeyParameters;
+import willow.train.hexie.core.api.traincontrol.TrainCommand;
+import willow.train.hexie.core.api.vehicle.Point3;
+import willow.train.hexie.core.util.station.Connections;
 import willow.train.hexie.vehicle.kinematics.VehicleConstraintSolver;
-import willow.train.hexie.vehicle.track.TrackGeometry;
-import willow.train.hexie.vehicle.track.TrackGeometry.Vector;
-import willow.train.hexie.vehicle.track.TrackPath;
+import willow.train.hexie.vehicle.runtime.BogeyDefinition;
+import willow.train.hexie.vehicle.runtime.BogeyMount;
+import willow.train.hexie.vehicle.runtime.CarriageDefinition;
+import willow.train.hexie.vehicle.runtime.CouplerAdapter;
+import willow.train.hexie.vehicle.runtime.CouplingEndpoint;
+import willow.train.hexie.vehicle.runtime.VehicleRuntime;
 
 /** Runtime state serialization; structure blocks remain in their separate carriage snapshots. */
 public final class VehicleRuntimeNbt {
@@ -82,7 +97,7 @@ public final class VehicleRuntimeNbt {
                 e.putString("Model", endpoint.model());
                 if (endpoint.visual() != null) e.put("Visual", writeCouplerVisual(endpoint.visual()));
                 if (endpoint.adapter() != null) {
-                    var adapterTag = willow.train.hexie.blocks.coupler.CouplerAdapterData.encode(endpoint.adapter());
+                    var adapterTag = HexieBridges.couplerBlock().couplerAdapterData().encode(endpoint.adapter());
                     number(adapterTag, "Thickness", endpoint.adapter().thickness());
                     e.put("Adapter", adapterTag);
                 }
@@ -112,11 +127,11 @@ public final class VehicleRuntimeNbt {
     }
 
     public static VehicleRuntime load(CompoundTag tag) {
-        return load(tag, TrackPath.straight());
+        return load(tag, TrackPathView.straight());
     }
 
     /** The caller resolves the saved route on its owning backend before restoring motion. */
-    public static VehicleRuntime load(CompoundTag tag, TrackPath path) {
+    public static VehicleRuntime load(CompoundTag tag, TrackPathView path) {
         var checkpoint = readCheckpoint(tag);
         // Older poses predate bolsterless body fitting and independent rigid-hook head positions.
         return tag.getInt("Version") < STRICT_PLACEMENT_VERSION ? VehicleRuntime.restoreLegacyPlacement(checkpoint, path)
@@ -133,7 +148,7 @@ public final class VehicleRuntimeNbt {
         for (var car : entries(tag, "Carriages")) {
             double floorOffset = car.contains("FloorOffset") ? number(car, "FloorOffset") : 0;
             var bogeys = new ArrayList<BogeyDefinition>();
-            var controls = new LinkedHashMap<UUID, VehicleRuntime.Control>();
+            var controls = new LinkedHashMap<UUID, TrainCommand>();
             for (var b : entries(car, "Bogeys")) {
                 var id = uuid(b, "Id");
                 var parameters = new BogeyParameters(number(b,"LoadKg"), number(b,"TractionN"), number(b,"BrakeN"),
@@ -148,9 +163,9 @@ public final class VehicleRuntimeNbt {
                 var geometry = new BogeyGeometry(number(b, "GeometryWheelRadius"),
                         axles.stream().map(t -> Double.longBitsToDouble(((LongTag)t).getAsLong())).toList());
                 var mount = new BogeyMount(point(b, "BodyMount"), point(b, "TrackPivot"),
-                        BogeyMount.Type.valueOf(string(b, "MountType")), number(b, "LateralLimit"));
+                        BogeyModel.MountType.valueOf(string(b, "MountType")), number(b, "LateralLimit"));
                 bogeys.add(new BogeyDefinition(id, string(b,"Model"), number(b,"Offset"), geometry, parameters, mount));
-                controls.put(id, new VehicleRuntime.Control(number(b,"Throttle"), number(b,"Brake")));
+                controls.put(id, new TrainCommand(number(b,"Throttle"), number(b,"Brake")));
             }
             var endpoints = new ArrayList<CouplingEndpoint>();
             for (var e : entries(car, "Endpoints")) {
@@ -164,7 +179,7 @@ public final class VehicleRuntimeNbt {
                     var a = e.getCompound("Adapter");
                     var decoded = a.copy();
                     decoded.putDouble("Thickness", number(a, "Thickness"));
-                    adapter = willow.train.hexie.blocks.coupler.CouplerAdapterData.decode(decoded);
+                    adapter = (CouplerAdapter) HexieBridges.couplerBlock().couplerAdapterData().decode(decoded);
                 }
                 var complete = point(e, "Complete");
                 // Legacy markers described a vertical line using an arbitrary point on it.
@@ -175,8 +190,8 @@ public final class VehicleRuntimeNbt {
                     visual = new CouplingEndpoint.Visual(visual.facing(), visual.fixed(), visual.shiftedFixed(),
                             visual.moving(), axis.atHeight(complete.y() + floorOffset), visual.movingOffset());
                 endpoints.add(new CouplingEndpoint(uuid(e,"Id"), point(e,"Block"),
-                        CouplingEndpoint.Facing.valueOf(string(e,"Facing")), axis, point(e,"Start"),
-                        complete, CouplingEndpoint.Kind.valueOf(string(e,"Kind")), maxExtension, model, adapter, visual));
+                        CouplingBridge.CouplingEndpointFacing.valueOf(string(e,"Facing")), axis, point(e,"Start"),
+                        complete, CouplingBridge.CouplingEndpointKind.valueOf(string(e,"Kind")), maxExtension, model, adapter, visual));
             }
             var definition = new CarriageDefinition(uuid(car,"Id"), bogeys, endpoints,
                     number(car,"RearExtent"), number(car,"FrontExtent"),
@@ -198,7 +213,7 @@ public final class VehicleRuntimeNbt {
         var motionDistances = new LinkedHashMap<UUID, Double>();
         for (var entry : entries(placement, "Bogeys")) {
             var id = uuid(entry, "Id");
-            var sample = TrackGeometry.Sample.restoreNormalized(vector(entry, "TrackPosition"), vector(entry, "TrackTangent"),
+            var sample = TrackGeometryView.Sample.restoreNormalized(vector(entry, "TrackPosition"), vector(entry, "TrackTangent"),
                     vector(entry, "TrackNormal"), number(entry, "Cant"));
             unique(positions, id, new VehicleConstraintSolver.BogeyPosition(number(entry, "Distance"),
                     number(entry, "Lateral"), number(entry, "Vertical"), sample,
@@ -225,14 +240,14 @@ public final class VehicleRuntimeNbt {
         var bodies = new ListTag();
         // Map equality ignores iteration order; NBT lists do not. UUID hash collisions
         // can reorder Map.copyOf on load, so serialize these lookup maps canonically.
-        new TreeMap<>(solution.bodies()).forEach((id, pose) -> {
+        new TreeMap<>(solution.bodyPoses()).forEach((id, pose) -> {
             var entry = new CompoundTag(); entry.putUUID("Id", id);
             entry.put("Position", vector(pose.position())); number(entry, "Yaw", pose.yaw());
             number(entry, "Pitch", pose.pitch()); number(entry, "Roll", pose.roll()); bodies.add(entry);
         });
         tag.put("Bodies", bodies);
         var bogeys = new ListTag();
-        new TreeMap<>(solution.bogeys()).forEach((id, position) -> {
+        new TreeMap<>(solution.bogeyPositions()).forEach((id, position) -> {
             var entry = new CompoundTag(); entry.putUUID("Id", id);
             number(entry, "Distance", position.distance()); number(entry, "Lateral", position.lateral());
             number(entry, "MotionDistance", motionDistances.get(id));
@@ -246,7 +261,7 @@ public final class VehicleRuntimeNbt {
         });
         tag.put("Bogeys", bogeys);
         var endpoints = new ListTag();
-        new TreeMap<>(solution.endpoints()).forEach((id, pose) -> {
+        new TreeMap<>(solution.endpointPoses()).forEach((id, pose) -> {
             var entry = new CompoundTag(); entry.putUUID("Id", id);
             entry.put("Pivot", vector(pose.pivot())); entry.put("Start", vector(pose.start()));
             entry.put("Complete", vector(pose.complete())); endpoints.add(entry);
@@ -255,52 +270,31 @@ public final class VehicleRuntimeNbt {
         return tag;
     }
     public static CompoundTag writeCouplerVisual(CouplingEndpoint.Visual visual) {
-        var tag = new CompoundTag();
-        tag.putString("Facing", visual.facing().name());
-        tag.put("Fixed", renderState(visual.fixed()));
-        tag.put("ShiftedFixed", renderState(visual.shiftedFixed()));
-        if (visual.moving() != null) tag.put("Moving", renderState(visual.moving()));
-        tag.put("Origin", point(visual.origin()));
-        tag.put("Offset", point(visual.movingOffset()));
-        return tag;
+        return CouplerVisualNbt.writeCouplerVisual(visual);
     }
 
     public static CouplingEndpoint.Visual readCouplerVisual(CompoundTag tag) {
-        return new CouplingEndpoint.Visual(CouplingEndpoint.Facing.valueOf(string(tag, "Facing")),
-                renderState(tag, "Fixed"), renderState(tag, "ShiftedFixed"),
-                tag.contains("Moving") ? renderState(tag, "Moving") : null,
-                point(tag, tag.contains("Origin") ? "Origin" : "Pivot"), point(tag, "Offset"));
+        return CouplerVisualNbt.readCouplerVisual(tag);
     }
 
     public static CompoundTag renderState(CouplingEndpoint.RenderState state) {
-        var tag = new CompoundTag();
-        tag.putString("Block", state.block());
-        var properties = new CompoundTag();
-        state.properties().forEach(properties::putString);
-        tag.put("Properties", properties);
-        return tag;
+        return CouplerVisualNbt.renderState(state);
     }
 
     public static CouplingEndpoint.RenderState renderState(CompoundTag parent, String key) {
-        require(parent, key, Tag.TAG_COMPOUND);
-        var tag = parent.getCompound(key);
-        require(tag, "Properties", Tag.TAG_COMPOUND);
-        var values = new TreeMap<String, String>();
-        var properties = tag.getCompound("Properties");
-        for (String name : properties.getAllKeys()) values.put(name, string(properties, name));
-        return new CouplingEndpoint.RenderState(string(tag, "Block"), values);
+        return CouplerVisualNbt.renderState(parent, key);
     }
 
     private static <T> void unique(Map<UUID, T> values, UUID id, T value) {
         if (values.putIfAbsent(id, value) != null) throw new IllegalArgumentException("Duplicate saved placement UUID: " + id);
     }
-    private static CompoundTag vector(Vector value) { return point(new CouplingEndpoint.Point(value.x(), value.y(), value.z())); }
+    private static CompoundTag vector(Vector value) { return point(new Point3(value.x(), value.y(), value.z())); }
     private static Vector vector(CompoundTag tag, String key) { var p = point(tag, key); return new Vector(p.x(), p.y(), p.z()); }
 
     private static CompoundTag pair(UUID first, UUID second) {
         var tag = new CompoundTag(); tag.putUUID("First", first); tag.putUUID("Second", second); return tag;
     }
-    private static CompoundTag point(CouplingEndpoint.Point point) {
+    static CompoundTag point(Point3 point) {
         var tag = new CompoundTag(); number(tag, "X", point.x()); number(tag, "Y", point.y()); number(tag, "Z", point.z()); return tag;
     }
     private static CompoundTag axis(CouplingEndpoint.Axis axis) {
@@ -310,9 +304,9 @@ public final class VehicleRuntimeNbt {
         require(tag, key, Tag.TAG_COMPOUND); var axis = tag.getCompound(key);
         return new CouplingEndpoint.Axis(number(axis, "X"), number(axis, "Z"));
     }
-    private static CouplingEndpoint.Point point(CompoundTag tag, String key) {
+    static Point3 point(CompoundTag tag, String key) {
         require(tag,key,Tag.TAG_COMPOUND); var p = tag.getCompound(key);
-        return new CouplingEndpoint.Point(number(p,"X"), number(p,"Y"), number(p,"Z"));
+        return new Point3(number(p,"X"), number(p,"Y"), number(p,"Z"));
     }
     private static List<CompoundTag> entries(CompoundTag tag, String key) {
         require(tag,key,Tag.TAG_LIST); var list = (ListTag) tag.get(key);
@@ -322,7 +316,7 @@ public final class VehicleRuntimeNbt {
     private static UUID uuid(CompoundTag tag, String key) {
         if (!tag.hasUUID(key)) throw new IllegalArgumentException("Invalid UUID: " + key); return tag.getUUID(key);
     }
-    private static String string(CompoundTag tag, String key) { require(tag,key,Tag.TAG_STRING); return tag.getString(key); }
+    static String string(CompoundTag tag, String key) { require(tag,key,Tag.TAG_STRING); return tag.getString(key); }
     // Version 2 stores IEEE 754 bits: DoubleTag canonicalizes -0.0 to +0.0, altering solver seeds.
     private static void number(CompoundTag tag, String key, double value) {
         if (!Double.isFinite(value)) throw new IllegalArgumentException("Non-finite runtime field: " + key);
@@ -334,7 +328,7 @@ public final class VehicleRuntimeNbt {
         if (!Double.isFinite(value)) throw new IllegalArgumentException("Non-finite runtime field: " + key);
         return value;
     }
-    private static void require(CompoundTag tag, String key, int type) {
+    static void require(CompoundTag tag, String key, int type) {
         if (!tag.contains(key,type)) throw new IllegalArgumentException("Missing or invalid runtime field: " + key);
     }
 }

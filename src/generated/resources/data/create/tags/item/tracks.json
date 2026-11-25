@@ -1,7 +1,16 @@
 {
   "values": [
-    "hexie:standard_track",
-    "hexie:ballastless_track",
-    "hexie:tieless_track"
+    {
+      "id": "hexie:create_standard_track",
+      "required": false
+    },
+    {
+      "id": "hexie:create_ballastless_track",
+      "required": false
+    },
+    {
+      "id": "hexie:create_tieless_track",
+      "required": false
+    }
   ]
 }

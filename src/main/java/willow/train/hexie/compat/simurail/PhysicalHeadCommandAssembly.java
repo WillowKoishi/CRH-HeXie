@@ -9,9 +9,9 @@ import dev.ryanhcode.sable.companion.math.BoundingBox3ic;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
-import willow.train.hexie.blocks.emu.head.HeadFloorBlock;
-import willow.train.hexie.blocks.parts.PartInstallation;
-import willow.train.hexie.blocks.parts.PartStructures;
+import willow.train.hexie.bridge.HexieBridges;
+import willow.train.hexie.bridge.world.CarriageBlockBridge.HeadFloorBlockView;
+import willow.train.hexie.bridge.world.CarriageBlockBridge.PhysicalHeadBlockView;
 
 /** Ordinary Sable assembly selects complete fishheads; explicit shatter commands retain their own semantics. */
 public final class PhysicalHeadCommandAssembly {
@@ -33,17 +33,17 @@ public final class PhysicalHeadCommandAssembly {
         for (var pos : selected) {
             if (!level.hasChunkAt(pos)) continue;
             var state = level.getBlockState(pos);
-            if (!(state.getBlock() instanceof PhysicalHeadBlock)
+            if (!(state.getBlock() instanceof PhysicalHeadBlockView)
                     && !(state.getBlock() instanceof PhysicalHeadBogeyBlock)
-                    && !(state.getBlock() instanceof HeadFloorBlock)) continue;
-            var root = PartStructures.resolve(level, pos, state);
+                    && !(state.getBlock() instanceof HeadFloorBlockView)) continue;
+            var root = HexieBridges.partBlock().partStructures().resolve(level, pos, state);
             if (root == null) {
-                if (state.getBlock() instanceof PhysicalHeadBlock || state.getBlock() instanceof PhysicalHeadBogeyBlock)
+                if (state.getBlock() instanceof PhysicalHeadBlockView || state.getBlock() instanceof PhysicalHeadBogeyBlock)
                     throw INCOMPLETE.create(pos.toShortString());
                 continue;
             }
-            if (!(root.structure() instanceof PhysicalHeadBlock) || !checkedRoots.add(root.pos())) continue;
-            if (!PartInstallation.complete(level, root.pos(), root.state(), root.structure()))
+            if (!(root.structure() instanceof PhysicalHeadBlockView) || !checkedRoots.add(root.pos())) continue;
+            if (!HexieBridges.partBlock().partInstallation().complete(level, root.pos(), root.state(), root.structure()))
                 throw INCOMPLETE.create(root.pos().toShortString());
             // Completeness is checked before adding any cell, so unrelated occupants are never captured.
             for (var member : root.structure().partCells(level, root.pos(), root.state()).keySet()) {

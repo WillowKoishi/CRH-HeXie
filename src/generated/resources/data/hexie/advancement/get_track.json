@@ -1,8 +1,14 @@
 {
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "create"
+    }
+  ],
   "parent": "hexie:get_steel",
   "display": {
     "icon": {
-      "id": "hexie:standard_track"
+      "id": "hexie:create_standard_track"
     },
     "title": {
       "translate": "hexie.advancement.track"
@@ -23,7 +29,7 @@
         "items": [
           {
             "items": [
-              "hexie:standard_track"
+              "hexie:create_standard_track"
             ]
           }
         ]

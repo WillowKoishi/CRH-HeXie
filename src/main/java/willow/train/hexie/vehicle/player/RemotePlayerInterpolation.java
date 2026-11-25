@@ -2,9 +2,10 @@ package willow.train.hexie.vehicle.player;
 
 import java.util.ArrayDeque;
 import net.minecraft.world.phys.Vec3;
+import willow.train.hexie.bridge.vehicle.PlayerCarriageBridge;
 
 /** Plays confirmed carriage-local positions in server-tick order without extrapolation. */
-public final class RemotePlayerInterpolation {
+public final class RemotePlayerInterpolation implements PlayerCarriageBridge.RemotePlayerInterpolationView {
     private static final int SAMPLE_INTERVAL = 3;
     private static final int MAX_SAMPLES = 16;
     private record Sample(Vec3 position, long tick) {}

@@ -1,0 +1,194 @@
+package willow.train.hexie.world.registry.core;
+
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import willow.train.hexie.core.HexieConstants;
+import willow.train.hexie.world.blockentity.cab.DrivingConsoleEntity;
+import willow.train.hexie.world.blockentity.coupler.CouplerBlockEntity;
+import willow.train.hexie.world.blockentity.door.CustomRenderedDoorEntity;
+import willow.train.hexie.world.blockentity.door.ElectricFenceDoorEntity;
+import willow.train.hexie.world.blockentity.door.OBJRenderableEndFaceEntity;
+import willow.train.hexie.world.blockentity.head.CR200jFrontBlockEntity;
+import willow.train.hexie.world.blockentity.head.CRH1HeadEntity;
+import willow.train.hexie.world.blockentity.head.CRH2HeadEntity;
+import willow.train.hexie.world.blockentity.misc.MegaphoneBlockEntity;
+import willow.train.hexie.world.blockentity.misc.TicketVendorEntity;
+import willow.train.hexie.world.blockentity.misc.TurnstileBlockEntity;
+import willow.train.hexie.world.blockentity.misc.TurnstileCRBlockEntity;
+import willow.train.hexie.world.blockentity.panel.CRH2PartEntity;
+import willow.train.hexie.world.blockentity.panel.PassengerPanelEntity;
+import willow.train.hexie.world.blockentity.sign.CarriageNoSignEntity;
+import willow.train.hexie.world.blockentity.sign.CarriageTypeSignEntity;
+import willow.train.hexie.world.blockentity.sign.GroundStationSignEntity;
+import willow.train.hexie.world.blockentity.sign.LacqueredBoardEntity;
+import willow.train.hexie.world.blockentity.sign.TrainSpeedSignEntity;
+import willow.train.hexie.world.blocks.carriage.CustomRenderedDoorBlock;
+import willow.train.hexie.world.blocks.carriage.OBJRenderableEndFaceBlock;
+import willow.train.hexie.world.blocks.coupler.CouplerBlock;
+import willow.train.hexie.world.blocks.emu.CRH2HeadBlock;
+import willow.train.hexie.world.blocks.emu.CRH2PanelBlock;
+import willow.train.hexie.world.blocks.locos.SS7DHeadEntity;
+import willow.train.hexie.world.blocks.misc.DrivingConsoleBlock;
+import willow.train.hexie.world.blocks.parts.VehicleMarkingSurface;
+import willow.train.hexie.world.blocks.signs.PassengerDisplayPanel;
+import willow.train.hexie.world.registry.blocks.BlockInit;
+import willow.train.hexie.world.registry.blocks.CustomRenderedDoorBlockInit;
+
+public class BlockEntitiesInit {
+    public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
+            DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, HexieConstants.MOD_ID);
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PassengerPanelEntity>> PASSENGER_PANEL =
+            BLOCK_ENTITIES.register("passenger_panel", () -> BlockEntityType.Builder.of(PassengerPanelEntity::new,
+                    BuiltInRegistries.BLOCK.stream().filter(block -> PassengerDisplayPanel.supports(block)
+                            && !(block instanceof CRH2PanelBlock))
+                            .toArray(Block[]::new)).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CRH1HeadEntity>> CRH1A_HEAD =
+            BLOCK_ENTITIES.register("crh1a_head", () -> BlockEntityType.Builder.of(
+                    CRH1HeadEntity::new, BlockInit.CRH1A_HEAD.get()).build(null));
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SS7DHeadEntity>> SS7D_HEAD =
+            BLOCK_ENTITIES.register("ss7d_head", () -> BlockEntityType.Builder.of(
+                    SS7DHeadEntity::new, BlockInit.SS7D_HEAD.get()).build(null));
+
+    // Shell geometry remains static. These entities retain editable vehicle markings and legacy IDs.
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CRH2HeadEntity>> CRH2A_HEAD =
+            BLOCK_ENTITIES.register("crh2a_head", () -> BlockEntityType.Builder.of(
+                    CRH2HeadEntity::new, BuiltInRegistries.BLOCK.stream()
+                            .filter(CRH2HeadBlock.class::isInstance)
+                            .toArray(Block[]::new)).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CRH2PartEntity>> CRH2A_PART =
+            BLOCK_ENTITIES.register("crh2a_part", () -> BlockEntityType.Builder.of(CRH2PartEntity::new,
+                    BuiltInRegistries.BLOCK.stream().filter(block -> block instanceof VehicleMarkingSurface && block instanceof EntityBlock)
+                            .toArray(Block[]::new)).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DrivingConsoleEntity>> DRIVING_CONSOLE =
+            BLOCK_ENTITIES.register("driving_console", () -> BlockEntityType.Builder.of(
+                    DrivingConsoleEntity::new, BuiltInRegistries.BLOCK.stream()
+                            .filter(DrivingConsoleBlock.class::isInstance).toArray(Block[]::new)).build(null));
+
+    /** Blocks are registered before entity types; add-on CouplerBlocks may reuse this entity. */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<BlockEntity>> COUPLER =
+            BLOCK_ENTITIES.register("coupler", () -> BlockEntityType.Builder.of(CouplerBlockEntity::create,
+                    BuiltInRegistries.BLOCK.stream()
+                            .filter(block -> block instanceof CouplerBlock
+                                    && block instanceof EntityBlock)
+                            .toArray(Block[]::new)).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<GroundStationSignEntity>> GROUND_STATION_SIGN =
+            BLOCK_ENTITIES.register("ground_station_sign", () -> BlockEntityType.Builder.of(
+                    GroundStationSignEntity::new, BlockInit.GROUND_STATION_SIGN.get()).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<MegaphoneBlockEntity>>
+            MEGAPHONE_BLOCK_ENTITIES =
+                    BLOCK_ENTITIES.register(
+                            "megaphone_block_entity",
+                            () ->
+                                    BlockEntityType.Builder.of(
+                                                    MegaphoneBlockEntity::new,
+                                                    BlockInit.MEGAPHONE.get())
+                                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CarriageTypeSignEntity>> CARRIAGE_TYPE_SIGN =
+            BLOCK_ENTITIES.register(
+                    "carriage_type_sign",
+                    () ->
+                            BlockEntityType.Builder.of(
+                                            CarriageTypeSignEntity::new,
+                                            BlockInit.TRAIN_BOTTOM_PANEL_BLOCK.get())
+                                    .build(null));
+
+    /**
+     * 这里注册方块实体的时候就已经连接了 Entity 和 Block CarriageNoSignEntity::new 是调用 Entity 的构造体，
+     * Block.TRAIN_NO_BLOCK.get() 是调用对应的方块
+     */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CarriageNoSignEntity>> CARRIAGE_NO_SIGN =
+            BLOCK_ENTITIES.register(
+                    "carriage_no_sign",
+                    () ->
+                            BlockEntityType.Builder.of(
+                                            CarriageNoSignEntity::new,
+                                            BlockInit.TRAIN_NO_BLOCK.get())
+                                    .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TrainSpeedSignEntity>> TRAIN_SPEED_SIGN =
+            BLOCK_ENTITIES.register(
+                    "carriage_speed_level_sign",
+                    () ->
+                            BlockEntityType.Builder.of(
+                                            TrainSpeedSignEntity::new,
+                                            BlockInit.TRAIN_SPEED_BLOCK.get())
+                                    .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LacqueredBoardEntity>> LAQUERED_BOARD =
+            BLOCK_ENTITIES.register(
+                    "laquered_board",
+                    () ->
+                            BlockEntityType.Builder.of(
+                                            LacqueredBoardEntity::new,
+                                            BlockInit.LAQUERED_BOARD_BLOCK.get())
+                                    .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ElectricFenceDoorEntity>>
+            ELECTRIC_FENCE_DOOR =
+                    BLOCK_ENTITIES.register(
+                            "electric_fence_door",
+                            () ->
+                                    BlockEntityType.Builder.of(
+                                                    ElectricFenceDoorEntity::new,
+                                                    BlockInit.ELECTRIC_FENCE_DOOR_BLOCK.get())
+                                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TurnstileBlockEntity>> TURNS_A =
+            BLOCK_ENTITIES.register(
+                    "turns_a",
+                    () ->
+                            BlockEntityType.Builder.of(
+                                            TurnstileBlockEntity::new, BlockInit.TURNS_A.get())
+                                    .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TurnstileCRBlockEntity>> TURNS_B =
+            BLOCK_ENTITIES.register(
+                    "turns_b",
+                    () ->
+                            BlockEntityType.Builder.of(
+                                            TurnstileCRBlockEntity::new, BlockInit.TURNS_B.get())
+                                    .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TicketVendorEntity>> TICKET_VENDOR =
+            BLOCK_ENTITIES.register(
+                    "ticket_vendor",
+                    () ->
+                            BlockEntityType.Builder.of(
+                                            TicketVendorEntity::new,
+                                            BlockInit.TICKET_VENDOR_BLOCK.get())
+                                    .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<OBJRenderableEndFaceEntity>>
+            OBJ_RENDERABLE_END_FACE_BLOCK_ENTITY = BLOCK_ENTITIES.register(
+            "obj_renderable_end_face_block_entity",
+            () -> BlockEntityType.Builder.of(OBJRenderableEndFaceEntity::new,
+                    BuiltInRegistries.BLOCK.stream().filter(block -> block instanceof OBJRenderableEndFaceBlock)
+                            .toArray(Block[]::new)).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CR200jFrontBlockEntity>>
+            CR200J_FRONT_BLOCK_ENTITY = BLOCK_ENTITIES.register(
+            "cr200j_front_block_entity",
+            () -> BlockEntityType.Builder.of(CR200jFrontBlockEntity::new, CustomRenderedDoorBlockInit.CR200J_FRONT_BLOCK.get())
+                    .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CustomRenderedDoorEntity>>
+            CUSTOM_RENDERED_DOOR_ENTITY = BLOCK_ENTITIES.register(
+            "custom_rendered_door_entity",
+            () -> BlockEntityType.Builder.of(CustomRenderedDoorEntity::new,
+                    BuiltInRegistries.BLOCK.stream().filter(block -> block instanceof CustomRenderedDoorBlock)
+                            .toArray(Block[]::new)).build(null));
+
+}

@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "hexie:block/carriage_end_face/end_face_25t_original_upper",
+      "y": 270
+    },
+    "facing=north": {
+      "model": "hexie:block/carriage_end_face/end_face_25t_original_upper",
+      "y": 180
+    },
+    "facing=south": {
+      "model": "hexie:block/carriage_end_face/end_face_25t_original_upper",
+      "y": 0
+    },
+    "facing=west": {
+      "model": "hexie:block/carriage_end_face/end_face_25t_original_upper",
+      "y": 90
+    }
+  }
+}

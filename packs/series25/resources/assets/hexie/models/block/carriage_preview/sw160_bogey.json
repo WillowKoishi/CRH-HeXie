@@ -1,0 +1,14 @@
+{
+  "loader": "neoforge:composite",
+  "children": {
+    "frame": {"parent": "hexie:block/bogey/sw160/sw160_frame", "transform": {"translation": [0, 0.264, 0]}},
+    "air_spring_upper": {"parent": "hexie:block/bogey/sw160/air_spring_upper", "transform": {"translation": [0, 0.264, 0]}},
+    "bolster": {"parent": "hexie:block/bogey/sw160/bolster", "transform": {"translation": [0, 0.264, 0]}},
+    "longitudinal_link_left": {"parent": "hexie:block/bogey/sw160/longitudinal_link_left", "transform": {"translation": [0, 0.264, 0]}},
+    "longitudinal_link_mount_left": {"parent": "hexie:block/bogey/sw160/longitudinal_link_mount_left", "transform": {"translation": [0, 0.264, 0]}},
+    "longitudinal_link_right": {"parent": "hexie:block/bogey/sw160/longitudinal_link_right", "transform": {"translation": [0, 0.264, 0]}},
+    "longitudinal_link_mount_right": {"parent": "hexie:block/bogey/sw160/longitudinal_link_mount_right", "transform": {"translation": [0, 0.264, 0]}},
+    "front_axle": {"parent": "hexie:block/bogey/sw160/sw160_wheel", "transform": {"translation": [0, 0.805, 1.28]}},
+    "rear_axle": {"parent": "hexie:block/bogey/sw160/sw160_wheel", "transform": {"translation": [0, 0.805, -1.28]}}
+  }
+}

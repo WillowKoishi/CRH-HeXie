@@ -11,10 +11,13 @@ import java.util.TreeMap;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackType;
 import net.neoforged.fml.ModList;
-import willow.train.hexie.api.railway.RailwayHandle;
-import willow.train.hexie.api.railway.RailwayModels;
-import willow.train.hexie.api.railway.RailwayRegistry;
+import willow.train.hexie.compat.create.bogey.CreateBogeyResources;
 import willow.train.hexie.compat.create.railx.RailxTracks;
+import willow.train.hexie.core.api.bogey.BogeyHandle;
+import willow.train.hexie.core.api.railway.RailwayDefinition;
+import willow.train.hexie.core.api.railway.RailwayHandle;
+import willow.train.hexie.core.api.railway.RailwayModels.Shape;
+import willow.train.hexie.core.api.railway.RailwayRegistry;
 
 /** Translates HeXie model definitions into resources understood by the current backend. */
 public final class CreateRailwayResources {
@@ -23,15 +26,22 @@ public final class CreateRailwayResources {
     private static final ResourceLocation CREATE_PARTICLE =
             id("create", "block/palettes/stone_types/polished/andesite_cut_polished");
 
+    // These three materials retain their checked-in model directories and serialized aliases.
+    static final Map<ResourceLocation, String> LEGACY_MATERIAL_PATHS = Map.of(
+            id("hexie", "create_standard"), "standard",
+            id("hexie", "create_ballastless"), "ballastless",
+            id("hexie", "create_tieless"), "tieless");
+
     private CreateRailwayResources() {}
 
     public static Map<PackType, Map<ResourceLocation, byte[]>> resources() {
+        if (!ModList.get().isLoaded("create")) return Map.of();
         var generated = new Generated(RailwayRegistry.entries());
         if (ModList.get().isLoaded("railx")) {
             RailxTracks.entries().forEach((hiddenId, entry) ->
                     generated.hiddenTrack(entry.materialId(), hiddenId, entry.originalBlockId()));
         }
-        return merge(generated.finish(), willow.train.hexie.compat.create.bogey.CreateBogeyResources.resources());
+        return merge(generated.finish(), CreateBogeyResources.resources());
     }
 
     /** The shared runtime pack must retain both declarations' tags and language entries. */
@@ -71,32 +81,41 @@ public final class CreateRailwayResources {
 
     /** Combined defaults without resolving registries or loading optional integrations. */
     public static Map<PackType, Map<ResourceLocation, byte[]>> resources(List<RailwayHandle> railways,
-            List<willow.train.hexie.api.bogey.BogeyHandle> bogeys) {
-        return merge(resources(railways), willow.train.hexie.compat.create.bogey.CreateBogeyResources.resources(bogeys));
+            List<BogeyHandle> bogeys) {
+        return merge(resources(railways), CreateBogeyResources.resources(bogeys));
     }
 
     public static ResourceLocation particle(ResourceLocation texture) {
         return DEFAULT_PARTICLE.equals(texture) ? CREATE_PARTICLE : texture;
     }
 
-    public static ResourceLocation blockModel(ResourceLocation materialId, String shapeModel) {
-        return id(materialId.getNamespace(), "block/track/generated/" + materialId.getPath() + "/" + shapeModel);
+    public static ResourceLocation railxBlockId(ResourceLocation materialId) {
+        return materialId.withPath("railx_" + materialId.getPath() + "_track");
     }
 
-    public static RailwayModels.Shape shape(String model) {
+    public static ResourceLocation blockModel(ResourceLocation materialId, String shapeModel) {
+        String directory = LEGACY_MATERIAL_PATHS.getOrDefault(materialId, materialId.getPath());
+        return id(materialId.getNamespace(), "block/track/generated/" + directory + "/" + shapeModel);
+    }
+
+    static String trackName(ResourceLocation materialId, RailwayDefinition definition) {
+        return definition.displayName() + (LEGACY_MATERIAL_PATHS.containsKey(materialId) ? " Track" : " Train Track");
+    }
+
+    public static Shape shape(String model) {
         return switch (model) {
-            case "x_ortho" -> RailwayModels.Shape.EAST_WEST;
-            case "z_ortho" -> RailwayModels.Shape.NORTH_SOUTH;
-            case "diag" -> RailwayModels.Shape.DIAGONAL_POSITIVE;
-            case "diag_2" -> RailwayModels.Shape.DIAGONAL_NEGATIVE;
-            case "ascending" -> RailwayModels.Shape.SLOPE;
-            case "teleport" -> RailwayModels.Shape.PORTAL;
-            case "cross_ortho" -> RailwayModels.Shape.CROSS_ORTHOGONAL;
-            case "cross_diag" -> RailwayModels.Shape.CROSS_DIAGONAL;
-            case "cross_d1_xo" -> RailwayModels.Shape.CROSS_POSITIVE_EAST_WEST;
-            case "cross_d1_zo" -> RailwayModels.Shape.CROSS_POSITIVE_NORTH_SOUTH;
-            case "cross_d2_xo" -> RailwayModels.Shape.CROSS_NEGATIVE_EAST_WEST;
-            case "cross_d2_zo" -> RailwayModels.Shape.CROSS_NEGATIVE_NORTH_SOUTH;
+            case "x_ortho" -> Shape.EAST_WEST;
+            case "z_ortho" -> Shape.NORTH_SOUTH;
+            case "diag" -> Shape.DIAGONAL_POSITIVE;
+            case "diag_2" -> Shape.DIAGONAL_NEGATIVE;
+            case "ascending" -> Shape.SLOPE;
+            case "teleport" -> Shape.PORTAL;
+            case "cross_ortho" -> Shape.CROSS_ORTHOGONAL;
+            case "cross_diag" -> Shape.CROSS_DIAGONAL;
+            case "cross_d1_xo" -> Shape.CROSS_POSITIVE_EAST_WEST;
+            case "cross_d1_zo" -> Shape.CROSS_POSITIVE_NORTH_SOUTH;
+            case "cross_d2_xo" -> Shape.CROSS_NEGATIVE_EAST_WEST;
+            case "cross_d2_zo" -> Shape.CROSS_NEGATIVE_NORTH_SOUTH;
             default -> throw new IllegalArgumentException("Unsupported Create track model: " + model);
         };
     }
@@ -152,11 +171,11 @@ public final class CreateRailwayResources {
             item.add("textures", textures);
             put(assets, resource(blockId, "models/item/", ".json"), item);
             put(data, resource(blockId, "loot_table/blocks/", ".json"), loot(blockId, blockId));
-            blockTags.add(blockId.toString());
-            itemTags.add(blockId.toString());
+            blockTags.add(optionalTag(blockId));
+            itemTags.add(optionalTag(blockId));
             languages.computeIfAbsent(blockId.getNamespace(), ignored -> new JsonObject())
                     .addProperty("block." + blockId.getNamespace() + "." + blockId.getPath().replace('/', '.'),
-                            definition.displayName() + " Train Track");
+                            trackName(handle.id(), definition));
         }
 
         private void hiddenTrack(ResourceLocation materialId, ResourceLocation hiddenId, ResourceLocation originalId) {
@@ -168,10 +187,14 @@ public final class CreateRailwayResources {
             blockstate.add("variants", variants);
             put(assets, resource(hiddenId, "blockstates/", ".json"), blockstate);
             put(data, resource(hiddenId, "loot_table/blocks/", ".json"), loot(hiddenId, originalId));
-            var optionalTag = new JsonObject();
-            optionalTag.addProperty("id", hiddenId.toString());
-            optionalTag.addProperty("required", false);
-            blockTags.add(optionalTag);
+            blockTags.add(optionalTag(hiddenId));
+        }
+
+        private static JsonObject optionalTag(ResourceLocation id) {
+            var entry = new JsonObject();
+            entry.addProperty("id", id.toString());
+            entry.addProperty("required", false);
+            return entry;
         }
 
         private Map<PackType, Map<ResourceLocation, byte[]>> finish() {

@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "hexie:block/carriage/carriage25gaozu_niucha/panel_25_marshalled_bottom",
+      "y": 270
+    },
+    "facing=north": {
+      "model": "hexie:block/carriage/carriage25gaozu_niucha/panel_25_marshalled_bottom",
+      "y": 180
+    },
+    "facing=south": {
+      "model": "hexie:block/carriage/carriage25gaozu_niucha/panel_25_marshalled_bottom",
+      "y": 0
+    },
+    "facing=west": {
+      "model": "hexie:block/carriage/carriage25gaozu_niucha/panel_25_marshalled_bottom",
+      "y": 90
+    }
+  }
+}

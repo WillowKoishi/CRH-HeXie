@@ -4,14 +4,20 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import willow.train.hexie.api.interaction.BlockControlContext;
-import willow.train.hexie.interaction.ControlInputTargets;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
+import willow.train.hexie.bridge.HexieBridges;
+import willow.train.hexie.bridge.interaction.InteractionBridge.ControlInputTargetsCoordinatesView;
+import willow.train.hexie.core.api.interaction.BlockControlContext;
 
 /** Composes a target's storage position with Sable's current logical plot pose. */
-public final class SableControlInputCoordinates implements ControlInputTargets.Coordinates {
+public final class SableControlInputCoordinates implements ControlInputTargetsCoordinatesView {
     private SableControlInputCoordinates() {}
 
-    public static void register() { ControlInputTargets.registerCoordinates(new SableControlInputCoordinates()); }
+    public static void register() {
+        HexieBridges.interaction().controlInputTargets().registerCoordinates(new SableControlInputCoordinates());
+        if (FMLEnvironment.dist == Dist.CLIENT) SableControlInputClient.register(HexieBridges.modBootstrap().modBus());
+    }
 
     private BlockPos owner(BlockControlContext target) {
         return target.carrier() == null ? target.position() : target.carrier().blockPosition();

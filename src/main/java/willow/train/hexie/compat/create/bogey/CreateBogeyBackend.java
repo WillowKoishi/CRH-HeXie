@@ -22,11 +22,11 @@ import net.neoforged.fml.ModList;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import willow.train.hexie.api.bogey.BogeyDefinition;
-import willow.train.hexie.api.bogey.BogeyHandle;
-import willow.train.hexie.api.railway.BogeyRailwayRegistry;
-import willow.train.hexie.compat.create.CreateBlockReservations;
-import willow.train.hexie.vehicle.assembly.BogeyModelCatalog;
+import willow.train.hexie.bridge.HexieBridges;
+import willow.train.hexie.compat.create.signal.CreateBlockReservations;
+import willow.train.hexie.core.api.bogey.BogeyDefinition;
+import willow.train.hexie.core.api.bogey.BogeyHandle;
+import willow.train.hexie.core.api.railway.BogeyRailwayRegistry;
 
 /** Creates the active backend's style/block/entity plumbing without exposing it to add-ons. */
 public final class CreateBogeyBackend {
@@ -97,7 +97,7 @@ public final class CreateBogeyBackend {
     private static synchronized void registerOperating(String namespace) {
         for (var entry : ENTRIES.values()) {
             if (!entry.id.getNamespace().equals(namespace)) continue;
-            BogeyModelCatalog.production().register(entry.definition.blockId(), entry.definition.model());
+            HexieBridges.bogeyRegistry().bogeyModelCatalog().production().register(entry.definition.blockId(), entry.definition.model());
             BogeyRailwayRegistry.register(entry.id, entry.definition.allowedRailways());
         }
     }

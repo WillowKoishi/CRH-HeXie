@@ -1,14 +1,16 @@
 package willow.train.hexie.vehicle.control;
 
 import java.util.Objects;
-import willow.train.hexie.vehicle.runtime.VehicleRuntime;
+import willow.train.hexie.bridge.vehicle.CabControlBridge;
+import willow.train.hexie.core.api.cab.CabState;
+import willow.train.hexie.core.api.traincontrol.TrainCommand;
 
 /** Aggregates synchronized desks, ordered from oldest to most recently operated. */
 public final class CabControlArbitration {
     private CabControlArbitration() {}
 
     /** The most recently operated enabled desk supplies the operating mode. */
-    public record Selection(int enabledCount, CabController.Mode mode) {
+    public record Selection(int enabledCount, CabState.Mode mode) implements CabControlBridge.CabControlArbitrationSelectionView {
         public Selection {
             if (enabledCount < 0 || (enabledCount > 0) != (mode != null))
                 throw new IllegalArgumentException("Invalid enabled cab selection");
@@ -19,14 +21,14 @@ public final class CabControlArbitration {
     }
 
     /** The caller computes each cab's command in the common train coordinate system first. */
-    public record Command(boolean enabled, VehicleRuntime.Control control) {
+    public record Command(boolean enabled, TrainCommand control) implements CabControlBridge.CabControlArbitrationCommandView {
         public Command { Objects.requireNonNull(control); }
     }
 
-    public static Selection select(Iterable<CabModule.State> cabs) {
+    public static Selection select(Iterable<CabState> cabs) {
         Objects.requireNonNull(cabs);
         int enabled = 0;
-        CabController.Mode mode = null;
+        CabState.Mode mode = null;
         for (var cab : cabs) {
             Objects.requireNonNull(cab);
             if (!cab.enabled()) continue;
@@ -37,12 +39,12 @@ public final class CabControlArbitration {
     }
 
     /** All desks supply brake; the last enabled desk supplies traction. */
-    public static VehicleRuntime.Control aggregate(Iterable<Command> commands) {
-        return aggregate(commands, VehicleRuntime.Control.NEUTRAL);
+    public static TrainCommand aggregate(Iterable<? extends CabControlBridge.CabControlArbitrationCommandView> commands) {
+        return aggregate(commands, TrainCommand.NEUTRAL);
     }
 
     /** The backend supplies traction when the consist has no enabled desk. */
-    public static VehicleRuntime.Control aggregate(Iterable<Command> commands, VehicleRuntime.Control backend) {
+    public static TrainCommand aggregate(Iterable<? extends CabControlBridge.CabControlArbitrationCommandView> commands, TrainCommand backend) {
         Objects.requireNonNull(commands);
         double brake = backend.brake();
         double power = backend.throttle();
@@ -52,6 +54,6 @@ public final class CabControlArbitration {
             if (!command.enabled()) continue;
             power = command.control().throttle();
         }
-        return new VehicleRuntime.Control(power, brake);
+        return new TrainCommand(power, brake);
     }
 }

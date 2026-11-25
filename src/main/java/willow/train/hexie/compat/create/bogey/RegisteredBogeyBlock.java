@@ -6,10 +6,11 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import willow.train.hexie.blocks.bogeys.HexieBogeyBlock;
+import willow.train.hexie.bridge.compat.CreateTrainBridgePort.RegisteredBogeyBlockView;
 
 /** Backend-owned block for an add-on's declaration; retains HeXie's existing support behavior. */
-public final class RegisteredBogeyBlock extends HexieBogeyBlock<RegisteredBogeyBlockEntity> {
+public final class RegisteredBogeyBlock extends HexieBogeyBlock<RegisteredBogeyBlockEntity>
+        implements RegisteredBogeyBlockView {
     private final ResourceLocation bogeyId;
     private final Supplier<BogeyStyle> style;
     private final Supplier<BlockEntityType<RegisteredBogeyBlockEntity>> entityType;

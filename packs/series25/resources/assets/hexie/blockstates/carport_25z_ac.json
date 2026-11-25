@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "hexie:block/carriage/carriage25z/carport/carport_25z_ac_ne",
+      "y": 270
+    },
+    "facing=north": {
+      "model": "hexie:block/carriage/carriage25z/carport/carport_25z_ac_ne",
+      "y": 180
+    },
+    "facing=south": {
+      "model": "hexie:block/carriage/carriage25z/carport/carport_25z_ac_sw",
+      "y": 0
+    },
+    "facing=west": {
+      "model": "hexie:block/carriage/carriage25z/carport/carport_25z_ac_sw",
+      "y": 90
+    }
+  }
+}

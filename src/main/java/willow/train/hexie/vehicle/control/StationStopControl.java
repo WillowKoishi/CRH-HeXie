@@ -1,13 +1,14 @@
 package willow.train.hexie.vehicle.control;
 
 import java.util.Objects;
+import willow.train.hexie.bridge.vehicle.CabControlBridge;
 
 /** Shared arrival/departure state. Docking motion and backend timetable operations remain separate. */
-public final class StationStopControl {
+public final class StationStopControl implements CabControlBridge.StationStopControlView {
     public static final double ARRIVAL_DISTANCE_M = 10;
     private static final double STOPPED_SPEED_MPS = 1e-6;
 
-    public record StationObservation(String stationId, String stationName, double distanceM) {
+    public record StationObservation(String stationId, String stationName, double distanceM) implements CabControlBridge.StationStopControlStationObservationView {
         public StationObservation {
             Objects.requireNonNull(stationId);
             Objects.requireNonNull(stationName);
@@ -16,7 +17,7 @@ public final class StationStopControl {
         }
     }
 
-    public record State(boolean waitingForDeparture, String stationId, String stationName) {
+    public record State(boolean waitingForDeparture, String stationId, String stationName) implements CabControlBridge.StationStopControlStateView {
         public static final State RUNNING = new State(false, "", "");
         public State {
             Objects.requireNonNull(stationId);
@@ -36,7 +37,7 @@ public final class StationStopControl {
     }
 
     /** Returns true exactly once when the observed stopped train enters this station's arrival window. */
-    public boolean observeStop(double speedMps, StationObservation station) {
+    public boolean observeStop(double speedMps, CabControlBridge.StationStopControlStationObservationView station) {
         boolean stopped = stopped(speedMps);
         if (state.waitingForDeparture() || station == null || !stopped
                 || Math.abs(station.distanceM()) > ARRIVAL_DISTANCE_M + 1e-7) return false;
@@ -61,5 +62,8 @@ public final class StationStopControl {
 
     public void clear() { state = State.RUNNING; }
 
-    public void restore(State saved) { state = Objects.requireNonNull(saved); }
+    public void restore(CabControlBridge.StationStopControlStateView saved) {
+        Objects.requireNonNull(saved);
+        state = saved instanceof State value ? value : new State(saved.waitingForDeparture(), saved.stationId(), saved.stationName());
+    }
 }

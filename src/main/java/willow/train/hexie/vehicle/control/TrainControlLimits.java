@@ -18,7 +18,7 @@ public record TrainControlLimits(double massKg, double serviceBrakeForceN,
     }
 
     /** Read definitions only: current handles and automatic planning parameters are not capabilities. */
-    public static TrainControlLimits capture(VehicleRuntime runtime, UUID member) {
+    public static willow.train.hexie.core.api.cab.TrainControlLimits capture(VehicleRuntime runtime, UUID member) {
         Objects.requireNonNull(runtime);
         double mass = 0, brake = 0, a = 0, b = 0, c = 0;
         for (var car : runtime.definitions()) {
@@ -32,7 +32,7 @@ public record TrainControlLimits(double massKg, double serviceBrakeForceN,
                 c += p.resistanceQuadraticNs2PerM2();
             }
         }
-        return new TrainControlLimits(mass, brake * TrainControl.Source.CAB_MANUAL.serviceBrakeLimit(),
+        return new willow.train.hexie.core.api.cab.TrainControlLimits(mass, brake * TrainControl.Source.CAB_MANUAL.serviceBrakeLimit(),
                 a, b, c, runtime.brakingMultiplier());
     }
 
