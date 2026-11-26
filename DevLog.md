@@ -6,7 +6,7 @@
 
 添加方块（组）:
 
-- 新增 CR200J 车头及面板方块，并加入对应方块实体和专用渲染（HachimiYang）
+- 新增 CR200J 车头与面板方块，分别拆出车头方块、面板方块组、车头方块实体和专用渲染器（HachimiYang）
 
 添加功能:
 
@@ -14,12 +14,18 @@
 
 修改机制:
 
-- 将内置车型和转向架的代码及资源整理到按车型划分的 `packs/` 源目录，并将渲染代码集中到 `renderer/`；保留 `hexie` 注册 ID 和资源路径以兼容既有存档（HachimiYang）
-- 新增 Gradle `checkDomainBoundaries` 任务，检查十个代码域的引用边界及可选依赖引用范围（HachimiYang）
+- 将车辆与转向架按车型归入独立车包源目录；构建配置统一登记 CRH1A（`crh1a`）、CRH2A（`crh2a`）、CR200J（`cr200j`）、25 系客车（`series25`）、韶山 7D（`ss7d`）、东风 11G（`df11g`）、和谐 3D（`hxd3d`）及前进型蒸汽机车（`qj`）八个内置车包，并分别纳入 Java 源码、资源和数据生成读取路径（HachimiYang）
+- 本次提交实际迁移与调整的车包文件集中在 CRH1A 和 CR200J：CRH1A 车头、端面、地板、驾驶台、门及相关部件代码和资源归入 `packs/crh1a/`；CR200J 车头与面板代码、模型贴图、方块状态和配方等资源归入 `packs/cr200j/`。其余六个车包已纳入统一构建入口，但本次提交没有相应的 `packs/` 文件迁移（HachimiYang）
+- 将 CRH1A 的车头几何、车门主体与成员方块、门几何和修复逻辑、端面、地板、驾驶台、头车转向架及车钩等实现按职责拆为独立类；另将车门交互、驾驶台控制与手柄、头车方块实体，以及车门、头车、端面、车钩、照明和静态车厢段渲染分别拆分，便于按功能维护（HachimiYang）
+- 将渲染实现和资源集中到 `renderer/` 渲染域；车包内仍可保留车型专属渲染类，并通过构建源目录统一编译；注册 ID 和资源路径继续使用 `hexie` 命名空间，保持既有存档兼容（HachimiYang）
+- 将通用实现按 `core`、`bridge`、`railway`、`vehicle`、`world`、`interaction`、`sync`、`ui`、`render`、`compat` 十个代码域组织：核心域不依赖其他模组代码，桥接域只依赖核心与自身，业务域通过桥接接口协作；`Main.java` 作为组合入口连接各域（HachimiYang）
+- 新增 Gradle `checkDomainBoundaries` 校验任务，扫描源码及车包，限制跨域导入、全限定类名和对 `Main` 的引用，并将 Create、Flywheel、Catnip、Registrate 等可选库引用限定在兼容与渲染相关位置；该任务接入 `check` 和 `jar`（HachimiYang）
 
 其他:
 
-- 加入 JUnit 5 测试运行配置，并处理 Sodium 0.8.13 的嵌套模组包以支持客户端开发运行配置（HachimiYang）
+- 补充 209P、CW-2、SW160、SW220K 转向架模型与贴图及椅子 22 源模型；完成车包目录、功能域和构建入口重组，并未把这些美术源模型当作车型代码迁移（WillowKoishi、HachimiYang）
+- 加入 JUnit 5 与 Gson 测试依赖及 JUnit Platform 运行配置；增加 Sodium 0.8.13 嵌套模组包提取和客户端运行目录暂存任务，供开发运行配置加载（HachimiYang）
+- 增加按代码域筛选 Java 编译的 `compileOnlyZones` 参数，并将 NeoForge access transformer 接入构建（HachimiYang）
 - 将开发版本号从 0.11.2-nonomi-bata 更新为 0.11.4-nonomi-bata（HachimiYang）
 - 将开发版本号从 0.11.4-nonomi-bata 更新为 1.0.0-hoshino-alpha（WillowKoishi）
 
