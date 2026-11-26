@@ -9,9 +9,9 @@ import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.Style;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.common.NeoForge;
+import willow.train.hexie.ui.hud.HudFonts;
 
 /** Full-screen first-launch warning for the current game session. */
 public final class StartupWarningScreen extends Screen {
@@ -48,14 +48,15 @@ public final class StartupWarningScreen extends Screen {
     @Override
     protected void init() {
         ConfirmButton button = new ConfirmButton();
-        button.setX(width / 2 - 50);
+        button.setX((width - button.getWidth()) / 2);
         button.setY(height - 32);
         addRenderableWidget(button);
     }
 
     private final class ConfirmButton extends AbstractButton {
         private ConfirmButton() {
-            super(0, 0, 100, 20, Component.literal("确认"));
+            super(0, 0, 250, 20,
+                    Component.literal("OK / Aceptar / Bestätigen / 确认 / Confirmer / 了解"));
         }
 
         @Override
@@ -67,8 +68,12 @@ public final class StartupWarningScreen extends Screen {
         protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
             int background = isHoveredOrFocused() ? 0xFF202020 : 0xFF000000;
             graphics.fill(getX(), getY(), getRight(), getBottom(), background);
-            graphics.drawCenteredString(font, getMessage(), getX() + getWidth() / 2,
-                    getY() + (getHeight() - font.lineHeight) / 2, 0xFFFFFFFF);
+            HudFonts.Text label = HudFonts.layout(font, getMessage().getString());
+            graphics.pose().pushPose();
+            graphics.pose().translate(getX() + getWidth() / 2f, getY() + getHeight() / 2f, 0);
+            graphics.pose().scale(TEXT_SCALE, TEXT_SCALE, 1);
+            label.draw(graphics, -label.width() / 2f, -font.lineHeight / 2f, 0xFFFFFFFF);
+            graphics.pose().popPose();
         }
 
         @Override
@@ -100,20 +105,21 @@ public final class StartupWarningScreen extends Screen {
         int titleGap = 15;
         int textHeight = font.lineHeight + titleGap + lineCount * lineHeight
                 + (paragraphs.size() - 1) * paragraphGap;
-        int y = (height - textHeight) / 2;
+        int textBottom = height - 32;
+        int y = (textBottom - textHeight) / 2;
 
         graphics.pose().pushPose();
         graphics.pose().translate(width / 2f, height / 2f, 0);
         graphics.pose().scale(TEXT_SCALE, TEXT_SCALE, 1);
         graphics.pose().translate(-width / 2f, -height / 2f, 0);
 
-        graphics.drawCenteredString(font, Component.literal(TITLE).withStyle(Style.EMPTY.withBold(true)),
-                width / 2, y, 0xFFFFFFFF);
+        HudFonts.Text title = HudFonts.layout(font, TITLE);
+        title.draw(graphics, (width - title.width()) / 2f, y, 0xFFFFFFFF);
         y += font.lineHeight + titleGap;
 
         for (int paragraphIndex = 0; paragraphIndex < paragraphs.size(); paragraphIndex++) {
             for (String line : paragraphs.get(paragraphIndex)) {
-                graphics.drawString(font, line, (width - maxWidth) / 2, y, 0xFFFFFFFF);
+                HudFonts.layout(font, line).draw(graphics, (width - maxWidth) / 2f, y, 0xFFFFFFFF);
                 y += lineHeight;
             }
             if (paragraphIndex < paragraphs.size() - 1) y += paragraphGap;
@@ -128,7 +134,7 @@ public final class StartupWarningScreen extends Screen {
             int codePoint = text.codePointAt(offset);
             int nextOffset = offset + Character.charCount(codePoint);
             line.appendCodePoint(codePoint);
-            if (font.width(line.toString()) > maxWidth && line.length() > Character.charCount(codePoint)) {
+            if (HudFonts.layout(font, line.toString()).width() > maxWidth && line.length() > Character.charCount(codePoint)) {
                 line.setLength(line.length() - Character.charCount(codePoint));
                 lines.add(line.toString().stripTrailing());
                 line.setLength(0);

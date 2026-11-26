@@ -1,12 +1,12 @@
 
 # 开发日志
 
-### version 1.0.0-hoshino-alpha
+### version 1.0.0-hoshino-alpha d.1542
 ##### 2026.11.26
 
 添加方块（组）:
 
-- 新增 CR200J 车头及面板方块，并加入对应方块实体和专用渲染（HachimiYang）
+- 新增 CR200J 车头与面板方块，分别拆出车头方块、面板方块组、车头方块实体和专用渲染器（HachimiYang）
 
 添加功能:
 
@@ -14,17 +14,28 @@
 
 修改机制:
 
-- 将内置车型和转向架的代码及资源整理到按车型划分的 `packs/` 源目录，并将渲染代码集中到 `renderer/`；保留 `hexie` 注册 ID 和资源路径以兼容既有存档（HachimiYang）
-- 新增 Gradle `checkDomainBoundaries` 任务，检查十个代码域的引用边界及可选依赖引用范围（HachimiYang）
+- 将车辆与转向架按车型归入独立车包源目录；构建配置统一登记 CRH1A（`crh1a`）、CRH2A（`crh2a`）、CR200J（`cr200j`）、25 系客车（`series25`）、韶山 7D（`ss7d`）、东风 11G（`df11g`）、和谐 3D（`hxd3d`）及前进型蒸汽机车（`qj`）八个内置车包，并分别纳入 Java 源码、资源和数据生成读取路径（HachimiYang）
+- 本次提交实际迁移与调整的车包文件集中在 CRH1A 和 CR200J：CRH1A 车头、端面、地板、驾驶台、门及相关部件代码和资源归入 `packs/crh1a/`；CR200J 车头与面板代码、模型贴图、方块状态和配方等资源归入 `packs/cr200j/`。其余六个车包已纳入统一构建入口，但本次提交没有相应的 `packs/` 文件迁移（HachimiYang）
+- 将 CRH1A 的车头几何、车门主体与成员方块、门几何和修复逻辑、端面、地板、驾驶台、头车转向架及车钩等实现按职责拆为独立类；另将车门交互、驾驶台控制与手柄、头车方块实体，以及车门、头车、端面、车钩、照明和静态车厢段渲染分别拆分，便于按功能维护（HachimiYang）
+- 将渲染实现和资源集中到 `renderer/` 渲染域；车包内仍可保留车型专属渲染类，并通过构建源目录统一编译；注册 ID 和资源路径继续使用 `hexie` 命名空间，保持既有存档兼容（HachimiYang）
+- 将通用实现按 `core`、`bridge`、`railway`、`vehicle`、`world`、`interaction`、`sync`、`ui`、`render`、`compat` 十个代码域组织：核心域不依赖其他模组代码，桥接域只依赖核心与自身，业务域通过桥接接口协作；`Main.java` 作为组合入口连接各域（HachimiYang）
+- 新增 Gradle `checkDomainBoundaries` 校验任务，扫描源码及车包，限制跨域导入、全限定类名和对 `Main` 的引用，并将 Create、Flywheel、Catnip、Registrate 等可选库引用限定在兼容与渲染相关位置；该任务接入 `check` 和 `jar`（HachimiYang）
+
+移除内容:
+
+- 剥离 Create 兼容模块并将轨道、信号机及半成品迁移至 `create_*` 注册名后，移除旧 `standard_track`、`ballastless_track`、`tieless_track`、`hx_semaphore` 战利品表、旧无砟／无枕轨道半成品物品模型，以及 12 个依赖机械动力或旧路径的合成配方（涵盖 25B/G/K 原色端面、25 系车顶空调与水箱、轨道、耐候钢块搅拌／压板与 25Z 地板地毯搅拌配方）（HachimiYang）
+- 随代码域与 Mixin 体系重组，移除约 20 个不再使用的旧 Mixin 与访问器（包括 `MixinBlockControlClip`、`MixinBlockControlPicking`、`MixinDoorInteractionPacket`、`MixinDriverSeat`、`MixinPhysicalCouplerRedstone`、`MixinCarriageCamera`、`MixinTrainHudDirection`、`MixinTrackGraphVisualizer`、`MixinCRH1DoorRenderContext` 等）（HachimiYang）
 
 其他:
 
-- 加入 JUnit 5 测试运行配置，并处理 Sodium 0.8.13 的嵌套模组包以支持客户端开发运行配置（HachimiYang）
+- 补充 209P、CW-2、SW160、SW220K 转向架模型与贴图及椅子 22 源模型；完成车包目录、功能域和构建入口重组，并未把这些美术源模型当作车型代码迁移（WillowKoishi、HachimiYang）
+- 加入 JUnit 5 与 Gson 测试依赖及 JUnit Platform 运行配置；增加 Sodium 0.8.13 嵌套模组包提取和客户端运行目录暂存任务，供开发运行配置加载（HachimiYang）
+- 增加按代码域筛选 Java 编译的 `compileOnlyZones` 参数，并将 NeoForge access transformer 接入构建（HachimiYang）
 - 将开发版本号从 0.11.2-nonomi-bata 更新为 0.11.4-nonomi-bata（HachimiYang）
 - 将开发版本号从 0.11.4-nonomi-bata 更新为 1.0.0-hoshino-alpha（WillowKoishi）
 
 ---
-### version 0.11.2-nonomi-bata
+### version 0.11.2-nonomi-bata d.1542
 ##### 2026.11.26
 
 新增 / 修改美术资源:
@@ -37,7 +48,7 @@
 - 更新 README 英文项目标题与介绍，补充铁路系统、MTCS-200、CarriageFlow 及模组兼容性说明与配图（WillowKoishi）
 
 ---
-### version 0.11.1-nonomi-bata
+### version 0.11.1-nonomi-bata d.1541
 ##### 2026.11.25
 
 添加功能:
@@ -59,7 +70,7 @@
 - 为 Create、Aeronautics 及其客户端运行配置拆分 Gradle source set，并添加客户端 Patchouli 依赖（WillowKoishi）
 
 ---
-### version 0.11.0-nonomi-bata
+### version 0.11.0-nonomi-bata d.1539
 ##### 2026.11.23
 
 添加方块（组）:
@@ -99,7 +110,7 @@
 - 将车窗流资源包配置文档标题中的「车窗流」改为「车厢流」（WillowKoishi）
 
 ---
-### version 0.10.6-Shiroko-bata
+### version 0.10.6-Shiroko-bata d.1537
 ##### 2026.11.21
 
 添加方块（组）:
@@ -135,14 +146,18 @@
 - 补充韶山 7D 整车、前转向架及中间转向架的源模型和配套贴图。中间转向架本阶段为美术资源（AlpacaEgg、WillowKoishi）
 - 将 AlpacaEgg 早期制作的车轮源模型重新纳入韶山 7D 素材目录（WillowKoishi, AlpacaEgg）
 
+移除内容:
+
+- 移除已不存在的接触网实体（`catenary_base`、`small_catenary_base`）、接触网连接操作以及部分闸机提示等遗留简体中文翻译条目（WillowKoishi）
+
 其他:
 
 - 将 Simurail 依赖版本更新为 0.1.4+mc1.21.1，可选兼容范围调整为 0.1.4（含）至 0.2（不含）（WillowKoishi）
-- 在车型编号牌的简体中文界面标明十六进制颜色以 0x 开头，移除部分接触网实体、接触网操作和闸机提示的简体中文条目（WillowKoishi）
+- 在车型编号牌的简体中文界面标明十六进制颜色以 0x 开头（WillowKoishi）
 
 ---
 
-### version 0.10.5-Shiroko-bata
+### version 0.10.5-Shiroko-bata d.1535
 ##### 2026.11.19
 
 修改机制:
@@ -165,7 +180,7 @@
 - 将 macOS 的 .DS_Store 文件加入 Git 忽略规则（WillowKoishi）
 
 ---
-### version 0.10.4-Shiroko-bata
+### version 0.10.4-Shiroko-bata d.1532
 ##### 2026.11.16
 
 添加方块（组）:
@@ -199,13 +214,16 @@
 - 为 CRH1A、CRH2A 端面物品补充左右手的第一、第三人称显示配置，调整持握角度、缩放与偏移（WillowKoishi）
 - 添加动车组停车位置标识牌及另一组铁路标识牌的整体源模型；本阶段为美术资源（Lacus-Mort1s）
 
+移除内容:
+
+- 清理未采用的车轮源模型、配套贴图及车顶设备源模型（`art_assets/train_collection/` 下的 `wheel.png`、`！？wheelwheel？！.bbmodel` 及 `车顶设备.bbmodel`）（AlpacaEgg）
+
 其他:
 
 - 添加 CEE 通用兼容代码的专用服务器侧引用检查，并接入 check 及 jar 任务，防止通用逻辑引用客户端渲染类（WillowKoishi）
-- 清理未采用的车轮源模型、配套贴图及车顶设备源模型（AlpacaEgg）
 
 ---
-### version 0.10.2-Shiroko-bata
+### version 0.10.2-Shiroko-bata d.1531
 ##### 2026.11.15
 
 添加方块（组）:
@@ -252,13 +270,17 @@
 - 补充 CRH1A 面板、地板、裙板、车顶、驾驶台、头车及沙库车钩的源模型、游戏模型、材质与贴图（WillowKoishi, FlycatFeimao）
 - 补充 DF11G 重制头车模型与贴图、HXD3D 重制源模型，并调整 CRH2A 适配版头车及 CW-2 转向架模板源模型；本阶段为美术资源（WillowKoishi）
 
+移除内容:
+
+- 清理 `art_assets/CRH1/` 目录下临时遗留的说明文档 `README.md` 与面板导出脚本 `export_panels.py`（FlycatFeimao、WillowKoishi）
+
 其他:
 
 - 将 CEE 可选依赖的版本范围由固定 1.21.1-1.1.4 调整为 1.21.1-1.1.2 及以上（HachimiYang）
 - 补充转向架选择界面所用 Simurail 代码及资源的 MIT 许可与第三方声明（HachimiYang）
 
 ---
-### version 0.10.1-Shiroko-bata
+### version 0.10.1-Shiroko-bata d.1531
 ##### 2026.11.15
 
 添加方块（组）:
@@ -296,7 +318,7 @@
 - 将界面切换提示中的“车窗流”调整为“车厢流”（WillowKoishi）
 
 ---
-### version 0.9.6-Plana-bata
+### version 0.9.6-Plana-bata d.1529
 ##### 2026.11.13
 
 添加功能:
@@ -329,8 +351,9 @@
 
 - 在航空学测试运行配置中加入 Copycats+ 3.0.11 依赖（WillowKoishi）
 - 补充 CEE 可选依赖声明与编译依赖，并支持通过 withCee 开发配置加载运行依赖（misaka10843）
+
 ---
-### version 0.9.5-Plana-bata
+### version 0.9.5-Plana-bata d.1527
 ##### 2026.11.11
 
 添加功能:
@@ -362,7 +385,7 @@
 - 更新开发版本号至 0.9.5-Plana-bata；本次提交仅修改版本配置（HachimiYang）
 
 ---
-### version 0.9.4-Plana-bata
+### version 0.9.4-Plana-bata d.1526
 ##### 2026.11.10
 
 添加方块（组）:
@@ -399,6 +422,11 @@
 
 - 添加 25B、25G、25K、25T、25Z 蓝图图标，并调整 25K 车厢内外预览结构（WillowKoishi）
 
+移除内容:
+
+- 整理转向架与轨道公共接口后，移除旧版 SPI 后端加载器及服务配置文件（`BogeyBackend`、`BogeyBackendLoader`、`BogeyAnimationBackend`、`RailwayBackend`、`RailwayBackendLoader` 及 `META-INF/services/` 对应配置）（HachimiYang）
+- 迁移车窗流配置文档时移除旧路径文档 `docs/carriage-browser-example.md`（HachimiYang）
+
 其他:
 
 - 整理 Gradle 构建配置，补充 Simulated、Sable Companion 及 ComputerCraft 等兼容模块的编译依赖（HachimiYang）
@@ -406,7 +434,7 @@
 
 
 ---
-### version 0.9.3-Plana-bata
+### version 0.9.3-Plana-bata d.1525
 ##### 2026.11.9
 
 修改名称:
@@ -417,12 +445,16 @@
 
 - 添加 CRH 标识的物品图标及配套贴图（WillowKoishi）
 
+移除内容:
+
+- 随「和谐号标识」更名为「CRH 标识」，移除旧版 `HarmonyLogoItem` 类及 `item.hexie.harmony_logo` 语言键（WillowKoishi）
+
 其他:
 
 - 添加文言文语言文件（lzh）（WillowKoishi）
 
 ---
-### version 0.9.0-Plana-bata
+### version 0.9.0-Plana-bata d.1524
 ##### 2026.11.8
 
 添加方块（组）:
@@ -469,8 +501,13 @@
 - 更新 25B、25G、25K、25T、25Z 车厢的内外预览车模，并调整车厢前后间距（WillowKoishi, AlpacaEgg）
 - 提亮老式站牌表面，修复模型中的纹理冲突；本次提交为美术源模型调整（AlpacaEgg）
 
+移除内容:
+
+- 移除旧版客户端覆层框架及转向架检查覆层（`BaseOverlay`、`BogeyCheckOverlay`、`HexieOverlay`、`OverlayManager`）（HachimiYang）
+- 统一表面选取与交互后，移除旧版车门／车钩独立选取类与 Mixin（`CouplerInteractionPicking`、`DoorInteractionPicking`、`ShiftedCouplerInteraction`、`MixinDoorPicking`）及旧车厢位置校正数据包 `CarriagePositionCorrectionPacket`（HachimiYang）
+
 ---
-### version 0.4.14-A.R.O.N.A.
+### version 0.4.14-A.R.O.N.A. d.1523
 ##### 2026.11.7
 
 添加方块（组）:
@@ -508,9 +545,13 @@
 - 补充 CRH2A 端面连接器、电缆及电子显示牌素材，修正连接器贴图（WillowKoishi）
 - 添加并调整通用詹氏车钩、CRH2 救援车钩模型及贴图；本阶段为美术资源（WillowKoishi）
 
-----
+移除内容:
 
-### version 0.4.13-A.R.O.N.A.
+- 移除旧版曲线道床 Flywheel 实例化渲染与自定义着色器（`CurveBedInstance`、`CurveBedShader` 及 `curve_bed` 系列着色器文件）（HachimiYang）
+- 重构驾驶台控制接口时，移除旧版 CRH2 驾驶台拖拽与测试驾驶台客户端实现（`Crh2CabPresentation`、`Crh2CabSliderTrack`、`Crh2CabDrag`、`TestCabClient`、`DrivingConsoleCamera`）及对应数据包（`Crh2CabHandlePacket`、`TestCabActionPacket`）（HachimiYang）
+
+---
+### version 0.4.13-A.R.O.N.A. d.1521
 ##### 2026.11.5
 
 添加方块（组）:
@@ -543,12 +584,16 @@
 - SKTB-200 拖车转向架及拖车轮模型，本阶段为美术资源（WillowKoishi）
 - 修正 DT206 转向架、CRH2A 头车侧面及前窗贴图（WillowKoishi）
 
+移除内容:
+
+- 移除 `art_assets/CRH2A/bogey/dt206/` 目录下的冗余贴图 `dt206_frame.png`（WillowKoishi）
+
 其他:
 - 完善构建产物中的项目、字体、第三方及美术许可声明（HachimiYang）
 - 构建时同时生成代码源码包和对应的美术源码包（HachimiYang）
 
 ---
-### version 0.4.12-A.R.O.N.A.
+### version 0.4.12-A.R.O.N.A. d.1520
 ##### 2026.11.4
 
 添加方块（组）:
@@ -574,7 +619,7 @@
 - 整理部分装饰类美术资源的名称与目录（AlpacaEgg）
 
 ---
-### version 0.4.11-A.R.O.N.A.
+### version 0.4.11-A.R.O.N.A. d.1518
 ##### 2026.11.2
 
 添加方块（组）:
@@ -619,12 +664,19 @@
 - 国铁样式道口信号机、老式站牌及 CRH 停车位置标识资源（AlpacaEgg）
 - 国铁 G 型客车空调发电车车顶装饰、四类车顶通风口，以及 25G、25K 行李车上厢板资源（AlpacaEgg）
 
+移除内容:
+
+- 移除 8 个既有方块及其代码、模型、贴图、战利品表与相关配方：单臂受电弓（`ss8_pantograph`）、月台（`platform_line_block`）、禁止双弓标志牌（`no_double_pantograph`）、断标志牌（`switch_off_sign`）、合标志牌（`switch_on_sign`）、直盲道（`tactile_paving_straight`）、点盲道（`tactile_paving_pin`）与日光灯（`flourescent_light`），同步移除混凝土及盲道、断合标转换配方（WillowKoishi）
+- 移除 3 个既有物品及其完整交互与界面系统：一些钉子（`pins`）、可动方块控制器（`animatable_block_controller`）与自动控制联轴器（`automatic_control_coupling`），一并删除对应的遥控交互框架、GUI 界面、容器菜单、物品栏同步包及配方（WillowKoishi）
+- 清理开发过渡期的验证车钩（`test_coupler`）与旧车钩转换器（`coupler_adapter`）模型与战利品表、旧前进型转向架顶盖模型 `qj_top.json`、旧转向架几何配置 `bogey_models.json` 与 `HexieBogeyGeometries`、废弃的 `MixinCurvedBallastInteraction` 及旧版 `CRH2HeadRenderer`（HachimiYang）
+- 移除 `sign_fonts/` 目录下的重复字体许可文本文件及误置于转向架目录的 `crh2a_head.bbmodel`，并清理迁移前旧路径的国铁地面站牌与道口信号源模型（WillowKoishi、AlpacaEgg）
+
 其他:
 - 更新项目介绍，说明跨越 0.3.9n 资源来源及 Create / Simurail 兼容关系（WillowKoishi）
 - 补充美术资源的 GPL-3.0-only 许可及适用范围说明（WillowKoishi）
 
 ---
-### version 0.4.10-A.R.O.N.A.
+### version 0.4.10-A.R.O.N.A. d.1513
 ##### 2026.10.28
 
 添加功能:
@@ -643,7 +695,7 @@
 - 添加车窗流资源包配置示例（HachimiYang）
 
 ---
-### version 0.4.9-A.R.O.N.A.
+### version 0.4.9-A.R.O.N.A. d.1512
 ##### 2026.10.27
 
 添加功能:
@@ -658,13 +710,17 @@
 修复问题:
 - 修复修改车厢号码牌导致玩家被踢出的问题（FlycatFeimao）
 
+移除内容:
+
+- 清理旧版轨道组装覆盖贴图（`track_assembly_overlay.png`／`.xcf`）、标准轨方块状态生成器 `StandardTrackBlockStateGenerator`、旧构建转换器 `BuilderTransformers` 及旧标签注册类 `TagsInit`（WillowKoishi）
+
 其他:
 - 添加航空学兼容测试使用的客户端运行配置（WillowKoishi）
 - 添加持续集成构建配置（WillowKoishi）
 - 补充第三方版权声明（HachimiYang）
 
 ---
-### version 0.4.8-A.R.O.N.A.
+### version 0.4.8-A.R.O.N.A. d.1511
 ##### 2026.10.26
 
 添加功能:
@@ -678,11 +734,15 @@
 - 修复前进型转向架连杆动画（HachimiYang）
 - 修复信号机贴图透视问题（WillowKoishi）
 
+移除内容:
+
+- 清理未使用的字体样式工具 `HexieFontStyle`、蓝图物品工具 `SchematicItemUtil` 及配置事件类 `ConfigEvents`（WillowKoishi）
+
 其他:
 - 添加并固定 Simurail、Aeronautics 及 Sable 的开发依赖（WillowKoishi）
 
 ---
-### version 0.4.7-A.R.O.N.A.
+### version 0.4.7-A.R.O.N.A. d.1510
 ##### 2026.10.25
 
 修复问题:
@@ -693,14 +753,18 @@
 修改机制:
 - 调整信号机、轨道物品的放置状态与客户端同步（WillowKoishi）
 
+移除内容:
+
+- 移除 4 个旧版地面信号机方块及其代码、模型、贴图、战利品表与语言条目：进站信号机（`station_entrance_signal`）、旧版调车信号机（`shunting_signal`）、信号机柱（`signal_pole`）与柱上信号机（`signal_pole_light`）（WillowKoishi）
+
 ---
-### version 0.4.6-A.R.O.N.A.
+### version 0.4.6-A.R.O.N.A. d.1510
 ##### 2026.10.25
 
 版本迁移:
 - 将既有铁路装饰内容迁移至 Minecraft 1.21.1 / NeoForge（WillowKoishi, FlycatFeimao）
 - 使用 Java 21，适配 Create 6.0.10 及相关渲染、注册接口（WillowKoishi, FlycatFeimao）
-- 迁移车厢、转向架、接触网、信号机、售票及标牌等既有内容（FlycatFeimao, WillowKoishi）
+- 迁移车厢、转向架、信号机、售票及标牌等既有内容（FlycatFeimao, WillowKoishi）
 
 添加方块（组）:
 - 各锈蚀阶段的涂蜡耐候钢块（WillowKoishi）
@@ -717,382 +781,613 @@
 - 修复轨道破坏时的粒子效果（WillowKoishi）
 - 修正 OBJ 模型、资源路径及部分界面的兼容性问题（WillowKoishi, FlycatFeimao）
 
+移除内容:
+
+- 迁移至 1.21.1 / NeoForge 时移除原有接触网系统全部方块、物品与实体逻辑，包括新旧水泥／工字钢接触网柱、A／B／C／D 型接触网支架与转接器、龙门架及挂架、绝缘子与悬架、坠砣与配重、非接触网线缆挂点、创造发电机，以及接触网挂线线轴、电缆线轴、钢缆线轴与剪线钳（FlycatFeimao、WillowKoishi）
+- 将 DF11G「跨越」涂装车棚与下厢板（`df11g_carport_kuayue`、`df11g_panel_kuayue`）替换为「和谐」版本，并移除旧重复硬座注册项 `yz_seat2`（WillowKoishi、FlycatFeimao）
+
 其他:
 - 补全 Gradle Wrapper（WillowKoishi）
 
 ---
-### 2024.2.20
-##### version 0.3.8-izayoi_sakuya
+### version 0.3.9-izayoi_sakuya-rc1 d.554
+##### 2024.3.13
 
 修改机制:
-- 减少 Mixin 使用
-- 重制资源读取方式, 期望减少资源读取的 bug
 
----
-### 2024.2.17
-##### version 0.3.8-izayoi_sakuya
+- 修改通过信号机信号灯的渲染类型，并扩大信号灯的渲染范围（Zlw380）
 
-修改机制:
-- 获取转向架信息暂时不再需要佩戴工程师护目镜
-- 新版接触网支架补全 tooltips
-- 修改 Interaction Mixin 使用
+移除内容:
 
----
-### 2024.2.16
-##### version 0.3.8-izayoi_sakuya
+- 彻底删除此前停用的旧版色灯信号机相关源码与注册项，包括 `KYSemaphoreBlock`、`KYSemaphoreBlockEntity`、`KYSemaphoreItem`、`KYSemaphoreRenderer` 及 `KYEdgePointTypes`（Zlw380）
+- 移除转向架径向快捷选择菜单及其服务端／客户端处理与网络包（`RadialBogeyCategoryMenu`、`BogeyCategoryHandlerClient`、`BogeyCategoryHandlerServer`、`BogeyStyleSelectionPacket`）和压路机替换轨道扩展 `TrackReplacePaver`（Zlw380）
+- 清理不再使用的轨道／转向架／网络 Mixin 与底层工具类，包括 `MixinBogeyInstance`、`MixinTrackRenderer`、`MixinTrackTargetingClient`、`MixinAbstractBogeyBlock`、`ServerGamePacketListenerMixin`、`ClientPacketListenerMixin`、`PacketsInit`、`PacketSet`、`C2SPacket`、`OverridableSignalPacket`、`RegistrationListening` 及 `TextUtils`（Zlw380）
 
-添加物品(组):
-- cr200j 上中下厢板 (Desert_Walker, WillowKoishi)
-- cr200j 端面(两种) (Desert_Walker)
-- cr200j 车头 (Desert_Walker)
-- cr200j 车窗 (Desert_Walker)
-- 可动方块控制器
-- 自动控制联轴器
-- 25z样式地毯
-- 通过信号机 (Zlw380)
-- 无砟轨道 (Zlw380, WillowKoishi)
-- 无枕轨道 (Zlw310, WillowKoishi)
-- 耐候钢块(WillowKoishi)
+新增 / 修改美术资源:
 
-修改机制:
-- 添加可动方块自动控制与联轴
-- 旧版本接触网替换为新版本接触网 (Desert_Walker)
-- 旧版本接触网废弃
-- 塞拉门动画修改
+- 调整耐候钢锭与耐候钢板的物品贴图（WillowKoishi）
 
 其他:
-- 添加合成表 (WillowKoishi, HTony03)
-- tag 修正 (Willowkoishi)
-- 挖掘掉落修复
-- 添加修改成就系统 (HTony03)
 
-----
-### 2023.10.21
-##### version 0.3.5-izayoi_sakuya
+- 更新 `mods.toml` 中的模组主页地址，将 Create 依赖更新至 0.5.1.f-332，并将开发版本号更新为 `0.3.9-izayoi_sakuya-rc1`（Zlw380）
 
-添加方块：
-- 前进型锅胴 (WillowKoishi)
+---
+### version 0.3.8-izayoi_sakuya d.532
+##### 2024.2.20
 
-添加转向架：
-- 前进型动轮 (Willikoishi,Zlw380)
+修改机制:
 
-添加功能：
-- 内置蓝图系统
+- 规范化并重制资源读取方式，降低资源加载异常的发生概率，并进一步减少 Mixin 使用（MegumiKasuga）
 
+移除内容:
 
-----
-### 2023.7.31
-##### version 0.3.2-izayoi_sakuya
+- 移除客户端覆层 Mixin（`MixinForgeGui`）并删除冗余工具类 `PlayerFocusingBlockPredicateUtil`（MegumiKasuga）
 
-添加物品：
-- 耐候钢（HTony03）
-- 耐候钢版（HTony03）
-- 刷子
-- 带颜色的刷子
-- 绿色刷子（HTony03）
-- 列车运行区段指示牌
-- 贴纸
+---
+### version 0.3.8-izayoi_sakuya d.529
+##### 2024.2.17
+
+修改机制:
+
+- 获取转向架信息暂时不再需要佩戴工程师护目镜（MegumiKasuga）
+- 为新版接触网支架补充操作工具提示（MegumiKasuga）
+- 调整可动方块交互相关的 Mixin 实现（MegumiKasuga）
+
+修复问题:
+
+- 修复 SW160 转向架与前进型转向架的模型及贴图显示问题（MegumiKasuga）
+
+移除内容:
+
+- 移除 `MixinSimpleBlockMovingInteraction`，减少对机械动力可动方块交互的 Mixin 侵入（MegumiKasuga）
+
+---
+### version 0.3.8-izayoi_sakuya d.528
+##### 2024.2.16
+
+添加方块（组）:
+
+- 统型 CR200J 车头、动力车门、拖车车门与滑动门、车梯、滑动门／转轴门端面、直排便池、宽窗／密封宽窗／密封小窗／厕所窗、车头弧线／复兴号／CR 标志／无黑带／弧线过渡段等上中下厢板、裙板、侧裙板、车棚与中央车棚（Desert_Walker、WillowKoishi、MegumiKasuga）
+- SW160 转向架（Zlw380、WillowKoishi）
+- 无砟轨道、无枕轨道及配套传送门轨道适配（Zlw380、WillowKoishi）
+- 通过信号机（Zlw380）
+- 创造发电机（MegumiKasuga）
+- 耐候钢块及其 6 种锈蚀阶段与对应涂蜡变体（MegumiKasuga、WillowKoishi）
+- 原色 25Z 车厢地板样式地毯（MegumiKasuga）
+
+添加物品:
+
+- 可动方块控制器、自动控制联轴器（MegumiKasuga）
+- 耐候钢锭、耐候钢粒（MegumiKasuga）
+- 标准轨、无砟轨道与无枕轨道半成品（HTony03）
+
+添加功能:
+
+- 实现可动方块自动遥控与联轴器绑定系统，支持对车门与 CR200J 车头整流罩／雨刮器进行实体态遥控（MegumiKasuga）
+- 实现接触网供电电网底层与多线程任务队列调度，并补充部分 GUI 覆层显示（MegumiKasuga）
+- 补充生存模式基础支持、蓝图桌合成表底层及 XML 解释器，并调整车厢分类侧栏与自动化 RenderType 注册（MegumiKasuga）
+- 为矮型色灯信号机补充使用提示，使压路机不会破坏新增轨道类型（Zlw380）
+
+修改机制:
+
+- 以新版接触网替换旧版接触网并废弃旧版接触网系统（Desert_Walker、MegumiKasuga）
+- 调整车门与塞拉门开关动画实现方式，统一车厢板采集、镶字与转向架组装前后朝向逻辑（MegumiKasuga、Zlw380）
+
+修复问题:
+
+- 修复方块标签失效、挖掘掉落缺失、服务端物品栏同步及资源读取异常，修正 25 系车厢涂蜡右键音效（MegumiKasuga、WillowKoishi、HTony03）
+
+修改名称:
+
+- 将原「耐候钢（`weathering_resistant_steel`）」与「一小块耐候钢（`weathering_resistant_steel_piece`）」调整为「耐候钢锭（`weathering_resistant_steel_ingot`）」与「耐候钢粒（`weathering_resistant_steel_nugget`）」（MegumiKasuga）
+- 将「未完成的标准轨（`uncompleted_standard_track`）」更名为「标准轨（半成品）（`incomplete_standard_track`）」（HTony03）
+
+移除内容:
+
+- 停用并移除依赖于机械动力列车信号机的色灯信号机（`ky_semaphore`）方块与方块实体注册，并清理 `ThroughSignalBlockEntity` 中的冗余信号状态枚举（Zlw380）
+- 移除早期旧版 `widepanel_cr200j_marshalled_mid` 方块、方块状态与模型，拆分为多类独立的统型 CR200J 车窗方块（MegumiKasuga）
+- 清理 `develop_art_resource/cr200j/垃圾桶/` 目录下的 12 个废案源模型与贴图文件（WillowKoishi）
+- 更改车门动画实现后，移除 4 个旧版 CR200J 车门开启状态静态模型（`door_bottom_open`、`door_top_open` 及镜像版本）（MegumiKasuga）
+- 移除废弃的 `MixinModelBakery`、旧版战利品表数据生成器（`KuayueLootTableProvider`、`KuayueBlockLoots`）、旧界面按钮控件 `ImageButton`，以及电网多线程重构中废弃的 `ChargedGraphTask`、`ChargedGraphSavedData`、`MergeGraphTask`、`SplitGraphTask`（MegumiKasuga）
+- 移除过时的耐候钢压制／合成配方、旧标准轨压制配方及重复的 `ventiduct_25b` 配方，并清理标准轨旧物品贴图 `track_standard.png` 与冗余轨枕贴图（HTony03、MegumiKasuga、Zlw380）
+
+新增 / 修改美术资源:
+
+- 更换调车信号机、标准轨、无砟轨、无枕轨及传送门轨道的模型与贴图（Zlw380、WillowKoishi、Desert_Walker）
+- 调整耐候钢锭、耐候钢粒与螺丝钉贴图（MegumiKasuga）
+
+新增 / 修改数据资源:
+
+- 补充并重构大批方块与物品合成表，新增并调整进度（成就）及教程内容（HTony03、WillowKoishi）
+
+---
+### version 0.3.6-izayoi_sakuya d.411
+##### 2023.10.22
+
+添加方块（组）:
+
+- 前进型蒸汽机车锅胴（WillowKoishi）
+- 前进型动轮转向架，包含曲柄、月牙板、连杆、偏心杆、十字头、鞲鞴杆、结合杆、合并杆、汽阀杆、半径杆、压油机、回动机及台架架体联动动画（WillowKoishi、Zlw380）
+- 新版接触网 A 型内／外侧支架、C 型 1／2 号支架、D 型内／外侧挂架、绝缘子、绝缘子悬架与新版接触网路端配重（MegumiKasuga）
+
+添加物品:
+
+- 原色 25B、25G、25K、25T、25Z 车厢内置蓝图（MegumiKasuga）
+
+添加功能:
+
+- 完善内置蓝图系统与新版接触网外围接口、悬链线算法、最大斜率／最大连接数限制及剪线钳预览功能（MegumiKasuga）
+- 新增客户端 Overlay 覆层渲染框架（MegumiKasuga）
+- 支持在转向架渲染器中读取列车速度与运行方向（Zlw380）
+
+修复问题:
+
+- 修复车厢号码牌无法更新、接触网客户端同步异常及椅子无法随组装车厢旋转的问题（MegumiKasuga）
+
+移除内容:
+
+- 删除仅用于信号机测试的 21 个临时 `ky_semaphore` 臂板／灯具模型与贴图资源（Zlw380）
+- 删除不再使用的 `data_fixer` 接口体系及旧注册类 `KYDataFixers`（Zlw380）
+- 替换为分体模型与新贴图后，移除前进型动轮旧版整体模型 `wheel_group`、`wheel_group2` 及旧贴图 `wheel_group.png`（Zlw380）
+- 移除旧版接触网类与网络包（`GeneralHyperbolic`、`GeneralStraight`、`CatenaryGridConnectPacket`、`CatenaryGridInitPacket`、`CatenarySaveDataUpdatePacket`、`IGridModel`）、测试贴图 `test2.png`、旧椅子旋转 Mixin（`AccessorContraptionRotationState`）以及内置思源黑体字体文件 `source_han_sans_cn-medium.ttf` 与配置（MegumiKasuga）
+
+新增 / 修改美术资源:
+
+- 新增 5 种接触网路端配重模型并完善配重三种状态显示，修改三种接触网线轴的物品贴图与中文翻译（MegumiKasuga）
+
+其他:
+
+- 新增英文版开发日志 `DevLog_EN.md`（HTony03）
+
+---
+### version 0.3.5-izayoi_sakuya d.369
+##### 2023.9.10
+
+添加方块（组）:
+
+- 原色 25Z 车厢完整组件，包括粗腰线／细腰线／厕所外墙下厢板、车厢一侧中厢板、席位等级标志窗、宽窗／小窗／车厢一侧小窗／厕所窗、车厢门、直排式便池、上端面（普通／空调端）、车棚、中央车棚及车厢空调（Desert_Walker、MegumiKasuga、WillowKoishi）
+- 色灯信号机（`ky_semaphore`）原型（Zlw380）
+
+添加物品:
+
+- 一些钉子、一小块耐候钢、耐候钢棒、钢线与未完成的标准轨等合成材料（HTony03）
+
+添加功能:
+
+- 完成内嵌蓝图系统基础功能，并使蓝图可在创造物品栏中取用（MegumiKasuga）
+- 实现全部车窗与车门开启交互及开关音效，支持车梯开关及使用带颜色的刷子切换 25Z 席位等级与中厢板数字（MegumiKasuga、WillowKoishi）
+
+修复问题:
+
+- 修复 25Z 车门渲染与开启异常、行李架渲染问题、车厢类型牌渲染问题以及斧头挖掘标签丢失的问题（MegumiKasuga）
+
+移除内容:
+
+- 隐藏 `ky_standard_bogey` 转向架方块的独立物品注册，改为通过转向架样式切换选用（MegumiKasuga）
+- 将 25Z 下厢板拆分为多种变体后，移除旧版 `panel_25z_original_bottom` 方块及模型（MegumiKasuga）
+- 精简合成材料物品注册，删除冗余类 `mixture.java` 与 8 个独立合成材料物品类，并移除旧 `ItemInit.java`、`TrainPanelItem.java`、`Env.java` 及临时 `Config.java`（MegumiKasuga、HTony03、Zlw380）
+- 清理未使用的音效 `beep_ticket_vendor.ogg`、旧物品贴图 `train_panel_sign_item.png` 以及错误的原版 `minecraft:signs` 方块标签文件（MegumiKasuga）
+
+新增 / 修改美术资源:
+
+- 更新 25Z 车梯贴图并补充 25T 动态图标，修正 25Z 席位等级模型与中厢板贴图位置（MegumiKasuga、WillowKoishi）
+
+新增 / 修改数据资源:
+
+- 补充多项方块与物品合成表、中文翻译与进度（成就）内容，整理合成材料目录结构（HTony03）
+
+其他:
+
+- 引入 GitHub Actions 构建与 Google Java Format 自动化工作流（Yjn024）
+
+---
+### version 0.3.2-izayoi_sakuya d.358
+##### 2023.8.30
+
+添加方块（组）:
+
+- 原色 25Z 车厢下／中／上厢板、端面、车梯与地板（WillowKoishi、MegumiKasuga）
+- 电动围栏、电动围栏门（MegumiKasuga）
+- 合并 Lead Beyond（引向超越）内容：软座席、硬座、硬座车小桌板、行李架、闸机、国铁闸机、售票机（WillowKoishi、MegumiKasuga、Radekemia Haruka）
+- 车种标签、车厢号码贴纸、水牌贴纸与车厢速度等级贴纸方块（MegumiKasuga）
+- 浦镇 209P 转向架（含无轴发及反向版本）、SW220K 转向架（含反向版本）、DF11G 转向架完善版本（Zlw380、WillowKoishi）
+
+添加物品:
+
+- 耐候钢、耐候钢板、绿色刷子（HTony03）
+- 刷子、带颜色的刷子、列车运行区段指示牌（水牌）、贴纸（MegumiKasuga）
+- 合并 Lead Beyond 内容：单程票（后更名为乘车报销凭证）、红票、储值卡（MegumiKasuga）
+
+添加功能:
+
+- 支持创建、编辑、复制粘贴及随机生成车厢号、车厢编号、水牌与车厢速度标，提供颜色修改界面与预设，并补全生存／冒险模式适配与粒子音效（MegumiKasuga）
+- 支持使用扳手右键转向架底部调整转向架朝向，适配 Create: Steam 'n' Rails（汽鸣铁道）轨道渲染（Zlw380）
+- 支持在售票机上绘制线路图并购买指定区间车票（MegumiKasuga）
+- 整理创造物品分类与车厢板排列顺序（MegumiKasuga、WillowKoishi、HTony03）
+
+修复问题:
+
+- 修复转向架在组装列车时反方向渲染、剪贴板失效及创造物品栏异常等问题（Zlw380、MegumiKasuga）
+
+修改名称:
+
+- 将「单程票」更名为「乘车报销凭证」（MegumiKasuga）
+
+移除内容:
+
+- 废弃并在创造物品栏中隐藏旧版刷绿 25B 窗户（`panel_25b_marshalled_window`）与刷绿 25 系列窗户（`panel_25_marshalled_window`）（MegumiKasuga）
+- 移除早期未采用的矿物混合物翻译键 `item.kuayue.mineral_mixture`、冗余键 `block.kuayue.Carrier` 及旧工具提示键 `item.kuayue.colored_brush.tooltip`（HTony03、MegumiKasuga）
+- 执行代码整理与架构合并时，删除旧版 `TrainPanelSignBlock`、`TrainPanelSignBlock2`、`TrainPanelSignBlockEntities`、`OrdinaryTrainSkirtPanelBlock`、旧版 `TrainSpeedSign*`、`WoodTypeInit`、`ModSetup`、`PlayerSelection`、旧大写 `Catenary/` 目录类、错误放置于 `c2s` 的 3 个 S2C 数据包、旧 `ElectricFenceDoorLeftModel` 及失效的 `MixinCarriageParticles`（MegumiKasuga）
+- 删除测试图片 `genshin.jpg`、旧版模组图标 `kuayue.png`、旧 `cr_tunst_0_L_open.json` 闸机模型及多余的 `sw220k_top_lh.json` 模型文件（MegumiKasuga、WillowKoishi、Zlw380）
+
+新增 / 修改美术资源:
+
+- 修改软座席与硬座贴图，新增座椅模型资源（Desert_Walker）
+- 补充 209P、SW220K 与 DF11G 转向架模型，更新模组横幅与水牌物品贴图（WillowKoishi、MegumiKasuga）
+
+新增 / 修改数据资源:
+
+- 补充与修正多批方块、物品及绿色刷子合成表，初步引入进度（成就）系统并校对英文翻译（HTony03）
+
+---
+### version 0.3.0-izayoi_sakuya d.336
+##### 2023.8.8
+
+添加方块（组）:
+
 - 标准轨距铁轨（Zlw380）
+- 长客 CW-2 转向架与 DF11G 转向架初版（Zlw380、WillowKoishi）
 
-添加方块：
-- 原色25Z车厢下厢版（柳树怪）
-- 原色25Z车厢中厢版（柳树怪）
-- 原色25Z车厢上厢版（柳树怪）
-- 原色25Z端面（柳树怪）
-- 原色25Z车梯（柳树怪）
-- 原色25Z列车地板（柳树怪）
-- 单臂受电弓
-- 标准轨距铁轨（Zlw380）
-- 电动围栏门
-- 电动围栏
+修改机制:
 
-添加转向架：（Zlw380，柳树怪）
-- 长客CW-2转向架
-- 铺镇209P转向架
-- 铺镇209P转向架（轴发）
-- SW220K转向架
-- df11g转向架
+- 推进 Minecraft 1.19.2 迁移与轨道／转向架底层构建，使机械动力压路机不会破坏标准轨距铁轨，并禁用早期转向架快捷切换栏（MegumiKasuga、Zlw380）
 
-添加修改合成表（HTony03）
+移除内容:
 
-添加功能：
-- 创建，编写车厢号，车厢编号，列车运行区段指示牌，车厢速度标
-- 复制黏贴车厢号，车厢编号，列车运行区段指示牌
-- 随机生成车厢编号
-- 添加创造物品分类
-- 修改车厢编号颜色以及车厢编号颜色预设
+- 清理轨道与转向架研发初期遗留的重复架构源码（`Bogeyss/`、`Tracks/standard_track/`、`KYStandardBogey*`、`RadialBogeyCategoryMenu`、`MultiLoader/` 旧接口与一批旧轨道 Mixin 等 76 个文件）及 `CustomTrackBlockStateGenerator`（Zlw380）
+- 删除测试阶段的白桦木与金合欢木轨道模型、方块状态及贴图（`birch_track` 等 29 个文件）、未使用的道岔／车钩轨道覆盖层模型与贴图（29 个文件）、旧轨枕贴图与无用方块标签（Zlw380）
+- 清理 `Blocks/Catenary/` 大写目录遗留的 45 个重复文件，以及旧 `TrainPanelBlock`、`TrackPlacementMixin`、未正常工作的车厢粒子 Mixin（`MixinCarriageContraptionEntity`、`AccessorCarriageParticles`）和旧原版路径贴图 `minecraft/textures/entity/signs/train_panel.png`（MegumiKasuga）
 
-合并 Lead Beyond 内容
+新增 / 修改美术资源:
 
-新增物品：
-- 红票
+- 补充 Patchouli 手册贴图与 25Z 转向架白模，调整转向架与旁承座模型（HTony03、WillowKoishi、MegumiKasuga）
 
-新增方块：
-- 行李架
-- 国铁闸机
+新增 / 修改数据资源:
 
-修改名称：
-- 单程票->乘车报销凭证
+- 补充耐候钢测试代码与部分合成表，修正简体中文缺失翻译（HTony03）
 
-修改贴图：（Desert_Walker）
-- 软座席
-- 硬座
+---
+### version 0.2.4-Patchouli d.263
+##### 2023.5.27
 
-添加功能：
-- 在售票机上绘制线路图
-- 购买指定区间车票
+添加方块（组）:
 
+- 单臂受电弓（SS8 受电弓）（MegumiKasuga）
 
-----
-### 2023.5.12
-##### version 0.2.1-Patchouli
+添加功能:
 
-接触网下垂系数修正为0.0007
-悬链线下垂系数修正为120
+- 引入 Patchouli（帕秋莉手册）辞典框架（WillowKoishi）
 
+修改机制:
 
-----
-### 2023.5.12
-##### version 0.2.0-Patchouli
+- 适配 Create 0.5.1.x 与 Forge 40.2.5，补充单臂受电弓方块标签及跨版本兼容工具（WillowKoishi）
 
-更新部分的合成表（HTony03）
+移除内容:
 
-修改模型：
-- 调车信号机（HTony03）
+- 删除早期版本中实验失败的 DF11G 假转向架与旧车头方块实体／渲染源码，包括 `DF11GBogeyBlock`、`FakeDF11GBogeyBlock`、`DF11GBogeyTileEntity`、`DF11GFrontTileEntity`、`DF11GFrontInstance`、`FakeDF11GBogeyBehavior`、`FakeDF11GBogeyInstance`、`DF11GTileEntityRenderer`、`FakeDF11GBogeyRenderer` 及 `KYBuilderTransformers`（WillowKoishi）
 
-增加方块：
-- 水泥接触网柱
-- 水泥接触网柱45度转角
-- 接触网柱侧边挂点转接器
-- 接触网柱侧边挂点转接器45度转角
-- 工字钢接触网柱
-- 工字钢接触网柱45度转角
-- 接触网支架A型内侧支架
-- 接触网支架A型内侧支架45度转角
-- 接触网支架A型外侧支架
-- 接触网支架A型外侧支架45度转角
-- 接触网支架C型1号支架
-- 接触网支架C型2号支架
-- 接触网支架C型1号支架45度转角
-- 接触网支架C型2号支架45度转角
-- 接触网支架B型（悬挂式）
-- 接触网路端配重
-- 坠砣吊线
-- 线缆挂点（非接触网用）
-- 适配支柱的线缆挂点（非接触网用）
-- 悬空线缆挂点
-- 坠砣
-- 龙门架水泥杆
-- 龙门架金属杆
-- 龙门架连接器
-- 龙门架
-- 龙门架接触网挂架
-- 龙门架接触网挂架（双侧）
-- 龙门架接触网挂架延长杆
-- 龙门架接触网挂架延长杆（双侧)
-- a类接触网转接器
-- c类接触网转接器
-- 微型悬空线缆挂点
-- 月台
+其他:
 
-增加物品：
-- 通用接触网
-- 通用直线
-- 通用悬链线
-- 剪线钳
+- 补全接触网实体中文译名与英文翻译，更新版本 Logo（HTony03、ACS-resources、WillowKoishi）
 
-----
+---
+### version 0.2.2-Patchouli d.249
+##### 2023.5.13
 
-### 2022.10.14
+修改机制:
 
-##### version 0.0.7-Kurumi d.37
+- 将接触网下垂系数修正为 0.0007，将悬链线下垂系数先后修正为 120（`0.2.1-Patchouli`）与 160（MegumiKasuga）
 
-增加方块：
-- 道口铃
-- 原色25G登车梯
-- CR200J上厢板
-- CR200J车窗
-- CR200J下厢板
-- CR200J地板
+修复问题:
+
+- 修正入站信号机无法正常工作的问题（MegumiKasuga）
+
+移除内容:
+
+- 清理大小写目录重复引发的 `Blocks/Catenary/` 与旧 `catenary/` 包下 53 个冗余接触网源码文件（MegumiKasuga、WillowKoishi）
+
+其他:
+
+- 更新模组 Logo，并将 0.2.2 特性同步移植至 Minecraft 1.19.2（WillowKoishi）
+
+---
+### version 0.2.0-Patchouli d.248
+##### 2023.5.12
+
+添加方块（组）:
+
+- 接触网系统方块：水泥接触网柱、工字钢接触网柱及其 45 度转角，接触网柱侧边挂点转接器及其 45 度转角，A 型内／外侧支架及 45 度转角，C 型 1／2 号支架及 45 度转角，A／C 类连接器与转接器，B 型悬挂式支架，1125／1600 规格接触网（含带承力索与挂点变体），接触网路端配重，坠砣与坠砣吊线，四类非接触网线缆挂点，龙门架及其水泥杆、金属杆、连接器与单／双侧接触网挂架及延长杆（MegumiKasuga）
+- 月台方块（MegumiKasuga）
+
+添加物品:
+
+- 通用接触网、通用直线、通用悬链线、剪线钳（MegumiKasuga）
+
+移除内容:
+
+- 以新版多规格接触网支架体系替换旧版接触网支架后，移除旧 `catenary_grid`（旧接触网支架）与 `hang_catenary_grid`（悬吊接触网支架）的方块状态、模型及 17 个相关贴图文件，并移除旧物品贴图 `general_catenary.png`（MegumiKasuga）
+
+新增 / 修改美术资源:
+
+- 修改调车信号机模型与贴图（HTony03）
+
+新增 / 修改数据资源:
+
+- 更新部分方块与物品的合成表（HTony03）
+
+---
+### version 0.1.2-HoanMeirin d.155
+##### 2023.2.8
+
+新增 / 修改数据资源:
+
+- 新增平滑石英竖半砖／1/4 砖／1/8 砖（含切石机配方）、黏土台阶与楼梯、绿色隔离栅栏、盲道、断合标、混凝土、火车餐 A 及 25B/G/K 车厢窗户等多组合成表，并整理配方目录与修正格式错误（HTony03）
+
+其他:
+
+- 更新机械动力 API 依赖与版本号，修正英文翻译并更新 README 进度清单（WillowKoishi、ACS-resources、Steve108）
+
+---
+### version 0.1.1-Cirno d.113
+##### 2022.12.28
+
+添加方块（组）:
+
+- HXD3D 车头、通用厢板、「和谐」厢板、车棚、地板与驾驶室门（WillowKoishi、Radekemia Haruka）
+- DF11G 设备间门、DF11G 机车端面（WillowKoishi）
+- 原色 25B、25G、25K、25T 车厢端面与上端面（普通／空调端）、25K／25T 橡胶风挡端面与上端面，以及 25B/G 车厢隔离门（WillowKoishi）
+- 原色 25B 登车梯，原色 25K／25T 塞拉门及配套塞拉门登车梯（WillowKoishi）
+- 25 系列多类车窗：25B/G/K/T 宽窗、密封窗、错位窗、小窗、密封小窗、厕所窗、25G 砍头窗，25T 金属框／蓝色框车窗及 BSP25T 车窗（WillowKoishi）
+- 25B/G/Z/K 车厢空调 1／2、中央车棚、上水箱、25B 车厢通气孔，BSP25T 中央车棚与空调、25T 卫生间排气扇，以及茶炉与原色 25B/G/K/T 直排式便池（WillowKoishi）
+- 绿色隔离栅栏及其 45 度转角变体（WillowKoishi）
+
+添加功能:
+
+- 为受电弓添加右键升降弓交互（WillowKoishi）
+
+修改机制:
+
+- 调整车厢板厚度并修改 HXD3D 车头及驾驶室门模型（WillowKoishi）
+
+修复问题:
+
+- 修复新加入车窗的放置与朝向错误（WillowKoishi）
+
+移除内容:
+
+- 将 0.1.1 版本移植至 1.19.2 时移除重复的旧版 `Train25GLadderBlock.java` 源码文件（WillowKoishi）
+
+---
+### version 0.0.9-Rumia d.88
+##### 2022.12.3
+
+添加方块（组）:
+
+- DF11G 排障器（含碰撞箱）与 DF11G 驾驶室门（WillowKoishi）
+
+修改机制:
+
+- 通过 Mixin 放宽机械动力轨道曲线长度限制，支持铺设更长的曲线轨道（WillowKoishi）
+- 重构方块状态与模型 JSON 目录结构（WillowKoishi）
+
+修复问题:
+
+- 解决登车梯引发的闪退及导致上方车门错位的问题，修复 DF11G 驾驶室门无法被正确识别的问题（WillowKoishi）
+
+移除内容:
+
+- 回滚实验性 Fabric 移植尝试，移除临时引入的 `fabric.mod.json`、`kueyue.mixins.json`、`FreeWoodType` 及 Fabric 侧 Mixin 文件（Yjn024）
+
+其他:
+
+- 将 0.0.9 版本同步移植至 Minecraft 1.19.2（WillowKoishi）
+
+---
+### version 0.0.8-VIVIT d.79
+##### 2022.11.24
+
+添加方块（组）:
+
+- DF11G 机车车头（使用 Create 渲染器渲染）、车棚 1／2／通用／「跨越」变体、散热风机／机械室通风／辅助风滤器三类车棚百叶扇、通用／「跨越」下厢板、通用／1／2 号／路徽中厢板、下／中百叶扇与设备间窗户（WillowKoishi）
+- 实验性列车标识牌（WillowKoishi）
+
+添加功能:
+
+- 完善道口扩音器与 25G 登车梯功能（WillowKoishi）
+- 新增「普速旅客车厢」与「机车组件」创造物品分类（WillowKoishi）
+
+修复问题:
+
+- 修复登车梯方块刷新异常、DF11G 车头车窗碰撞箱问题及行李 25T 透光窗贴图问题（WillowKoishi）
+
+移除内容:
+
+- 重做登车梯多状态模型时移除旧版 `ladder_25g_original.json` 单态方块模型（WillowKoishi）
+- 调整 DF11G 转向架原型方案时移除实验性 `DF11GBogeyInstance` 类（WillowKoishi）
+- 整理方块状态与物品模型时移除多余的 `carport_df11g_1.json` 方块状态及旧版 `df11g_front.json` 物品模型（WillowKoishi）
+
+新增 / 修改美术资源:
+
+- 添加 HXD3D 机车源模型与基础贴图资源（Radekemia Haruka）
+- 调整 DF11G 部分贴图（WillowKoishi）
+
+其他:
+
+- 调整方块工具提示与中英文翻译，并依次推进 `0.0.7-Elly`、`0.0.7-Mugetsu`、`0.0.8-Alice`、`0.0.8-Yumeko`、`0.0.8-Shinki`、`0.0.8-VIVIT` 等开发版本迭代（WillowKoishi）
+
+---
+### version 0.0.7-Kurumi d.37
+##### 2022.10.14
+
+添加方块（组）:
+
+- 道口扩音器（道口铃）（WillowKoishi）
+- 原色 25G 登车梯（WillowKoishi）
+- 东福绿 CR200J 拖车上厢板、车窗、下厢板与地板（WillowKoishi）
+
+其他:
+
+- 补全道口扩音器及 CR200J 拖车方块的中文翻译（WillowKoishi）
 
 呕
 
-----
+---
+### version 0.0.6-YumemiOkazaki d.32
+##### 2022.10.9
 
-### 2022.10.8
+添加方块（组）:
 
-##### version 0.0.6-YumemiOkazaki d.32
+- 高阻绿 25G 标识线、高阻绿 25K 标识线、高阻绿 25 车厢窗户、高阻绿 25T 车厢裙板与侧裙板（WillowKoishi）
 
-增加方块：
-- 刷绿25B车厢标识线
-- 高阻绿25G标识线
-- 高阻绿25K标识线
-- 高阻绿25车厢窗户
-- 高阻绿25T车厢裙板
-- 高阻绿25T车厢侧裙板
+新增 / 修改美术资源:
 
-修改贴图：
-- 原色25T窗户
-- 原色25K窗户
+- 调整原色 25T 与原色 25K 车厢窗户贴图（WillowKoishi）
 
 囍报，全刷绿了
 
-----
+---
+### version 0.0.6-YumemiOkazaki d.31
+##### 2022.10.8
 
-### 2022.10.8
+添加方块（组）:
 
-##### version 0.0.6-YumemiOkazaki d.31
+- 日光灯、直盲道、点盲道（MegumiKasuga）
+- 刷绿 25 系列车厢门、下厢板、下厢板 b、中厢板、上厢板、上厢板 b、地板，以及刷绿 25B 车厢标识线与窗户（WillowKoishi）
 
+修改机制:
 
-增加方块：
-- 日光灯
-- 刷绿25系列车厢门
-- 刷绿25系列厢下厢板
-- 刷绿25系列厢下厢板b
-- 刷绿25系列车厢中厢板
-- 刷绿25系列厢上厢板
-- 刷绿25系列厢上厢板b
-- 刷绿25B车厢标识线
-- 刷绿25B车厢窗户
-- 刷绿25系列车厢地板
+- 为日光灯补充发光效果（WillowKoishi）
 
-修改贴图：
-- 原色25B窗户
-- 原色25B车厢上厢板b
-- 原色25B车厢下厢板
-- 原色25B车厢中厢板
-- 原色25B车厢上厢板
-- 原色25B车厢窗户
-- 原色25B车厢车门
+新增 / 修改美术资源:
+
+- 调整原色 25B 车厢下厢板、中厢板、上厢板、上厢板 b、窗户与车厢门贴图，并更新模组图标（WillowKoishi）
+
+其他:
+
+- 修复机械动力依赖配置（WillowKoishi）
 
 蛤蛤，开始刷绿咯
 
-----
+---
+### version 0.0.5-ChiyuriKitashirakawa d.20
+##### 2022.9.24
 
-### 2022.09.24
+添加方块（组）:
 
+- 接触网系统：钢制接触网柱、混凝土接触网柱、接触网支架、悬吊接触网支架（MegumiKasuga）
+- 地面系统：进站信号机、调车信号机、信号机柱、柱上信号机、禁止双弓标志牌、断标志牌、合标志牌（MegumiKasuga、WillowKoishi）
 
-##### version 0.0.5-ChiyuriKitashirakawa d.20
-增加方块：
+添加功能:
 
-接触网:
-- 钢制接触网柱
-- 混凝土接触网柱
-- 接触网支架
+- 新增「接触网」与「地面系统」创造物品分类（MegumiKasuga）
 
-地面系统:
-- 入站信号机
-- 禁止双弓标志牌
-- 断标志牌
-- 合标志牌
-- 信号机柱
-- 信号机(柱上)
-- 盲道
+修改名称:
 
+- 规范部分方块译名并整理代码风格（WillowKoishi）
 
-----
+新增 / 修改美术资源:
 
-### 2022.09.23
+- 调整部分方块的模型显示效果（WillowKoishi）
 
-##### version 0.0.4-RikakoAsakura d.18
-增加方块：
+其他:
 
-- 原色BSP25T车厢窗户
-- 原色行李25T车厢上窗板
+- 升级 Forge 至 40.1.60，引入 Create（机械动力）与 JEI 依赖，并开始探索 Minecraft 1.19 移植（WillowKoishi）
 
-调整模型：
-- 原色25T车厢裙板
-- 原色25T车厢侧裙板
+---
+### version 0.0.4-RikakoAsakura d.18
+##### 2022.9.23
 
-----
+添加方块（组）:
 
-### 2022.09.21
+- 原色 BSP25T 车厢窗户、原色行李 25T 车厢上窗板（WillowKoishi）
 
-##### version 0.0.3-KanaAnaberal d.16
+新增 / 修改美术资源:
 
-增加方块：
+- 调整原色 25T 车厢裙板与侧裙板模型（WillowKoishi）
 
-- 原色25B车厢上厢板b
-- 原色25T车厢上厢板b
-- 原色25T车厢下厢板b
-- 原色25B车厢地板
-- 原色25G车厢地板
-- 原色25K车厢地板
-- 原色25T车厢地板
+---
+### version 0.0.3-KanaAnaberal d.16
+##### 2022.9.21
+
+添加方块（组）:
+
+- 原色 25B 车厢上厢板 b、原色 25T 车厢上厢板 b、原色 25T 车厢下厢板 b（WillowKoishi）
+- 原色 25B、25G、25K、25T 车厢地板（WillowKoishi）
+
+新增 / 修改美术资源:
+
+- 配合新增车厢地板，同步调整 25B、25G、25K、25T 四种车厢的下厢板模型与贴图（WillowKoishi）
 
 为此调整了以上4种车厢的下厢板。
 
 准备刷绿了（悲）
 
-----
+---
+### version 0.0.3-KanaAnaberal d.10
+##### 2022.9.16
 
-### 2022.09.16
+添加方块（组）:
 
-##### version 0.0.3-KanaAnaberal d.10
+- 原色 25B 车厢下／中／上厢板、窗户与车厢门（WillowKoishi）
+- 原色 25K 车厢下／中／上厢板、窗户、车厢门、腰线板与标识板（WillowKoishi）
+- 原色 25T 车厢下／中／中侧／上厢板、窗户、车厢门、裙板与侧裙板（WillowKoishi）
+- 25B/G/Z/K 车厢车棚、25T 车厢车棚（WillowKoishi）
 
-增加方块：
+移除内容:
 
-- 原色25B车厢下厢板
-- 原色25B车厢中厢板
-- 原色25B车厢上厢板
-- 原色25B车厢窗户
-- 原色25B车厢车门
-- 原色25K车厢下厢板
-- 原色25K车厢中厢板
-- 原色25K车厢上厢板
-- 原色25K车厢窗户
-- 原色25K车厢车门
-- 原色25k车厢标志板
-- 原色25k车厢腰线板
-- 原色25T车厢下厢板
-- 原色25T车厢中厢板
-- 原色25T车厢中侧厢板
-- 原色25T车厢上厢板
-- 原色25T车厢窗户
-- 原色25T车厢车门
-- 原色25T车厢裙板
-- 原色25T车厢侧裙板
-- 25B/G/K车棚
-- 25T车棚
+- 清理 Forge 模板遗留文件 `CREDITS.txt`、`changelog.txt` 与旧图标 `kuayue.png`，并移除重复的车棚语言键 `block.kuayue_carport.25bgzk`、`block.kuayue_carport.25t`（WillowKoishi）
 
 ~~五提好时代要来力（喜）~~
 
 另外，批量加板子真的累死人了啊
 
-----
-
-### 2022.09.12
-
-##### version 0.0.2-Kotohime d.6
+---
+### version 0.0.2-Kotohime d.6
+##### 2022.9.12
 
 开始实装自己的服务器，大受好评（大嘘）
 
-增加方块:
+添加方块（组）:
 
-- 原色25G车厢中厢板
-- 原色25G车厢上厢板
-- 原色25G车厢窗户
-- 原色25G车厢车门
-- 黏土楼梯
-- 平滑石英竖半砖
-- 平滑石英竖1/4砖
-- 平滑石英竖1/8砖
-- 平滑石英竖坡
+- 原色 25G 车厢中厢板、上厢板、窗户与车厢门（WillowKoishi）
+- 中国铁路路徽、黏土楼梯、平滑石英竖半砖、平滑石英竖 1/4 砖、平滑石英竖 1/8 砖与平滑石英半坡（WillowKoishi）
 
-----
+添加物品:
 
-### 2022.09.07
+- 餐车 25T 物品图标（WillowKoishi）
 
-##### version 0.0.1-Ellen d.1
+移除内容:
+
+- 删除初始 `README.txt` 文件并改用 `README.md`（WillowKoishi）
+
+其他:
+
+- 初始化项目仓库与结构体、餐饮两个创造物品分类（WillowKoishi）
+
+---
+### version 0.0.1-Ellen d.1
+##### 2022.9.7
 
 作为试水性的写了一些hello world
 
-增加方块:
+添加方块（组）:
 
-- 原色25G车厢下厢板
-- 受电弓
-- 黏土台阶
+- 原色 25G 车厢下厢板、受电弓与黏土台阶（WillowKoishi）
 
-增加物品:
+添加物品:
 
-- 火车餐A
+- 火车餐 A（WillowKoishi）
+
+其他:
+
+- 完成早期模组工程搭建与基础自定义方块、物品试水（WillowKoishi）
