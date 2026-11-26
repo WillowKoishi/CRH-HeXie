@@ -1,0 +1,14 @@
+{
+  "block.hexie.qj_backward_bogey": "前进型反向转向架",
+  "simurail_bogey_entry.hexie.qj": "前进型动轮",
+  "simurail_bogey_entry.hexie.qj_backward": "前进型动轮（反向）",
+  "container.hexie.bogey_check_overlay.hexie_df11gbogey.hexie_qj.bogey.name": "前进型动轮",
+  "container.hexie.bogey_check_overlay.hexie_df11gbogey.hexie_qj.bogey.speed": "构造速度: 80km/h",
+  "container.hexie.bogey_check_overlay.hexie_df11gbogey.hexie_qj.bogey.cart": "适用机车: 前进型, (QJ)",
+  "container.hexie.bogey_check_overlay.hexie_steambogey.hexie_qj.bogey.name": "前进型动轮",
+  "container.hexie.bogey_check_overlay.hexie_steambogey.hexie_qj.bogey.speed": "构造速度: 80km/h",
+  "container.hexie.bogey_check_overlay.hexie_steambogey.hexie_qj.bogey.cart": "适用机车: 前进型, (QJ)",
+  "container.hexie.bogey_check_overlay.hexie_steambogey.hexie_qj_backward.bogey.name": "前进型动轮（反向）",
+  "container.hexie.bogey_check_overlay.hexie_steambogey.hexie_qj_backward.bogey.speed": "构造速度: 80km/h",
+  "container.hexie.bogey_check_overlay.hexie_steambogey.hexie_qj_backward.bogey.cart": "适用机车: 前进型, (QJ)"
+}

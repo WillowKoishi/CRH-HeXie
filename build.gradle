@@ -96,6 +96,76 @@ tasks.named('assemble') {
 // Registry IDs and asset paths remain under namespace 'hexie' for full save compatibility.
 def builtinPacks = ['crh1a', 'crh2a', 'cr200j', 'series25', 'ss7d', 'df11g', 'hxd3d', 'qj']
 
+def langResourceRoots = [
+        layout.projectDirectory.dir('src/main/resources'),
+        layout.projectDirectory.dir('src/generated/resources'),
+        layout.projectDirectory.dir('renderer/resources')
+] + builtinPacks.collect { pack -> layout.projectDirectory.dir("packs/${pack}/resources") }
+
+def mergedLangDir = layout.buildDirectory.dir('generated/merged-lang')
+def mergeLangFiles = tasks.register('mergeLangFiles') {
+    group = 'build'
+    description = 'Merges assets/hexie/lang/*.json from core resources and built-in vehicle packs.'
+    def langDirs = langResourceRoots.collect { it.dir('assets/hexie/lang').asFile }
+    langDirs.each { dir ->
+        inputs.files(fileTree(dir: dir, include: '*.json'))
+                .withPathSensitivity(PathSensitivity.RELATIVE)
+    }
+    outputs.dir(mergedLangDir)
+    doLast {
+        def outRoot = mergedLangDir.get().dir('assets/hexie/lang').asFile
+        delete(outRoot)
+        outRoot.mkdirs()
+
+        def parser = new groovy.json.JsonSlurper()
+        def mergedByLocale = new LinkedHashMap<String, LinkedHashMap<String, Object>>()
+        def keyOriginsByLocale = new LinkedHashMap<String, Map<String, String>>()
+
+        langDirs.each { File dir ->
+            if (!dir.isDirectory()) return
+            def files = dir.listFiles({ File f -> f.isFile() && f.name.endsWith('.json') } as FileFilter)
+            if (files == null) return
+            files.sort { it.name }
+            files.each { File langFile ->
+                def parsed = parser.parseText(langFile.getText('UTF-8'))
+                if (!(parsed instanceof Map)) {
+                    throw new GradleException("Language file must be a JSON object: ${langFile}")
+                }
+                def locale = langFile.name
+                def merged = mergedByLocale.computeIfAbsent(locale) { new LinkedHashMap<String, Object>() }
+                def origins = keyOriginsByLocale.computeIfAbsent(locale) { new LinkedHashMap<String, String>() }
+                def relSource = projectDir.toPath().relativize(langFile.toPath()).toString().replace('\\', '/')
+                parsed.each { k, v ->
+                    String key = k.toString()
+                    if (origins.containsKey(key)) {
+                        throw new GradleException(
+                                "Duplicate translation key '${key}' in ${locale}: defined in both ${origins[key]} and ${relSource}"
+                        )
+                    }
+                    origins[key] = relSource
+                    merged[key] = v
+                }
+            }
+        }
+
+        def generator = new groovy.json.JsonGenerator.Options()
+                .disableUnicodeEscaping()
+                .build()
+        mergedByLocale.each { locale, entries ->
+            def sb = new StringBuilder('{\n')
+            int idx = 0
+            int total = entries.size()
+            entries.each { k, v ->
+                sb.append('  ').append(generator.toJson(k)).append(': ').append(generator.toJson(v))
+                if (++idx < total) sb.append(',')
+                sb.append('\n')
+            }
+            sb.append('}\n')
+            new File(outRoot, locale).setText(sb.toString(), 'UTF-8')
+        }
+    }
+}
+
 sourceSets.main.java {
     srcDir 'renderer/java'
     builtinPacks.each { pack -> srcDir "packs/${pack}/java" }
@@ -105,7 +175,11 @@ sourceSets.main.resources {
     srcDir 'src/generated/resources'
     srcDir 'renderer/resources'
     builtinPacks.each { pack -> srcDir "packs/${pack}/resources" }
-    exclude '**/.cache/**', '**/*.bbmodel'
+    exclude '**/.cache/**', '**/*.bbmodel', 'assets/hexie/lang/*.json'
+}
+
+tasks.named('sourcesJar', Jar).configure {
+    from(mergeLangFiles)
 }
 
 repositories {
@@ -316,6 +390,7 @@ tasks.named('processResources', ProcessResources).configure {
                       minecraft_version: minecraft_version, neo_version: neo_version]
     inputs.properties properties
     filesMatching('META-INF/neoforge.mods.toml') { expand properties }
+    from(mergeLangFiles)
 }
 
 tasks.withType(JavaCompile).configureEach {

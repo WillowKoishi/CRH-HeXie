@@ -1,0 +1,14 @@
+{
+  "block.hexie.qj_backward_bogey": "QJ Backward Bogey",
+  "simurail_bogey_entry.hexie.qj": "QJ Driving Wheels",
+  "simurail_bogey_entry.hexie.qj_backward": "QJ Driving Wheels (Backward)",
+  "container.hexie.bogey_check_overlay.hexie_df11gbogey.hexie_qj.bogey.name": "QianJin Main",
+  "container.hexie.bogey_check_overlay.hexie_df11gbogey.hexie_qj.bogey.speed": "Max speed: 80km/h",
+  "container.hexie.bogey_check_overlay.hexie_df11gbogey.hexie_qj.bogey.cart": "Loco: QianJin(QJ)",
+  "container.hexie.bogey_check_overlay.hexie_steambogey.hexie_qj.bogey.name": "QianJin Main",
+  "container.hexie.bogey_check_overlay.hexie_steambogey.hexie_qj.bogey.speed": "Max speed: 80km/h",
+  "container.hexie.bogey_check_overlay.hexie_steambogey.hexie_qj.bogey.cart": "Loco: QianJin(QJ)",
+  "container.hexie.bogey_check_overlay.hexie_steambogey.hexie_qj_backward.bogey.name": "QJ Driving Wheels (Backward)",
+  "container.hexie.bogey_check_overlay.hexie_steambogey.hexie_qj_backward.bogey.speed": "Max speed: 80km/h",
+  "container.hexie.bogey_check_overlay.hexie_steambogey.hexie_qj_backward.bogey.cart": "Loco: QianJin(QJ)"
+}
