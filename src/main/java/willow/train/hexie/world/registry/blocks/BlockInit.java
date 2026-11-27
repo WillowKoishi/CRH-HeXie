@@ -705,7 +705,7 @@ public static final DeferredHolder<Block, TrainOpenableWindowBlock> ORIGINAL_COL
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops().noOcclusion(), false),
             object -> () -> HexieBridges.itemFactory().createToolTipsItemHelper(object.get(), new Item.Properties()));
 
-    //猪
+
     public static final DeferredHolder<Block, OrdinaryTrainPanelBlock> PANEL_25Z_ORIGINAL_BOTTOM_SIDE = register("panel_25z_original_bottom_side",
             () -> new OrdinaryTrainPanelBlock(BlockBehaviour.Properties.of().mapColor(MapColor.PLANT).strength(1.5f, 3.0f)
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops()),
@@ -759,12 +759,12 @@ public static final DeferredHolder<Block, TrainOpenableWindowBlock> ORIGINAL_COL
             object -> () -> HexieBridges.itemFactory().createPartBlockItem(object.get(), new Item.Properties()));
 
     //panel_25k_original_bottom
-    //猪
+
     public static final DeferredHolder<Block, OrdinaryTrainPanelBlock> PANEL_25K_ORIGINAL_BOTTOM = register("panel_25k_original_bottom",
             () -> new OrdinaryTrainPanelBlock(BlockBehaviour.Properties.of().mapColor(MapColor.PLANT).strength(1.5f, 3.0f)
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops()),
             object -> () -> HexieBridges.itemFactory().createPartBlockItem(object.get(), new Item.Properties()));
-    //猪
+
     public static final DeferredHolder<Block, OrdinaryTrainPanelBlock> PANEL_25K_ORIGINAL_LINE = register("panel_25k_original_bottom_line",
             () -> new OrdinaryTrainPanelBlock(BlockBehaviour.Properties.of().mapColor(MapColor.PLANT).strength(1.5f, 3.0f)
                     .sound(SoundType.COPPER).requiresCorrectToolForDrops()),
