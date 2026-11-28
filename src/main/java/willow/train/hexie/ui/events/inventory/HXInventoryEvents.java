@@ -2,10 +2,15 @@ package willow.train.hexie.ui.events.inventory;
 
 // split from willow/train/hexie/event/client/HXInventoryEvents.java
 
+import com.mojang.blaze3d.systems.RenderSystem;
+import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.ItemStack;
@@ -16,7 +21,10 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import willow.train.hexie.bridge.HexieBridges;
 import willow.train.hexie.core.HexieConstants;
+import willow.train.hexie.core.creative.BannerSection;
+import willow.train.hexie.core.creative.SectionedCreativeTab;
 import willow.train.hexie.ui.flow.CarriageFlowClient;
+import willow.train.hexie.ui.flow.CarriageFlowPaletteScreen;
 import willow.train.hexie.ui.screens.widget.GuiImageCache;
 import willow.train.hexie.ui.screens.widget.ImageButton;
 import willow.train.hexie.ui.screens.widget.ItemIconButton;
@@ -45,10 +53,117 @@ public class HXInventoryEvents {
 
 
     public static void captureLegacyScroll(CreativeModeInventoryScreen screen) {
-        if (instance == null || screen instanceof willow.train.hexie.ui.flow.CarriageFlowPaletteScreen
+        if (instance == null || screen instanceof CarriageFlowPaletteScreen
                 || CarriageFlowClient.previewMode()) return;
         if (isCarriageTab(CreativeModeInventoryScreen.selectedTab) && instance.filter.hasAppliedFilter(screen.getMenu()))
             groupScroll[CarriageInventoryFilter.carriageType] = screen.scrollOffs;
+    }
+
+    @Nullable
+    private static SectionedCreativeTab activeSectionedTab(@Nullable CreativeModeInventoryScreen screen) {
+        if (screen == null || screen instanceof CarriageFlowPaletteScreen || CarriageFlowClient.active(screen)) {
+            return null;
+        }
+        CreativeModeTab selected = CreativeModeInventoryScreen.selectedTab;
+        if (!(selected instanceof SectionedCreativeTab sectionedTab)
+                || selected.getType() != CreativeModeTab.Type.CATEGORY
+                || selected.hasSearchBar()) {
+            return null;
+        }
+        return sectionedTab;
+    }
+
+    public static void applySectionedTabLayout(CreativeModeInventoryScreen screen, CreativeModeTab tab) {
+        if (screen instanceof CarriageFlowPaletteScreen
+                || !(tab instanceof SectionedCreativeTab sectionedTab)
+                || tab.hasSearchBar()) {
+            return;
+        }
+        CreativeModeInventoryScreen.ItemPickerMenu menu = screen.getMenu();
+        menu.items.clear();
+        menu.items.addAll(sectionedTab.getLayoutItems());
+    }
+
+    public static boolean isSectionBannerSlot(Screen screen, @Nullable Slot slot) {
+        if (slot == null || !(screen instanceof CreativeModeInventoryScreen creative)) {
+            return false;
+        }
+        SectionedCreativeTab tab = activeSectionedTab(creative);
+        if (tab == null || !creative.isCreativeSlot(slot)) {
+            return false;
+        }
+        int slotIdx = slot.getSlotIndex();
+        if (slotIdx < 0 || slotIdx >= 45) {
+            return false;
+        }
+        int visibleRow = slotIdx / SectionedCreativeTab.COLUMNS;
+        int startRow = creative.getMenu().getRowIndexForScroll(creative.scrollOffs);
+        return tab.isBannerRow(startRow + visibleRow);
+    }
+
+    public static void renderSectionBanners(CreativeModeInventoryScreen screen, GuiGraphics guiGraphics) {
+        SectionedCreativeTab tab = activeSectionedTab(screen);
+        if (tab == null) {
+            return;
+        }
+        CreativeModeInventoryScreen.ItemPickerMenu menu = screen.getMenu();
+        if (menu.slots.size() < 45) {
+            return;
+        }
+
+        int startRow = menu.getRowIndexForScroll(screen.scrollOffs);
+        int leftPos = screen.getGuiLeft();
+        int topPos = screen.getGuiTop();
+        Font font = Minecraft.getInstance().font;
+
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+
+        for (int row = 0; row < 5; row++) {
+            BannerSection banner = tab.getBannerAtRow(startRow + row);
+            if (banner == null) {
+                continue;
+            }
+            Slot firstSlot = menu.slots.get(row * SectionedCreativeTab.COLUMNS);
+            if (!screen.isCreativeSlot(firstSlot)) {
+                continue;
+            }
+
+            int x = leftPos + firstSlot.x - 1;
+            int y = topPos + firstSlot.y - 1;
+
+            guiGraphics.blit(
+                    banner.texture(),
+                    x,
+                    y,
+                    0.0F,
+                    0.0F,
+                    BannerSection.BANNER_WIDTH,
+                    BannerSection.BANNER_HEIGHT,
+                    BannerSection.BANNER_WIDTH,
+                    BannerSection.BANNER_HEIGHT
+            );
+
+            Component title = banner.title();
+            int textWidth = font.width(title);
+            int boxLeft = x + 2;
+            int boxTop = y + 2;
+            int boxBottom = y + BannerSection.BANNER_HEIGHT - 2;
+            int maxBoxRight = x + BannerSection.BANNER_WIDTH - 2;
+            int boxRight = Math.min(maxBoxRight, boxLeft + textWidth + 8);
+
+            guiGraphics.fill(boxLeft, boxTop, boxRight, boxBottom, banner.overlayColor());
+
+            int textX = boxLeft + 4;
+            int textY = y + (BannerSection.BANNER_HEIGHT - font.lineHeight + 1) / 2;
+            guiGraphics.enableScissor(boxLeft, boxTop, boxRight, boxBottom);
+            guiGraphics.drawString(font, title, textX, textY, banner.textColor(), true);
+            guiGraphics.disableScissor();
+        }
+
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.disableBlend();
     }
 
     public static void restoreMode(CreativeModeInventoryScreen screen) {

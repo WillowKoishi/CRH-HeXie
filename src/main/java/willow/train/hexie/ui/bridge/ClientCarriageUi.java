@@ -1,11 +1,13 @@
 package willow.train.hexie.ui.bridge;
 
+import javax.annotation.Nullable;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
@@ -144,7 +146,27 @@ final class ClientCarriageUi implements ClientCarriageUiBridge {
     @Override
     public DrivingConsoleClientOperations drivingConsoleClient() { return drivingConsoleClient; }
 
-    private static final HXInventoryEventsOperations hxInventoryEvents = HXInventoryEvents::captureLegacyScroll;
+    private static final HXInventoryEventsOperations hxInventoryEvents = new HXInventoryEventsOperations() {
+        @Override
+        public void captureLegacyScroll(CreativeModeInventoryScreen screen) {
+            HXInventoryEvents.captureLegacyScroll(screen);
+        }
+
+        @Override
+        public void applySectionedTabLayout(CreativeModeInventoryScreen screen, CreativeModeTab tab) {
+            HXInventoryEvents.applySectionedTabLayout(screen, tab);
+        }
+
+        @Override
+        public void renderSectionBanners(CreativeModeInventoryScreen screen, GuiGraphics guiGraphics) {
+            HXInventoryEvents.renderSectionBanners(screen, guiGraphics);
+        }
+
+        @Override
+        public boolean isSectionBannerSlot(Screen screen, @Nullable Slot slot) {
+            return HXInventoryEvents.isSectionBannerSlot(screen, slot);
+        }
+    };
 
     @Override
     public HXInventoryEventsOperations hxInventoryEvents() { return hxInventoryEvents; }
