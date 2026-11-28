@@ -1,3 +1,5 @@
 {
-  "block.hexie.carriage25g_floor_dc600": "25G Passenger Coach Floor (DC 600 V)"
+  "block.hexie.carriage25g_floor_dc600": "25G Passenger Coach Floor (DC 600 V)",
+  "block.hexie.carriage25g_panel_bottom": "Original Color 25G Lower Wall Panel",
+  "block.hexie.carriage25g_panel_upper": "Original Color 25G Upper Wall Panel"
 }

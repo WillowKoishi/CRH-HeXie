@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "hexie:block/carriage25/25g/carriage25g_panel_bottom"
+  },
+  "elements": []
+}

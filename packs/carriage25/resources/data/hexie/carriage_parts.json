@@ -4,5 +4,17 @@
     "palettes": {
       "Carriage25G": 17
     }
+  },
+  "hexie:carriage25g_panel_bottom": {
+    "creative_order": 168,
+    "palettes": {
+      "Carriage25G": 18
+    }
+  },
+  "hexie:carriage25g_panel_upper": {
+    "creative_order": 169,
+    "palettes": {
+      "Carriage25G": 19
+    }
   }
 }
