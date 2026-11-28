@@ -94,7 +94,7 @@ tasks.named('assemble') {
 
 // Built-in rolling-stock packs (each owning its own vehicle + bogey java/ and resources/ roots).
 // Registry IDs and asset paths remain under namespace 'hexie' for full save compatibility.
-def builtinPacks = ['crh1a', 'crh2a', 'cr200j', 'series25', 'ss7d', 'df11g', 'hxd3d', 'qj']
+def builtinPacks = ['crh1a', 'crh2a', 'cr200j', 'series25', 'carriage25', 'ss7d', 'df11g', 'hxd3d', 'qj']
 
 def langResourceRoots = [
         layout.projectDirectory.dir('src/main/resources'),
@@ -166,6 +166,41 @@ def mergeLangFiles = tasks.register('mergeLangFiles') {
     }
 }
 
+// Pack-local declarations feed both the creative tab and the legacy carriage picker.
+def mergedCarriagePartsDir = layout.buildDirectory.dir('generated/merged-carriage-parts')
+def mergeCarriagePartCatalog = tasks.register('mergeCarriagePartCatalog') {
+    group = 'build'
+    description = 'Merges the core carriage part catalog and built-in pack declarations.'
+    def catalogs = [file('src/main/resources/data/hexie/carriage_parts.json')] +
+            builtinPacks.collect { pack -> file("packs/${pack}/resources/data/hexie/carriage_parts.json") }
+    inputs.files(catalogs).withPathSensitivity(PathSensitivity.RELATIVE)
+    outputs.dir(mergedCarriagePartsDir)
+    doLast {
+        def merged = new LinkedHashMap<String, Object>()
+        def orders = [:]
+        def parser = new groovy.json.JsonSlurper()
+        catalogs.findAll { it.isFile() }.each { catalog ->
+            def entries = parser.parseText(catalog.getText('UTF-8'))
+            if (!(entries instanceof Map)) throw new GradleException("Invalid carriage part catalog: ${catalog}")
+            entries.each { id, entry ->
+                if (merged.containsKey(id)) throw new GradleException("Duplicate carriage part ${id}: ${catalog}")
+                def checkOrder = { groupName, order ->
+                    if (!(order instanceof Number) || order.intValue() != order || order < 0)
+                        throw new GradleException("Invalid ${groupName} order for ${id}: ${catalog}")
+                    def seen = orders.computeIfAbsent(groupName) { new HashSet<>() }
+                    if (!seen.add(order.intValue())) throw new GradleException("Duplicate ${groupName} order ${order}: ${catalog}")
+                }
+                if (entry.containsKey('creative_order') && entry.creative_order != -1) checkOrder('creative', entry.creative_order)
+                (entry.palettes ?: [:]).each { palette, order -> checkOrder(palette, order) }
+                merged[id] = entry
+            }
+        }
+        def output = mergedCarriagePartsDir.get().file('data/hexie/carriage_parts.json').asFile
+        output.parentFile.mkdirs()
+        output.setText(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(merged)) + '\n', 'UTF-8')
+    }
+}
+
 sourceSets.main.java {
     srcDir 'renderer/java'
     builtinPacks.each { pack -> srcDir "packs/${pack}/java" }
@@ -175,11 +210,12 @@ sourceSets.main.resources {
     srcDir 'src/generated/resources'
     srcDir 'renderer/resources'
     builtinPacks.each { pack -> srcDir "packs/${pack}/resources" }
-    exclude '**/.cache/**', '**/*.bbmodel', 'assets/hexie/lang/*.json'
+    exclude '**/.cache/**', '**/*.bbmodel', 'assets/hexie/lang/*.json', 'data/hexie/carriage_parts.json'
 }
 
 tasks.named('sourcesJar', Jar).configure {
     from(mergeLangFiles)
+    from(mergeCarriagePartCatalog)
 }
 
 repositories {
@@ -391,6 +427,7 @@ tasks.named('processResources', ProcessResources).configure {
     inputs.properties properties
     filesMatching('META-INF/neoforge.mods.toml') { expand properties }
     from(mergeLangFiles)
+    from(mergeCarriagePartCatalog)
 }
 
 tasks.withType(JavaCompile).configureEach {

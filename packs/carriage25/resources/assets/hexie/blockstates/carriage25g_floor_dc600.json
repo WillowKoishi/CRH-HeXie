@@ -1,0 +1,824 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "facing": "north"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "side_beam_left": "true"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_beam_left",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "side_beam_right": "true"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_beam_right",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "equipment": "1",
+        "equipment_rotation": "0"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_toilet",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "equipment": "1",
+        "equipment_rotation": "1"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_toilet",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "equipment": "1",
+        "equipment_rotation": "2"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_toilet",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "equipment": "1",
+        "equipment_rotation": "3"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_toilet",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "equipment": "2",
+        "equipment_rotation": "0"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_brake",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "equipment": "2",
+        "equipment_rotation": "1"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_brake",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "equipment": "2",
+        "equipment_rotation": "2"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_brake",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "equipment": "2",
+        "equipment_rotation": "3"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_brake",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "equipment": "3",
+        "equipment_rotation": "0"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_battery",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "equipment": "3",
+        "equipment_rotation": "1"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_battery",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "equipment": "3",
+        "equipment_rotation": "2"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_battery",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "equipment": "3",
+        "equipment_rotation": "3"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_battery",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "equipment": "4",
+        "equipment_rotation": "0"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_inverter",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "equipment": "4",
+        "equipment_rotation": "1"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_inverter",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "equipment": "4",
+        "equipment_rotation": "2"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_inverter",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "equipment": "4",
+        "equipment_rotation": "3"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_inverter",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "east"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "side_beam_left": "true"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_beam_left",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "side_beam_right": "true"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_beam_right",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "equipment": "1",
+        "equipment_rotation": "0"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_toilet",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "equipment": "1",
+        "equipment_rotation": "1"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_toilet",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "equipment": "1",
+        "equipment_rotation": "2"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_toilet",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "equipment": "1",
+        "equipment_rotation": "3"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_toilet",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "equipment": "2",
+        "equipment_rotation": "0"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_brake",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "equipment": "2",
+        "equipment_rotation": "1"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_brake",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "equipment": "2",
+        "equipment_rotation": "2"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_brake",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "equipment": "2",
+        "equipment_rotation": "3"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_brake",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "equipment": "3",
+        "equipment_rotation": "0"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_battery",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "equipment": "3",
+        "equipment_rotation": "1"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_battery",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "equipment": "3",
+        "equipment_rotation": "2"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_battery",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "equipment": "3",
+        "equipment_rotation": "3"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_battery",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "equipment": "4",
+        "equipment_rotation": "0"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_inverter",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "equipment": "4",
+        "equipment_rotation": "1"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_inverter",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "equipment": "4",
+        "equipment_rotation": "2"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_inverter",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "equipment": "4",
+        "equipment_rotation": "3"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_inverter",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "south"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "side_beam_left": "true"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_beam_left",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "side_beam_right": "true"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_beam_right",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "equipment": "1",
+        "equipment_rotation": "0"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_toilet",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "equipment": "1",
+        "equipment_rotation": "1"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_toilet",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "equipment": "1",
+        "equipment_rotation": "2"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_toilet",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "equipment": "1",
+        "equipment_rotation": "3"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_toilet",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "equipment": "2",
+        "equipment_rotation": "0"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_brake",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "equipment": "2",
+        "equipment_rotation": "1"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_brake",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "equipment": "2",
+        "equipment_rotation": "2"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_brake",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "equipment": "2",
+        "equipment_rotation": "3"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_brake",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "equipment": "3",
+        "equipment_rotation": "0"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_battery",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "equipment": "3",
+        "equipment_rotation": "1"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_battery",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "equipment": "3",
+        "equipment_rotation": "2"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_battery",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "equipment": "3",
+        "equipment_rotation": "3"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_battery",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "equipment": "4",
+        "equipment_rotation": "0"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_inverter",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "equipment": "4",
+        "equipment_rotation": "1"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_inverter",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "equipment": "4",
+        "equipment_rotation": "2"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_inverter",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "equipment": "4",
+        "equipment_rotation": "3"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_inverter",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "west"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "side_beam_left": "true"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_beam_left",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "side_beam_right": "true"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_beam_right",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "equipment": "1",
+        "equipment_rotation": "0"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_toilet",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "equipment": "1",
+        "equipment_rotation": "1"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_toilet",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "equipment": "1",
+        "equipment_rotation": "2"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_toilet",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "equipment": "1",
+        "equipment_rotation": "3"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_toilet",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "equipment": "2",
+        "equipment_rotation": "0"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_brake",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "equipment": "2",
+        "equipment_rotation": "1"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_brake",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "equipment": "2",
+        "equipment_rotation": "2"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_brake",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "equipment": "2",
+        "equipment_rotation": "3"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_brake",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "equipment": "3",
+        "equipment_rotation": "0"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_battery",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "equipment": "3",
+        "equipment_rotation": "1"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_battery",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "equipment": "3",
+        "equipment_rotation": "2"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_battery",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "equipment": "3",
+        "equipment_rotation": "3"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_battery",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "equipment": "4",
+        "equipment_rotation": "0"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_inverter",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "equipment": "4",
+        "equipment_rotation": "1"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_inverter",
+        "y": 0
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "equipment": "4",
+        "equipment_rotation": "2"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_inverter",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "equipment": "4",
+        "equipment_rotation": "3"
+      },
+      "apply": {
+        "model": "hexie:block/carriage25/25g/carriage25g_floor_dc600_inverter",
+        "y": 180
+      }
+    }
+  ]
+}

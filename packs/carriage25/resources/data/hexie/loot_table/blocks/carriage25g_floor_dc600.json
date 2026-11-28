@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "bonus_rolls": 0.0,
+      "rolls": 1.0,
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "hexie:carriage25g_floor_dc600"
+        }
+      ]
+    }
+  ],
+  "random_sequence": "hexie:blocks/carriage25g_floor_dc600"
+}

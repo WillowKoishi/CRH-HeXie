@@ -1,0 +1,293 @@
+{
+    "meta": {
+        "format_version": "5.0",
+        "model_format": "free",
+        "box_uv": false
+    },
+    "name": "carriage25g_panel_upper",
+    "model_identifier": "",
+    "visible_box": [
+        1,
+        1,
+        0
+    ],
+    "variable_placeholders": "",
+    "multi_file_ruleset": "",
+    "variable_placeholder_buttons": [],
+    "timeline_setups": [],
+    "unhandled_root_fields": {},
+    "resolution": {
+        "width": 16,
+        "height": 16
+    },
+    "elements": [
+        {
+            "name": "mesh",
+            "color": 3,
+            "origin": [
+                0,
+                0,
+                0
+            ],
+            "rotation": [
+                0,
+                0,
+                0
+            ],
+            "shading": "flat",
+            "export": true,
+            "visibility": true,
+            "locked": false,
+            "render_order": "default",
+            "scope": 0,
+            "allow_mirror_modeling": true,
+            "vertices": {
+                "Tjlm": [
+                    9,
+                    16,
+                    8
+                ],
+                "N8Td": [
+                    9,
+                    16,
+                    -8
+                ],
+                "DcvH": [
+                    9,
+                    0,
+                    8
+                ],
+                "Lhjf": [
+                    9,
+                    0,
+                    -8
+                ],
+                "weOE": [
+                    7,
+                    16,
+                    8
+                ],
+                "bjRU": [
+                    7,
+                    16,
+                    -8
+                ],
+                "Un4V": [
+                    7,
+                    0,
+                    8
+                ],
+                "4K4z": [
+                    7,
+                    0,
+                    -8
+                ]
+            },
+            "faces": {
+                "7RPk3S7G": {
+                    "uv": {
+                        "Lhjf": [
+                            16,
+                            16
+                        ],
+                        "DcvH": [
+                            0,
+                            16
+                        ],
+                        "Tjlm": [
+                            0,
+                            0
+                        ],
+                        "N8Td": [
+                            16,
+                            0
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "N8Td",
+                        "Tjlm",
+                        "DcvH",
+                        "Lhjf"
+                    ]
+                },
+                "Rwccp4Mp": {
+                    "uv": {
+                        "4K4z": [
+                            0,
+                            33
+                        ],
+                        "bjRU": [
+                            0,
+                            17
+                        ],
+                        "weOE": [
+                            16,
+                            17
+                        ],
+                        "Un4V": [
+                            16,
+                            33
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Un4V",
+                        "weOE",
+                        "bjRU",
+                        "4K4z"
+                    ]
+                },
+                "GbtGRgv9": {
+                    "uv": {
+                        "bjRU": [
+                            17,
+                            0
+                        ],
+                        "N8Td": [
+                            19,
+                            0
+                        ],
+                        "Tjlm": [
+                            19,
+                            16
+                        ],
+                        "weOE": [
+                            17,
+                            16
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "weOE",
+                        "Tjlm",
+                        "N8Td",
+                        "bjRU"
+                    ]
+                },
+                "JASL95UP": {
+                    "uv": {
+                        "4K4z": [
+                            17,
+                            33
+                        ],
+                        "Un4V": [
+                            17,
+                            17
+                        ],
+                        "DcvH": [
+                            19,
+                            17
+                        ],
+                        "Lhjf": [
+                            19,
+                            33
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "Lhjf",
+                        "DcvH",
+                        "Un4V",
+                        "4K4z"
+                    ]
+                },
+                "aSPxneNO": {
+                    "uv": {
+                        "Un4V": [
+                            20,
+                            16
+                        ],
+                        "weOE": [
+                            20,
+                            0
+                        ],
+                        "Tjlm": [
+                            22,
+                            0
+                        ],
+                        "DcvH": [
+                            22,
+                            16
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "DcvH",
+                        "Tjlm",
+                        "weOE",
+                        "Un4V"
+                    ]
+                },
+                "L4wJq8pJ": {
+                    "uv": {
+                        "4K4z": [
+                            22,
+                            33
+                        ],
+                        "Lhjf": [
+                            20,
+                            33
+                        ],
+                        "N8Td": [
+                            20,
+                            17
+                        ],
+                        "bjRU": [
+                            22,
+                            17
+                        ]
+                    },
+                    "texture": 0,
+                    "vertices": [
+                        "bjRU",
+                        "N8Td",
+                        "Lhjf",
+                        "4K4z"
+                    ]
+                }
+            },
+            "type": "mesh",
+            "uuid": "c3425ada-b789-8fe6-a732-7083f9cd864b"
+        }
+    ],
+    "groups": [],
+    "outliner": [
+        "c3425ada-b789-8fe6-a732-7083f9cd864b"
+    ],
+    "textures": [
+        {
+            "name": "carriage25g_panel_upper.png",
+            "relative_path": "carriage25g_panel_upper.png",
+            "folder": "",
+            "namespace": "",
+            "id": "0",
+            "group": "",
+            "scope": 0,
+            "width": 64,
+            "height": 64,
+            "uv_width": 64,
+            "uv_height": 64,
+            "particle": false,
+            "use_as_default": false,
+            "layers_enabled": false,
+            "sync_to_project": "",
+            "file_format": "png",
+            "render_mode": "default",
+            "render_sides": "auto",
+            "wrap_mode": "limited",
+            "pbr_channel": "color",
+            "fps": 7,
+            "force_translucent": false,
+            "frame_time": 1,
+            "frame_order_type": "loop",
+            "frame_order": "",
+            "frame_interpolate": false,
+            "visible": true,
+            "internal": true,
+            "saved": true,
+            "uuid": "885c5b43-881d-5e9f-7678-4b43d37d5db3",
+            "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABiElEQVR4AexYMU7DQBA8X4GQKKAB0lFQIvEVSl6ARJ2OF0CV76RA0AM9D0DQ0JECaCInU7hwZClarfe0exlLI++dTuvZmXFz+e/3p9UgrZ/p9K4F1mXC+/lp3qKOgLx/fZk0GBry/OFmaNvlXnbJqiApCvDxv0waDJk1/1oMbbvcYwJc2lKQFBNQUGyXn2ICXNpSkBQTUFBsl59iAlzaUpDUziVgU9t89vjZaICGs9l9A3T17fuiQR0B+e31pdUAQ+ISBECNy5Wuxto7Rv8Fvq8uvM/c45dPT46SBr1uARd5cnyYNAg4c4/y6L9ApMsQKDG6AGgaCRQgklsWXJkAC1Uj9WQCIrllwZUJsFA1Us/qE7DNDAqwdzBpNIDCuAwBUOMypKux9g4mwLtD1vyYAGuFvfdnArw7ZM2PCbBW2Ht/JsC7Q9b8mABrhb33ZwK8OyTlJz3PBEgVq+08E1Cbo9J5mACpYrWdZwJqc1Q6DxMgVay280xAbY5K52ECpIrVdp4JiO6olv8KAAD//5R6q5oAAAAGSURBVAMAWHb7gYVQ0wEAAAAASUVORK5CYII="
+        }
+    ]
+}

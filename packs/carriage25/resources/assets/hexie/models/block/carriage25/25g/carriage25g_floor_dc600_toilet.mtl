@@ -1,0 +1,4 @@
+newmtl t4
+map_Kd #t4
+Kd 1 1 1
+d 1

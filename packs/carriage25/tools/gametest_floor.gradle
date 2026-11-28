@@ -1,0 +1,12 @@
+// gradlew -I packs/carriage25/tools/gametest_floor.gradle runGameTestServer
+allprojects {
+    afterEvaluate {
+        sourceSets.main.java.srcDir('packs/carriage25/gametest/java')
+        sourceSets.main.resources.srcDir('packs/carriage25/gametest/resources')
+        neoForge.runs.gameTestServer {
+            sourceSet = sourceSets.main
+            gameDirectory = file(providers.gradleProperty('carriage25GameTestDir')
+                    .getOrElse('build/carriage25-check/game'))
+        }
+    }
+}

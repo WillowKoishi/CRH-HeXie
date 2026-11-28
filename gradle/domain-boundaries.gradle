@@ -11,7 +11,7 @@ tasks.register('checkDomainBoundaries') {
     group = 'verification'
     description = 'Enforces the ten domain boundaries and confines optional library references to compat and render.'
 
-    def builtinPacks = ['crh1a', 'crh2a', 'cr200j', 'series25', 'ss7d', 'df11g', 'hxd3d', 'qj']
+    def builtinPacks = ['crh1a', 'crh2a', 'cr200j', 'series25', 'carriage25', 'ss7d', 'df11g', 'hxd3d', 'qj']
     def javaRoots = [layout.projectDirectory.dir('src/main/java/willow/train/hexie').asFile] +
             builtinPacks.collect { pack -> layout.projectDirectory.dir("packs/${pack}/java/willow/train/hexie").asFile }
     javaRoots.each { root -> if (root.exists()) inputs.dir(root) }
