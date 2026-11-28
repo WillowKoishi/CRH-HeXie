@@ -14,6 +14,7 @@ import net.neoforged.neoforge.registries.RegisterEvent;
 import willow.train.hexie.bridge.HexieBridges;
 import willow.train.hexie.core.HexieConstants;
 import willow.train.hexie.world.blocks.carriage.Carriage25GFloorBlock;
+import willow.train.hexie.world.blocks.carriage.Carriage25GPanelBlock;
 import willow.train.hexie.world.blocks.parts.PartDefinitions;
 
 /** The carriage25 pack owns registration as well as its block and item resources. */
@@ -21,13 +22,23 @@ import willow.train.hexie.world.blocks.parts.PartDefinitions;
 public final class Carriage25Blocks {
     public static final DeferredHolder<Block, Carriage25GFloorBlock> FLOOR_DC600 = DeferredHolder.create(
             Registries.BLOCK, HexieConstants.asResource("carriage25g_floor_dc600"));
+    public static final DeferredHolder<Block, Carriage25GPanelBlock> PANEL_BOTTOM = DeferredHolder.create(
+            Registries.BLOCK, HexieConstants.asResource("carriage25g_panel_bottom"));
+    public static final DeferredHolder<Block, Carriage25GPanelBlock> PANEL_UPPER = DeferredHolder.create(
+            Registries.BLOCK, HexieConstants.asResource("carriage25g_panel_upper"));
 
     private Carriage25Blocks() {}
 
     @SubscribeEvent
     public static void setup(FMLCommonSetupEvent event) {
-        event.enqueueWork(() -> PartDefinitions.register(FLOOR_DC600.getId(),
-                new PartDefinitions.Definition(PartDefinitions.Extension.FLOOR, false, false)));
+        event.enqueueWork(() -> {
+            PartDefinitions.register(FLOOR_DC600.getId(),
+                    new PartDefinitions.Definition(PartDefinitions.Extension.FLOOR, false, false));
+            PartDefinitions.register(PANEL_BOTTOM.getId(),
+                    new PartDefinitions.Definition(PartDefinitions.Extension.SIDE, false, false));
+            PartDefinitions.register(PANEL_UPPER.getId(),
+                    new PartDefinitions.Definition(PartDefinitions.Extension.SIDE, false, false));
+        });
     }
 
     @SubscribeEvent
@@ -37,5 +48,12 @@ public final class Carriage25Blocks {
                         .strength(2).sound(SoundType.METAL).noOcclusion())));
         event.register(Registries.ITEM, helper -> helper.register(FLOOR_DC600.getId(),
                 HexieBridges.itemFactory().createPartBlockItem(FLOOR_DC600.get(), new Item.Properties())));
+        for (var panel : java.util.List.of(PANEL_BOTTOM, PANEL_UPPER)) {
+            event.register(Registries.BLOCK, helper -> helper.register(panel.getId(),
+                    new Carriage25GPanelBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL)
+                            .strength(2).sound(SoundType.METAL).noOcclusion(), panel.getId().getPath())));
+            event.register(Registries.ITEM, helper -> helper.register(panel.getId(),
+                    HexieBridges.itemFactory().createCRH2PartItem(panel.get(), new Item.Properties())));
+        }
     }
 }
