@@ -1,6 +1,7 @@
 package willow.train.hexie.world.registry.core;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -20,22 +21,42 @@ import willow.train.hexie.world.registry.creative.HexieCreativeTabs;
 public final class CreativeTabsInit {
     private static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, HexieConstants.MOD_ID);
 
-    private static final BannerSection BANNER_UTILITY = new BannerSection(
-            Component.translatable("itemGroup." + HexieConstants.MOD_ID + ".section.utility"),
-            ResourceLocation.fromNamespaceAndPath(HexieConstants.MOD_ID, "textures/gui/creative_banners/utility.png")
-    );
-    private static final BannerSection BANNER_BUILDING_BLOCKS = new BannerSection(
-            Component.translatable("itemGroup." + HexieConstants.MOD_ID + ".section.building_blocks"),
-            ResourceLocation.fromNamespaceAndPath(HexieConstants.MOD_ID, "textures/gui/creative_banners/building_blocks.png")
-    );
-    private static final BannerSection BANNER_INTERIOR = new BannerSection(
-            Component.translatable("itemGroup." + HexieConstants.MOD_ID + ".section.interior"),
-            ResourceLocation.fromNamespaceAndPath(HexieConstants.MOD_ID, "textures/gui/creative_banners/interior.png")
-    );
-    private static final BannerSection BANNER_DINING = new BannerSection(
-            Component.translatable("itemGroup." + HexieConstants.MOD_ID + ".section.dining"),
-            ResourceLocation.fromNamespaceAndPath(HexieConstants.MOD_ID, "textures/gui/creative_banners/dining.png")
-    );
+    private static final BannerSection BANNER_UTILITY = parallaxBanner("utility", 0xFFDCE6DE, 4.0F, 11.0F, 18.0F,
+            BannerSection.ItemShowcase.randomParallax(24.0F, 30.0F));
+    private static final BannerSection BANNER_BUILDING_BLOCKS = parallaxBanner("building_blocks", 0xFFDCE6F0, 5.0F, 14.0F, 28.0F,
+            BannerSection.ItemShowcase.DISABLED);
+    private static final BannerSection BANNER_INTERIOR = parallaxBanner("interior", 0xFFEFE8D8, 4.5F, 13.0F, 24.0F,
+            BannerSection.ItemShowcase.DISABLED);
+    private static final BannerSection BANNER_DINING = parallaxBanner("dining", 0xFFF8E8CE, 3.5F, 10.0F, 20.0F,
+            BannerSection.ItemShowcase.DISABLED);
+
+    private static BannerSection parallaxBanner(
+            String id,
+            int borderColor,
+            float farSpeed,
+            float midSpeed,
+            float foreSpeed,
+            BannerSection.ItemShowcase itemShowcase
+    ) {
+        String base = "textures/gui/creative_banners/" + id;
+        return BannerSection.parallaxWithItems(
+                Component.translatable("itemGroup." + HexieConstants.MOD_ID + ".section." + id),
+                ResourceLocation.fromNamespaceAndPath(HexieConstants.MOD_ID, base + ".png"),
+                borderColor,
+                List.of(
+                        new BannerSection.ParallaxLayer(
+                                ResourceLocation.fromNamespaceAndPath(HexieConstants.MOD_ID, base + "_far.png"),
+                                farSpeed, 6.0F),
+                        new BannerSection.ParallaxLayer(
+                                ResourceLocation.fromNamespaceAndPath(HexieConstants.MOD_ID, base + "_mid.png"),
+                                midSpeed, 16.0F),
+                        new BannerSection.ParallaxLayer(
+                                ResourceLocation.fromNamespaceAndPath(HexieConstants.MOD_ID, base + "_fore.png"),
+                                foreSpeed, itemShowcase.enabled() ? 22.0F : 30.0F)
+                ),
+                itemShowcase
+        );
+    }
 
     private static final String[] HEXIE_MAIN_UTILITY = new String[] {
             "harmony_wrench", "general_janney_coupler", "crh2a_rescue_coupler",

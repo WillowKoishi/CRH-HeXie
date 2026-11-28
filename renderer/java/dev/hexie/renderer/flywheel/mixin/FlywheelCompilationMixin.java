@@ -3,6 +3,7 @@ package dev.hexie.renderer.flywheel.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.hexie.renderer.flywheel.FlywheelPrograms;
+import dev.hexie.renderer.mc.ForwardLight;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
@@ -13,6 +14,6 @@ abstract class FlywheelCompilationMixin {
             at = @At(value = "INVOKE", target = "Ldev/engine_room/flywheel/backend/gl/GlCompat;safeShaderSource(ILjava/lang/CharSequence;)V"),
             require = 0)
     private void hexie$patchFlywheelShader(int handle, CharSequence source, Operation<Void> original) {
-        original.call(handle, FlywheelPrograms.patchFragment(source));
+        original.call(handle, ForwardLight.supportsGpuForward() ? FlywheelPrograms.patchFragment(source) : source);
     }
 }

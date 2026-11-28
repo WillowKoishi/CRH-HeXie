@@ -40,6 +40,7 @@ public class SectionedCreativeTab extends CreativeModeTab {
 
     private List<ItemStack> layoutItems = List.of();
     private Int2ObjectMap<BannerSection> bannerRows = new Int2ObjectOpenHashMap<>();
+    private Int2ObjectMap<List<ItemStack>> bannerSectionItems = new Int2ObjectOpenHashMap<>();
     @Nullable
     private Collection<ItemStack> layoutDisplaySnapshot;
     private int layoutDisplaySize = -1;
@@ -124,6 +125,7 @@ public class SectionedCreativeTab extends CreativeModeTab {
         Set<ItemStack> placed = ItemStackLinkedSet.createTypeAndComponentsSet();
         List<ItemStack> items = new ArrayList<>();
         Int2ObjectMap<BannerSection> banners = new Int2ObjectOpenHashMap<>();
+        Int2ObjectMap<List<ItemStack>> sectionItemsByRow = new Int2ObjectOpenHashMap<>();
 
         for (ItemStack stack : this.rawTopItems) {
             if (!stack.isEmpty() && allowed.contains(stack) && placed.add(stack)) {
@@ -139,9 +141,11 @@ public class SectionedCreativeTab extends CreativeModeTab {
             for (int i = 0; i < COLUMNS; i++) {
                 items.add(ItemStack.EMPTY);
             }
+            List<ItemStack> resolvedSectionItems = new ArrayList<>();
             for (ItemStack stack : section.items()) {
                 if (!stack.isEmpty() && allowed.contains(stack) && placed.add(stack)) {
                     items.add(stack);
+                    resolvedSectionItems.add(stack);
                 }
             }
             if (!extrasMergedIntoSection && this.extraItemsTargetBanner != null
@@ -149,10 +153,12 @@ public class SectionedCreativeTab extends CreativeModeTab {
                 for (ItemStack stack : extraItems) {
                     if (placed.add(stack)) {
                         items.add(stack);
+                        resolvedSectionItems.add(stack);
                     }
                 }
                 extrasMergedIntoSection = true;
             }
+            sectionItemsByRow.put(bannerRow, List.copyOf(resolvedSectionItems));
         }
 
         if (!extrasMergedIntoSection && !extraItems.isEmpty()) {
@@ -170,6 +176,7 @@ public class SectionedCreativeTab extends CreativeModeTab {
 
         this.layoutItems = Collections.unmodifiableList(items);
         this.bannerRows = banners;
+        this.bannerSectionItems = sectionItemsByRow;
         this.layoutDisplaySnapshot = currentDisplayItems;
         this.layoutDisplaySize = currentDisplayItems.size();
     }
@@ -190,6 +197,11 @@ public class SectionedCreativeTab extends CreativeModeTab {
     public BannerSection getBannerAtRow(int row) {
         ensureLayoutCurrent();
         return this.bannerRows.get(row);
+    }
+
+    public List<ItemStack> getSectionItemsAtRow(int row) {
+        ensureLayoutCurrent();
+        return this.bannerSectionItems.getOrDefault(row, List.of());
     }
 
     public boolean isBannerRow(int row) {

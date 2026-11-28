@@ -210,9 +210,15 @@ public final class StickerModeScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics gui, int mouseX, int mouseY, float partialTick) {
+    public void renderBackground(GuiGraphics gui, int mouseX, int mouseY, float partialTick) {
+        this.renderTransparentBackground(gui);
         gui.fill(left, top, left + PANEL_W, top + PANEL_H, 0xCC181C24);
         gui.renderOutline(left, top, PANEL_W, PANEL_H, 0xFF5A6577);
+    }
+
+    @Override
+    public void render(GuiGraphics gui, int mouseX, int mouseY, float partialTick) {
+        super.render(gui, mouseX, mouseY, partialTick);
         gui.drawCenteredString(font, title, left + PANEL_W / 2, top + 8, 0xFFFFFF);
 
         if (StickerToolState.mode() == StickerMode.WINDOW) {
@@ -236,7 +242,6 @@ public final class StickerModeScreen extends Screen {
                 gui.drawString(font, statusMessage, left + 14, top + 160, 0xFFD27F);
             }
         }
-        super.render(gui, mouseX, mouseY, partialTick);
     }
 
     @Override public boolean isPauseScreen() { return false; }

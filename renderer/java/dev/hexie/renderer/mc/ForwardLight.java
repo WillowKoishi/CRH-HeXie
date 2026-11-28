@@ -2,6 +2,8 @@ package dev.hexie.renderer.mc;
 
 import dev.hexie.renderer.*;
 import java.util.*;
+import org.lwjgl.opengl.GL;
+import org.lwjgl.system.Platform;
 import static org.lwjgl.opengl.GL45C.*;
 
 /**
@@ -77,9 +79,20 @@ public final class ForwardLight {
             int lampCol
     ) {}
 
+    private static final ProgramLayout NONE = new ProgramLayout(-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
     private static final Map<Integer, ProgramLayout> PROGRAM_CACHE = new HashMap<>();
 
     private ForwardLight() {}
+
+    /** True only when the active GL context can run HeXie's GL 4.5 forward lighting pipeline (never on macOS GL 4.1). */
+    public static boolean supportsGpuForward() {
+        if (Platform.get() == Platform.MACOSX) return false;
+        try {
+            return GL.getCapabilities().OpenGL45;
+        } catch (IllegalStateException e) {
+            return false;
+        }
+    }
 
     public static BoxTree buildBoxTree(List<Box> boxes) {
         return new BoxTree(boxes == null ? List.of() : List.copyOf(boxes));
@@ -170,9 +183,9 @@ public final class ForwardLight {
     }
 
     private static ProgramLayout programMeta(int program) {
-        return PROGRAM_CACHE.computeIfAbsent(program, p -> {
+        ProgramLayout cached = PROGRAM_CACHE.computeIfAbsent(program, p -> {
             int enabled = glGetUniformLocation(p, "hexieEnabled");
-            if (enabled < 0) return null;
+            if (enabled < 0) return NONE;
             return new ProgramLayout(
                     enabled,
                     glGetUniformLocation(p, "hexieSunDir"),
@@ -191,10 +204,27 @@ public final class ForwardLight {
                     glGetUniformLocation(p, "u_HexieLampCol")
             );
         });
+        return cached == NONE ? null : cached;
+    }
+
+    /** Moves inactive shadow samplers off unit 0 so sampler2DShadow never collides with sampler2D on unit 0. */
+    private static void bindSafeInactiveSamplers() {
+        int program = glGetInteger(GL_CURRENT_PROGRAM);
+        ProgramLayout meta = program == 0 ? null : programMeta(program);
+        if (meta == null) return;
+        if (meta.shadowMap >= 0) glUniform1i(meta.shadowMap, UNIT_SHADOW_CMP);
+        if (meta.shadowDepth >= 0) glUniform1i(meta.shadowDepth, UNIT_SHADOW_RAW);
+        if (meta.pointAtlas >= 0) glUniform1i(meta.pointAtlas, UNIT_POINT_ATLAS);
+        if (meta.enabled >= 0) glUniform1i(meta.enabled, 0);
     }
 
     private static void drawReceiver(Vec camera, float[] rotation, boolean packedNormal, Runnable original) {
+        if (!supportsGpuForward()) {
+            original.run();
+            return;
+        }
         if (!active || ClientRenderState.engine().route().tier() != RenderSettings.Tier.FULL) {
+            bindSafeInactiveSamplers();
             original.run();
             return;
         }
