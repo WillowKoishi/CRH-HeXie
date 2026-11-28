@@ -8,6 +8,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
@@ -87,6 +88,9 @@ public interface ClientCarriageUiBridge {
 
     interface HXInventoryEventsOperations {
         void captureLegacyScroll(CreativeModeInventoryScreen screen);
+        void applySectionedTabLayout(CreativeModeInventoryScreen screen, CreativeModeTab tab);
+        void renderSectionBanners(CreativeModeInventoryScreen screen, GuiGraphics guiGraphics);
+        boolean isSectionBannerSlot(Screen screen, @Nullable Slot slot);
     }
 
     HudFontsOperations hudFonts();
