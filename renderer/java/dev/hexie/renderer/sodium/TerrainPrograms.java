@@ -33,7 +33,7 @@ public final class TerrainPrograms {
                         +attribute+".xyz))/127.0;\ngl_Position="));
                 if (source.contains("_vert_tex_light_coord")) {
                     source=source.replace("texture(u_LightTex, _vert_tex_light_coord)",
-                            "texture(u_LightTex, hexieEnabled!=0 ? vec2((clamp((_vert_tex_light_coord.x*16.0-0.5)/15.0,0.0,1.0)*mix(1.0,0.12,smoothstep(32.0,20.0,length(position)))*15.0+0.5)/16.0, _vert_tex_light_coord.y) : _vert_tex_light_coord)");
+                            "texture(u_LightTex, hexieEnabled!=0 ? vec2((clamp((_vert_tex_light_coord.x*16.0-0.5)/15.0,0.0,1.0)*mix(1.0,0.0,smoothstep(48.0,36.0,length(position)))*15.0+0.5)/16.0, _vert_tex_light_coord.y) : _vert_tex_light_coord)");
                     source=source.replace("hexieTint=_vert_color.rgb;",
                             "hexieTint=_vert_color.rgb; hexieSky=clamp((_vert_tex_light_coord.y*16.0-0.5)/15.0,0.0,1.0);");
                 }
@@ -47,12 +47,12 @@ public final class TerrainPrograms {
         String albedoExpr="texture(u_BlockTex,v_TexCoord,lodBias).rgb*hexieTint";
         int version=source.indexOf('\n');
         if (version < 0 || !source.contains("void main()")) return source;
-        return (source.substring(0, version + 1) + "#ifdef GL_ARB_shader_storage_buffer_object\n"
-                + "#extension GL_ARB_shader_storage_buffer_object : enable\n#endif\n" + source.substring(version + 1))
+        return source
                 .replace("void main()", "in vec3 hexiePos, hexieTint, hexiePacked; in float hexieSky;\n" + ForwardLight.FRAGMENT + "\nvoid main()")
-                .replace(before, "\n#if defined(GL_ARB_shader_storage_buffer_object) || (__VERSION__ >= 430)\n"
-                        + "vec3 hexieAlb=" + albedoExpr + "; vec3 hexieNrm=" + normalExpr + ";\n"
-                        + "color.rgb += hexieDirect(hexiePos, hexieAlb, hexieNrm);\n"
-                        + "color.rgb += hexieDaylight(hexiePos, hexieAlb, hexieNrm, hexieSky);\n#endif\n" + before);
+                .replace(before, "\nvec3 hexieAlb=" + albedoExpr + "; vec3 hexieNrm=" + normalExpr + ";\n"
+                        + "if (hexieEnabled != 0) {\n"
+                        + "    vec3 hexieVanillaLight = clamp(color.rgb / max(hexieAlb, vec3(0.008)), vec3(0.0), vec3(1.5));\n"
+                        + "    color.rgb = hexieShadeSurface(hexiePos, hexieAlb, hexieNrm, hexieVanillaLight, hexieSky, 0.12);\n"
+                        + "}\n" + before);
     }
 }

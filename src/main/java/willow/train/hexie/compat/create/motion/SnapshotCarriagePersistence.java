@@ -24,7 +24,9 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
 import net.minecraft.world.phys.Vec3;
 import willow.train.hexie.bridge.HexieBridges;
+import willow.train.hexie.bridge.sticker.ContraptionStickerHost;
 import willow.train.hexie.bridge.vehicle.CarriageSnapshotView;
+import willow.train.hexie.compat.create.assembly.ContraptionStickers;
 import willow.train.hexie.compat.create.assembly.SnapshotCarriageCargo;
 import willow.train.hexie.compat.create.assembly.SnapshotCarriageStructure;
 import willow.train.hexie.compat.create.interaction.ContraptionInteractionTargets;
@@ -141,6 +143,9 @@ public final class SnapshotCarriagePersistence {
         tag.put("Passengers", NBTHelper.writeCompoundList(carriageEntity.getContraption().getSeatMapping().entrySet(), e -> {
             var data = new CompoundTag(); data.putUUID("Id", e.getKey()); data.putInt("Seat", e.getValue()); return data;
         }));
+        if (carriageEntity.getContraption() instanceof ContraptionStickerHost host && !host.hexie$stickers().isEmpty()) {
+            tag.put(ContraptionStickers.NBT_KEY, ContraptionStickers.writeListTag(host.hexie$stickers()));
+        }
         return tag;
     }
 
@@ -235,6 +240,9 @@ public final class SnapshotCarriagePersistence {
         view.getSeatMapping().putAll(passengers);
         carriageEntity.behavioursActive = view.active = tag.getBoolean("Active");
         view.stalled = tag.getBoolean("Stalled");
+        if (tag.contains(ContraptionStickers.NBT_KEY, Tag.TAG_LIST) && ((Object) view) instanceof ContraptionStickerHost host) {
+            host.hexie$setStickers(ContraptionStickers.readListTag(tag, ContraptionStickers.NBT_KEY));
+        }
         view.invalidateColliders();
     }
 

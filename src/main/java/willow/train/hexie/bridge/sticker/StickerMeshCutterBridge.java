@@ -25,6 +25,9 @@ public interface StickerMeshCutterBridge {
     /** Fast O(1) check whether this BlockPos is cut by at least one WINDOW sticker (safe on worker threads). */
     boolean hasWindowCutAt(BlockPos pos);
 
+    /** Returns true if this cut block has been removed from terrain chunk meshes and cached by HeXie renderer. */
+    boolean isExternallyRenderedCut(BlockPos pos);
+
     /** Fast O(1) check whether this BlockPos OR a multi-block model rooted here may overlap a WINDOW cut. */
     boolean hasCandidateCutAt(BlockPos pos);
 

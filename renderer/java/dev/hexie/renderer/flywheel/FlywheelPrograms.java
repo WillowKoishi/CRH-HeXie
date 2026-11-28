@@ -46,7 +46,6 @@ public final class FlywheelPrograms {
         String replacement = """
             vec4 lightColor = vec4(1.);
             if (flw_material.useLight) {
-            #if defined(GL_ARB_shader_storage_buffer_object) || (__VERSION__ >= 430)
                 if (hexieEnabled != 0) {
                     vec3 hexieAlb = color.rgb / max(diffuseFactor, 0.001);
                     vec2 hexieLight = clamp((flw_fragLight * 16.0 - 0.5) / 15.0, 0.0, 1.0);
@@ -55,29 +54,19 @@ public final class FlywheelPrograms {
                             ? (gl_FrontFacing ? flw_vertexNormal : -flw_vertexNormal) * inversesqrt(hexieNLen2)
                             : vec3(0.0, 1.0, 0.0);
                     vec3 hexieRelPos = flw_vertexPos.xyz - flw_cameraPos;
-                    float hexieLocal = smoothstep(32.0, 20.0, length(hexieRelPos));
-                    float hexieRoof = hexieLight.y > 0.05 ? hexieRoofShade(hexieRelPos, hexieNrm) : 1.0;
-                    vec2 hexieUv = (vec2(hexieLight.x * mix(1.0, 0.12, hexieLocal), hexieLight.y * hexieRoof) * 15.0 + 0.5) / 16.0;
+                    float hexieLocal = smoothstep(48.0, 36.0, length(hexieRelPos));
+                    vec2 hexieUv = (vec2(hexieLight.x * mix(1.0, 0.0, hexieLocal), hexieLight.y) * 15.0 + 0.5) / 16.0;
                     lightColor = texture(flw_lightTex, hexieUv);
-                    color.rgb = hexieAlb * lightColor.rgb * (0.72 + 0.28 * max(-0.5, hexieNrm.y));
-                    color.rgb += hexieDirect(hexieRelPos, hexieAlb, hexieNrm);
-                    color.rgb += hexieDaylight(hexieRelPos, hexieAlb, hexieNrm, hexieLight.y);
+                    color.rgb = hexieShadeSurface(hexieRelPos, hexieAlb, hexieNrm, lightColor.rgb, hexieLight.y, 0.26);
                     color.a *= lightColor.a;
-                } else
-            #endif
-                {
+                } else {
                     lightColor = texture(flw_lightTex, clamp(flw_fragLight, 0.5 / 16.0, 15.5 / 16.0));
                     color *= lightColor;
                 }
             }""";
 
         String patched = lightMatcher.replaceFirst(Matcher.quoteReplacement(replacement));
-        patched = patched.replace("void _flw_main()", ForwardLight.FRAGMENT + "\nvoid _flw_main()");
-        return patched.substring(0, versionEnd + 1)
-                + "#ifdef GL_ARB_shader_storage_buffer_object\n"
-                + "#extension GL_ARB_shader_storage_buffer_object : enable\n"
-                + "#endif\n"
-                + patched.substring(versionEnd + 1);
+        return patched.replace("void _flw_main()", ForwardLight.FRAGMENT + "\nvoid _flw_main()");
     }
 
     public static void draw(Runnable original) {

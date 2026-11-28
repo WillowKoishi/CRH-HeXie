@@ -126,7 +126,9 @@ public final class HexieClient {
         })));
         var preset=Commands.literal("preset");
         for (var p:RenderSettings.Preset.values()) preset.then(Commands.literal(p.name().toLowerCase(java.util.Locale.ROOT)).executes(c->{
-            engine().settings(RenderSettings.of(p)); save();
+            engine().settings(RenderSettings.of(p));
+            if (p == RenderSettings.Preset.OFF) ForwardLight.clear();
+            save();
             return reply(c.getSource(),"preset="+p);
         }));
         root.then(preset);

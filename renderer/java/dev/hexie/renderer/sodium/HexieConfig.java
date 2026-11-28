@@ -13,9 +13,13 @@ public final class HexieConfig implements ConfigEntryPoint {
     public void registerConfigLate(ConfigBuilder builder) {
         var group=builder.createOptionGroup();
         group.addOption(builder.createEnumOption(id("preset"),RenderSettings.Preset.class)
-                .setName(Component.literal("Preset")).setDefaultValue(RenderSettings.Preset.MEDIUM)
-                .setBinding(p->engine().settings(RenderSettings.of(p)),()->engine().settings().preset())
-                .setElementNameProvider(p->Component.literal(p.name())).setTooltip(p->Component.literal(stats()))
+                .setName(Component.literal("Preset")).setDefaultValue(RenderSettings.Preset.OFF)
+                .setBinding(p->{
+                    engine().settings(RenderSettings.of(p));
+                    if (p == RenderSettings.Preset.OFF) ForwardLight.clear();
+                },()->engine().settings().preset())
+                .setElementNameProvider(p->Component.literal(p == RenderSettings.Preset.OFF ? "OFF (Vanilla)" : p.name()))
+                .setTooltip(p->Component.literal(stats()))
                 .setStorageHandler(ClientRenderState::save));
         group.addOption(builder.createBooleanOption(id("quality"))
                 .setName(Component.literal("Full quality")).setDefaultValue(false)
@@ -30,7 +34,7 @@ public final class HexieConfig implements ConfigEntryPoint {
                 default -> Integer.MAX_VALUE;
             };
             group.addOption(builder.createIntegerOption(id(name)).setName(Component.literal(name.replace('_',' ')))
-                    .setRange(0,max,1).setDefaultValue(field.defaultValue(RenderSettings.Preset.MEDIUM))
+                    .setRange(0,max,1).setDefaultValue(field.defaultValue(RenderSettings.Preset.OFF))
                     .setBinding(v->engine().settings(engine().settings().with(field,v)),()->engine().settings().get(field))
                     .setValueFormatter(v->Component.literal(v+" / "+engine().effective(field)))
                     .setTooltip(v->Component.literal("Configured / effective | "+stats())).setStorageHandler(ClientRenderState::save));

@@ -54,8 +54,9 @@ public final class BlockModelCutter implements StickerMeshCutterBridge {
     private static final ResourceLocation WHITE_SPRITE_ID = HexieConstants.asResource("block/white_pixel");
 
     private final Map<Long, List<StickerEntry>> chunkWindows = new ConcurrentHashMap<>();
-    private final Map<BlockPos, List<StickerEntry>> blockWindows = new ConcurrentHashMap<>();
-    private final Map<BlockPos, List<StickerEntry>> nearBlockWindows = new ConcurrentHashMap<>();
+    private volatile Map<BlockPos, List<StickerEntry>> blockWindows = Map.of();
+    private volatile Map<BlockPos, List<StickerEntry>> nearBlockWindows = Map.of();
+    private volatile Set<BlockPos> externallyRenderedCuts = Set.of();
     private final List<java.util.function.Consumer<Set<BlockPos>>> cutChangedListeners = new java.util.concurrent.CopyOnWriteArrayList<>();
     private volatile StickerEntry liveOverride;
 
@@ -73,8 +74,9 @@ public final class BlockModelCutter implements StickerMeshCutterBridge {
 
     public synchronized void clearAll() {
         chunkWindows.clear();
-        blockWindows.clear();
-        nearBlockWindows.clear();
+        blockWindows = Map.of();
+        nearBlockWindows = Map.of();
+        externallyRenderedCuts = Set.of();
         liveOverride = null;
     }
 
@@ -90,7 +92,7 @@ public final class BlockModelCutter implements StickerMeshCutterBridge {
         collectDirty(nextWins, dirty);
         rebuildBlockIndex();
         notifyCutListeners(dirty);
-        markSectionsDirty(dirty);
+        markUncachedSectionsDirty(dirty);
     }
 
     @Override
@@ -102,7 +104,21 @@ public final class BlockModelCutter implements StickerMeshCutterBridge {
         if (liveOverride != null) collectDirty(List.of(liveOverride), dirty);
         rebuildBlockIndex();
         notifyCutListeners(dirty);
-        markSectionsDirty(dirty);
+        markUncachedSectionsDirty(dirty);
+    }
+
+    private void markUncachedSectionsDirty(Set<BlockPos> dirty) {
+        if (dirty.isEmpty()) return;
+        Set<BlockPos> external = externallyRenderedCuts;
+        if (external.isEmpty()) {
+            markSectionsDirty(dirty);
+            return;
+        }
+        var filtered = new HashSet<BlockPos>();
+        for (BlockPos bp : dirty) {
+            if (!external.contains(bp)) filtered.add(bp);
+        }
+        if (!filtered.isEmpty()) markSectionsDirty(filtered);
     }
 
     private void notifyCutListeners(Set<BlockPos> dirty) {
@@ -144,10 +160,12 @@ public final class BlockModelCutter implements StickerMeshCutterBridge {
             }
         }
         if (ov != null) indexEntry(exact, near, ov);
-        blockWindows.clear();
-        exact.forEach((p, l) -> blockWindows.put(p, List.copyOf(l)));
-        nearBlockWindows.clear();
-        near.forEach((p, s) -> nearBlockWindows.put(p, List.copyOf(s)));
+        var nextBlock = new HashMap<BlockPos, List<StickerEntry>>(exact.size());
+        exact.forEach((p, l) -> nextBlock.put(p, List.copyOf(l)));
+        var nextNear = new HashMap<BlockPos, List<StickerEntry>>(near.size());
+        near.forEach((p, s) -> nextNear.put(p, List.copyOf(s)));
+        blockWindows = nextBlock.isEmpty() ? Map.of() : Collections.unmodifiableMap(nextBlock);
+        nearBlockWindows = nextNear.isEmpty() ? Map.of() : Collections.unmodifiableMap(nextNear);
     }
 
     private static void indexEntry(Map<BlockPos, List<StickerEntry>> exact,
@@ -189,13 +207,53 @@ public final class BlockModelCutter implements StickerMeshCutterBridge {
     }
 
     @Override
+    public boolean isExternallyRenderedCut(BlockPos pos) {
+        return !externallyRenderedCuts.isEmpty() && externallyRenderedCuts.contains(pos);
+    }
+
+    /**
+     * Atomically swaps the set of non-StaticShell cut blocks that have been removed from terrain chunk meshes
+     * and moved into HeXie's cached cut VBOs, dirtying ONLY newly added/removed blocks' chunk sections.
+     */
+    public synchronized void setExternallyRenderedCuts(Set<BlockPos> nextCuts) {
+        Set<BlockPos> prev = externallyRenderedCuts;
+        Set<BlockPos> next = (nextCuts == null || nextCuts.isEmpty()) ? Set.of() : Set.copyOf(nextCuts);
+        if (prev.equals(next)) return;
+        var changed = new HashSet<BlockPos>();
+        for (BlockPos p : prev) if (!next.contains(p)) changed.add(p);
+        for (BlockPos p : next) if (!prev.contains(p)) changed.add(p);
+        externallyRenderedCuts = next;
+        if (!changed.isEmpty()) {
+            markSectionsDirty(changed);
+        }
+    }
+
+    /** Thread-safe snapshot of all active WINDOW stickers (including live Free-Camera edit override). */
+    public synchronized List<StickerEntry> snapshotActiveWindowEntries() {
+        var out = new ArrayList<StickerEntry>();
+        StickerEntry ov = liveOverride;
+        for (var list : chunkWindows.values()) {
+            for (var e : list) {
+                if (ov != null && e.anchorKey().equals(ov.anchorKey())) continue;
+                out.add(e);
+            }
+        }
+        if (ov != null) out.add(ov);
+        return out.isEmpty() ? List.of() : List.copyOf(out);
+    }
+
+    @Override
     public boolean hasCandidateCutAt(BlockPos pos) {
         return !nearBlockWindows.isEmpty() && nearBlockWindows.containsKey(pos);
     }
 
     @Override
     public boolean shouldExposeFaceIntoCut(BlockPos pos, Direction side, BlockPos neighborPos) {
-        if (blockWindows.isEmpty()) return false;
+        if (blockWindows.isEmpty() && externallyRenderedCuts.isEmpty()) return false;
+        // Never expose internal faces between two blocks that are BOTH cut (eliminates cross-block seam!).
+        if (externallyRenderedCuts.contains(pos) || blockWindows.containsKey(pos)) return false;
+        // Uncut solid block adjacent to a cut block removed from chunk mesh: expose its face into the cavity!
+        if (externallyRenderedCuts.contains(neighborPos)) return true;
         List<StickerEntry> neighborWins = blockWindows.get(neighborPos);
         if (neighborWins == null || neighborWins.isEmpty()) return false;
         for (var e : neighborWins) {

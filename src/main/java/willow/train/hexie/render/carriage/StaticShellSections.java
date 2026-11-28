@@ -166,6 +166,7 @@ final class StaticShellSections {
                 var original = event.getModels().get(key);
                 if (original == null) continue;
                 original = prepare.apply(original, state);
+                original = SmoothShellNormals.smooth(original, state);
                 var mesh = new StaticShellMesh(original, state);
                 String modelKey = "hexie:" + familyId + ":" + (++idx) + ":" + key;
                 HexieRendererBridge.registerShellModel(modelKey, original, state);

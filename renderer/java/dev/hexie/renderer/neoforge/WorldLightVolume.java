@@ -22,17 +22,43 @@ import static org.lwjgl.opengl.GL45C.*;
 
 /** Integer world cells, with texel centers at block centers. Shared by all views of a snapshot. */
 final class WorldLightVolume {
+    private static final int MAX_XZ = 128;
+    private static final int MAX_Y = 48;
+    private static final int[][] DIRS = {{0, 1, 0}, {1, 0, 0}, {-1, 0, 0}, {0, 0, 1}, {0, 0, -1}, {0, -1, 0}};
+
     record Grid(int x, int y, int z, int width, int height, int depth) {
-        static Grid covering(AABB box) {
-            int x = (int) Math.floor(box.minX) - 4, y = (int) Math.floor(box.minY) - 4, z = (int) Math.floor(box.minZ) - 4;
-            int w = (int) Math.floor(box.maxX) + 5 - x, h = (int) Math.floor(box.maxY) + 5 - y, d = (int) Math.floor(box.maxZ) + 5 - z;
-            return new Grid(x + Math.max(0, w - 64) / 2, y + Math.max(0, h - 48) / 2, z + Math.max(0, d - 64) / 2,
-                    Math.min(w, 64), Math.min(h, 48), Math.min(d, 64));
+        static Grid covering(AABB box, Vec focus) {
+            int bx0 = (int) Math.floor(box.minX) - 4, by0 = (int) Math.floor(box.minY) - 4, bz0 = (int) Math.floor(box.minZ) - 4;
+            int bw = (int) Math.floor(box.maxX) + 5 - bx0;
+            int bh = (int) Math.floor(box.maxY) + 5 - by0;
+            int bd = (int) Math.floor(box.maxZ) + 5 - bz0;
+            int w = Math.min(bw, MAX_XZ), h = Math.min(bh, MAX_Y), d = Math.min(bd, MAX_XZ);
+            int gx = fitAxis(bx0, bw, w, focus != null ? focus.x() : bx0 + bw * 0.5);
+            int gy = fitAxis(by0, bh, h, focus != null ? focus.y() : by0 + bh * 0.5);
+            int gz = fitAxis(bz0, bd, d, focus != null ? focus.z() : bz0 + bd * 0.5);
+            return new Grid(gx, gy, gz, w, h, d);
         }
 
-        boolean enclosesInner(AABB box) {
-            return box.minX >= x + 1 && box.minY >= y + 1 && box.minZ >= z + 1
-                    && box.maxX <= x + width - 1 && box.maxY <= y + height - 1 && box.maxZ <= z + depth - 1;
+        private static int fitAxis(int min, int span, int size, double focus) {
+            if (span <= size) return min;
+            // Snap to 16-block chunk steps around camera so walking across a large railway yard stays smooth!
+            int target = ((int) Math.floor(focus - size * 0.5)) & ~15;
+            return Math.max(min, Math.min(min + span - size, target));
+        }
+
+        boolean covers(AABB box, Vec focus) {
+            Grid desired = Grid.covering(box, focus);
+            // Always resize if the scene grew beyond the current volume dimensions!
+            if (width < desired.width || height < desired.height || depth < desired.depth) return false;
+            if (desired.width < MAX_XZ && (box.minX < x + 1 || box.maxX > x + width - 1)) return false;
+            if (desired.height < MAX_Y && (box.minY < y + 1 || box.maxY > y + height - 1)) return false;
+            if (desired.depth < MAX_XZ && (box.minZ < z + 1 || box.maxZ > z + depth - 1)) return false;
+            if (focus != null) {
+                if (width == MAX_XZ && desired.x != x && Math.abs(focus.x() - (x + width * 0.5)) > 16.0) return false;
+                if (height == MAX_Y && desired.y != y && Math.abs(focus.y() - (y + height * 0.5)) > 10.0) return false;
+                if (depth == MAX_XZ && desired.z != z && Math.abs(focus.z() - (z + depth * 0.5)) > 16.0) return false;
+            }
+            return true;
         }
     }
 
@@ -121,21 +147,26 @@ final class WorldLightVolume {
     }
 
     int update(ClientLevel world, Snapshot scene) {
+        return update(world, scene, null);
+    }
+
+    int update(ClientLevel world, Snapshot scene, Vec focus) {
         Geometry geometry = bounds(scene);
         if (world == null || geometry == null) return 0;
-        boolean moved = grid == null || !grid.enclosesInner(geometry.union);
-        Grid next = moved ? Grid.covering(geometry.union) : grid;
+        boolean moved = grid == null || !grid.covers(geometry.union, focus);
+        Grid next = moved ? Grid.covering(geometry.union, focus) : grid;
         long tick = world.getGameTime();
         boolean fullRebuild = world != level || !next.equals(grid) || texture == 0 || samples == null;
         boolean sectionDirty = revision != ClientRenderState.sectionRevision;
         var cell = new BlockPos.MutableBlockPos();
-        if (!fullRebuild && !sectionDirty && tick - lastProbe >= 10) {
+        if (!fullRebuild && Math.abs(tick - lastProbe) >= 10) {
             lastProbe = tick;
             // Rotate the checked cells so delayed light-engine updates eventually cover every voxel.
             for (int i = probeOffset; i < next.width * next.height * next.depth; i += 64) {
-                cell.set(next.x + i % next.width, next.y + i / next.width % next.height, next.z + i / (next.width * next.height));
-                if (samples.get(2 * i) != light(world, LightLayer.BLOCK, cell)
-                        || samples.get(2 * i + 1) != light(world, LightLayer.SKY, cell)) {
+                int packed = samplePacked(world, next.x + i % next.width, next.y + i / next.width % next.height,
+                        next.z + i / (next.width * next.height), cell);
+                if (samples.get(2 * i) != (byte) (packed & 0xFF)
+                        || samples.get(2 * i + 1) != (byte) ((packed >>> 8) & 0xFF)) {
                     fullRebuild = true;
                     break;
                 }
@@ -169,9 +200,9 @@ final class WorldLightVolume {
                         int gy = sy0 - next.y + dy;
                         int rowBase = 2 * ((gz * next.height + gy) * next.width + (sx0 - next.x));
                         for (int dx = 0; dx < sw; dx++) {
-                            cell.set(sx0 + dx, sy0 + dy, sz0 + dz);
-                            byte bl = light(world, LightLayer.BLOCK, cell);
-                            byte sl = light(world, LightLayer.SKY, cell);
+                            int packed = samplePacked(world, sx0 + dx, sy0 + dy, sz0 + dz, cell);
+                            byte bl = (byte) (packed & 0xFF);
+                            byte sl = (byte) ((packed >>> 8) & 0xFF);
                             samples.put(rowBase + 2 * dx, bl);
                             samples.put(rowBase + 2 * dx + 1, sl);
                             subSamples.put(bl).put(sl);
@@ -193,6 +224,8 @@ final class WorldLightVolume {
             if (texture != 0) glDeleteTextures(texture);
             texture = glCreateTextures(GL_TEXTURE_3D);
             glTextureStorage3D(texture, 1, GL_RG8, next.width, next.height, next.depth);
+            glTextureParameteri(texture, GL_TEXTURE_BASE_LEVEL, 0);
+            glTextureParameteri(texture, GL_TEXTURE_MAX_LEVEL, 0);
             glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             for (int axis : new int[]{GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_TEXTURE_WRAP_R})
@@ -204,8 +237,8 @@ final class WorldLightVolume {
         for (int z = 0; z < next.depth; z++)
             for (int y = 0; y < next.height; y++)
                 for (int x = 0; x < next.width; x++) {
-                    cell.set(next.x + x, next.y + y, next.z + z);
-                    samples.put(light(world, LightLayer.BLOCK, cell)).put(light(world, LightLayer.SKY, cell));
+                    int packed = samplePacked(world, next.x + x, next.y + y, next.z + z, cell);
+                    samples.put((byte) (packed & 0xFF)).put((byte) ((packed >>> 8) & 0xFF));
                 }
         samples.flip();
         upload(texture, next, samples);
@@ -214,17 +247,42 @@ final class WorldLightVolume {
         revision = ClientRenderState.sectionRevision;
         contentRevision++;
         lastProbe = tick;
+        int fx = focus != null ? (int) Math.floor(focus.x()) : next.x + next.width / 2;
+        int fy = focus != null ? (int) Math.floor(focus.y()) : next.y + next.height / 2;
+        int fz = focus != null ? (int) Math.floor(focus.z()) : next.z + next.depth / 2;
+        int fp = samplePacked(world, fx, fy, fz, cell);
+        ClientRenderState.volumeDebug = String.format("tex=%d [%d..%d,%d..%d,%d..%d] %dx%dx%d focus(%d,%d,%d)=b%d/s%d",
+                texture, next.x, next.x + next.width, next.y, next.y + next.height, next.z, next.z + next.depth,
+                next.width, next.height, next.depth, fx, fy, fz, (fp & 0xFF) / 17, ((fp >>> 8) & 0xFF) / 17);
         return texture;
     }
 
-    private static byte light(ClientLevel world, LightLayer layer, BlockPos cell) {
-        return (byte) (17 * world.getBrightness(layer, cell));
+    /** Samples RG8-scaled (block | sky<<8) light; solid opaque blocks inherit max open-neighbor light so GL_LINEAR
+     * never bleeds pitch-black (0,0) upward out of grass/dirt/track floors into carriage skirts or floors! */
+    private static int samplePacked(ClientLevel world, int x, int y, int z, BlockPos.MutableBlockPos cell) {
+        cell.set(x, y, z);
+        int b = world.getBrightness(LightLayer.BLOCK, cell);
+        int s = world.getBrightness(LightLayer.SKY, cell);
+        if (b == 0 && s == 0 && world.getBlockState(cell).isSolidRender(world, cell)) {
+            for (int[] d : DIRS) {
+                cell.set(x + d[0], y + d[1], z + d[2]);
+                if (world.getBlockState(cell).isSolidRender(world, cell)) continue;
+                int nb = world.getBrightness(LightLayer.BLOCK, cell);
+                int ns = world.getBrightness(LightLayer.SKY, cell);
+                if (nb > b) b = nb;
+                if (ns > s) s = ns;
+            }
+        }
+        return (17 * b) | ((17 * s) << 8);
     }
 
     /** Continuous 8-corner trilinear light field matching StaticShellLighting & Flywheel LightShaders.SMOOTH. */
     int vertexLight(ClientLevel world, Vec p, Vec n) {
         if (world == null) return 0;
-        double x = p.x() - 0.5, y = p.y() - 0.5, z = p.z() - 0.5;
+        double ox = n != null ? n.x() * 0.15 : 0.0;
+        double oy = n != null ? n.y() * 0.15 : 0.0;
+        double oz = n != null ? n.z() * 0.15 : 0.0;
+        double x = p.x() + ox - 0.5, y = p.y() + oy - 0.5, z = p.z() + oz - 0.5;
         int bx = (int) Math.floor(x), by = (int) Math.floor(y), bz = (int) Math.floor(z);
         double fx = x - bx, fy = y - by, fz = z - bz;
         double block = 0.0, sky = 0.0;
@@ -247,10 +305,9 @@ final class WorldLightVolume {
                         bVal = Byte.toUnsignedInt(samples.get(i)) / 17;
                         sVal = Byte.toUnsignedInt(samples.get(i + 1)) / 17;
                     } else {
-                        pos.set(gx, gy, gz);
-                        int packed = LevelRenderer.getLightColor(world, pos);
-                        bVal = LightTexture.block(packed);
-                        sVal = LightTexture.sky(packed);
+                        int packed = samplePacked(world, gx, gy, gz, pos);
+                        bVal = (packed & 0xFF) / 17;
+                        sVal = ((packed >>> 8) & 0xFF) / 17;
                     }
                     block += bVal * w;
                     sky += sVal * w;

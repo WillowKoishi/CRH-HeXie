@@ -42,6 +42,8 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import willow.train.hexie.bridge.HexieBridges;
+import willow.train.hexie.bridge.sticker.ContraptionRenderFilter;
+import willow.train.hexie.bridge.sticker.ContraptionStickerHost;
 import willow.train.hexie.bridge.vehicle.CarriageSnapshotView;
 import willow.train.hexie.bridge.vehicle.VehicleBridge.CarriageFloorViewView;
 import willow.train.hexie.bridge.world.BlockEntityViews.BlockEntityAnimationView;
@@ -145,6 +147,11 @@ public final class SnapshotCarriageStructure {
         // Create rounds the preserved Y interval and derives its radius from block cells.
         // Retain the original model envelope too, including fractional height and overhangs.
         view.bounds = view.bounds.minmax(bounds);
+        if (mountStorage && carriageEntity.level() instanceof net.minecraft.server.level.ServerLevel serverLevel
+                && ((Object) view) instanceof ContraptionStickerHost host) {
+            var captured = ContraptionStickers.captureFromWorld(serverLevel, snapshot.origin(), view.getBlocks().keySet());
+            if (!captured.isEmpty()) host.hexie$setStickers(captured.localEntries());
+        }
         view.configureDirection(carriageEntity.originalForward);
         carriageEntity.setInitialOrientation(Direction.SOUTH);
         carriageEntity.startAtInitialYaw();
@@ -336,6 +343,8 @@ public final class SnapshotCarriageStructure {
                     return new RenderedBlocks(pos -> {
                         var info = SnapshotView.this.getBlocks().get(pos);
                         if (info == null) return net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
+                        if (ContraptionRenderFilter.shouldHide(SnapshotView.this, pos, info.state()))
+                            return net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
                         if (openControls && info.state().getBlock() instanceof ControlsBlock)
                             return info.state().setValue(ControlsBlock.OPEN, true);
                         var animation = ((SnapshotCarriageEntity) entity).couplerAnimation();

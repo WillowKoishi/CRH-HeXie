@@ -7,7 +7,7 @@ import java.util.*;
 
 /** Integer UI units are explicit for fractional controls. A zero always survives persistence. */
 public record RenderSettings(Preset preset, Map<Field,Integer> values, boolean fullQuality) {
-    public enum Preset { LOW, MEDIUM, HIGH }
+    public enum Preset { OFF, LOW, MEDIUM, HIGH }
     public enum Tier { BASIC, FULL, IRIS }
     public enum Field {
         POINT_LIGHTS(1,1,1), TILE_PIXELS(32,16,16), DEPTH_LAYERS(16,24,24), PRIORITY_LIGHTS(2,4,8),
@@ -20,7 +20,9 @@ public record RenderSettings(Preset preset, Map<Field,Integer> values, boolean f
 
         private final int[] defaults;
         Field(int low,int medium,int high) { defaults = new int[]{low,medium,high}; }
-        public int defaultValue(Preset preset) { return defaults[preset.ordinal()]; }
+        public int defaultValue(Preset preset) {
+            return preset == Preset.OFF ? 0 : defaults[preset.ordinal() - 1];
+        }
     }
 
     public RenderSettings {
@@ -41,8 +43,9 @@ public record RenderSettings(Preset preset, Map<Field,Integer> values, boolean f
         return new RenderSettings(preset,copy,fullQuality);
     }
     public int get(Field field) { return values.get(field); }
+    public boolean isDisabled() { return preset == Preset.OFF || get(Field.MEMORY_MIB) == 0; }
     public int effective(Field field,Tier tier) {
-        if (tier != Tier.FULL || get(Field.MEMORY_MIB) == 0) return 0;
+        if (isDisabled() || tier != Tier.FULL) return 0;
         return switch (field) {
             case MEMORY_MIB, GPU_MICROSECONDS, MAP_FACES -> get(field);
             case CSM_LEVELS, CSM_RES, CSM_DISTANCE -> get(Field.CSM_LEVELS)* (long)get(Field.CSM_RES) == 0
@@ -63,7 +66,7 @@ public record RenderSettings(Preset preset, Map<Field,Integer> values, boolean f
         };
     }
     public static RenderSettings load(Path path) throws IOException {
-        if (!Files.exists(path)) return of(Preset.MEDIUM);
+        if (!Files.exists(path)) return of(Preset.OFF);
         try (Reader reader=Files.newBufferedReader(path)) {
             return Objects.requireNonNull(new Gson().fromJson(reader,RenderSettings.class));
         }

@@ -4,543 +4,156 @@ import dev.hexie.renderer.*;
 import java.util.*;
 import static org.lwjgl.opengl.GL45C.*;
 
-/** Multi-light forward input for Sodium terrain, Sable ships, and HeXie custom geometry.
- * Uses zero-stack preorder threaded BVHs for both axis-aligned terrain VoxelShape boxes and
- * exact world-space custom triangles (including alpha-tested iron-bar cutout grates), relative
- * to an integer-aligned local origin with a union-AABB early-out for distant terrain pixels. */
+/**
+ * Pure-Geometry GPU Forward Lighting for Sodium terrain, HeXie StaticShell/cut-window geometry, Flywheel trains, and Sable ships.
+ * ZERO voxel grids!
+ * - Unit 4: 2048x2048 Non-Linear Distorted GPU Sun/Moon Shadow Map (hardware PCF compare sampler) for 160-block PCSS soft shadows
+ * - Unit 5: 3072x2048 Exact-Geometry 6-Face Cubemap Point-Light Shadow Atlas (16 shadowed lamps x 6 faces @ 256x256, hardware PCF!)
+ * - Unit 7: 2048x2048 Raw Sun Depth Sampler for PCSS Blocker Search
+ */
 public final class ForwardLight {
     public record Box(Vec low, Vec high) {}
-    public static final int TARGET_WORLD = 1, TARGET_GEOMETRY = 2, TARGET_ALL = 3, TARGET_BLOCK_EMITTER = 4;
+    public static final int TARGET_WORLD = 1, TARGET_GEOMETRY = 2, TARGET_ALL = 3, TARGET_BLOCK_EMITTER = 4, TARGET_CEILING_DOWN = 8;
+    public static final int MAX_POINT_LAMPS = 16;
+
     public record Lamp(Vec position, LightState source, int targetMask) {
         public Lamp(Vec position, LightState source) { this(position, source, TARGET_ALL); }
     }
+    public record ShadowedLamp(Lamp lamp, int atlasSlot) {}
     public record Sun(Vec direction, Vec color) {
         public static final Sun OFF = new Sun(Vec.ZERO, Vec.ZERO);
     }
     /** cutoutMode: 0 = solid opaque, 1 = iron-bar cutout (even quad tri), 2 = iron-bar cutout (odd quad tri). */
     public record CasterTri(Triangle triangle, int cutoutMode) {}
 
-    /** Reusable pre-built stackless BVH over static terrain boxes to avoid per-frame CPU sorting. */
+    /** Lightweight compatibility wrapper kept for public/internal callers. */
     public static final class BoxTree {
         final List<Box> boxes;
-        final double[] bounds; // 6 doubles per node: lo.xyz, hi.xyz
-        final int[] miss;
-        final boolean[] leaf;
-        final int nodeCount;
-
-        BoxTree(List<Box> boxes, double[] bounds, int[] miss, boolean[] leaf, int nodeCount) {
-            this.boxes = boxes;
-            this.bounds = bounds;
-            this.miss = miss;
-            this.leaf = leaf;
-            this.nodeCount = nodeCount;
-        }
-
+        BoxTree(List<Box> boxes) { this.boxes = boxes; }
         public int boxCount() { return boxes.size(); }
         public List<Box> boxes() { return boxes; }
     }
 
-    /** Reusable pre-built stackless BVH over static caster triangles to avoid per-frame CPU sorting. */
+    /** Lightweight compatibility wrapper kept for public/internal callers. */
     public static final class TriTree {
-        final CasterTri[] ordered;
-        final List<Triangle> plainTris;
-        final double[] bounds; // 6 doubles per node: lo.xyz, hi.xyz
-        final int[] miss;
-        final int[] leafIdx;
-        final int nodeCount;
-
-        TriTree(CasterTri[] ordered, List<Triangle> plainTris, double[] bounds, int[] miss, int[] leafIdx, int nodeCount) {
-            this.ordered = ordered;
-            this.plainTris = plainTris;
-            this.bounds = bounds;
-            this.miss = miss;
-            this.leafIdx = leafIdx;
-            this.nodeCount = nodeCount;
-        }
-
-        public int triangleCount() { return ordered.length; }
+        final List<CasterTri> tris;
+        TriTree(List<CasterTri> tris) { this.tris = tris; }
+        public int triangleCount() { return tris.size(); }
     }
 
-    private static final BoxTree EMPTY_BOX_TREE = new BoxTree(List.of(), new double[0], new int[0], new boolean[0], 0);
-    public static final TriTree EMPTY_TRI_TREE = new TriTree(new CasterTri[0], List.of(), new double[0], new int[0], new int[0], 0);
+    public static final TriTree EMPTY_TRI_TREE = new TriTree(List.of());
 
-    private static final int[] buffers = new int[3], capacities = new int[3];
-    private static int ringIndex, activeBuffer, lampCount, boxCount, triCount;
-    private static float[] scratch = new float[0];
-    private static Vec origin = Vec.ZERO;
-    private static Vec boundMin = Vec.ZERO, boundMax = Vec.ZERO;
-    private static int publishedMask;
+    private static final int UNIT_SHADOW_CMP = 4;
+    private static final int UNIT_POINT_ATLAS = 5;
+    private static final int UNIT_SHADOW_RAW = 7;
+
+    private static boolean active;
+    private static int shadowDepthTex, shadowCompareSampler, shadowRawSampler;
+    private static int pointAtlasTex, pointCompareSampler;
+    private static float[] sunMatrix = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
+    private static Vec shadowOrigin = Vec.ZERO;
     private static Sun sun = Sun.OFF;
-    private static BoxTree publishedBoxTree = EMPTY_BOX_TREE;
-    private static TriTree publishedTriTree = EMPTY_TRI_TREE;
-    private static List<Box> casters = List.of();
-    private static List<Triangle> casterTriangles = List.of();
-    private static List<Lamp> lamps = List.of();
+    private static List<ShadowedLamp> activePointLamps = List.of();
+    private static List<Lamp> fallbackEntityLamps = List.of();
+    private static final float[] LAMP_POS_BUF = new float[MAX_POINT_LAMPS * 4];
+    private static final float[] LAMP_COL_BUF = new float[MAX_POINT_LAMPS * 4];
+    private static int reportedLights, reportedFaces;
+
+    private record ProgramLayout(
+            int enabled,
+            int sunDir,
+            int sunColor,
+            int sunMat,
+            int shadowCamOff,
+            int hasShadow,
+            int hasPointAtlas,
+            int rotation,
+            int hasNormal,
+            int shadowMap,
+            int shadowDepth,
+            int pointAtlas,
+            int lampCount,
+            int lampPos,
+            int lampCol
+    ) {}
+
+    private static final Map<Integer, ProgramLayout> PROGRAM_CACHE = new HashMap<>();
 
     private ForwardLight() {}
 
+    public static BoxTree buildBoxTree(List<Box> boxes) {
+        return new BoxTree(boxes == null ? List.of() : List.copyOf(boxes));
+    }
+
+    public static TriTree buildTriTree(List<CasterTri> triangles) {
+        return new TriTree(triangles == null ? List.of() : List.copyOf(triangles));
+    }
+
     public static void clear() {
-        if (activeBuffer == 0 && lampCount == 0 && publishedMask == 0 && sun == Sun.OFF) return;
-        activeBuffer = 0;
-        lampCount = 0;
-        boxCount = 0;
-        triCount = 0;
-        origin = Vec.ZERO;
-        boundMin = Vec.ZERO;
-        boundMax = Vec.ZERO;
-        publishedBoxTree = EMPTY_BOX_TREE;
-        publishedTriTree = EMPTY_TRI_TREE;
-        casters = List.of();
-        casterTriangles = List.of();
-        lamps = List.of();
-        publishedMask = 0;
+        active = false;
+        shadowDepthTex = shadowCompareSampler = shadowRawSampler = 0;
+        pointAtlasTex = pointCompareSampler = 0;
         sun = Sun.OFF;
+        activePointLamps = List.of();
+        fallbackEntityLamps = List.of();
+        reportedLights = reportedFaces = 0;
     }
 
     public static void dispose() {
         clear();
         invalidatePrograms();
-        maxSsboBindings = 0;
-        for (int buffer : buffers) if (buffer != 0) glDeleteBuffers(buffer);
-        Arrays.fill(buffers, 0);
-        Arrays.fill(capacities, 0);
-        ringIndex = 0;
-        scratch = new float[0];
     }
 
-    public static BoxTree buildBoxTree(List<Box> boxes) {
-        int n = boxes.size();
-        if (n == 0) return EMPTY_BOX_TREE;
-        Box[] arr = boxes.toArray(new Box[0]);
-        int maxNodes = 2 * n;
-        double[] bounds = new double[6 * maxNodes];
-        int[] miss = new int[maxNodes];
-        boolean[] leaf = new boolean[maxNodes];
-        int[] cursor = {0};
-        buildBoxNodes(arr, 0, n, bounds, miss, leaf, cursor);
-        return new BoxTree(List.copyOf(boxes), bounds, miss, leaf, cursor[0]);
+    public static void invalidatePrograms() {
+        PROGRAM_CACHE.clear();
     }
 
-    public static TriTree buildTriTree(List<CasterTri> triangles) {
-        int tc = triangles.size();
-        if (tc == 0) return EMPTY_TRI_TREE;
-        int maxTriNodes = 2 * tc;
-        double[] triBounds = new double[6 * maxTriNodes];
-        int[] triMiss = new int[maxTriNodes];
-        int[] triLeafIdx = new int[maxTriNodes];
-        CasterTri[] triArr = triangles.toArray(new CasterTri[0]);
-        int[] cursor = {0};
-        buildTriNodes(triArr, 0, tc, triBounds, triMiss, triLeafIdx, cursor);
-        var plain = new ArrayList<Triangle>(tc);
-        for (int i = 0; i < tc; i++) plain.add(triArr[i].triangle());
-        return new TriTree(triArr, List.copyOf(plain), triBounds, triMiss, triLeafIdx, cursor[0]);
-    }
-
-    public static void publish(Vec light, LightState source, List<Box> boxes, int rayBudget) {
-        publish(List.of(new Lamp(light, source)), buildBoxTree(boxes), EMPTY_TRI_TREE, rayBudget, Sun.OFF, Vec.ZERO);
-    }
-
-    public static void publish(List<Lamp> activeLamps, List<Box> boxes, int rayBudget) {
-        publish(activeLamps, buildBoxTree(boxes), EMPTY_TRI_TREE, rayBudget, Sun.OFF, Vec.ZERO);
-    }
-
-    public static void publish(List<Lamp> activeLamps, List<Box> boxes, List<Triangle> triangles, int rayBudget) {
-        var wrapped = new ArrayList<CasterTri>(triangles.size());
-        for (var t : triangles) wrapped.add(new CasterTri(t, 0));
-        publish(activeLamps, buildBoxTree(boxes), buildTriTree(wrapped), rayBudget, Sun.OFF, Vec.ZERO);
-    }
-
-    public static void publish(List<Lamp> activeLamps, BoxTree boxTree, List<CasterTri> triangles, int rayBudget) {
-        publish(activeLamps, boxTree, buildTriTree(triangles), rayBudget, Sun.OFF, Vec.ZERO);
-    }
-
-    public static void publish(List<Lamp> activeLamps, BoxTree boxTree, List<CasterTri> triangles, int rayBudget,
-                               Sun daylight, Vec geometryOrigin) {
-        publish(activeLamps, boxTree, buildTriTree(triangles), rayBudget, daylight, geometryOrigin);
-    }
-
-    public static void publish(List<Lamp> activeLamps, BoxTree boxTree, TriTree triTree, int rayBudget,
-                               Sun daylight, Vec geometryOrigin) {
-        if (activeLamps.isEmpty() && daylight.color().equals(Vec.ZERO)) {
+    /** Publishes the current frame's Exact-Geometry Sun Shadow Map + Point-Light Cubemap Shadow Atlas. */
+    public static void publishGpuLighting(
+            Sun daylight,
+            int shadowTex, int compareSampler, int rawSampler, float[] sunMat, Vec shadowOrig,
+            int ptAtlasTex, int ptCompareSampler, List<ShadowedLamp> shadowedPointLamps,
+            List<Lamp> allLampsForEntityFallback, int casterFaceCount) {
+        boolean hasSun = daylight != null && !daylight.color().equals(Vec.ZERO) && shadowTex != 0;
+        boolean hasPoints = ptAtlasTex != 0 && shadowedPointLamps != null && !shadowedPointLamps.isEmpty();
+        if (!hasSun && !hasPoints) {
             clear();
             return;
         }
-        // Integer-aligned local origin keeps MC integer & 1/16 sub-block VoxelShape coordinates bit-exact in float32.
-        Vec first = activeLamps.isEmpty() ? geometryOrigin : activeLamps.get(0).position();
-        Vec base = new Vec(Math.floor(first.x()), Math.floor(first.y()), Math.floor(first.z()));
-        if (activeBuffer != 0 && boxTree == publishedBoxTree && triTree == publishedTriTree
-                && base.equals(origin) && daylight.equals(sun) && activeLamps.equals(lamps)) {
-            return;
-        }
-        int lc = activeLamps.size();
-        int boxNodeCount = boxTree.nodeCount;
-        int tc = triTree.ordered.length;
-        int triNodeCount = triTree.nodeCount;
-        double[] triBounds = triTree.bounds;
-        int[] triMiss = triTree.miss;
-        int[] triLeafIdx = triTree.leafIdx;
-        CasterTri[] triArr = triTree.ordered;
+        active = true;
+        sun = daylight != null ? daylight : Sun.OFF;
+        shadowDepthTex = hasSun ? shadowTex : 0;
+        shadowCompareSampler = compareSampler;
+        shadowRawSampler = rawSampler;
+        if (sunMat != null && sunMat.length == 16) sunMatrix = sunMat;
+        shadowOrigin = shadowOrig != null ? shadowOrig : Vec.ZERO;
+        pointAtlasTex = hasPoints ? ptAtlasTex : 0;
+        pointCompareSampler = ptCompareSampler;
+        activePointLamps = hasPoints ? shadowedPointLamps : List.of();
+        fallbackEntityLamps = allLampsForEntityFallback != null ? allLampsForEntityFallback : List.of();
+        reportedLights = Math.max(activePointLamps.size(), fallbackEntityLamps.size());
+        reportedFaces = casterFaceCount;
+    }
 
-        int triDataBase = lc + boxNodeCount + triNodeCount;
-        int totalPairs = triDataBase + 2 * tc;
-        int needed = 4 + totalPairs * 8;
-        if (scratch.length < needed) scratch = new float[Math.max(needed, Math.max(512, scratch.length * 2))];
-        float[] data = scratch;
-        data[0] = Float.intBitsToFloat(triNodeCount);
-        data[1] = Float.intBitsToFloat(triDataBase);
-        data[2] = Float.intBitsToFloat(lc);
-        data[3] = Float.intBitsToFloat(boxNodeCount);
+    public static int publishedLamps() { return reportedLights; }
+    public static int publishedTriangles() { return reportedFaces; }
+    public static int usedRays() { return active ? (shadowDepthTex != 0 ? 18 : 0) + activePointLamps.size() * 4 : 0; }
 
-        double bMinX = Double.POSITIVE_INFINITY, bMinY = Double.POSITIVE_INFINITY, bMinZ = Double.POSITIVE_INFINITY;
-        double bMaxX = Double.NEGATIVE_INFINITY, bMaxY = Double.NEGATIVE_INFINITY, bMaxZ = Double.NEGATIVE_INFINITY;
-        int mask = 0;
-        for (int i = 0; i < lc; i++) {
-            var lamp = activeLamps.get(i);
-            mask |= lamp.targetMask();
-            Vec rel = lamp.position().minus(base);
+    /** Fast entity block-light query used by EntityLightMixin. */
+    public static int blockLight(Vec lo, Vec hi) {
+        if (fallbackEntityLamps.isEmpty()) return 0;
+        Vec center = lo.plus(hi).times(0.5);
+        int best = 0;
+        for (var lamp : fallbackEntityLamps) {
             double r = lamp.source().radius();
-            bMinX = Math.min(bMinX, rel.x() - r);
-            bMinY = Math.min(bMinY, rel.y() - r);
-            bMinZ = Math.min(bMinZ, rel.z() - r);
-            bMaxX = Math.max(bMaxX, rel.x() + r);
-            bMaxY = Math.max(bMaxY, rel.y() + r);
-            bMaxZ = Math.max(bMaxZ, rel.z() + r);
-            Vec rgb = lamp.source().linearRgb().times(lamp.source().intensity());
-            int o = 4 + 8 * i;
-            data[o] = (float) rel.x();
-            data[o + 1] = (float) rel.y();
-            data[o + 2] = (float) rel.z();
-            data[o + 3] = (float) r;
-            data[o + 4] = (float) rgb.x();
-            data[o + 5] = (float) rgb.y();
-            data[o + 6] = (float) rgb.z();
-            data[o + 7] = lamp.targetMask();
+            Vec d = center.minus(lamp.position());
+            double d2 = d.dot(d);
+            if (d2 >= r * r) continue;
+            int level = (int) Math.round(lamp.source().radius() - Math.sqrt(d2));
+            if (level > best) best = level;
+            if (best >= 15) return 15;
         }
-
-        int boxBase = 4 + 8 * lc;
-        double bx = base.x(), by = base.y(), bz = base.z();
-        for (int i = 0; i < boxNodeCount; i++) {
-            int o = boxBase + 8 * i;
-            int bi = 6 * i;
-            boolean isLeaf = boxTree.leaf[i];
-            writeBounds(data, o,
-                    boxTree.bounds[bi] - bx, boxTree.bounds[bi + 1] - by, boxTree.bounds[bi + 2] - bz,
-                    boxTree.bounds[bi + 3] - bx, boxTree.bounds[bi + 4] - by, boxTree.bounds[bi + 5] - bz,
-                    !isLeaf);
-            data[o + 3] = (float) boxTree.miss[i];
-            data[o + 7] = isLeaf ? 1f : 0f;
-        }
-
-        int triNodeBase = boxBase + 8 * boxNodeCount;
-        for (int i = 0; i < triNodeCount; i++) {
-            int o = triNodeBase + 8 * i;
-            int bi = 6 * i;
-            writeBounds(data, o,
-                    triBounds[bi] - bx, triBounds[bi + 1] - by, triBounds[bi + 2] - bz,
-                    triBounds[bi + 3] - bx, triBounds[bi + 4] - by, triBounds[bi + 5] - bz,
-                    true);
-            data[o + 3] = (float) triMiss[i];
-            data[o + 7] = (float) triLeafIdx[i];
-        }
-
-        int triDataOffset = 4 + 8 * triDataBase;
-        for (int i = 0; i < tc; i++) {
-            var ct = triArr[i];
-            var t = ct.triangle();
-            int o = triDataOffset + 16 * i;
-            data[o] = (float) (t.a().x() - bx);
-            data[o + 1] = (float) (t.a().y() - by);
-            data[o + 2] = (float) (t.a().z() - bz);
-            data[o + 3] = 0f;
-            data[o + 4] = (float) (t.b().x() - bx);
-            data[o + 5] = (float) (t.b().y() - by);
-            data[o + 6] = (float) (t.b().z() - bz);
-            data[o + 7] = 0f;
-            data[o + 8] = (float) (t.c().x() - bx);
-            data[o + 9] = (float) (t.c().y() - by);
-            data[o + 10] = (float) (t.c().z() - bz);
-            data[o + 11] = 0f;
-            data[o + 12] = (float) ct.cutoutMode();
-            data[o + 13] = 0f;
-            data[o + 14] = 0f;
-            data[o + 15] = 0f;
-        }
-
-        ringIndex = (ringIndex + 1) % buffers.length;
-        if (buffers[ringIndex] == 0) buffers[ringIndex] = glCreateBuffers();
-        int buffer = buffers[ringIndex];
-        if (needed > capacities[ringIndex]) {
-            int alloc = Math.max(needed, Math.max(512, capacities[ringIndex] * 2));
-            glNamedBufferData(buffer, 4L * alloc, GL_STREAM_DRAW);
-            capacities[ringIndex] = alloc;
-        }
-        float[] upload = needed == data.length ? data : Arrays.copyOf(data, needed);
-        glNamedBufferSubData(buffer, 0L, upload);
-        activeBuffer = buffer;
-        origin = base;
-        boundMin = lc == 0 ? Vec.ZERO : new Vec(bMinX, bMinY, bMinZ);
-        boundMax = lc == 0 ? Vec.ZERO : new Vec(bMaxX, bMaxY, bMaxZ);
-        publishedMask = mask;
-        sun = daylight;
-        publishedBoxTree = boxTree;
-        publishedTriTree = triTree;
-        lampCount = lc;
-        boxCount = boxTree.boxCount();
-        triCount = tc;
-        casters = boxTree.boxes;
-        casterTriangles = triTree.plainTris;
-        lamps = List.copyOf(activeLamps);
-    }
-
-    private static void writeBounds(float[] data, int o,
-                                    double lx, double ly, double lz,
-                                    double hx, double hy, double hz,
-                                    boolean conservative) {
-        float ax = (float) lx, ay = (float) ly, az = (float) lz;
-        float bx = (float) hx, by = (float) hy, bz = (float) hz;
-        if (conservative) {
-            data[o] = ax > lx ? Math.nextDown(ax) : ax;
-            data[o + 1] = ay > ly ? Math.nextDown(ay) : ay;
-            data[o + 2] = az > lz ? Math.nextDown(az) : az;
-            data[o + 4] = bx < hx ? Math.nextUp(bx) : bx;
-            data[o + 5] = by < hy ? Math.nextUp(by) : by;
-            data[o + 6] = bz < hz ? Math.nextUp(bz) : bz;
-        } else {
-            data[o] = ax;
-            data[o + 1] = ay;
-            data[o + 2] = az;
-            data[o + 4] = bx;
-            data[o + 5] = by;
-            data[o + 6] = bz;
-        }
-    }
-
-    private static void buildBoxNodes(Box[] items, int start, int end,
-                                      double[] bounds, int[] miss, boolean[] leaf, int[] cursor) {
-        int idx = cursor[0]++;
-        if (end - start == 1) {
-            Box b = items[start];
-            int o = 6 * idx;
-            bounds[o] = b.low.x(); bounds[o + 1] = b.low.y(); bounds[o + 2] = b.low.z();
-            bounds[o + 3] = b.high.x(); bounds[o + 4] = b.high.y(); bounds[o + 5] = b.high.z();
-            miss[idx] = idx + 1;
-            leaf[idx] = true;
-            return;
-        }
-        double lx = Double.POSITIVE_INFINITY, ly = Double.POSITIVE_INFINITY, lz = Double.POSITIVE_INFINITY;
-        double hx = Double.NEGATIVE_INFINITY, hy = Double.NEGATIVE_INFINITY, hz = Double.NEGATIVE_INFINITY;
-        double clx = Double.POSITIVE_INFINITY, cly = Double.POSITIVE_INFINITY, clz = Double.POSITIVE_INFINITY;
-        double chx = Double.NEGATIVE_INFINITY, chy = Double.NEGATIVE_INFINITY, chz = Double.NEGATIVE_INFINITY;
-        for (int i = start; i < end; i++) {
-            Vec lo = items[i].low, hi = items[i].high;
-            if (lo.x() < lx) lx = lo.x(); if (lo.y() < ly) ly = lo.y(); if (lo.z() < lz) lz = lo.z();
-            if (hi.x() > hx) hx = hi.x(); if (hi.y() > hy) hy = hi.y(); if (hi.z() > hz) hz = hi.z();
-            double cx = lo.x() + hi.x(), cy = lo.y() + hi.y(), cz = lo.z() + hi.z();
-            if (cx < clx) clx = cx; if (cy < cly) cly = cy; if (cz < clz) clz = cz;
-            if (cx > chx) chx = cx; if (cy > chy) chy = cy; if (cz > chz) chz = cz;
-        }
-        double sx = chx - clx, sy = chy - cly, sz = chz - clz;
-        int axis = sx >= sy && sx >= sz ? 0 : sy >= sz ? 1 : 2;
-        int mid = (start + end) >>> 1;
-        partitionBoxes(items, start, end - 1, mid, axis);
-        buildBoxNodes(items, start, mid, bounds, miss, leaf, cursor);
-        buildBoxNodes(items, mid, end, bounds, miss, leaf, cursor);
-        int o = 6 * idx;
-        bounds[o] = lx; bounds[o + 1] = ly; bounds[o + 2] = lz;
-        bounds[o + 3] = hx; bounds[o + 4] = hy; bounds[o + 5] = hz;
-        miss[idx] = cursor[0];
-        leaf[idx] = false;
-    }
-
-    private static void buildTriNodes(CasterTri[] items, int start, int end,
-                                      double[] bounds, int[] miss, int[] leafIdx, int[] cursor) {
-        int idx = cursor[0]++;
-        if (end - start == 1) {
-            Triangle t = items[start].triangle();
-            Vec lo = t.low(), hi = t.high();
-            int o = 6 * idx;
-            bounds[o] = lo.x(); bounds[o + 1] = lo.y(); bounds[o + 2] = lo.z();
-            bounds[o + 3] = hi.x(); bounds[o + 4] = hi.y(); bounds[o + 5] = hi.z();
-            miss[idx] = idx + 1;
-            leafIdx[idx] = start;
-            return;
-        }
-        double lx = Double.POSITIVE_INFINITY, ly = Double.POSITIVE_INFINITY, lz = Double.POSITIVE_INFINITY;
-        double hx = Double.NEGATIVE_INFINITY, hy = Double.NEGATIVE_INFINITY, hz = Double.NEGATIVE_INFINITY;
-        double clx = Double.POSITIVE_INFINITY, cly = Double.POSITIVE_INFINITY, clz = Double.POSITIVE_INFINITY;
-        double chx = Double.NEGATIVE_INFINITY, chy = Double.NEGATIVE_INFINITY, chz = Double.NEGATIVE_INFINITY;
-        for (int i = start; i < end; i++) {
-            Triangle t = items[i].triangle();
-            Vec lo = t.low(), hi = t.high();
-            if (lo.x() < lx) lx = lo.x(); if (lo.y() < ly) ly = lo.y(); if (lo.z() < lz) lz = lo.z();
-            if (hi.x() > hx) hx = hi.x(); if (hi.y() > hy) hy = hi.y(); if (hi.z() > hz) hz = hi.z();
-            double cx = lo.x() + hi.x(), cy = lo.y() + hi.y(), cz = lo.z() + hi.z();
-            if (cx < clx) clx = cx; if (cy < cly) cly = cy; if (cz < clz) clz = cz;
-            if (cx > chx) chx = cx; if (cy > chy) chy = cy; if (cz > chz) chz = cz;
-        }
-        double sx = chx - clx, sy = chy - cly, sz = chz - clz;
-        int axis = sx >= sy && sx >= sz ? 0 : sy >= sz ? 1 : 2;
-        int mid = (start + end) >>> 1;
-        partitionTris(items, start, end - 1, mid, axis);
-        buildTriNodes(items, start, mid, bounds, miss, leafIdx, cursor);
-        buildTriNodes(items, mid, end, bounds, miss, leafIdx, cursor);
-        int o = 6 * idx;
-        bounds[o] = lx; bounds[o + 1] = ly; bounds[o + 2] = lz;
-        bounds[o + 3] = hx; bounds[o + 4] = hy; bounds[o + 5] = hz;
-        miss[idx] = cursor[0];
-        leafIdx[idx] = -1;
-    }
-
-    /** Linear-time quickselect partition (zero allocations, no Comparator boxing). */
-    private static void partitionBoxes(Box[] a, int lo, int hi, int k, int axis) {
-        while (lo < hi) {
-            double pivot = boxKey(a[(lo + hi) >>> 1], axis);
-            int i = lo, j = hi;
-            while (i <= j) {
-                while (boxKey(a[i], axis) < pivot) i++;
-                while (boxKey(a[j], axis) > pivot) j--;
-                if (i <= j) {
-                    Box tmp = a[i]; a[i] = a[j]; a[j] = tmp;
-                    i++; j--;
-                }
-            }
-            if (k <= j) hi = j;
-            else if (k >= i) lo = i;
-            else return;
-        }
-    }
-
-    private static void partitionTris(CasterTri[] a, int lo, int hi, int k, int axis) {
-        while (lo < hi) {
-            double pivot = triKey(a[(lo + hi) >>> 1], axis);
-            int i = lo, j = hi;
-            while (i <= j) {
-                while (triKey(a[i], axis) < pivot) i++;
-                while (triKey(a[j], axis) > pivot) j--;
-                if (i <= j) {
-                    CasterTri tmp = a[i]; a[i] = a[j]; a[j] = tmp;
-                    i++; j--;
-                }
-            }
-            if (k <= j) hi = j;
-            else if (k >= i) lo = i;
-            else return;
-        }
-    }
-
-    private static double boxKey(Box b, int axis) {
-        return b.low.at(axis) + b.high.at(axis);
-    }
-
-    private static double triKey(CasterTri ct, int axis) {
-        Triangle t = ct.triangle();
-        return t.low().at(axis) + t.high().at(axis);
-    }
-
-    public static int usedRays() { return 0; }
-    public static int publishedLamps() { return lampCount; }
-    public static int publishedBoxes() { return boxCount; }
-    public static int publishedTriangles() { return triCount; }
-
-    /** A single packed light is shared by a draw. Certify the entire light/receiver hull
-     * with its enclosing AABB. Touching an uncertain caster withholds the increase. */
-    public static int blockLight(Vec low, Vec high) {
-        if (lamps.isEmpty() || ClientRenderState.engine().route().tier() != RenderSettings.Tier.FULL) return 0;
-        double total = 0;
-        for (var entry : lamps) {
-            if ((entry.targetMask() & TARGET_WORLD) == 0) continue;
-            Vec position = entry.position();
-            LightState lamp = entry.source();
-            Vec lo = Vec.min(position, low), hi = Vec.max(position, high);
-            double far2 = 0;
-            for (int i = 0; i < 3; i++) {
-                double far = Math.max(position.at(i) - lo.at(i), hi.at(i) - position.at(i));
-                far2 += far * far;
-            }
-            if (far2 >= lamp.radius() * lamp.radius()) continue;
-            boolean blocked = false;
-            for (var b : casters) {
-                if (lo.x() <= b.high.x() && hi.x() >= b.low.x() && lo.y() <= b.high.y() && hi.y() >= b.low.y()
-                        && lo.z() <= b.high.z() && hi.z() >= b.low.z()) {
-                    blocked = true;
-                    break;
-                }
-            }
-            if (!blocked) {
-                for (var t : casterTriangles) {
-                    Vec tLo = t.low(), tHi = t.high();
-                    if (lo.x() <= tHi.x() && hi.x() >= tLo.x() && lo.y() <= tHi.y() && hi.y() >= tLo.y()
-                            && lo.z() <= tHi.z() && hi.z() >= tLo.z()) {
-                        blocked = true;
-                        break;
-                    }
-                }
-            }
-            if (blocked) continue;
-            double mono = lamp.linearRgb().dot(new Vec(.2126, .7152, .0722));
-            total += mono * lamp.energy(Math.sqrt(far2), Visibility.VISIBLE, 64);
-        }
-        return (int) (15 * Math.min(1, total));
-    }
-
-    private record ProgramLayout(int uniforms, int attributes, int blocks, int blockIndex, int defaultBinding,
-                               BitSet occupiedSlots, int enabled, int receiverMask, int sunDir, int sunColor,
-                               int origin, int boundMin, int boundMax, int rotation, int hasNormal) {}
-
-    private static final class ProgramMeta {
-        long validatedFrame;
-        ProgramLayout layout;
-    }
-
-    private static final Map<Integer, ProgramMeta> programs = new HashMap<>();
-    private static int maxSsboBindings;
-
-    public static void invalidatePrograms() {
-        programs.clear();
-    }
-
-    private static ProgramMeta programMeta(int program) {
-        long frame = ClientRenderState.engine().route().frameId();
-        var cached = programs.get(program);
-        if (cached != null && cached.validatedFrame == frame) return cached;
-        if (cached == null) {
-            cached = new ProgramMeta();
-            programs.put(program, cached);
-        }
-        cached.layout = validateLayout(program, cached.layout);
-        cached.validatedFrame = frame;
-        return cached;
-    }
-
-    private static ProgramLayout validateLayout(int program, ProgramLayout cached) {
-        boolean deleted = glGetProgrami(program, GL_DELETE_STATUS) != 0;
-        if (glGetProgrami(program, GL_LINK_STATUS) == GL_FALSE) return null;
-        int blocks = glGetProgramInterfacei(program, GL_SHADER_STORAGE_BLOCK, GL_ACTIVE_RESOURCES);
-        if (blocks == 0) return null;
-        int uniforms = glGetProgrami(program, GL_ACTIVE_UNIFORMS);
-        int attributes = glGetProgrami(program, GL_ACTIVE_ATTRIBUTES);
-        // Resource counts can collide. Our receiver mask resets to zero on every link.
-        // Resolve this one name before reading it: an old location may now be invalid.
-        int mask = glGetUniformLocation(program, "hexieReceiverMask");
-        if (!deleted && cached != null && cached.uniforms == uniforms && cached.attributes == attributes
-                && cached.blocks == blocks && mask >= 0 && cached.receiverMask == mask && glGetUniformi(program, mask) != 0)
-            return cached;
-
-        int block = glGetProgramResourceIndex(program, GL_SHADER_STORAGE_BLOCK, "HexieCasters");
-        if (block == GL_INVALID_INDEX) return null;
-        var occupied = new BitSet();
-        int[] property = {GL_BUFFER_BINDING}, binding = {0};
-        int defaultBinding = 0;
-        for (int i = 0; i < blocks; i++) {
-            glGetProgramResourceiv(program, GL_SHADER_STORAGE_BLOCK, i, property, null, binding);
-            if (i == block) defaultBinding = binding[0];
-            else occupied.set(binding[0]);
-        }
-        return new ProgramLayout(uniforms, attributes, blocks, block, defaultBinding, occupied,
-                glGetUniformLocation(program, "hexieEnabled"), mask, glGetUniformLocation(program, "hexieSunDir"),
-                glGetUniformLocation(program, "hexieSunColor"), glGetUniformLocation(program, "hexieOrigin"),
-                glGetUniformLocation(program, "hexieBoundMin"), glGetUniformLocation(program, "hexieBoundMax"),
-                glGetUniformLocation(program, "hexieRotation"), glGetUniformLocation(program, "hexieHasNormal"));
+        return Math.min(15, best);
     }
 
     public static void draw(Vec camera, float[] rotation, boolean packedNormal, Runnable original) {
@@ -550,56 +163,136 @@ public final class ForwardLight {
     public static void draw(Vec camera, float[] rotation, boolean packedNormal, int receiverMask, Runnable original) {
         long start = receiverMask == TARGET_WORLD ? System.nanoTime() : 0;
         try {
-            drawReceiver(camera, rotation, packedNormal, receiverMask, original);
+            drawReceiver(camera, rotation, packedNormal, original);
         } finally {
             if (receiverMask == TARGET_WORLD) ClientRenderState.timings.terrainDrawNs += System.nanoTime() - start;
         }
     }
 
-    private static void drawReceiver(Vec camera, float[] rotation, boolean packedNormal, int receiverMask, Runnable original) {
-        boolean sunlight = !sun.color().equals(Vec.ZERO);
-        if (activeBuffer == 0 || ((publishedMask & receiverMask) == 0 && !sunlight)
-                || ClientRenderState.engine().route().tier() != RenderSettings.Tier.FULL) {
+    private static ProgramLayout programMeta(int program) {
+        return PROGRAM_CACHE.computeIfAbsent(program, p -> {
+            int enabled = glGetUniformLocation(p, "hexieEnabled");
+            if (enabled < 0) return null;
+            return new ProgramLayout(
+                    enabled,
+                    glGetUniformLocation(p, "hexieSunDir"),
+                    glGetUniformLocation(p, "hexieSunColor"),
+                    glGetUniformLocation(p, "u_HexieSunMat"),
+                    glGetUniformLocation(p, "u_HexieShadowCamOff"),
+                    glGetUniformLocation(p, "u_HexieHasShadow"),
+                    glGetUniformLocation(p, "u_HexieHasPointAtlas"),
+                    glGetUniformLocation(p, "hexieRotation"),
+                    glGetUniformLocation(p, "hexieHasNormal"),
+                    glGetUniformLocation(p, "u_HexieShadowMap"),
+                    glGetUniformLocation(p, "u_HexieShadowDepth"),
+                    glGetUniformLocation(p, "u_HexiePointAtlas"),
+                    glGetUniformLocation(p, "u_HexieLampCount"),
+                    glGetUniformLocation(p, "u_HexieLampPos"),
+                    glGetUniformLocation(p, "u_HexieLampCol")
+            );
+        });
+    }
+
+    private static void drawReceiver(Vec camera, float[] rotation, boolean packedNormal, Runnable original) {
+        if (!active || ClientRenderState.engine().route().tier() != RenderSettings.Tier.FULL) {
             original.run();
             return;
         }
         int program = glGetInteger(GL_CURRENT_PROGRAM);
-        ProgramLayout meta = program == 0 ? null : programMeta(program).layout;
+        ProgramLayout meta = program == 0 ? null : programMeta(program);
         if (meta == null) {
             original.run();
             return;
         }
-        if (maxSsboBindings == 0) maxSsboBindings = glGetInteger(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS);
-        int slot = -1;
-        for (int i = maxSsboBindings - 1; i >= 0; i--) {
-            if ((i < 8 || i > 10) && !meta.occupiedSlots.get(i) && glGetIntegeri(GL_SHADER_STORAGE_BUFFER_BINDING, i) == 0) {
-                slot = i;
-                break;
-            }
-        }
-        if (slot < 0) {
-            original.run();
-            return;
-        }
-        int general = glGetInteger(GL_SHADER_STORAGE_BUFFER_BINDING);
+
+        int prevActiveTex = glGetInteger(GL_ACTIVE_TEXTURE);
+        glActiveTexture(GL_TEXTURE0 + UNIT_SHADOW_CMP);
+        int prevTex4 = glGetInteger(GL_TEXTURE_BINDING_2D);
+        int prevSamp4 = glGetInteger(GL_SAMPLER_BINDING);
+        glActiveTexture(GL_TEXTURE0 + UNIT_POINT_ATLAS);
+        int prevTex5 = glGetInteger(GL_TEXTURE_BINDING_2D);
+        int prevSamp5 = glGetInteger(GL_SAMPLER_BINDING);
+        glActiveTexture(GL_TEXTURE0 + UNIT_SHADOW_RAW);
+        int prevTex7 = glGetInteger(GL_TEXTURE_BINDING_2D);
+        int prevSamp7 = glGetInteger(GL_SAMPLER_BINDING);
+
         try {
-            glShaderStorageBlockBinding(program, meta.blockIndex, slot);
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, slot, activeBuffer);
-            glUniform1i(meta.receiverMask, receiverMask);
+            if (shadowDepthTex != 0) {
+                glActiveTexture(GL_TEXTURE0 + UNIT_SHADOW_CMP);
+                glBindTexture(GL_TEXTURE_2D, shadowDepthTex);
+                glBindSampler(UNIT_SHADOW_CMP, shadowCompareSampler);
+                glActiveTexture(GL_TEXTURE0 + UNIT_SHADOW_RAW);
+                glBindTexture(GL_TEXTURE_2D, shadowDepthTex);
+                glBindSampler(UNIT_SHADOW_RAW, shadowRawSampler);
+            }
+            if (pointAtlasTex != 0) {
+                glActiveTexture(GL_TEXTURE0 + UNIT_POINT_ATLAS);
+                glBindTexture(GL_TEXTURE_2D, pointAtlasTex);
+                glBindSampler(UNIT_POINT_ATLAS, pointCompareSampler);
+            }
+            glActiveTexture(prevActiveTex);
+
+            if (meta.shadowMap >= 0) glUniform1i(meta.shadowMap, UNIT_SHADOW_CMP);
+            if (meta.shadowDepth >= 0) glUniform1i(meta.shadowDepth, UNIT_SHADOW_RAW);
+            if (meta.pointAtlas >= 0) glUniform1i(meta.pointAtlas, UNIT_POINT_ATLAS);
+
             if (meta.sunDir >= 0) setVec(meta.sunDir, sun.direction());
             if (meta.sunColor >= 0) setVec(meta.sunColor, sun.color());
-            setVec(meta.origin, origin.minus(camera));
-            setVec(meta.boundMin, boundMin);
-            setVec(meta.boundMax, boundMax);
+            if (meta.sunMat >= 0) glUniformMatrix4fv(meta.sunMat, false, sunMatrix);
+            if (meta.shadowCamOff >= 0) setVec(meta.shadowCamOff, camera.minus(shadowOrigin));
+            if (meta.hasShadow >= 0) glUniform1i(meta.hasShadow, shadowDepthTex != 0 ? 1 : 0);
+            if (meta.hasPointAtlas >= 0) glUniform1i(meta.hasPointAtlas, pointAtlasTex != 0 ? 1 : 0);
+
+            if (meta.lampCount >= 0) {
+                int count = 0;
+                if (pointAtlasTex != 0 && !activePointLamps.isEmpty()) {
+                    for (int i = 0; i < activePointLamps.size() && count < MAX_POINT_LAMPS; i++) {
+                        ShadowedLamp sl = activePointLamps.get(i);
+                        Lamp lamp = sl.lamp();
+                        var src = lamp.source();
+                        if (!src.enabled() || src.intensity() <= 0.0 || src.radius() <= 0.1) continue;
+                        double dx = lamp.position().x() - camera.x();
+                        double dy = lamp.position().y() - camera.y();
+                        double dz = lamp.position().z() - camera.z();
+                        float r = (float) Math.max(2.0, src.radius());
+                        boolean ceilingDown = (lamp.targetMask() & TARGET_CEILING_DOWN) != 0;
+                        int o = count * 4;
+                        LAMP_POS_BUF[o] = (float) dx;
+                        LAMP_POS_BUF[o + 1] = (float) dy;
+                        LAMP_POS_BUF[o + 2] = (float) dz;
+                        LAMP_POS_BUF[o + 3] = ceilingDown ? -r : r;
+                        float scale = (float) (src.intensity() * 0.95);
+                        LAMP_COL_BUF[o] = (float) (src.linearRgb().x() * scale);
+                        LAMP_COL_BUF[o + 1] = (float) (src.linearRgb().y() * scale);
+                        LAMP_COL_BUF[o + 2] = (float) (src.linearRgb().z() * scale);
+                        LAMP_COL_BUF[o + 3] = (float) sl.atlasSlot();
+                        count++;
+                    }
+                }
+                glUniform1i(meta.lampCount, count);
+                if (count > 0) {
+                    if (meta.lampPos >= 0) glUniform4fv(meta.lampPos, count == MAX_POINT_LAMPS ? LAMP_POS_BUF : Arrays.copyOf(LAMP_POS_BUF, count * 4));
+                    if (meta.lampCol >= 0) glUniform4fv(meta.lampCol, count == MAX_POINT_LAMPS ? LAMP_COL_BUF : Arrays.copyOf(LAMP_COL_BUF, count * 4));
+                }
+            }
+
             if (meta.rotation >= 0) glUniformMatrix3fv(meta.rotation, false, rotation);
             if (meta.hasNormal >= 0) glUniform1i(meta.hasNormal, packedNormal ? 1 : 0);
             glUniform1i(meta.enabled, 1);
+
             original.run();
         } finally {
             glProgramUniform1i(program, meta.enabled, 0);
-            glShaderStorageBlockBinding(program, meta.blockIndex, meta.defaultBinding);
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, slot, 0);
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, general);
+            glActiveTexture(GL_TEXTURE0 + UNIT_SHADOW_CMP);
+            glBindTexture(GL_TEXTURE_2D, prevTex4);
+            glBindSampler(UNIT_SHADOW_CMP, prevSamp4);
+            glActiveTexture(GL_TEXTURE0 + UNIT_POINT_ATLAS);
+            glBindTexture(GL_TEXTURE_2D, prevTex5);
+            glBindSampler(UNIT_POINT_ATLAS, prevSamp5);
+            glActiveTexture(GL_TEXTURE0 + UNIT_SHADOW_RAW);
+            glBindTexture(GL_TEXTURE_2D, prevTex7);
+            glBindSampler(UNIT_SHADOW_RAW, prevSamp7);
+            glActiveTexture(prevActiveTex);
         }
     }
 
@@ -607,187 +300,294 @@ public final class ForwardLight {
         glUniform3f(location, (float) v.x(), (float) v.y(), (float) v.z());
     }
 
+    /**
+     * Pure-Geometry Forward Shading GLSL snippet (GLSL 330+ compatible, ZERO voxel grids!):
+     * - 160-block Distorted PCSS Sun/Moon Soft Shadows (6-tap Vogel blocker search + 12-tap hardware PCF)
+     * - Exact-Geometry 6-Face Cubemap Point-Light Shadow Atlas (16 shadowed lamps x 256x256/face, 4-tap rotated hardware PCF)
+     * - Sky/Ground Hemisphere Ambient + Dielectric Fresnel Specular + Linear RGB with smooth highlight roll-off!
+     */
     public static final String FRAGMENT = """
-        #if defined(GL_ARB_shader_storage_buffer_object) || (__VERSION__ >= 430)
-        struct HexiePair { vec4 a; vec4 b; };
-        layout(std430) readonly buffer HexieCasters {
-            uint hexieTriNodeCount, hexieTriDataBase, hexieLampCount, hexieBoxNodeCount;
-            HexiePair hexieData[];
-        };
         uniform int hexieEnabled;
-        uniform int hexieReceiverMask;
+        uniform int u_HexieHasShadow;
+        uniform int u_HexieHasPointAtlas;
         uniform vec3 hexieSunDir, hexieSunColor;
-        uniform vec3 hexieOrigin;
-        uniform vec3 hexieBoundMin;
-        uniform vec3 hexieBoundMax;
+        uniform mat4 u_HexieSunMat;
+        uniform vec3 u_HexieShadowCamOff;
         uniform mat3 hexieRotation;
-        bool hexieBoxInFront(vec3 lo, vec3 hi, vec3 p, vec3 n) {
-            vec3 farthest = mix(lo, hi, greaterThanEqual(n, vec3(0.0)));
-            return dot(farthest - p, n) > 6e-5;
+        uniform sampler2DShadow u_HexieShadowMap;
+        uniform sampler2D u_HexieShadowDepth;
+        uniform sampler2DShadow u_HexiePointAtlas;
+        uniform int u_HexieLampCount;
+        uniform vec4 u_HexieLampPos[16];
+        uniform vec4 u_HexieLampCol[16];
+
+        vec3 hexieToLinear(vec3 c) {
+            return pow(max(c, vec3(0.0)), vec3(2.2));
         }
-        bool hexieRayBox(vec3 orig, vec3 invDelta, vec3 lo, vec3 hi, bool strictEnd, float sourceExit) {
-            vec3 t0 = (lo - orig) * invDelta;
-            vec3 t1 = (hi - orig) * invDelta;
-            vec3 tMin = min(t0, t1);
-            vec3 tMax = max(t0, t1);
-            float enter = max(0.0, max(tMin.x, max(tMin.y, tMin.z)));
-            float leave = min(1.0, min(tMax.x, min(tMax.y, tMax.z)));
-            // A solid emitter can light its exposed faces. Keep the rest of a merged terrain
-            // leaf opaque, as well as all triangles and boxes between the source and receiver.
-            if (strictEnd && sourceExit >= 0.0 && all(greaterThanEqual(orig, lo)) && all(lessThanEqual(orig, hi))
-                    && leave <= sourceExit + 1e-5) return false;
-            return strictEnd ? (enter <= leave && enter < 1.0) : (enter <= leave);
+
+        vec3 hexieToSrgb(vec3 c) {
+            return pow(max(c, vec3(0.0)), vec3(1.0 / 2.2));
         }
-        bool hexieGrateOpaque(vec2 uv) {
-            const uint rows[16] = uint[16](
-                0x318Cu, 0x318Cu, 0x31FCu, 0x31FCu,
-                0x318Cu, 0x318Cu, 0x318Cu, 0xF18Fu,
-                0xF18Fu, 0x318Cu, 0x318Cu, 0x318Cu,
-                0x3F8Cu, 0x3F8Cu, 0x318Cu, 0x318Cu
-            );
-            int tx = clamp(int(uv.x * 16.0), 0, 15);
-            int ty = clamp(int(uv.y * 16.0), 0, 15);
-            return ((rows[ty] >> uint(tx)) & 1u) != 0u;
+
+        vec3 hexieSoftHighlight(vec3 lin) {
+            vec3 excess = max(lin - vec3(0.78), vec3(0.0));
+            return lin - excess * (excess / (excess + vec3(1.25)));
         }
-        bool hexieRayTri(vec3 orig, vec3 delta, vec3 a, vec3 b, vec3 c, int cutoutMode, vec3 p, vec3 n) {
-            float front = max(dot(a - p, n), max(dot(b - p, n), dot(c - p, n)));
-            if (front <= 6e-5) return false;
-            vec3 e1 = b - a;
-            vec3 e2 = c - a;
-            vec3 h = cross(delta, e2);
-            float det = dot(e1, h);
-            if (abs(det) <= 1e-12) return false;
-            float invDet = 1.0 / det;
-            vec3 s = orig - a;
-            float u = dot(s, h) * invDet;
-            if (u < -1e-6 || u > 1.0 + 1e-6) return false;
-            vec3 q = cross(s, e1);
-            float v = dot(delta, q) * invDet;
-            if (v < -1e-6 || u + v > 1.0 + 1e-6) return false;
-            float t = dot(e2, q) * invDet;
-            if (t < 0.0 || t >= 1.0) return false;
-            if (cutoutMode > 0) {
-                vec2 uv = cutoutMode == 1 ? vec2(u + v, v) : vec2(u, u + v);
-                if (!hexieGrateOpaque(uv)) return false;
+
+        float hexieIgn(vec2 px) {
+            return fract(52.9829189 * fract(dot(px, vec2(0.06711056, 0.00583715))));
+        }
+
+        vec2 hexieVogelDisk(int idx, int total, float phiOffset) {
+            float r = sqrt((float(idx) + 0.5) / float(total));
+            float theta = float(idx) * 2.39996323 + phiOffset;
+            return vec2(cos(theta), sin(theta)) * r;
+        }
+
+        // Exact-Geometry 6-Face Cubemap Point-Light Shadow Atlas (3072x2048 = 12x8 tiles of 256x256, 4-tap rotated hardware PCF)
+        float hexieSamplePointShadow(vec3 d, float farPlane, int slot, float phi) {
+            if (u_HexieHasPointAtlas == 0) return 1.0;
+            vec3 ad = abs(d);
+            int face;
+            float u, v, zAxis;
+            if (ad.x >= ad.y && ad.x >= ad.z) {
+                if (d.x >= 0.0) { face = 0; u = -d.z / d.x;  v = -d.y / d.x;  zAxis = d.x; }
+                else            { face = 1; u =  d.z / -d.x; v = -d.y / -d.x; zAxis = -d.x; }
+            } else if (ad.y >= ad.z) {
+                if (d.y >= 0.0) { face = 2; u =  d.x / d.y;  v =  d.z / d.y;  zAxis = d.y; }
+                else            { face = 3; u =  d.x / -d.y; v = -d.z / -d.y; zAxis = -d.y; }
+            } else {
+                if (d.z >= 0.0) { face = 4; u =  d.x / d.z;  v = -d.y / d.z;  zAxis = d.z; }
+                else            { face = 5; u = -d.x / -d.z; v = -d.y / -d.z; zAxis = -d.z; }
             }
-            return true;
-        }
-        bool hexieOccluded(vec3 orig, vec3 delta, vec3 p, vec3 n, bool blockEmitter) {
-            vec3 safeDelta = vec3(
-                abs(delta.x) > 1e-12 ? delta.x : (delta.x >= 0.0 ? 1e-12 : -1e-12),
-                abs(delta.y) > 1e-12 ? delta.y : (delta.y >= 0.0 ? 1e-12 : -1e-12),
-                abs(delta.z) > 1e-12 ? delta.z : (delta.z >= 0.0 ? 1e-12 : -1e-12));
-            vec3 invDelta = 1.0 / safeDelta;
-            float sourceExit = -1.0;
-            if (blockEmitter) {
-                vec3 edge = floor(orig) + mix(vec3(0.0), vec3(1.0), greaterThanEqual(delta, vec3(0.0)));
-                vec3 t = (edge - orig) * invDelta;
-                sourceExit = min(t.x, min(t.y, t.z));
+            if (zAxis <= 0.145) return 1.0;
+
+            const float NEAR = 0.14;
+            const float INV_TAN_HALF = 1.0 / 1.015625;
+            vec2 tileUv = clamp(vec2(u, v) * (0.5 * INV_TAN_HALF) + 0.5, vec2(0.008), vec2(0.992));
+
+            float ndcZ = (farPlane + NEAR) / (farPlane - NEAR) - (2.0 * farPlane * NEAR) / ((farPlane - NEAR) * zAxis);
+            float refDepth = clamp(ndcZ * 0.5 + 0.5, 0.0, 0.9999);
+
+            int tile = slot * 6 + face;
+            float col = float(tile % 12);
+            float row = float(tile / 12);
+            vec2 tileScale = vec2(1.0 / 12.0, 1.0 / 8.0);
+            vec2 tileMin = (vec2(col, row) + vec2(0.006)) * tileScale;
+            vec2 tileMax = (vec2(col, row) + vec2(0.994)) * tileScale;
+            vec2 baseUv = (vec2(col, row) + tileUv) * tileScale;
+
+            // Soft 4-tap rotated hardware PCF (16 hardware bilinear comparisons, clamped strictly within tile!)
+            vec2 pcfRad = vec2(1.5 / 3072.0, 1.5 / 2048.0);
+            float vis = 0.0;
+            for (int i = 0; i < 4; i++) {
+                vec2 uv = clamp(baseUv + hexieVogelDisk(i, 4, phi) * pcfRad, tileMin, tileMax);
+                vis += texture(u_HexiePointAtlas, vec3(uv, refDepth));
             }
-            uint idx = 0u;
-            while (idx < hexieBoxNodeCount) {
-                HexiePair node = hexieData[hexieLampCount + idx];
-                bool isLeaf = node.b.w > 0.5;
-                if (hexieBoxInFront(node.a.xyz, node.b.xyz, p, n)
-                        && hexieRayBox(orig, invDelta, node.a.xyz, node.b.xyz, isLeaf, sourceExit)) {
-                    if (isLeaf) return true;
-                    idx++;
-                } else {
-                    idx = uint(node.a.w);
+            return vis * 0.25;
+        }
+
+        // Exact-Geometry Shadowed Local Point & Ceiling Lamps (ZERO voxel grid, ZERO thin-wall bleed!)
+        vec3 hexiePointLights(vec3 fragPos, vec3 nn, float specStrength, float phi) {
+            if (u_HexieLampCount <= 0) return vec3(0.0);
+            vec3 total = vec3(0.0);
+            vec3 viewDir = normalize(-fragPos);
+            int n = min(u_HexieLampCount, 16);
+            for (int i = 0; i < n; i++) {
+                vec4 lp = u_HexieLampPos[i];
+                float signedR = lp.w;
+                float r = abs(signedR);
+                vec3 toLamp = lp.xyz - fragPos;
+                float d2 = dot(toLamp, toLamp);
+                if (d2 >= r * r || d2 < 1e-6) continue;
+                // Downward-only ceiling lamps never shine upward through carriage roofs!
+                if (signedR < 0.0 && toLamp.y < -0.15) continue;
+
+                float invD = inversesqrt(d2);
+                vec3 L = toLamp * invD;
+                float rawNdl = dot(nn, L);
+                // Strictly reject back-facing surfaces (e.g. exterior of CRH2 shell facing away from cabin lamp!)
+                if (rawNdl <= -0.18) continue;
+
+                float dist = d2 * invD;
+                float ndl = max(0.0, rawNdl);
+                // Constant world-space normal/light bias (2.5 cm) -> zero acne & zero peter-panning at any distance!
+                float nBias = 0.024 + 0.022 * (1.0 - ndl);
+                vec3 biasedPos = fragPos + nn * nBias + L * 0.016;
+                int slot = int(u_HexieLampCol[i].w + 0.5);
+                float vis = hexieSamplePointShadow(biasedPos - lp.xyz, r, slot, phi + float(i) * 1.17);
+                if (vis <= 1e-4) continue;
+
+                float falloff = 1.0 - dist / r;
+                float atten = (falloff * falloff) / (0.45 + 0.24 * d2);
+                if (signedR < 0.0) {
+                    atten *= smoothstep(-0.35, 0.20, L.y);
+                }
+
+                // Crisp direct lighting + subtle shadow-gated cabin wrap fill (illuminates grazing seat sides without ever leaking outside!)
+                float wrapFill = max(0.0, rawNdl * 0.45 + 0.55) * 0.16;
+                vec3 lampRad = u_HexieLampCol[i].rgb * (atten * vis);
+                total += lampRad * (ndl + wrapFill);
+
+                if (specStrength > 0.001 && ndl > 0.0) {
+                    vec3 halfVec = normalize(L + viewDir);
+                    float ndh = max(0.0, dot(nn, halfVec));
+                    float vdh = max(0.0, dot(viewDir, halfVec));
+                    float fresnel = 0.04 + 0.96 * pow(1.0 - vdh, 5.0);
+                    total += lampRad * (pow(ndh, 28.0) * fresnel * specStrength * 0.55 * ndl);
                 }
             }
-            if (hexieTriNodeCount > 0u) {
-                uint triNodeBase = hexieLampCount + hexieBoxNodeCount;
-                uint tidx = 0u;
-                while (tidx < hexieTriNodeCount) {
-                    HexiePair node = hexieData[triNodeBase + tidx];
-                    if (hexieBoxInFront(node.a.xyz, node.b.xyz, p, n)
-                            && hexieRayBox(orig, invDelta, node.a.xyz, node.b.xyz, false, -1.0)) {
-                        int triIdx = int(node.b.w);
-                        if (triIdx >= 0) {
-                            uint base = hexieTriDataBase + 2u * uint(triIdx);
-                            HexiePair p0 = hexieData[base];
-                            HexiePair p1 = hexieData[base + 1u];
-                            if (hexieRayTri(orig, delta, p0.a.xyz, p0.b.xyz, p1.a.xyz, int(p1.b.x), p, n)) return true;
-                            tidx = uint(node.a.w);
-                        } else {
-                            tidx++;
-                        }
-                    } else {
-                        tidx = uint(node.a.w);
-                    }
+            return total;
+        }
+
+        // 160-block Non-Linear Distorted PCSS Soft Sun Shadow (6-tap Vogel blocker search + 12-tap Hardware PCF)
+        float hexieSampleSunShadow(vec3 p, vec3 nn, float ndl, float phi) {
+            if (u_HexieHasShadow == 0) return 1.0;
+            vec3 fragPos = hexieRotation * p;
+            float dist = length(fragPos);
+            float distFade = 1.0 - smoothstep(132.0, 156.0, dist);
+            if (distFade <= 1e-4) return 1.0;
+
+            float slopeBias = 0.024 + 0.032 * (1.0 - ndl);
+            vec3 shadowRel = fragPos + u_HexieShadowCamOff + nn * slopeBias + hexieSunDir * 0.018;
+            vec4 clip = u_HexieSunMat * vec4(shadowRel, 1.0);
+            float rLen = length(clip.xy);
+            float distort = mix(1.0, rLen, 0.72);
+            vec2 distortedXY = clip.xy / max(distort, 1e-4);
+            float zDepth = clip.z * 0.5;
+            vec3 sc = vec3(distortedXY * 0.5 + 0.5, zDepth * 0.5 + 0.5);
+            if (any(lessThan(sc.xy, vec2(0.002))) || any(greaterThan(sc.xy, vec2(0.998))) || sc.z <= 0.0 || sc.z >= 1.0) {
+                return 1.0;
+            }
+
+            float invDistort = 1.0 / max(distort, 0.28);
+            float searchRadius = 0.0042 * invDistort;
+            float blockerSum = 0.0;
+            float blockerCount = 0.0;
+            for (int i = 0; i < 6; i++) {
+                vec2 off = hexieVogelDisk(i, 6, phi) * searchRadius;
+                float d = textureLod(u_HexieShadowDepth, sc.xy + off, 0.0).r;
+                if (d < sc.z - 0.00018) {
+                    blockerSum += (sc.z - d);
+                    blockerCount += 1.0;
                 }
             }
-            return false;
+            if (blockerCount < 0.5) return 1.0;
+
+            float avgBlocker = blockerSum / blockerCount;
+            float penumbra = clamp(avgBlocker * 0.14, 0.00045, 0.0040) * invDistort;
+
+            float vis = 0.0;
+            for (int i = 0; i < 12; i++) {
+                vec2 off = hexieVogelDisk(i, 12, phi + 1.047) * penumbra;
+                vis += texture(u_HexieShadowMap, vec3(sc.xy + off, sc.z - 0.00015));
+            }
+            vis *= (1.0 / 12.0);
+            return mix(1.0, vis, distFade);
         }
-        bool hexieOccluded(vec3 orig, vec3 delta, vec3 p, vec3 n) {
-            return hexieOccluded(orig, delta, p, n, false);
-        }
-        float hexieRoofShade(vec3 p, vec3 nrm) {
-            if (hexieEnabled == 0 || dot(p, p) >= 40.0 * 40.0) return 1.0;
-            float nLen2 = dot(nrm, nrm);
-            vec3 nn = nLen2 > 1e-12 ? nrm * inversesqrt(nLen2) : vec3(0.0, 1.0, 0.0);
-            vec3 fragRel = hexieRotation * p - hexieOrigin;
-            // Offset 0.25 blocks along surface normal so recessed exterior doors step outside tiny overhangs,
-            // while interior walls/seats/floors step deeper inside the carriage under its roof.
-            vec3 pRoof = fragRel + nn * 0.25;
-            vec3 up = vec3(0.0, 16.0, 0.0);
-            return hexieOccluded(pRoof + up, -up, pRoof, vec3(0.0, 1.0, 0.0)) ? 0.55 : 1.0;
-        }
-        vec3 hexieDaylight(vec3 p, vec3 albedo, vec3 nrm, float sky) {
-            if (hexieEnabled == 0 || sky <= 0.0
-                    || !any(greaterThan(hexieSunColor, vec3(0.0)))) return vec3(0.0);
+
+        // Legacy-compatible hooks (used by Sable ships & simple receivers)
+        float hexieRoofShade(vec3 p, vec3 nrm) { return 1.0; }
+
+        vec3 hexieDirect(vec3 p, vec3 albedo, vec3 nrm) {
+            if (hexieEnabled == 0 || u_HexieLampCount <= 0) return vec3(0.0);
             float nLen2 = dot(nrm, nrm);
             if (!(nLen2 > 1e-12)) return vec3(0.0);
             vec3 nn = nrm * inversesqrt(nLen2);
-            float cosine = dot(nn, hexieSunDir);
-            if (cosine <= 0.0) return vec3(0.0);
-            if (dot(p, p) < 40.0 * 40.0) {
-                vec3 fragRel = hexieRotation * p - hexieOrigin;
-                vec3 pBias = fragRel + nn * 2.5e-3;
-                vec3 reach = hexieSunDir * 32.0;
-                if (hexieOccluded(pBias + reach, -reach, pBias, nn)) return vec3(0.0);
-            }
-            return albedo * hexieSunColor * (cosine * sky);
+            vec3 fragPos = hexieRotation * p;
+            if (dot(nn, -fragPos) < 0.0) nn = -nn;
+            float phi = hexieIgn(gl_FragCoord.xy) * 6.2831853;
+            vec3 linAlb = hexieToLinear(albedo);
+            return hexieToSrgb(hexieSoftHighlight(linAlb * hexiePointLights(fragPos, nn, 0.0, phi)));
         }
-        vec3 hexieDirect(vec3 p, vec3 albedo, vec3 normal) {
-            if (hexieEnabled == 0 || hexieLampCount == 0u) return vec3(0);
-            vec3 fragRel = hexieRotation * p - hexieOrigin;
-            if (any(lessThan(fragRel, hexieBoundMin)) || any(greaterThan(fragRel, hexieBoundMax))) return vec3(0);
-            float nLen2 = dot(normal, normal);
-            if (!(nLen2 > 1e-12)) return vec3(0);
-            vec3 nrm = normal * inversesqrt(nLen2);
-            vec3 pBias = fragRel + nrm * 2.5e-3;
-            vec3 sum = vec3(0);
-            for (uint li = 0u; li < hexieLampCount; li++) {
-                int target = int(hexieData[li].b.w);
-                if ((target & hexieReceiverMask) == 0) continue;
-                vec4 pr = hexieData[li].a;
-                vec3 rgb = hexieData[li].b.xyz;
-                vec3 delta = pBias - pr.xyz;
-                float d2 = dot(delta, delta);
-                if (!(d2 > 1e-10) || d2 >= pr.w * pr.w) continue;
-                float d = sqrt(d2);
-                float cosine = max(0.0, dot(nrm, -delta / d));
-                if (cosine <= 0.0) continue;
-                if (!hexieOccluded(pr.xyz, delta, pBias, nrm, (target & 4) != 0)) {
-                    float atten = (1.0 - smoothstep(14.0, 15.0, 15.0 * d / pr.w)) / max(d2, 1.0);
-                    sum += albedo * rgb * (cosine * atten);
+
+        vec3 hexieDaylight(vec3 p, vec3 albedo, vec3 nrm, float sky) {
+            if (hexieEnabled == 0 || sky <= 0.0 || !any(greaterThan(hexieSunColor, vec3(0.0)))) return vec3(0.0);
+            float nLen2 = dot(nrm, nrm);
+            if (!(nLen2 > 1e-12)) return vec3(0.0);
+            vec3 nn = nrm * inversesqrt(nLen2);
+            float ndl = dot(nn, hexieSunDir);
+            if (ndl <= 0.0) return vec3(0.0);
+            float phi = hexieIgn(gl_FragCoord.xy) * 6.2831853;
+            float sunVis = hexieSampleSunShadow(p, nn, ndl, phi);
+            if (sunVis <= 1e-4) return vec3(0.0);
+            vec3 linAlb = hexieToLinear(albedo);
+            return hexieToSrgb(hexieSoftHighlight(linAlb * hexieSunColor * (ndl * sunVis * sky)));
+        }
+
+        /**
+         * Unified Pure-Geometry Linear PBR Shading (ZERO voxel grids!):
+         * - Sky/Ground Hemisphere Ambient (cool blue sky + warm sunlit ground bounce)
+         * - 160-block Distorted PCSS Sun/Moon Soft Shadows + Fresnel Specular
+         * - Exact-Geometry 6-Face Cubemap Shadowed Local Point & Ceiling Lamps
+         */
+        vec3 hexieShadeSurface(vec3 p, vec3 albedo, vec3 nrm, vec3 vanillaLightRgb, float sky, float specStrength) {
+            float nLen2 = dot(nrm, nrm);
+            vec3 nn = nLen2 > 1e-12 ? nrm * inversesqrt(nLen2) : vec3(0.0, 1.0, 0.0);
+            vec3 fragPos = hexieRotation * p;
+            if (dot(nn, -fragPos) < 0.0) nn = -nn;
+            if (hexieEnabled == 0) {
+                // Disabled / vanilla-HeXie lighting path: pure continuous lightmap sampling with zero extra directional shading!
+                return albedo * vanillaLightRgb;
+            }
+            float directionalShade = 0.72 + 0.28 * max(-0.5, nn.y);
+
+            vec3 linAlb = hexieToLinear(albedo);
+            vec3 linBaseLight = hexieToLinear(vanillaLightRgb);
+            float phi = hexieIgn(gl_FragCoord.xy) * 6.2831853;
+
+            // 1. Physically balanced Sky / Ground Hemisphere Ambient (zero voxels!)
+            float dist = length(fragPos);
+            float shadowFade = u_HexieHasShadow != 0 ? (1.0 - smoothstep(132.0, 156.0, dist)) : 0.0;
+            bool hasSun = any(greaterThan(hexieSunColor, vec3(0.0)));
+            bool isDaySun = hexieSunColor.r > 0.35;
+            vec3 ambientLight = linBaseLight * directionalShade;
+            if (hasSun && shadowFade > 1e-4 && sky > 0.01) {
+                vec3 skyTint = isDaySun ? vec3(0.62, 0.78, 1.12) : vec3(0.72, 0.84, 1.14);
+                vec3 groundBounce = isDaySun ? vec3(0.36, 0.34, 0.27) : vec3(0.04, 0.05, 0.07);
+                float skyScale = isDaySun ? 0.23 : 0.52;
+                float upFactor = smoothstep(-0.45, 0.85, nn.y);
+                vec3 hemiAmb = linBaseLight * mix(groundBounce, skyTint, upFactor) * skyScale;
+                ambientLight = mix(ambientLight, hemiAmb, shadowFade * sky);
+            }
+            vec3 linColor = linAlb * ambientLight;
+
+            // 2. Exact-Geometry Cubemap-Shadowed Local Point & Ceiling Lamps!
+            linColor += linAlb * hexiePointLights(fragPos, nn, specStrength, phi);
+
+            // 3. Direct Sunlight / Moonlight with 160-block Distorted PCSS Soft Shadows + Fresnel Specular!
+            if (hasSun && sky > 0.01) {
+                float ndl = max(0.0, dot(nn, hexieSunDir));
+                if (ndl > 0.0) {
+                    float sunVis = hexieSampleSunShadow(p, nn, ndl, phi);
+                    if (sunVis > 1e-4) {
+                        vec3 sunRad = hexieSunColor * (sunVis * sky);
+                        linColor += linAlb * sunRad * ndl;
+
+                        if (specStrength > 0.001) {
+                            vec3 viewDir = normalize(-fragPos);
+                            vec3 halfVec = normalize(hexieSunDir + viewDir);
+                            float ndh = max(0.0, dot(nn, halfVec));
+                            float vdh = max(0.0, dot(viewDir, halfVec));
+                            float fresnel = 0.04 + 0.96 * pow(1.0 - vdh, 5.0);
+                            float spec = pow(ndh, 32.0) * fresnel * specStrength * ndl;
+                            linColor += sunRad * spec;
+                        }
+                    }
                 }
             }
-            if (any(isnan(sum)) || any(isinf(sum))) return vec3(0);
-            return sum;
+
+            return hexieToSrgb(hexieSoftHighlight(linColor));
         }
-        #endif
         """;
 
     public static String fragment(String source, String before, String albedo, String normal) {
         int version = source.indexOf('\n');
         if (version < 0 || !source.contains(before) || !source.contains("void main()")) return source;
-        return (source.substring(0, version + 1) + "#ifdef GL_ARB_shader_storage_buffer_object\n"
-                + "#extension GL_ARB_shader_storage_buffer_object : enable\n#endif\n" + source.substring(version + 1))
+        return source
                 .replace("void main()", "in vec3 hexiePos, hexieTint;\n" + FRAGMENT + "\nvoid main()")
-                .replace(before, "\n#ifdef GL_ARB_shader_storage_buffer_object\n"
-                        + "color.rgb += hexieDirect(hexiePos," + albedo + "," + normal + ");\n#endif\n" + before);
+                .replace(before, "\nvec3 hexieAlb=" + albedo + "; vec3 hexieNrm=" + normal + ";\n"
+                        + "color.rgb += hexieDirect(hexiePos, hexieAlb, hexieNrm);\n"
+                        + "color.rgb += hexieDaylight(hexiePos, hexieAlb, hexieNrm, 1.0);\n" + before);
     }
 }

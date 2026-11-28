@@ -1,6 +1,7 @@
 package willow.train.hexie.world.sticker;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -13,8 +14,31 @@ import willow.train.hexie.core.sticker.StickerEntry;
 
 /** Implements StickerBridge over LevelChunk attachments and StickerImageStore. */
 public final class StickerWorldStore implements StickerBridge {
+    // Buffers S2C chunk syncs that arrive before ClientChunkCache finishes registering the LevelChunk on rejoin.
+    private static final Map<Long, List<StickerEntry>> PENDING_CLIENT_SYNCS = new ConcurrentHashMap<>();
+    private static volatile Level lastClientLevel;
+
+    private static void syncClientLevelEpoch(Level level) {
+        if (level != null && level.isClientSide() && level != lastClientLevel) {
+            PENDING_CLIENT_SYNCS.clear();
+            lastClientLevel = level;
+        }
+    }
+
     private static ChunkStickerData dataIfLoaded(Level level, int chunkX, int chunkZ) {
         if (level == null || !level.hasChunk(chunkX, chunkZ)) return null;
+        if (level.isClientSide()) {
+            syncClientLevelEpoch(level);
+            List<StickerEntry> pending = PENDING_CLIENT_SYNCS.remove(ChunkPos.asLong(chunkX, chunkZ));
+            if (pending != null) {
+                LevelChunk chunk = level.getChunk(chunkX, chunkZ);
+                if (!pending.isEmpty() || chunk.hasData(StickerAttachments.CHUNK_STICKERS.get())) {
+                    dataOrCreate(chunk).replaceAll(pending);
+                }
+                var cutter = HexieBridges.Client.stickerMeshCutter();
+                if (cutter != null) cutter.onChunkSynced(chunkX, chunkZ, pending);
+            }
+        }
         LevelChunk chunk = level.getChunk(chunkX, chunkZ);
         return chunk.hasData(StickerAttachments.CHUNK_STICKERS.get())
                 ? chunk.getData(StickerAttachments.CHUNK_STICKERS.get()) : null;
@@ -84,7 +108,16 @@ public final class StickerWorldStore implements StickerBridge {
 
     @Override
     public void applyChunkSyncClient(Level level, int chunkX, int chunkZ, List<StickerEntry> entries) {
-        if (level == null || !level.hasChunk(chunkX, chunkZ)) return;
+        if (level == null) return;
+        syncClientLevelEpoch(level);
+        long key = ChunkPos.asLong(chunkX, chunkZ);
+        if (!level.hasChunk(chunkX, chunkZ)) {
+            PENDING_CLIENT_SYNCS.put(key, List.copyOf(entries));
+            var cutter = HexieBridges.Client.stickerMeshCutter();
+            if (cutter != null) cutter.onChunkSynced(chunkX, chunkZ, entries);
+            return;
+        }
+        PENDING_CLIENT_SYNCS.remove(key);
         LevelChunk chunk = level.getChunk(chunkX, chunkZ);
         if (!entries.isEmpty() || chunk.hasData(StickerAttachments.CHUNK_STICKERS.get())) {
             dataOrCreate(chunk).replaceAll(entries);

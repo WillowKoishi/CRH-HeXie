@@ -5,6 +5,7 @@ import com.simibubi.create.content.contraptions.Contraption;
 import dev.hexie.renderer.LightState;
 import dev.hexie.renderer.Triangle;
 import dev.hexie.renderer.Vec;
+import dev.hexie.renderer.mc.ClientRenderState;
 import dev.hexie.renderer.mc.ForwardLight;
 import dev.hexie.renderer.parse.CompiledMesh;
 import java.util.*;
@@ -27,6 +28,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.neoforge.common.Tags;
+import willow.train.hexie.bridge.sticker.ContraptionStickerHost;
 import willow.train.hexie.render.init.CarriageInteractionCoordinates;
 
 /**
@@ -36,24 +38,68 @@ import willow.train.hexie.render.init.CarriageInteractionCoordinates;
  * walls/roofs/floors cast crisp moving shadows while windows transmit light cleanly.
  */
 final class CreateContraptionCasters {
-    private static final double MAX_RANGE_SQ = 44.0 * 44.0;
-    private static final int MAX_LOCAL_TRIS_PER_CONTRAPTION = 8192;
+    private static final double MAX_RANGE_SQ = 160.0 * 160.0;
+    private static final int MAX_LOCAL_TRIS_PER_CONTRAPTION = 24576;
 
     private record LocalTri(double ax, double ay, double az,
                             double bx, double by, double bz,
                             double cx, double cy, double cz) {}
 
-    private record LocalLamp(double x, double y, double z, LightState source) {}
+    private record LocalLamp(double x, double y, double z, LightState source, boolean ceilingDown) {}
 
-    private record LocalAssembly(List<LocalTri> tris, List<LocalLamp> lamps) {
-        static final LocalAssembly EMPTY = new LocalAssembly(List.of(), List.of());
+    private record LocalAssembly(List<LocalTri> tris, float[] packedVerts,
+                                 List<LocalLamp> lamps, long rev, long stickerRev, int blockCount) {
+        static final LocalAssembly EMPTY = new LocalAssembly(List.of(), new float[0], List.of(), 0L, 0L, 0);
     }
 
     private record LampCluster(Block block, int cx, int cy, int cz) {}
 
     private static final Map<Contraption, LocalAssembly> LOCAL_CACHE = new WeakHashMap<>();
+    private static long assemblyRevSeq = 1L;
 
     private CreateContraptionCasters() {}
+
+    /**
+     * Zero-CPU-transform GPU shadow mesh provider: supplies each Contraption's cached local-space float[] VBO
+     * and its 4x4 column-major world affine matrix so GpuShadowMap renders moving trains in 1 draw call at 160m range!
+     */
+    static void collectDynamicMeshes(Object levelObj, Vec focus, float partialTick,
+                                     List<ClientRenderState.DynamicShadowMesh> outMeshes,
+                                     List<ForwardLight.Lamp> outLamps) {
+        if (!(levelObj instanceof ClientLevel level)) return;
+        for (Entity e : level.entitiesForRendering()) {
+            if (!(e instanceof AbstractContraptionEntity ace) || !ace.isAlive()) continue;
+            Contraption contraption = ace.getContraption();
+            if (contraption == null || contraption.getBlocks().isEmpty()) continue;
+            AABB bb = ace.getBoundingBoxForCulling();
+            if (bb.distanceToSqr(new Vec3(focus.x(), focus.y(), focus.z())) > MAX_RANGE_SQ) continue;
+
+            LocalAssembly local = getOrBuildLocalAssembly(contraption);
+            if (local.packedVerts.length == 0 && local.lamps.isEmpty()) continue;
+
+            Vec3 o = CarriageInteractionCoordinates.toWorld(ace, Vec3.ZERO);
+            Vec3 bx = CarriageInteractionCoordinates.toWorld(ace, new Vec3(1, 0, 0)).subtract(o);
+            Vec3 by = CarriageInteractionCoordinates.toWorld(ace, new Vec3(0, 1, 0)).subtract(o);
+            Vec3 bz = CarriageInteractionCoordinates.toWorld(ace, new Vec3(0, 0, 1)).subtract(o);
+
+            if (local.packedVerts.length >= 9) {
+                // Column-major 4x4 affine matrix for OpenGL uniform mat4
+                float[] mat = new float[]{
+                        (float) bx.x, (float) bx.y, (float) bx.z, 0f,
+                        (float) by.x, (float) by.y, (float) by.z, 0f,
+                        (float) bz.x, (float) bz.y, (float) bz.z, 0f,
+                        (float) o.x,  (float) o.y,  (float) o.z,  1f
+                };
+                outMeshes.add(new ClientRenderState.DynamicShadowMesh(
+                        System.identityHashCode(contraption), local.rev, local.packedVerts, mat));
+            }
+            for (var ll : local.lamps) {
+                Vec wp = xform(o, bx, by, bz, ll.x, ll.y, ll.z);
+                outLamps.add(new ForwardLight.Lamp(wp, ll.source,
+                        ForwardLight.TARGET_ALL | (ll.ceilingDown ? ForwardLight.TARGET_CEILING_DOWN : 0)));
+            }
+        }
+    }
 
     static long collect(Object levelObj, Vec focus, float partialTick, int maxTriangles,
                         List<ForwardLight.CasterTri> outTris, List<ForwardLight.Lamp> outLamps) {
@@ -79,7 +125,7 @@ final class CreateContraptionCasters {
 
         for (var a : active) {
             if (outTris.size() >= maxTriangles) break;
-            LocalAssembly local = LOCAL_CACHE.computeIfAbsent(a.contraption, CreateContraptionCasters::buildLocalAssembly);
+            LocalAssembly local = getOrBuildLocalAssembly(a.contraption);
             if (local.tris.isEmpty() && local.lamps.isEmpty()) continue;
 
             // Evaluate exact world affine basis (handles Create curves/slopes, SnapshotCarriageView, and Sable plots).
@@ -98,7 +144,8 @@ final class CreateContraptionCasters {
 
             for (var ll : local.lamps) {
                 Vec wp = xform(o, bx, by, bz, ll.x, ll.y, ll.z);
-                outLamps.add(new ForwardLight.Lamp(wp, ll.source, ForwardLight.TARGET_ALL));
+                outLamps.add(new ForwardLight.Lamp(wp, ll.source,
+                        ForwardLight.TARGET_ALL | (ll.ceilingDown ? ForwardLight.TARGET_CEILING_DOWN : 0)));
             }
             for (var lt : local.tris) {
                 if (outTris.size() >= maxTriangles) break;
@@ -122,7 +169,19 @@ final class CreateContraptionCasters {
                 o.z + bx.z * x + by.z * y + bz.z * z);
     }
 
-    private static LocalAssembly buildLocalAssembly(Contraption contraption) {
+    private static LocalAssembly getOrBuildLocalAssembly(Contraption contraption) {
+        long sRev = (contraption instanceof ContraptionStickerHost host) ? host.hexie$stickerRevision() : 0L;
+        int bCount = contraption.getBlocks().size();
+        LocalAssembly cached = LOCAL_CACHE.get(contraption);
+        if (cached != null && cached.stickerRev == sRev && cached.blockCount == bCount) {
+            return cached;
+        }
+        LocalAssembly built = buildLocalAssembly(contraption, sRev, bCount);
+        LOCAL_CACHE.put(contraption, built);
+        return built;
+    }
+
+    private static LocalAssembly buildLocalAssembly(Contraption contraption, long stickerRev, int blockCount) {
         var blocks = contraption.getBlocks();
         if (blocks.isEmpty()) return LocalAssembly.EMPTY;
 
@@ -139,17 +198,24 @@ final class CreateContraptionCasters {
             Block block = state.getBlock();
             BlockPos pos = info.pos();
 
-            // 0. Collect moving carriage interior lamps / torches / headlights, and omit the emitter's own box
-            // from triangle occlusion so light shines freely out of glowstone / sea lanterns / ceiling lamps!
+            // 0. Collect moving carriage interior lamps / torches / headlights, and omit non-ceiling emitters
+            // from triangle occlusion so light shines freely out of glowstone / sea lanterns / torches!
             int emission = state.getLightEmission(EmptyBlockGetter.INSTANCE, BlockPos.ZERO);
             if (emission > 0) {
-                collectLocalLamp(state, pos, emission, lampClusters);
-                continue;
+                double ceilingY = HexieRendererAdapter.isHeXieBlock(block)
+                        ? BakedModelMeshCompiler.ceilingEmitterOffsetY(state) : Double.NaN;
+                boolean isCeilingRoof = !Double.isNaN(ceilingY);
+                collectLocalLamp(state, pos, emission, isCeilingRoof, ceilingY, lampClusters);
+                if (!isCeilingRoof) continue;
             }
 
             if (state.getRenderShape() == RenderShape.INVISIBLE) continue;
 
-            // 1. StaticShell carriage parts (CRH1/CRH2 panels, floors, roofs, heads): use alpha-pruned opaque OBJ mesh!
+            // Blocks owned by CreateContraptionGroups (StaticShells + window-cut blocks) already cast exact cut shadows
+            // straight from HexieRenderEngine scene.sections() at the contraption's live Pose!
+            if (CreateContraptionGroups.shouldHideFromContraptionMesh(contraption, pos, state)) continue;
+
+            // 1. StaticShell carriage parts (CRH1/CRH2 panels, floors, roofs, heads): exact opaque OBJ mesh!
             if (HexieRendererAdapter.isShellBlock(block)) {
                 CompiledMesh cm = HexieRendererAdapter.compiledShellModel(state);
                 if (cm != null && !cm.isEmpty()) {
@@ -166,13 +232,27 @@ final class CreateContraptionCasters {
                 continue;
             }
 
-            // 2. Skip glass, stained glass, panes, leaves, fluids, and HeXie glass/window/door blocks.
+            // 1b. All non-full-cube HeXie blocks (roofs, AC units, windows, doors, end faces, panels, seats, etc.):
+            // emit exact cached alpha-pruned BakedModel shadow triangles (zero name whitelists!).
+            if (HexieRendererAdapter.usesCachedModelShadow(state)) {
+                var shadowTris = BakedModelMeshCompiler.compileOpaqueShadowTris(state);
+                double ox = pos.getX(), oy = pos.getY(), oz = pos.getZ();
+                for (var t : shadowTris) {
+                    if (tris.size() >= MAX_LOCAL_TRIS_PER_CONTRAPTION) break;
+                    tris.add(new LocalTri(
+                            ox + t.a().pos().x(), oy + t.a().pos().y(), oz + t.a().pos().z(),
+                            ox + t.b().pos().x(), oy + t.b().pos().y(), oz + t.b().pos().z(),
+                            ox + t.c().pos().x(), oy + t.c().pos().y(), oz + t.c().pos().z()));
+                }
+                continue;
+            }
+
+            // 2. Skip pure vanilla/third-party glass, panes, leaves, and fluids
             if (!state.getFluidState().isEmpty() || block instanceof LeavesBlock) continue;
             if (block instanceof StainedGlassPaneBlock || state.is(Blocks.GLASS_PANE) || state.is(Tags.Blocks.GLASS_PANES)) continue;
             if (block instanceof HalfTransparentBlock || state.is(Tags.Blocks.GLASS_BLOCKS)) {
                 if (state.getLightBlock(EmptyBlockGetter.INSTANCE, BlockPos.ZERO) < 15) continue;
             }
-            if (!state.canOcclude() && HexieRendererAdapter.isGlassOrWindowBlock(block)) continue;
 
             // 3. Regular solid or partial block inside the contraption
             VoxelShape shape;
@@ -180,7 +260,12 @@ final class CreateContraptionCasters {
                 shape = state.getOcclusionShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO);
                 if (shape.isEmpty()) shape = state.getShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO);
             } else {
-                if (state.getVisualShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO, CollisionContext.empty()).isEmpty()) continue;
+                // Solid-motion carriage panels (e.g. OrdinaryTrainUpperPanelBlock) override getVisualShape to empty
+                // for camera comfort, yet still form opaque walls/roofs that must cast shadows.
+                if (!state.blocksMotion()
+                        && state.getVisualShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO, CollisionContext.empty()).isEmpty()) {
+                    continue;
+                }
                 shape = state.getShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO);
             }
             if (shape.isEmpty()) continue;
@@ -247,16 +332,66 @@ final class CreateContraptionCasters {
             }
         }
 
-        for (double[] b : partialBoxes) {
+        for (double[] b : mergePartialBoxes(partialBoxes)) {
             if (tris.size() + 12 > MAX_LOCAL_TRIS_PER_CONTRAPTION) break;
             emitBoxTris(b[0], b[1], b[2], b[3], b[4], b[5], tris);
         }
+        float[] packed = new float[tris.size() * 9];
+        int k = 0;
+        for (var lt : tris) {
+            packed[k++] = (float) lt.ax; packed[k++] = (float) lt.ay; packed[k++] = (float) lt.az;
+            packed[k++] = (float) lt.bx; packed[k++] = (float) lt.by; packed[k++] = (float) lt.bz;
+            packed[k++] = (float) lt.cx; packed[k++] = (float) lt.cy; packed[k++] = (float) lt.cz;
+        }
         return new LocalAssembly(
                 tris.isEmpty() ? List.of() : List.copyOf(tris),
-                lampClusters.isEmpty() ? List.of() : List.copyOf(lampClusters.values()));
+                packed,
+                lampClusters.isEmpty() ? List.of() : List.copyOf(lampClusters.values()),
+                assemblyRevSeq++,
+                stickerRev,
+                blockCount);
     }
 
-    private static void collectLocalLamp(BlockState state, BlockPos pos, int emission, Map<LampCluster, LocalLamp> clusters) {
+    /** Fast O(N log N) exact axis-aligned merge along X -> Z -> Y so long carriage roofs/walls collapse 10-20x! */
+    private static List<double[]> mergePartialBoxes(List<double[]> input) {
+        if (input.size() <= 1) return input;
+        List<double[]> cur = mergeAlongAxis(input, 0);
+        cur = mergeAlongAxis(cur, 2);
+        return mergeAlongAxis(cur, 1);
+    }
+
+    private static List<double[]> mergeAlongAxis(List<double[]> boxes, int axis) {
+        int a1 = (axis + 1) % 3, a2 = (axis + 2) % 3;
+        var groups = new LinkedHashMap<String, List<double[]>>();
+        for (double[] b : boxes) {
+            String key = Math.round(b[a1] * 10000.0) + ":" + Math.round(b[a1 + 3] * 10000.0)
+                    + ":" + Math.round(b[a2] * 10000.0) + ":" + Math.round(b[a2 + 3] * 10000.0);
+            groups.computeIfAbsent(key, k -> new ArrayList<>()).add(b);
+        }
+        var out = new ArrayList<double[]>(boxes.size());
+        for (var list : groups.values()) {
+            if (list.size() == 1) {
+                out.add(list.getFirst());
+                continue;
+            }
+            list.sort(Comparator.comparingDouble(b -> b[axis]));
+            double[] cur = list.getFirst().clone();
+            for (int i = 1; i < list.size(); i++) {
+                double[] next = list.get(i);
+                if (next[axis] <= cur[axis + 3] + 1e-4) {
+                    cur[axis + 3] = Math.max(cur[axis + 3], next[axis + 3]);
+                } else {
+                    out.add(cur);
+                    cur = next.clone();
+                }
+            }
+            out.add(cur);
+        }
+        return out;
+    }
+
+    private static void collectLocalLamp(BlockState state, BlockPos pos, int emission, boolean isCeilingRoof,
+                                         double ceilingY, Map<LampCluster, LocalLamp> clusters) {
         // Cluster only directly adjacent 2x2x2 identical blocks (not 4x4x4) so every distinct carriage ceiling lamp shines!
         var key = new LampCluster(state.getBlock(), pos.getX() >> 1, pos.getY() >> 1, pos.getZ() >> 1);
         if (clusters.containsKey(key)) return;
@@ -270,21 +405,19 @@ final class CreateContraptionCasters {
             } else y = pos.getY() + 0.7;
         } else if (state.getBlock() instanceof LanternBlock) {
             y = pos.getY() + (state.getValue(LanternBlock.HANGING) ? 0.4375 : 0.3125);
-        } else if (state.getBlock().getDescriptionId().contains("ceilin")) {
-            // Place carriage ceiling lamp slightly below the ceiling shelf geometry so it illuminates downward cleanly
-            y = pos.getY() + 0.35;
+        } else if (isCeilingRoof) {
+            y = pos.getY() + ceilingY;
         }
         Vec color;
         if (state.is(Blocks.SOUL_TORCH) || state.is(Blocks.SOUL_WALL_TORCH) || state.is(Blocks.SOUL_LANTERN)
                 || state.is(Blocks.SOUL_CAMPFIRE) || state.is(Blocks.SOUL_FIRE)) color = new Vec(0.22, 0.72, 1.0);
         else if (state.is(Blocks.SEA_LANTERN) || state.is(Blocks.END_ROD) || state.is(Blocks.BEACON)) color = new Vec(0.78, 0.91, 1.0);
         else if (state.is(Blocks.REDSTONE_TORCH) || state.is(Blocks.REDSTONE_WALL_TORCH)) color = new Vec(1.0, 0.16, 0.07);
-        else if (state.getBlock().getDescriptionId().contains("ceilin") || state.getBlock().getDescriptionId().contains("lamp")
-                || state.getBlock().getDescriptionId().contains("light")) color = new Vec(1.0, 0.94, 0.84);
+        else if (isCeilingRoof) color = new Vec(1.0, 0.94, 0.84);
         else color = new Vec(1.0, 0.64, 0.30);
         var source = new LightState(0x434C0000_00000000L | (pos.asLong() & 0x0000_FFFF_FFFFFFFFL),
                 0, 0, Vec.ZERO, color, 2.8 * emission / 15.0, emission, true, LightState.LightKind.POINT, 0, 0);
-        clusters.put(key, new LocalLamp(x, y, z, source));
+        clusters.put(key, new LocalLamp(x, y, z, source, isCeilingRoof));
     }
 
     private static void emitBoxTris(double x0, double y0, double z0, double x1, double y1, double z1,

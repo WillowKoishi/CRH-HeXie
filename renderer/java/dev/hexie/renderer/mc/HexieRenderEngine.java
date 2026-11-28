@@ -19,7 +19,7 @@ public final class HexieRenderEngine implements RenderBridge {
     private RendererBackend.Lighting lighting = RendererBackend.Lighting.OFF;
     private final FrameRoute route = new FrameRoute();
     private final ViewPassOwnership ownership = new ViewPassOwnership();
-    private RenderSettings settings = RenderSettings.of(RenderSettings.Preset.MEDIUM);
+    private RenderSettings settings = RenderSettings.of(RenderSettings.Preset.OFF);
 
     public HexieRenderEngine(Function<StructureRevision.ModelRef,List<Triangle>> models,RendererBackend backend) {
         this(models, null, backend);

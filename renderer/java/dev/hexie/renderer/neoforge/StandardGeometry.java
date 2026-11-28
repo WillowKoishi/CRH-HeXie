@@ -42,6 +42,7 @@ final class StandardGeometry {
         layout(location = 4) in vec2 a_Light;
         uniform mat4 u_ModelView;
         uniform mat4 u_Projection;
+        uniform mat3 u_GroupRot;
         uniform vec3 u_DrawOffset;
         out vec3 v_Pos;
         out vec3 v_Normal;
@@ -49,9 +50,9 @@ final class StandardGeometry {
         out vec4 v_Color;
         out vec2 v_Light;
         void main() {
-            vec3 relPos = a_Pos + u_DrawOffset;
+            vec3 relPos = u_GroupRot * a_Pos + u_DrawOffset;
             v_Pos = relPos;
-            v_Normal = a_Normal;
+            v_Normal = u_GroupRot * a_Normal;
             v_Uv = a_Uv;
             v_Color = a_Color;
             v_Light = a_Light;
@@ -70,7 +71,7 @@ final class StandardGeometry {
         in vec4 v_Color;
         in vec2 v_Light;
         uniform sampler2D u_Tex;
-        layout(binding = 1) uniform sampler3D u_Volume;
+        layout(binding = 3) uniform sampler3D u_Volume;
         layout(binding = 2) uniform sampler2D u_Lightmap;
         uniform vec3 u_VolumeOrigin, u_VolumeSize;
         uniform int u_Cutout;
@@ -86,19 +87,16 @@ final class StandardGeometry {
             vec3 nrm = normalize(gl_FrontFacing ? v_Normal : -v_Normal);
             vec2 light = v_Light;
             if (u_VolumeSize.x > 0.0) {
-                vec3 cell = v_Pos - u_VolumeOrigin;
+                vec3 cell = v_Pos + nrm * 0.15 - u_VolumeOrigin;
                 vec3 edge = min(cell, u_VolumeSize - cell);
                 float weight = smoothstep(0.0, 1.0, min(edge.x, min(edge.y, edge.z)));
                 light = mix(light, texture(u_Volume, cell / u_VolumeSize).rg, weight);
             }
-            float hexieLocal = smoothstep(32.0, 20.0, length(v_Pos));
-            float blockScale = hexieEnabled != 0 ? mix(1.0, 0.12, hexieLocal) : 1.0;
+            float hexieLocal = smoothstep(48.0, 36.0, length(v_Pos));
+            float blockScale = hexieEnabled != 0 ? mix(1.0, 0.0, hexieLocal) : 1.0;
             vec2 uv = (light * vec2(blockScale, 1.0) * 15.0 + 0.5) / 16.0;
-            vec3 color = albedo * texture(u_Lightmap, uv).rgb * (0.72 + 0.28 * max(-0.5, nrm.y));
-        #if defined(GL_ARB_shader_storage_buffer_object) || (__VERSION__ >= 430)
-            color += hexieDirect(v_Pos, albedo, nrm);
-            color += hexieDaylight(v_Pos, albedo, nrm, light.y);
-        #endif
+            vec3 vanillaLight = texture(u_Lightmap, uv).rgb;
+            vec3 color = hexieShadeSurface(v_Pos, albedo, nrm, vanillaLight, light.y, 0.28);
             if (u_FogEnd > u_FogStart) {
                 float dist = length(v_Pos);
                 float f = clamp((dist - u_FogStart) / (u_FogEnd - u_FogStart), 0.0, 1.0) * u_FogColor.a;
@@ -112,10 +110,11 @@ final class StandardGeometry {
     private static final int[] vbos = new int[3], vboCaps = new int[3];
     private static int vboRing, vboCursorFloats;
     private static long vboFrame = Long.MIN_VALUE;
-    private static int locTex, locCutout, locModelView, locProjection, locDrawOffset, locFogStart, locFogEnd, locFogColor;
+    private static int locTex, locVolume, locLightmap, locCutout, locModelView, locProjection, locGroupRot, locDrawOffset, locFogStart, locFogEnd, locFogColor;
     private static int locVolumeOrigin, locVolumeSize;
     private static final float[] MAT_MV = new float[16];
     private static final float[] MAT_PROJ = new float[16];
+    private static final float[] MAT_GROUP_ROT = new float[9];
     private static float[] vertexScratch = new float[0];
     private static final ImageSource.ImageCapabilities CAPS = new ImageSource.ImageCapabilities(Set.of(ImageSource.Format.SRGB8_ALPHA8), 0L);
 
@@ -126,9 +125,11 @@ final class StandardGeometry {
         int capacityFloats;
         int vertexCount;
         RendererBackend.Section section;
-        Pose pose;
         long volumeRevision = Long.MIN_VALUE;
-        Vec anchor = Vec.ZERO;
+        long bakedTick = Long.MIN_VALUE;
+        boolean hadZeroLight;
+        int zeroRetries;
+        Vec localOrigin = Vec.ZERO;
     }
 
     private static final Map<BatchKey, StaticBatch> STATIC_BATCHES = new HashMap<>();
@@ -295,11 +296,14 @@ final class StandardGeometry {
         program = p;
         vao = array;
         locTex = glGetUniformLocation(p, "u_Tex");
+        locVolume = glGetUniformLocation(p, "u_Volume");
+        locLightmap = glGetUniformLocation(p, "u_Lightmap");
         locVolumeOrigin = glGetUniformLocation(p, "u_VolumeOrigin");
         locVolumeSize = glGetUniformLocation(p, "u_VolumeSize");
         locCutout = glGetUniformLocation(p, "u_Cutout");
         locModelView = glGetUniformLocation(p, "u_ModelView");
         locProjection = glGetUniformLocation(p, "u_Projection");
+        locGroupRot = glGetUniformLocation(p, "u_GroupRot");
         locDrawOffset = glGetUniformLocation(p, "u_DrawOffset");
         locFogStart = glGetUniformLocation(p, "u_FogStart");
         locFogEnd = glGetUniformLocation(p, "u_FogEnd");
@@ -324,7 +328,24 @@ final class StandardGeometry {
         return id;
     }
 
-    private record PreparedDraw(StaticBatch batch, int textureId) {}
+    private record PreparedDraw(StaticBatch batch, Pose pose, int textureId) {}
+
+    private static void poseRotationMatrix(Pose pose, float[] out) {
+        double x = pose.x(), y = pose.y(), z = pose.z(), w = pose.w();
+        double xx = x * x, yy = y * y, zz = z * z;
+        double xy = x * y, xz = x * z, yz = y * z;
+        double xw = x * w, yw = y * w, zw = z * w;
+        // Column-major 3x3 rotation matrix matching Pose.apply(v)
+        out[0] = (float) (1.0 - 2.0 * (yy + zz));
+        out[1] = (float) (2.0 * (xy + zw));
+        out[2] = (float) (2.0 * (xz - yw));
+        out[3] = (float) (2.0 * (xy - zw));
+        out[4] = (float) (1.0 - 2.0 * (xx + zz));
+        out[5] = (float) (2.0 * (yz + xw));
+        out[6] = (float) (2.0 * (xz + yw));
+        out[7] = (float) (2.0 * (yz - xw));
+        out[8] = (float) (1.0 - 2.0 * (xx + yy));
+    }
 
     private static void evictStaleBatches(RendererBackend.Snapshot scene) {
         if (STATIC_BATCHES.isEmpty()) return;
@@ -345,9 +366,12 @@ final class StandardGeometry {
                                                      WorldLightVolume volume) {
         var key = new BatchKey(group, mesh.start(), mesh.material());
         StaticBatch batch = STATIC_BATCHES.get(key);
+        long nowTick = world != null ? world.getGameTime() : 0L;
+        // Geometry is cached once in group-local space (zero CPU re-bake / VBO re-upload as trains move or rotate!).
         // Inside the 3D WorldLightVolume, fragment lighting reads u_Volume dynamically every frame;
-        // do NOT rebuild every static VBO whenever a torch is placed or broken!
-        if (batch != null && batch.section == section && batch.pose.equals(pose)) {
+        // only re-bake vertex fallback light if the chunk hadn't finished skylight sync when first baked.
+        if (batch != null && batch.section == section
+                && (!batch.hadZeroLight || batch.zeroRetries >= 20 || Math.abs(nowTick - batch.bakedTick) < 10L)) {
             return batch;
         }
         var tris = scene.triangles(group);
@@ -360,7 +384,12 @@ final class StandardGeometry {
         }
         float[] verts = vertexScratch;
         int cursor = 0;
-        Vec anchor = pose.translation();
+        Vec localOrigin = Vec.ZERO;
+        if (triCount > 0) {
+            Vec p0 = useCompiled ? compiled.triangles().get(mesh.start()).a().pos() : tris.get(mesh.start()).a();
+            localOrigin = new Vec(Math.floor(p0.x()), Math.floor(p0.y()), Math.floor(p0.z()));
+        }
+        boolean zeroLight = false;
         int base = useCompiled ? (mesh.argb() & 0x00FFFFFF) : (group == 1 ? 0x337d96 : 0xa4a09a);
         float cr = ((base >> 16) & 255) / 255f;
         float cg = ((base >> 8) & 255) / 255f;
@@ -369,36 +398,51 @@ final class StandardGeometry {
                 : (mesh.material().equals("translucent") ? (100f / 255f) : 1f);
         for (int i = mesh.start(); i < mesh.end(); i++) {
             if (useCompiled) {
-                var ct = compiled.triangles().get(i).transform(pose);
-                Vec pa = ct.a().pos(), pb = ct.b().pos(), pc = ct.c().pos();
-                cursor = pushVertex(verts, cursor, pa, anchor, ct.a().normal(), (float) ct.a().u(), (float) ct.a().v(),
-                        cr, cg, cb, ca, volume.vertexLight(world, pa, ct.a().normal()));
-                cursor = pushVertex(verts, cursor, pb, anchor, ct.b().normal(), (float) ct.b().u(), (float) ct.b().v(),
-                        cr, cg, cb, ca, volume.vertexLight(world, pb, ct.b().normal()));
-                cursor = pushVertex(verts, cursor, pc, anchor, ct.c().normal(), (float) ct.c().u(), (float) ct.c().v(),
-                        cr, cg, cb, ca, volume.vertexLight(world, pc, ct.c().normal()));
+                var lt = compiled.triangles().get(i);
+                var wt = lt.transform(pose);
+                int la = volume.vertexLight(world, wt.a().pos(), wt.a().normal());
+                int lb = volume.vertexLight(world, wt.b().pos(), wt.b().normal());
+                int lc = volume.vertexLight(world, wt.c().pos(), wt.c().normal());
+                if (la == 0 || lb == 0 || lc == 0) zeroLight = true;
+                cursor = pushVertex(verts, cursor, lt.a().pos(), localOrigin, lt.a().normal(), (float) lt.a().u(), (float) lt.a().v(),
+                        cr, cg, cb, ca, la);
+                cursor = pushVertex(verts, cursor, lt.b().pos(), localOrigin, lt.b().normal(), (float) lt.b().u(), (float) lt.b().v(),
+                        cr, cg, cb, ca, lb);
+                cursor = pushVertex(verts, cursor, lt.c().pos(), localOrigin, lt.c().normal(), (float) lt.c().u(), (float) lt.c().v(),
+                        cr, cg, cb, ca, lc);
             } else {
-                var t = tris.get(i).transform(pose);
-                var n = t.b().minus(t.a()).cross(t.c().minus(t.a()));
-                double length = Math.sqrt(n.dot(n));
+                var lt = tris.get(i);
+                var ln = lt.b().minus(lt.a()).cross(lt.c().minus(lt.a()));
+                double length = Math.sqrt(ln.dot(ln));
                 if (length <= 1e-12) continue;
-                n = n.times(1.0 / length);
+                ln = ln.times(1.0 / length);
+                var wt = lt.transform(pose);
+                var wn = wt.b().minus(wt.a()).cross(wt.c().minus(wt.a()));
+                double wlen = Math.sqrt(wn.dot(wn));
+                wn = wlen > 1e-12 ? wn.times(1.0 / wlen) : ln;
                 boolean even = ((i - mesh.start()) & 1) == 0;
                 float u1 = 1f, v1 = even ? 0f : 1f;
                 float u2 = even ? 1f : 0f, v2 = 1f;
-                cursor = pushVertex(verts, cursor, t.a(), anchor, n, 0f, 0f, cr, cg, cb, ca, volume.vertexLight(world, t.a(), n));
-                cursor = pushVertex(verts, cursor, t.b(), anchor, n, u1, v1, cr, cg, cb, ca, volume.vertexLight(world, t.b(), n));
-                cursor = pushVertex(verts, cursor, t.c(), anchor, n, u2, v2, cr, cg, cb, ca, volume.vertexLight(world, t.c(), n));
+                int la = volume.vertexLight(world, wt.a(), wn);
+                int lb = volume.vertexLight(world, wt.b(), wn);
+                int lc = volume.vertexLight(world, wt.c(), wn);
+                if (la == 0 || lb == 0 || lc == 0) zeroLight = true;
+                cursor = pushVertex(verts, cursor, lt.a(), localOrigin, ln, 0f, 0f, cr, cg, cb, ca, la);
+                cursor = pushVertex(verts, cursor, lt.b(), localOrigin, ln, u1, v1, cr, cg, cb, ca, lb);
+                cursor = pushVertex(verts, cursor, lt.c(), localOrigin, ln, u2, v2, cr, cg, cb, ca, lc);
             }
         }
         if (batch == null) {
             batch = new StaticBatch();
             STATIC_BATCHES.put(key, batch);
         }
+        boolean sameGeo = batch.section == section;
         batch.section = section;
-        batch.pose = pose;
         batch.volumeRevision = volume.contentRevision();
-        batch.anchor = anchor;
+        batch.bakedTick = nowTick;
+        batch.hadZeroLight = zeroLight;
+        batch.zeroRetries = zeroLight ? (sameGeo ? batch.zeroRetries + 1 : 1) : 0;
+        batch.localOrigin = localOrigin;
         batch.vertexCount = cursor / FLOATS_PER_VERTEX;
         if (cursor > 0) {
             if (batch.vbo == 0) batch.vbo = glCreateBuffers();
@@ -419,7 +463,7 @@ final class StandardGeometry {
         Vec eye = new Vec(pos.x, pos.y, pos.z);
         ClientLevel world = Minecraft.getInstance().level;
         long start = System.nanoTime();
-        int volumeId = volume.update(world, scene);
+        int volumeId = volume.update(world, scene, eye);
         ClientRenderState.timings.volumeNs += System.nanoTime() - start;
         if (pass == Pass.SOLID) evictStaleBatches(scene);
 
@@ -441,7 +485,7 @@ final class StandardGeometry {
                     if (batch.vertexCount <= 0 || batch.vbo == 0) return;
                     ResourceLocation texLoc = resolveTexture(mesh.material(), layer);
                     int texId = texManager.getTexture(texLoc).getId();
-                    draws.add(new PreparedDraw(batch, texId));
+                    draws.add(new PreparedDraw(batch, pose, texId));
                 });
             }
         }
@@ -481,12 +525,16 @@ final class StandardGeometry {
         int prevActiveTex = glGetInteger(GL_ACTIVE_TEXTURE);
         int prevMcActive = GlStateManager._getActiveTexture();
         int prevShaderTex2 = RenderSystem.getShaderTexture(2);
-        int prevTex0 = glGetIntegeri(GL_TEXTURE_BINDING_2D, 0);
-        int prevTex1 = glGetIntegeri(GL_TEXTURE_BINDING_3D, 1);
-        int prevTex2 = glGetIntegeri(GL_TEXTURE_BINDING_2D, 2);
-        int prevSampler1 = glGetIntegeri(GL_SAMPLER_BINDING, 1);
-        int prevSampler2 = glGetIntegeri(GL_SAMPLER_BINDING, 2);
-        int prevSampler0 = glGetIntegeri(GL_SAMPLER_BINDING, 0);
+        glActiveTexture(GL_TEXTURE0);
+        int prevTex0 = glGetInteger(GL_TEXTURE_BINDING_2D);
+        int prevSampler0 = glGetInteger(GL_SAMPLER_BINDING);
+        glActiveTexture(GL_TEXTURE2);
+        int prevTex2 = glGetInteger(GL_TEXTURE_BINDING_2D);
+        int prevSampler2 = glGetInteger(GL_SAMPLER_BINDING);
+        glActiveTexture(GL_TEXTURE3);
+        int prevTex3 = glGetInteger(GL_TEXTURE_BINDING_3D);
+        int prevSampler3 = glGetInteger(GL_SAMPLER_BINDING);
+        glActiveTexture(prevActiveTex);
         boolean prevDepth = glIsEnabled(GL_DEPTH_TEST);
         int prevDepthFunc = glGetInteger(GL_DEPTH_FUNC);
         boolean prevDepthMask = glGetBoolean(GL_DEPTH_WRITEMASK);
@@ -526,9 +574,9 @@ final class StandardGeometry {
             enableLightmap.run();
             glBindTexture(GL_TEXTURE_2D, RenderSystem.getShaderTexture(2));
             glBindSampler(2, 0);
-            glActiveTexture(GL_TEXTURE1);
+            glActiveTexture(GL_TEXTURE3);
             glBindTexture(GL_TEXTURE_3D, volumeId);
-            glBindSampler(1, 0);
+            glBindSampler(3, 0);
             if (volumeId != 0 && grid != null) {
                 glUniform3f(locVolumeOrigin, (float) (grid.x() - eye.x()), (float) (grid.y() - eye.y()), (float) (grid.z() - eye.z()));
                 glUniform3f(locVolumeSize, grid.width(), grid.height(), grid.depth());
@@ -537,9 +585,12 @@ final class StandardGeometry {
             glActiveTexture(GL_TEXTURE0);
             glBindSampler(0, 0);
             glUniform1i(locTex, 0);
+            if (locVolume >= 0) glUniform1i(locVolume, 3);
+            if (locLightmap >= 0) glUniform1i(locLightmap, 2);
             glUniform1i(locCutout, layer == Pass.CUTOUT ? 1 : 0);
             glUniformMatrix4fv(locModelView, false, modelView);
             glUniformMatrix4fv(locProjection, false, projection);
+            if (locGroupRot >= 0) glUniformMatrix3fv(locGroupRot, false, IDENTITY_3X3);
             glUniform3f(locDrawOffset, 0f, 0f, 0f);
             glUniform1f(locFogStart, fogStart);
             glUniform1f(locFogEnd, fogEnd);
@@ -552,8 +603,11 @@ final class StandardGeometry {
                         glBindTexture(GL_TEXTURE_2D, d.textureId);
                         boundTex = d.textureId;
                     }
-                    Vec a = d.batch.anchor;
-                    glUniform3f(locDrawOffset, (float) (a.x() - eye.x()), (float) (a.y() - eye.y()), (float) (a.z() - eye.z()));
+                    poseRotationMatrix(d.pose, MAT_GROUP_ROT);
+                    if (locGroupRot >= 0) glUniformMatrix3fv(locGroupRot, false, MAT_GROUP_ROT);
+                    Vec worldOrigin = d.pose.apply(d.batch.localOrigin);
+                    glUniform3f(locDrawOffset, (float) (worldOrigin.x() - eye.x()),
+                            (float) (worldOrigin.y() - eye.y()), (float) (worldOrigin.z() - eye.z()));
                     glVertexArrayVertexBuffer(vao, 0, d.batch.vbo, 0L, FLOATS_PER_VERTEX * Float.BYTES);
                     glDrawArrays(GL_TRIANGLES, 0, d.batch.vertexCount);
                 }
@@ -566,9 +620,9 @@ final class StandardGeometry {
             RenderSystem.bindTexture(prevTex0);
             glBindTexture(GL_TEXTURE_2D, prevTex0);
             glBindSampler(0, prevSampler0);
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_3D, prevTex1);
-            glBindSampler(1, prevSampler1);
+            glActiveTexture(GL_TEXTURE3);
+            glBindTexture(GL_TEXTURE_3D, prevTex3);
+            glBindSampler(3, prevSampler3);
             RenderSystem.activeTexture(GL_TEXTURE2);
             glActiveTexture(GL_TEXTURE2);
             RenderSystem.bindTexture(prevTex2);
@@ -624,12 +678,16 @@ final class StandardGeometry {
         int prevActiveTex = glGetInteger(GL_ACTIVE_TEXTURE);
         int prevMcActive = GlStateManager._getActiveTexture();
         int prevShaderTex2 = RenderSystem.getShaderTexture(2);
-        int prevTex0 = glGetIntegeri(GL_TEXTURE_BINDING_2D, 0);
-        int prevTex1 = glGetIntegeri(GL_TEXTURE_BINDING_3D, 1);
-        int prevTex2 = glGetIntegeri(GL_TEXTURE_BINDING_2D, 2);
-        int prevSampler1 = glGetIntegeri(GL_SAMPLER_BINDING, 1);
-        int prevSampler2 = glGetIntegeri(GL_SAMPLER_BINDING, 2);
-        int prevSampler0 = glGetIntegeri(GL_SAMPLER_BINDING, 0);
+        glActiveTexture(GL_TEXTURE0);
+        int prevTex0 = glGetInteger(GL_TEXTURE_BINDING_2D);
+        int prevSampler0 = glGetInteger(GL_SAMPLER_BINDING);
+        glActiveTexture(GL_TEXTURE2);
+        int prevTex2 = glGetInteger(GL_TEXTURE_BINDING_2D);
+        int prevSampler2 = glGetInteger(GL_SAMPLER_BINDING);
+        glActiveTexture(GL_TEXTURE3);
+        int prevTex3 = glGetInteger(GL_TEXTURE_BINDING_3D);
+        int prevSampler3 = glGetInteger(GL_SAMPLER_BINDING);
+        glActiveTexture(prevActiveTex);
         boolean prevDepth = glIsEnabled(GL_DEPTH_TEST);
         int prevDepthFunc = glGetInteger(GL_DEPTH_FUNC);
         boolean prevDepthMask = glGetBoolean(GL_DEPTH_WRITEMASK);
@@ -670,10 +728,10 @@ final class StandardGeometry {
             enableLightmap.run();
             glBindTexture(GL_TEXTURE_2D, RenderSystem.getShaderTexture(2));
             glBindSampler(2, 0);
-            glActiveTexture(GL_TEXTURE1);
+            glActiveTexture(GL_TEXTURE3);
             glBindTexture(GL_TEXTURE_3D, volumeId);
-            glBindSampler(1, 0);
-            if (volumeId != 0) {
+            glBindSampler(3, 0);
+            if (volumeId != 0 && grid != null) {
                 glUniform3f(locVolumeOrigin, (float) (grid.x() - eye.x()), (float) (grid.y() - eye.y()), (float) (grid.z() - eye.z()));
                 glUniform3f(locVolumeSize, grid.width(), grid.height(), grid.depth());
             } else glUniform3f(locVolumeSize, 0, 0, 0);
@@ -682,9 +740,12 @@ final class StandardGeometry {
             glBindTexture(GL_TEXTURE_2D, materialTexture.getAsInt());
             glBindSampler(0, 0);
             glUniform1i(locTex, 0);
+            if (locVolume >= 0) glUniform1i(locVolume, 3);
+            if (locLightmap >= 0) glUniform1i(locLightmap, 2);
             glUniform1i(locCutout, layer == Pass.CUTOUT ? 1 : 0);
             glUniformMatrix4fv(locModelView, false, modelView);
             glUniformMatrix4fv(locProjection, false, projection);
+            if (locGroupRot >= 0) glUniformMatrix3fv(locGroupRot, false, IDENTITY_3X3);
             glUniform3f(locDrawOffset, 0f, 0f, 0f);
             glUniform1f(locFogStart, fogStart);
             glUniform1f(locFogEnd, fogEnd);
@@ -698,9 +759,9 @@ final class StandardGeometry {
             RenderSystem.bindTexture(prevTex0);
             glBindTexture(GL_TEXTURE_2D, prevTex0);
             glBindSampler(0, prevSampler0);
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_3D, prevTex1);
-            glBindSampler(1, prevSampler1);
+            glActiveTexture(GL_TEXTURE3);
+            glBindTexture(GL_TEXTURE_3D, prevTex3);
+            glBindSampler(3, prevSampler3);
             RenderSystem.activeTexture(GL_TEXTURE2);
             glActiveTexture(GL_TEXTURE2);
             RenderSystem.bindTexture(prevTex2);

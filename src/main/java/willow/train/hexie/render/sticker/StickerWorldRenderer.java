@@ -68,7 +68,7 @@ public final class StickerWorldRenderer {
             var buffers = MultiBufferSource.immediate(mem);
             int pcx = mc.player.blockPosition().getX() >> 4;
             int pcz = mc.player.blockPosition().getZ() >> 4;
-            int radius = Math.min(6, mc.options.renderDistance().get());
+            int radius = Math.min(10, mc.options.renderDistance().get());
 
             for (int cx = pcx - radius; cx <= pcx + radius; cx++) {
                 for (int cz = pcz - radius; cz <= pcz + radius; cz++) {

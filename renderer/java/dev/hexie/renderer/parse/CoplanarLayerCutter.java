@@ -301,14 +301,15 @@ public final class CoplanarLayerCutter {
             double nw = n.dot(frame.w());
             double da = frame.depth(t.a().pos()), db = frame.depth(t.b().pos()), dc = frame.depth(t.c().pos());
             if (Math.abs(nw) < NORMAL_DOT_MIN) {
-                if (zeroThickness) {
+                double minW = Math.min(da, Math.min(db, dc));
+                double maxW = Math.max(da, Math.max(db, dc));
+                double pad = zeroThickness ? 0.01 : 0.005;
+                if (maxW <= minEntry - pad || minW >= maxExit + pad) {
                     outHostTris.add(t);
                     continue;
                 }
-                double minW = Math.min(da, Math.min(db, dc));
-                double maxW = Math.max(da, Math.max(db, dc));
-                if (maxW <= minEntry - 0.005 || minW >= maxExit + 0.005) {
-                    outHostTris.add(t);
+                if (zeroThickness) {
+                    outHostTris.addAll(clipPerpendicularTriOutsidePrism(t, frame, outerLoop));
                     continue;
                 }
                 UV midUv = frame.project(t.a().pos().plus(t.b().pos()).plus(t.c().pos()).times(1.0 / 3.0));
@@ -316,8 +317,7 @@ public final class CoplanarLayerCutter {
                 var splitW = splitTriByMaxDepth(t, frame, wExitLocal + 0.002);
                 outHostTris.addAll(splitW.deeper);
                 for (Tri shallowTri : splitW.shallower) {
-                    var clipped = subtractConvexFromTri(shallowTri, frame, outerLoop, false, boundaryWallSegments);
-                    outHostTris.addAll(clipped.outside);
+                    outHostTris.addAll(clipPerpendicularTriOutsidePrism(shallowTri, frame, outerLoop));
                 }
                 continue;
             }
@@ -362,12 +362,12 @@ public final class CoplanarLayerCutter {
                 double len = Math.sqrt(wallNormal.dot(wallNormal));
                 if (len <= 1e-12) continue;
                 wallNormal = wallNormal.times(1.0 / len);
-                double segLen = Math.sqrt(edge.dot(edge));
-                double depthSpan = Math.max(THICKNESS_EPS, ((w0b - w0f) + (w1b - w1f)) * 0.5);
-                Vertex v0f = new Vertex(p0Front, wallNormal, 0, 0);
-                Vertex v1f = new Vertex(p1Front, wallNormal, segLen, 0);
-                Vertex v1b = new Vertex(p1Back, wallNormal, segLen, depthSpan);
-                Vertex v0b = new Vertex(p0Back, wallNormal, 0, depthSpan);
+                double u0 = seg.p0.v().u(), v0 = seg.p0.v().v();
+                double u1 = seg.p1.v().u(), v1 = seg.p1.v().v();
+                Vertex v0f = new Vertex(p0Front, wallNormal, u0, v0);
+                Vertex v1f = new Vertex(p1Front, wallNormal, u1, v1);
+                Vertex v1b = new Vertex(p1Back, wallNormal, u1, v1);
+                Vertex v0b = new Vertex(p0Back, wallNormal, u0, v0);
                 outHostTris.add(new Tri(nextFaceId++, v0f, v1f, v1b, seg.materialId, seg.argb, false));
                 outHostTris.add(new Tri(nextFaceId++, v0f, v1b, v0b, seg.materialId, seg.argb, false));
             }
@@ -622,6 +622,66 @@ public final class CoplanarLayerCutter {
             return new PolyVert(new Vertex(p, n, tu, tv),
                     new UV(uv.u() + (other.uv.u() - uv.u()) * t, uv.v() + (other.uv.v() - uv.v()) * t));
         }
+    }
+
+    /**
+     * Clips a triangle perpendicular to the window plane directly in 3D against the extruded convex prism
+     * defined by convexCcw in (u, v). Uses 3D vertex deduplication and 3D triangle area so internal cross-block
+     * seams and panel flanges inside the opening are cleanly removed while outside segments stay intact.
+     */
+    private static List<Tri> clipPerpendicularTriOutsidePrism(Tri tri, PlaneFrame frame, List<UV> convexCcw) {
+        List<PolyVert> inside = List.of(
+                new PolyVert(tri.a(), frame.project(tri.a().pos())),
+                new PolyVert(tri.b(), frame.project(tri.b().pos())),
+                new PolyVert(tri.c(), frame.project(tri.c().pos())));
+        var outsideTris = new ArrayList<Tri>(4);
+        int m = convexCcw.size();
+        for (int k = 0; k < m; k++) {
+            if (inside.size() < 3) break;
+            UV e0 = convexCcw.get(k);
+            UV e1 = convexCcw.get((k + 1) % m);
+            var split = splitPolygonByDirectedLine3D(inside, e0, e1);
+            if (split.out.size() >= 3) {
+                fanTriangulate(split.out, tri, outsideTris);
+            }
+            inside = split.in;
+        }
+        return outsideTris;
+    }
+
+    private static SplitPoly splitPolygonByDirectedLine3D(List<PolyVert> poly, UV a, UV b) {
+        var in = new ArrayList<PolyVert>(poly.size() + 2);
+        var out = new ArrayList<PolyVert>(poly.size() + 2);
+        int n = poly.size();
+        for (int i = 0; i < n; i++) {
+            PolyVert p = poly.get(i), q = poly.get((i + 1) % n);
+            double dp = cross2D(a, b, p.uv()), dq = cross2D(a, b, q.uv());
+            if (dp >= -CLIP_EPS) in.add(p);
+            if (dp <= CLIP_EPS) out.add(p);
+            if ((dp > CLIP_EPS && dq < -CLIP_EPS) || (dp < -CLIP_EPS && dq > CLIP_EPS)) {
+                PolyVert mid = p.lerp(q, dp / (dp - dq));
+                in.add(mid);
+                out.add(mid);
+            }
+        }
+        return new SplitPoly(dedup3D(in), dedup3D(out));
+    }
+
+    private static List<PolyVert> dedup3D(List<PolyVert> pts) {
+        if (pts.size() < 2) return pts;
+        var out = new ArrayList<PolyVert>(pts.size());
+        for (var p : pts) {
+            if (out.isEmpty() || distSq3D(out.get(out.size() - 1).v().pos(), p.v().pos()) > 1e-14) out.add(p);
+        }
+        if (out.size() > 1 && distSq3D(out.get(0).v().pos(), out.get(out.size() - 1).v().pos()) <= 1e-14) {
+            out.remove(out.size() - 1);
+        }
+        return out;
+    }
+
+    private static double distSq3D(Vec a, Vec b) {
+        double dx = a.x() - b.x(), dy = a.y() - b.y(), dz = a.z() - b.z();
+        return dx * dx + dy * dy + dz * dz;
     }
 
     private static ClipOut subtractConvexFromTri(Tri tri, PlaneFrame frame, List<UV> convexCcw,

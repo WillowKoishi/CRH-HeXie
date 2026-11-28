@@ -116,6 +116,9 @@ public final class CreateVehicleAssembly {
             throw failure;
         }
         scanner.capturedGlue().forEach(SuperGlueEntity::discard);
+        for (int i = 0; i < carriers.size(); i++) {
+            ContraptionStickers.removeCapturedFromWorld(level, structures.get(i).origin(), carriers.get(i).getContraption());
+        }
         return assembly;
     }
 

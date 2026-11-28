@@ -34,6 +34,7 @@ public final class HexieMixinPlugin implements IMixinConfigPlugin {
         }
         return switch (name) {
             case "track.MixinTrackBallastData", "render.MixinClientContraptionDoor",
+                    "render.MixinClientContraptionStickers",
                     "render.MixinCRH2DoorRenderContext",
                     "input.MixinCarriageInteraction",
                     "collision.MixinCarriagePlayerCollision", "collision.MixinCarriageCollisionChunks",

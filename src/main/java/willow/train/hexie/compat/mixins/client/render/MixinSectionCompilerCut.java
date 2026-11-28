@@ -64,6 +64,9 @@ public abstract class MixinSectionCompilerCut {
             @Local Map<RenderType, BufferBuilder> bufferLayers,
             @Local(argsOnly = true) SectionBufferBuilderPack bufferPack) {
         var cutter = HexieBridges.Client.stickerMeshCutter();
+        if (cutter != null && cutter.isExternallyRenderedCut(pos)) {
+            return;
+        }
         if (cutter != null && cutter.hasCandidateCutAt(pos)) {
             boolean handled = cutter.tesselateCutBlock(
                     dispatcher, state, pos, region, poseStack, consumer,

@@ -34,9 +34,27 @@ public final class ClientRenderState {
                      List<ForwardLight.CasterTri> outTris, List<ForwardLight.Lamp> outLamps);
     }
 
+    /** Persistent GPU shadow mesh descriptor for a dynamic assembly (e.g. Create train):
+     * localVertexPositions is uploaded ONCE per contentRev; modelMatrix is updated per-frame! */
+    public record DynamicShadowMesh(long meshKey, long contentRev, float[] localVertexPositions,
+                                    float[] modelMatrix) {}
+
+    @FunctionalInterface
+    public interface DynamicMeshProvider {
+        void collect(Object level, Vec focus, float partialTick,
+                     List<DynamicShadowMesh> outMeshes, List<ForwardLight.Lamp> outLamps);
+    }
+
+    /** Pure-geometry check returning the safe local Y offset strictly beneath an opaque upper ceiling lamp plate
+     * (or Double.NaN if the block is not an opaque ceiling-mounted emitter). */
+    @FunctionalInterface
+    public interface CeilingEmitterChecker {
+        double ceilingEmitterOffsetY(Object blockState);
+    }
+
     public static DemoSceneController demo;
     public static Path config;
-    public static String pack="off", reason="waiting for frame";
+    public static String pack="off", reason="waiting for frame", volumeDebug="none";
     public static int terrainBatches,shipBatches,wrapperMismatches;
     public static int maxTextureSize=4096;
     public static long sectionRevision;
@@ -44,6 +62,8 @@ public final class ClientRenderState {
     private static final Map<String, HostFrameProvider> HOST_PROVIDERS = new ConcurrentHashMap<>();
     private static final Map<String, BlockCasterOverride> CASTER_OVERRIDES = new ConcurrentHashMap<>();
     private static final Map<String, DynamicCasterProvider> DYNAMIC_CASTER_PROVIDERS = new ConcurrentHashMap<>();
+    private static final Map<String, DynamicMeshProvider> DYNAMIC_MESH_PROVIDERS = new ConcurrentHashMap<>();
+    private static volatile CeilingEmitterChecker CEILING_EMITTER_CHECKER;
     private static final Set<Long> DIRTY_CASTER_SECTIONS = ConcurrentHashMap.newKeySet();
     private static final Set<Long> DIRTY_VOLUME_SECTIONS = ConcurrentHashMap.newKeySet();
     private static boolean trackingActive;
@@ -66,6 +86,27 @@ public final class ClientRenderState {
     public static void registerDynamicCasterProvider(String id, DynamicCasterProvider provider) {
         if (provider == null) DYNAMIC_CASTER_PROVIDERS.remove(id);
         else DYNAMIC_CASTER_PROVIDERS.put(id, provider);
+    }
+
+    public static void registerDynamicMeshProvider(String id, DynamicMeshProvider provider) {
+        if (provider == null) DYNAMIC_MESH_PROVIDERS.remove(id);
+        else DYNAMIC_MESH_PROVIDERS.put(id, provider);
+    }
+
+    public static void collectDynamicShadowMeshes(Object level, Vec focus, float partialTick,
+                                                  List<DynamicShadowMesh> outMeshes, List<ForwardLight.Lamp> outLamps) {
+        for (var p : DYNAMIC_MESH_PROVIDERS.values()) {
+            p.collect(level, focus, partialTick, outMeshes, outLamps);
+        }
+    }
+
+    public static void setCeilingEmitterChecker(CeilingEmitterChecker checker) {
+        CEILING_EMITTER_CHECKER = checker;
+    }
+
+    public static double ceilingEmitterOffsetY(Object blockState) {
+        CeilingEmitterChecker c = CEILING_EMITTER_CHECKER;
+        return c != null ? c.ceilingEmitterOffsetY(blockState) : Double.NaN;
     }
 
     public static long collectDynamicCasterTriangles(Object level, Vec focus, float partialTick,
@@ -208,13 +249,17 @@ public final class ClientRenderState {
         var e=engine();
         var l=e.lighting();
         var o=e.ownership();
-        String lightingOwner=switch(e.route().tier()) { case IRIS -> "shader pack"; case BASIC -> "vanilla"; case FULL -> "HeXie"; };
+        String lightingOwner=switch(e.route().tier()) {
+            case IRIS -> "shader pack";
+            case BASIC -> "vanilla";
+            case FULL -> e.settings().isDisabled() ? "vanilla (OFF)" : "HeXie";
+        };
         return e.route().tier()+" / "+e.settings().preset()+" / "+reason+" / "+pack+
                 " | lighting owner="+lightingOwner+
                 " | hosts="+HOST_PROVIDERS.size()+" groups="+e.sectionCount()+
                 " | lights="+l.lights()+"/"+demo.lights()+" faces="+l.faces()+" rays="+l.rays()+
                 " | geometry="+o.submissionsByOwner()+" missing="+o.missing()+" repeats prevented="+o.duplicatesPrevented()+
                 " | terrain="+terrainBatches+" ships="+shipBatches+" sections rev="+sectionRevision+
-                " MRT changes="+wrapperMismatches+" | "+timings.stats();
+                " MRT changes="+wrapperMismatches+" | vol="+volumeDebug+" | "+timings.stats();
     }
 }

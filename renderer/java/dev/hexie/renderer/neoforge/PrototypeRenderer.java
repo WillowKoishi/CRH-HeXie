@@ -15,7 +15,8 @@ final class PrototypeRenderer implements RendererBackend {
 
     @Override
     public Lighting prepare(Snapshot snapshot, RenderSettings settings) {
-        if (ClientRenderState.engine().route().tier() != RenderSettings.Tier.FULL
+        if (settings.isDisabled()
+                || ClientRenderState.engine().route().tier() != RenderSettings.Tier.FULL
                 || settings.effective(RenderSettings.Field.ACTIVE_LIGHTS, RenderSettings.Tier.FULL) == 0) {
             ForwardLight.clear();
             return Lighting.OFF;
@@ -52,7 +53,8 @@ final class PrototypeRenderer implements RendererBackend {
     }
 
     void prepareWorldIfIdle(net.minecraft.client.multiplayer.ClientLevel level, RenderSettings settings) {
-        if (ClientRenderState.engine().route().tier() != RenderSettings.Tier.FULL
+        if (settings.isDisabled()
+                || ClientRenderState.engine().route().tier() != RenderSettings.Tier.FULL
                 || settings.effective(RenderSettings.Field.ACTIVE_LIGHTS, RenderSettings.Tier.FULL) == 0) {
             ForwardLight.clear();
             return;
@@ -69,6 +71,7 @@ final class PrototypeRenderer implements RendererBackend {
     }
 
     @Override public void clear() {
+        casters.dispose();
         casters = new WorldCasters();
         volume.dispose();
         ForwardLight.clear();
